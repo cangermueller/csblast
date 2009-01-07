@@ -9,6 +9,7 @@
 
 #include "Amino_acid_alphabet.h"
 #include "Nucleic_acid_alphabet.h"
+#include "Sequence_profile.h"
 
 using std::cout;
 using std::endl;
@@ -18,10 +19,20 @@ int main(int argc, const char **argv) {
     Nucleic_acid_alphabet* na = Nucleic_acid_alphabet::instance();
 
     for(Sequence_alphabet::const_iterator iter=aa->begin(); iter != aa->end(); ++iter)
-        std::cout << *iter << std::endl;
-
+        cout << *iter << endl;
+    cout << endl;
     for(Sequence_alphabet::const_iterator iter=na->begin(); iter != na->end(); ++iter)
-        std::cout << *iter << std::endl;
+        cout << *iter << endl;
+
+    Sequence_profile profile(10, na);
+
+    cout << endl << profile.ncols() << endl << profile.nalph() << endl;
+
+    profile(0,4) = 0.5;
+    cout << endl << profile(0,4) << endl << endl;
+
+    for(Sequence_alphabet::const_iterator iter=profile.alphabet().begin(); iter != profile.alphabet().end(); ++iter)
+        cout << *iter << endl;
 
     return 0;
 }
