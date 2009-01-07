@@ -1,5 +1,5 @@
 #ifndef CS_ALPHABET_H
-#define Cs_ALPHABET_H
+#define CS_ALPHABET_H
 /***************************************************************************
  *   Copyright (C) 2008 by Andreas Biegert                                 *
  *   andreas.biegert@googlemail.com                                        *
