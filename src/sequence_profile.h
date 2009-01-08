@@ -9,6 +9,7 @@
 // A profile class representing columns of frequencies for sequence alphabet
 
 #include "row_major_matrix.h"
+#include "sequence.h"
 #include "sequence_alphabet.h"
 
 namespace cs
@@ -22,6 +23,8 @@ public:
 
     SequenceProfile(int ncols,
                     const SequenceAlphabet* alphabet);
+    SequenceProfile(const Sequence& sequence,
+                    const SequenceAlphabet* alphabet);
     virtual ~SequenceProfile();
 
     using RowMajorMatrix<float>::operator();
@@ -31,6 +34,9 @@ public:
     const SequenceAlphabet& alphabet() const;
 
 private:
+    // initialize profile matrix to zero
+    void init();
+
     const SequenceAlphabet* alphabet_;
 };//SequenceProfile
 
@@ -40,18 +46,22 @@ std::istream& operator>> (std::istream& i, SequenceProfile& profile);
 
 std::ostream& operator<< (std::ostream& o, const SequenceProfile& profile);
 
-void normalize(SequenceProfile& profile);
+// Resets all entries in given profile to zero.
+void reset(SequenceProfile& profile);
 
-
+// Returns the number of columns in the profile.
 inline int SequenceProfile::ncols() const
 { return RowMajorMatrix<float>::nrows(); }
 
+// Returns the number of columns in the profile.
 inline int SequenceProfile::length() const
 { return RowMajorMatrix<float>::nrows(); }
 
+// Returns the number of entries per profile column.
 inline int SequenceProfile::nalph() const
 { return RowMajorMatrix<float>::ncols(); }
 
+// Returns a reference to the underlying alphabet of the profile.
 inline const SequenceAlphabet& SequenceProfile::alphabet() const
 { return *alphabet_; }
 
