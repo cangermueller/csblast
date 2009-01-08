@@ -10,7 +10,8 @@ namespace cs
 
 Sequence::Sequence(int length,
                    const SequenceAlphabet* alphabet)
-        : alphabet_(alphabet), sequence_(length)
+        : alphabet_(alphabet),
+          sequence_(length)
 {}
 
 Sequence::Sequence(const std::string header,

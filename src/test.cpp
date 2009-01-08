@@ -26,7 +26,7 @@ int main(int argc, const char **argv) {
 
     cs::SequenceProfile profile(10, na);
 
-    cout << endl << profile.ncols() << endl << profile.nalph() << endl;
+    cout << endl << profile.ncols() << endl << profile.ndim() << endl;
 
     profile(0,4) = 0.5;
     cout << endl << profile(0,4) << endl << endl;
