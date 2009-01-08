@@ -20,11 +20,10 @@ NucleicAcidAlphabet* NucleicAcidAlphabet::instance()
     return &inst;
 }
 
-std::vector<char> NucleicAcidAlphabet::itoc() const
+void NucleicAcidAlphabet::init_itoc()
 {
     char itoc_arr[] = {'A','C','G','T','N'};
-    std::vector<char> itoc(itoc_arr, itoc_arr + sizeof(itoc_arr)/sizeof(*itoc_arr));
-    return itoc;
+    itoc_.insert(itoc_.begin(), itoc_arr, itoc_arr + sizeof(itoc_arr)/sizeof(*itoc_arr));
 }
 
 }//cs

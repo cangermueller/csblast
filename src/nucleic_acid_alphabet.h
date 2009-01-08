@@ -22,7 +22,7 @@ protected:
     NucleicAcidAlphabet();
     ~NucleicAcidAlphabet();
 
-    virtual std::vector<char> itoc() const;
+    virtual void init_itoc();
 
 private:
     // Not defined, to prevent copying

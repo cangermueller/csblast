@@ -28,11 +28,10 @@ AminoAcidAlphabet* AminoAcidAlphabet::instance()
     return &inst;
 }
 
-std::vector<char> AminoAcidAlphabet::itoc() const
+void AminoAcidAlphabet::init_itoc()
 {
     char itoc_arr[] = {'A','R','N','D','C','Q','E','G','H','I','L','K','M','F','P','S','T','W','Y','V','X'};
-    std::vector<char> itoc(itoc_arr, itoc_arr + sizeof(itoc_arr)/sizeof(*itoc_arr));
-    return itoc;
+    itoc_.insert(itoc_.begin(), itoc_arr, itoc_arr + sizeof(itoc_arr)/sizeof(*itoc_arr));
 }
 
 }//CS

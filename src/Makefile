@@ -1,21 +1,28 @@
-TARGET   := ./test
-CXXFLAGS := -O3 -g -W -Wall -Wno-long-long -Wno-char-subscripts -fno-strict-aliasing -pedantic
+TARGETS  :=
+CXXFLAGS := -O3 -g -W -Wall -Wno-long-long -Wno-char-subscripts -fno-strict-aliasing -I.
 CXX      := g++
 LIBS     :=
 EXT      := cpp
 BUILDDIR := build
-BINDIR   := ../bin
 
 override BUILDDIR := $(strip $(BUILDDIR))
 SOURCES  := $(wildcard *.$(EXT))
 OBJECTS  := $(patsubst %.$(EXT), $(BUILDDIR)/%.o, $(SOURCES))
 DEPS     := $(patsubst %.$(EXT), $(BUILDDIR)/%.dep, $(SOURCES))
+TESTS    := $(wildcard *test.h)
+
+# If you want to use python, specify USE_PYTHON=1 on the command line
+ifdef USE_PYTHON
+	TESTGEN = ../cxxtestgen.py
+else
+	TESTGEN = ../cxxtestgen.pl
+endif
 
 .PHONY: all
-all: $(TARGET)
+all: $(TARGETS)
 
-$(TARGET): $(OBJECTS) $(DEPS)
-	$(CXX) $(CXXFLAGS) -o $(BINDIR)/$(TARGET) $(OBJECTS) $(LIBS)
+# xxx: $(OBJECTS) $(DEPS)
+# 	$(CXX) $(CXXFLAGS) -o $@ $(OBJECTS) $(LIBS)
 
 ifneq ($(MAKECMDGOALS), clean)
 -include $(DEPS)
@@ -31,6 +38,15 @@ $(DEPS): $(BUILDDIR)/%.dep: %.$(EXT) $(BUILDDIR)/.tag
 	mkdir -p $(dir $(@))
 	touch $@
 
+run_tests: runner
+	./runner
+
+runner: runner.cpp $(OBJECTS) $(DEPS)
+	$(CXX) $(CXXFLAGS) -o $@ runner.cpp $(OBJECTS) $(LIBS)
+
+runner.cpp: $(TESTS)
+	$(TESTGEN) -o $@ --error-printer $(TESTS)
+
 .PHONY: clean
 clean:
-	rm -rf $(BUILDDIR) $(BINDIR)/* 
+	rm -rf $(BUILDDIR) $(TARGETS) runner runner.cpp

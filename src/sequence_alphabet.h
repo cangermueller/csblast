@@ -34,7 +34,7 @@ protected:
     ~SequenceAlphabet() { }
 
     void init();
-    virtual std::vector<char> itoc() const = 0;
+    virtual void init_itoc() = 0;
 
     std::vector<int> ctoi_;
     std::vector<char> itoc_;
