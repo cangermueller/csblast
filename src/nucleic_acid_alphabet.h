@@ -8,23 +8,28 @@
 // DESCRIPTION:
 // Singleton class that encapsulates meta information about nucleic acids
 
-#include "Sequence_alphabet.h"
+#include "sequence_alphabet.h"
 
-class Nucleic_acid_alphabet : public Sequence_alphabet
+namespace cs
+{
+
+class NucleicAcidAlphabet : public SequenceAlphabet
 {
 public:
-    static Nucleic_acid_alphabet* instance();
+    static NucleicAcidAlphabet* instance();
 
 protected:
-    Nucleic_acid_alphabet();
-    ~Nucleic_acid_alphabet();
+    NucleicAcidAlphabet();
+    ~NucleicAcidAlphabet();
 
     virtual std::vector<char> itoc() const;
 
 private:
     // Not defined, to prevent copying
-    Nucleic_acid_alphabet(const Nucleic_acid_alphabet& );
-    Nucleic_acid_alphabet& operator =(const Nucleic_acid_alphabet& other);
+    NucleicAcidAlphabet(const NucleicAcidAlphabet& );
+    NucleicAcidAlphabet& operator =(const NucleicAcidAlphabet& other);
 };
+
+}//cs
 
 #endif

@@ -8,23 +8,28 @@
 // DESCRIPTION:
 // Singleton class that encapsulates meta information about amino acids
 
-#include "Sequence_alphabet.h"
+#include "sequence_alphabet.h"
 
-class Amino_acid_alphabet : public Sequence_alphabet
+namespace cs
+{
+
+class AminoAcidAlphabet : public SequenceAlphabet
 {
 public:
-    static Amino_acid_alphabet* instance();
+    static AminoAcidAlphabet* instance();
 
 protected:
-    Amino_acid_alphabet();
-    ~Amino_acid_alphabet();
+    AminoAcidAlphabet();
+    ~AminoAcidAlphabet();
 
     virtual std::vector<char> itoc() const;
 
 private:
     // Not defined, to prevent copying
-    Amino_acid_alphabet(const Amino_acid_alphabet& );
-    Amino_acid_alphabet& operator =(const Amino_acid_alphabet& other);
+    AminoAcidAlphabet(const AminoAcidAlphabet& );
+        AminoAcidAlphabet& operator =(const AminoAcidAlphabet& other);
 };
+
+}//cs
 
 #endif

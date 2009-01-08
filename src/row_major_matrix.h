@@ -12,9 +12,9 @@
 #include <vector>
 
 template<typename T>
-class Row_major_matrix {
+class RowMajorMatrix {
 public:
-    Row_major_matrix(size_t nrows, size_t ncols);
+    RowMajorMatrix(size_t nrows, size_t ncols);
 
     // Access methods to get the (i,j) element:
     T&       operator() (size_t i, size_t j);
@@ -30,23 +30,23 @@ private:
 };
 
 template<typename T>
-inline size_t Row_major_matrix<T>::nrows() const
+inline size_t RowMajorMatrix<T>::nrows() const
 { return nrows_; }
 
 template<typename T>
-inline size_t Row_major_matrix<T>::ncols() const
+inline size_t RowMajorMatrix<T>::ncols() const
 { return ncols_; }
 
 template<typename T>
-inline T& Row_major_matrix<T>::operator() (size_t row, size_t col)
+inline T& RowMajorMatrix<T>::operator() (size_t row, size_t col)
 { return data_[row*ncols_ + col]; }
 
 template<typename T>
-inline const T& Row_major_matrix<T>::operator() (size_t row, size_t col) const
+inline const T& RowMajorMatrix<T>::operator() (size_t row, size_t col) const
 { return data_[row*ncols_ + col]; }
 
 template<typename T>
-Row_major_matrix<T>::Row_major_matrix(size_t nrows, size_t ncols)
+RowMajorMatrix<T>::RowMajorMatrix(size_t nrows, size_t ncols)
     : nrows_(nrows), ncols_(ncols), data_(nrows * ncols)
 { }
 

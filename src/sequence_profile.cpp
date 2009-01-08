@@ -3,18 +3,21 @@
  *   andreas.biegert@googlemail.com                                        *
  ***************************************************************************/
 
-#include "Sequence_profile.h"
+#include "sequence_profile.h"
 
+namespace cs
+{
 
-Sequence_profile::Sequence_profile(size_t ncols, const Sequence_alphabet* const alphabet)
-    : Row_major_matrix<float>(ncols, alphabet->size()), alphabet_(alphabet)
+SequenceProfile::SequenceProfile(size_t ncols, const SequenceAlphabet* const alphabet)
+    : RowMajorMatrix<float>(ncols, alphabet->size()), alphabet_(alphabet)
 { }
 
 
-Sequence_profile::~Sequence_profile()
+SequenceProfile::~SequenceProfile()
 { }
 
 
-const Sequence_alphabet& Sequence_profile::alphabet()
+const SequenceAlphabet& SequenceProfile::alphabet()
 { return *alphabet_; }
 
+}//cs

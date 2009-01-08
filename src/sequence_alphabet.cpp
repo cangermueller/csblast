@@ -3,14 +3,19 @@
  *   andreas.biegert@googlemail.com                                        *
  ***************************************************************************/
 
-#include "Sequence_alphabet.h"
+#include "sequence_alphabet.h"
 
+namespace cs
+{
 
-void Sequence_alphabet::init()
+void SequenceAlphabet::init()
 {
     itoc_ = itoc();
     const size_t char_size = static_cast<int>(pow(2, 8*sizeof(char)));
     for(size_t i=0; i<char_size; ++i) ctoi_.push_back(-1);
     for(size_t i=0; i<itoc_.size(); ++i) ctoi_[itoc_[i]]=i;
 }
+
+}//cs
+
 

@@ -1,16 +1,36 @@
-CXX = g++
-CXXFLAGS = -O3 -Wall -Wno-char-subscripts -fno-strict-aliasing
-CPP = $(CXX) $(CXXFLAGS)
+TARGET   := ./test
+CXXFLAGS := -O3 -g -W -Wall -Wno-long-long -Wno-char-subscripts -fno-strict-aliasing -pedantic -std=c++98
+CXX      := g++
+LIBS     :=
+EXT      := cpp
+BUILDDIR := build
+BINDIR   := ../bin
 
-SOURCES = test.cpp Sequence_profile.cpp Amino_acid_alphabet.cpp Nucleic_acid_alphabet.cpp Sequence_alphabet.cpp 
-HEADERS = Sequence_profile.h Amino_acid_alphabet.h Nucleic_acid_alphabet.h Sequence_alphabet.h
+override BUILDDIR := $(strip $(BUILDDIR))
+SOURCES  := $(wildcard *.$(EXT))
+OBJECTS  := $(patsubst %.$(EXT), $(BUILDDIR)/%.o, $(SOURCES))
+DEPS     := $(patsubst %.$(EXT), $(BUILDDIR)/%.dep, $(SOURCES))
 
-TARGETS = test
+.PHONY: all
+all: $(TARGET)
 
-all: $(TARGETS)
+$(TARGET): $(OBJECTS) $(DEPS)
+	$(CXX) $(CXXFLAGS) -o $(BINDIR)/$(TARGET) $(OBJECTS) $(LIBS)
 
-test: $(SOURCES) $(HEADERS)
-	$(CPP) -o ../bin/test $(SOURCES)
+ifneq ($(MAKECMDGOALS), clean)
+-include $(DEPS)
+endif
 
-clean: 	
-	-rm -f *.o ../bin/*
+$(OBJECTS): $(BUILDDIR)/%.o: %.$(EXT) $(BUILDDIR)/%.dep $(BUILDDIR)/.tag
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(DEPS): $(BUILDDIR)/%.dep: %.$(EXT) $(BUILDDIR)/.tag
+	$(CXX) $(CXXFLAGS) -MM $< -MT $@ -MT $(<:.$(EXT)=.o) -o $@
+
+%.tag:
+	mkdir -p $(dir $(@))
+	touch $@
+
+.PHONY: clean
+clean:
+	rm -rf $(BUILDDIR) $(BINDIR)/* 

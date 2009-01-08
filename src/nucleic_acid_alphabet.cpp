@@ -3,29 +3,33 @@
  *   andreas.biegert@googlemail.com                                        *
  ***************************************************************************/
 
-#include "Nucleic_acid_alphabet.h"
+#include "nucleic_acid_alphabet.h"
 
+namespace cs
+{
 
-Nucleic_acid_alphabet::Nucleic_acid_alphabet()
+NucleicAcidAlphabet::NucleicAcidAlphabet()
 {
     init();
 }
 
 
-Nucleic_acid_alphabet::~Nucleic_acid_alphabet()
+NucleicAcidAlphabet::~NucleicAcidAlphabet()
 { }
 
 
-Nucleic_acid_alphabet* Nucleic_acid_alphabet::instance()
+NucleicAcidAlphabet* NucleicAcidAlphabet::instance()
 {
-    static Nucleic_acid_alphabet inst;
+    static NucleicAcidAlphabet inst;
     return &inst;
 }
 
 
-std::vector<char> Nucleic_acid_alphabet::itoc() const
+std::vector<char> NucleicAcidAlphabet::itoc() const
 {
     char itoc_arr[] = {'A','C','G','T','N'};
     std::vector<char> itoc(itoc_arr, itoc_arr + sizeof(itoc_arr)/sizeof(*itoc_arr));
     return itoc;
 }
+
+}//cs

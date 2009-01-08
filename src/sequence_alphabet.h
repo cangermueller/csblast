@@ -13,7 +13,10 @@
 #include <vector>
 #include <cmath>
 
-class Sequence_alphabet
+namespace cs
+{
+
+class SequenceAlphabet
 {
 public:
     typedef std::vector<char>::const_iterator const_iterator;
@@ -27,8 +30,8 @@ public:
     const_iterator end() const;
 
 protected:
-    Sequence_alphabet() { }
-    ~Sequence_alphabet() { }
+    SequenceAlphabet() { }
+    ~SequenceAlphabet() { }
 
     void init();
     virtual std::vector<char> itoc() const = 0;
@@ -38,36 +41,38 @@ protected:
 
 private:
     // Not defined, to prevent copying
-    Sequence_alphabet(const Sequence_alphabet& );
-    Sequence_alphabet& operator =(const Sequence_alphabet& other);
+    SequenceAlphabet(const SequenceAlphabet& );
+    SequenceAlphabet& operator =(const SequenceAlphabet& other);
 };
 
 
-inline bool Sequence_alphabet::valid(char letter) const
+inline bool SequenceAlphabet::valid(char letter) const
 { return ctoi_[letter] != -1; }
 
 
-inline size_t Sequence_alphabet::size() const
+inline size_t SequenceAlphabet::size() const
 { return itoc_.size(); }
 
 
-inline int Sequence_alphabet::ctoi(char letter) const
+inline int SequenceAlphabet::ctoi(char letter) const
 { return ctoi_[letter]; }
 
 
-inline char Sequence_alphabet::itoc(int letter) const
+inline char SequenceAlphabet::itoc(int letter) const
 { return itoc_[letter]; }
 
 
-inline int Sequence_alphabet::any() const
+inline int SequenceAlphabet::any() const
 { return ctoi_[itoc_[itoc_.size()-1]]; }
 
 
-inline Sequence_alphabet::const_iterator Sequence_alphabet::begin() const
+inline SequenceAlphabet::const_iterator SequenceAlphabet::begin() const
 { return itoc_.begin(); }
 
 
-inline Sequence_alphabet::const_iterator Sequence_alphabet::end() const
+inline SequenceAlphabet::const_iterator SequenceAlphabet::end() const
 { return itoc_.end(); }
+
+}//cs
 
 #endif
