@@ -9,21 +9,16 @@ namespace cs
 {
 
 NucleicAcidAlphabet::NucleicAcidAlphabet()
-{
-    init();
-}
-
+{ init(); }
 
 NucleicAcidAlphabet::~NucleicAcidAlphabet()
 { }
-
 
 NucleicAcidAlphabet* NucleicAcidAlphabet::instance()
 {
     static NucleicAcidAlphabet inst;
     return &inst;
 }
-
 
 std::vector<char> NucleicAcidAlphabet::itoc() const
 {

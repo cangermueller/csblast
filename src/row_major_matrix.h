@@ -8,46 +8,50 @@
 // DESCRIPTION:
 // Matrix template class with continuous memory footprint in row major layout.
 
-#include <cstddef>
 #include <vector>
+
+#include "my_exception.h"
 
 template<typename T>
 class RowMajorMatrix {
 public:
-    RowMajorMatrix(size_t nrows, size_t ncols);
+    RowMajorMatrix(int nrows, int ncols);
 
     // Access methods to get the (i,j) element:
-    T&       operator() (size_t i, size_t j);
-    const T& operator() (size_t i, size_t j) const;
+    T&       operator() (int i, int j);
+    const T& operator() (int i, int j) const;
 
-    size_t nrows() const;  // #rows in this matrix
-    size_t ncols() const;  // #columns in this matrix
+    int nrows() const;  // #rows in this matrix
+    int ncols() const;  // #columns in this matrix
 
 private:
-    size_t nrows_;
-    size_t ncols_;
+    int nrows_;
+    int ncols_;
     std::vector<T> data_;
 };
 
 template<typename T>
-inline size_t RowMajorMatrix<T>::nrows() const
+inline int RowMajorMatrix<T>::nrows() const
 { return nrows_; }
 
 template<typename T>
-inline size_t RowMajorMatrix<T>::ncols() const
+inline int RowMajorMatrix<T>::ncols() const
 { return ncols_; }
 
 template<typename T>
-inline T& RowMajorMatrix<T>::operator() (size_t row, size_t col)
+inline T& RowMajorMatrix<T>::operator() (int row, int col)
 { return data_[row*ncols_ + col]; }
 
 template<typename T>
-inline const T& RowMajorMatrix<T>::operator() (size_t row, size_t col) const
+inline const T& RowMajorMatrix<T>::operator() (int row, int col) const
 { return data_[row*ncols_ + col]; }
 
 template<typename T>
-RowMajorMatrix<T>::RowMajorMatrix(size_t nrows, size_t ncols)
+RowMajorMatrix<T>::RowMajorMatrix(int nrows, int ncols)
     : nrows_(nrows), ncols_(ncols), data_(nrows * ncols)
-{ }
+{
+    if (nrows == 0 || ncols == 0)
+        throw MyException("Bad size arguments for matrix: nrows=%i ncols=%i", nrows, ncols);
+}
 
 #endif

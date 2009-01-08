@@ -17,30 +17,43 @@ namespace cs
 class SequenceProfile : private RowMajorMatrix<float>
 {
 public:
-    SequenceProfile(size_t ncols, const SequenceAlphabet* const alphabet);
+    friend std::istream& operator>> (std::istream& i, SequenceProfile& profile);
+    friend std::ostream& operator<< (std::ostream& o, const SequenceProfile& profile);
+
+    SequenceProfile(int ncols,
+                    const SequenceAlphabet* alphabet);
     virtual ~SequenceProfile();
 
     using RowMajorMatrix<float>::operator();
-    size_t ncols() const;
-    size_t length() const;
-    size_t nalph() const;
-
-    const SequenceAlphabet& alphabet();
+    int ncols() const;
+    int length() const;
+    int nalph() const;
+    const SequenceAlphabet& alphabet() const;
 
 private:
-    const SequenceAlphabet* const alphabet_;
-};
+    const SequenceAlphabet* alphabet_;
+};//SequenceProfile
 
-inline size_t SequenceProfile::ncols() const
-{ return RowMajorMatrix<float>::nrows(); }
 
-inline size_t SequenceProfile::length() const
-{ return RowMajorMatrix<float>::nrows(); }
 
-inline size_t SequenceProfile::nalph() const
-{ return RowMajorMatrix<float>::ncols(); }
+std::istream& operator>> (std::istream& i, SequenceProfile& profile);
+
+std::ostream& operator<< (std::ostream& o, const SequenceProfile& profile);
 
 void normalize(SequenceProfile& profile);
+
+
+inline int SequenceProfile::ncols() const
+{ return RowMajorMatrix<float>::nrows(); }
+
+inline int SequenceProfile::length() const
+{ return RowMajorMatrix<float>::nrows(); }
+
+inline int SequenceProfile::nalph() const
+{ return RowMajorMatrix<float>::ncols(); }
+
+inline const SequenceAlphabet& SequenceProfile::alphabet() const
+{ return *alphabet_; }
 
 }//cs
 

@@ -19,17 +19,14 @@ AminoAcidAlphabet::AminoAcidAlphabet()
     ctoi_['Z'] = ctoi_['E'];
 }
 
-
 AminoAcidAlphabet::~AminoAcidAlphabet()
-{ }
-
+{}
 
 AminoAcidAlphabet* AminoAcidAlphabet::instance()
 {
     static AminoAcidAlphabet inst;
     return &inst;
 }
-
 
 std::vector<char> AminoAcidAlphabet::itoc() const
 {

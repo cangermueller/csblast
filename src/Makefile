@@ -1,5 +1,5 @@
 TARGET   := ./test
-CXXFLAGS := -O3 -g -W -Wall -Wno-long-long -Wno-char-subscripts -fno-strict-aliasing -pedantic -std=c++98
+CXXFLAGS := -O3 -g -W -Wall -Wno-long-long -Wno-char-subscripts -fno-strict-aliasing -pedantic
 CXX      := g++
 LIBS     :=
 EXT      := cpp

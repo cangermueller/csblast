@@ -22,7 +22,7 @@ public:
     typedef std::vector<char>::const_iterator const_iterator;
 
     bool valid(char letter) const;
-    size_t size() const;
+    int size() const;
     int ctoi(char letter) const;
     char itoc(int letter) const;
     int any() const;
@@ -46,29 +46,24 @@ private:
 };
 
 
+
 inline bool SequenceAlphabet::valid(char letter) const
 { return ctoi_[letter] != -1; }
 
-
-inline size_t SequenceAlphabet::size() const
+inline int SequenceAlphabet::size() const
 { return itoc_.size(); }
-
 
 inline int SequenceAlphabet::ctoi(char letter) const
 { return ctoi_[letter]; }
 
-
 inline char SequenceAlphabet::itoc(int letter) const
 { return itoc_[letter]; }
-
 
 inline int SequenceAlphabet::any() const
 { return ctoi_[itoc_[itoc_.size()-1]]; }
 
-
 inline SequenceAlphabet::const_iterator SequenceAlphabet::begin() const
 { return itoc_.begin(); }
-
 
 inline SequenceAlphabet::const_iterator SequenceAlphabet::end() const
 { return itoc_.end(); }
