@@ -9,10 +9,15 @@
 // A container class representing a sequence consisting of letters over a
 // sequence alphabet.
 
+#include <cctype>
+#include <iostream>
+#include <streambuf>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 #include "sequence_alphabet.h"
+#include "my_exception.h"
 
 namespace cs
 {
@@ -20,23 +25,17 @@ namespace cs
 class Sequence
 {
 public:
-    friend std::istream& operator>> (std::istream& i, Sequence& sequence);
-    friend std::ostream& operator<< (std::ostream& o, const Sequence& sequence);
+    typedef std::vector<char>::const_iterator const_iterator;
+    typedef std::vector<char>::iterator iterator;
 
-    enum Format
-    {
-        PLAIN     = 0,
-        FASTA     = 1,
-        CLUSTAL   = 2  //not implemented
-    };
+    friend std::istream& operator>> (std::istream& in, Sequence& sequence);
 
     Sequence(int length,
              const SequenceAlphabet* alphabet);
-    Sequence(const std::string header,
-             const std::string sequence,
+    Sequence(const std::string& header,
+             const std::vector<char>& sequence,
              const SequenceAlphabet* alphabet);
-    Sequence(const char* header,
-             const char* sequence,
+    Sequence(std::istream& in,
              const SequenceAlphabet* alphabet);
     virtual ~Sequence();
 
@@ -44,21 +43,29 @@ public:
     const char& operator() (int i) const;
     char chr(int i) const;
     int length() const;
+    const std::string& header() const;
+    std::string& header();
     const SequenceAlphabet& alphabet() const;
+    const_iterator begin() const;
+    const_iterator end() const;
+    iterator begin();
+    iterator end();
 
 private:
-    void init(const char* header, const char* sequence);
+    // Initializes the sequence object with given header and sequence.
+    void init(const std::string& header, const std::vector<char>& sequence);
 
-    const SequenceAlphabet* const alphabet_;
+    const SequenceAlphabet* alphabet_;
     std::string header_;
     std::vector<char> sequence_;
 };//Sequence
 
 
+// Initializes a sequence object from FASTA formatted sequence in input stream.
+std::istream& operator>> (std::istream& in, Sequence& sequence);
 
-std::istream& operator>> (std::istream& i, Sequence& sequence);
-
-std::ostream& operator<< (std::ostream& o, const Sequence& sequence);
+// Prints the sequence in FASTA format to output stream.
+std::ostream& operator<< (std::ostream& out, const Sequence& sequence);
 
 
 inline char& Sequence::operator() (int i)
@@ -73,8 +80,26 @@ inline char Sequence::chr(int i) const
 inline int Sequence::length() const
 { return sequence_.size(); }
 
+inline std::string& Sequence::header()
+{ return header_; }
+
+inline const std::string& Sequence::header() const
+{ return header_; }
+
 inline const SequenceAlphabet& Sequence::alphabet() const
 { return *alphabet_; }
+
+inline Sequence::const_iterator Sequence::begin() const
+{ return sequence_.begin(); }
+
+inline Sequence::const_iterator Sequence::end() const
+{ return sequence_.end(); }
+
+inline Sequence::iterator Sequence::begin()
+{ return sequence_.begin(); }
+
+inline Sequence::iterator Sequence::end()
+{ return sequence_.end(); }
 
 }//cs
 

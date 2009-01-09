@@ -8,6 +8,12 @@
 namespace cs
 {
 
+SequenceAlphabet::SequenceAlphabet()
+{}
+
+SequenceAlphabet::~SequenceAlphabet()
+{}
+
 void SequenceAlphabet::init()
 {
     init_itoc();

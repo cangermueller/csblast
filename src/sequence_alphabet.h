@@ -30,10 +30,13 @@ public:
     const_iterator end() const;
 
 protected:
-    SequenceAlphabet() { }
-    ~SequenceAlphabet() { }
+    SequenceAlphabet();
+    ~SequenceAlphabet();
 
+    // Initializes ctoi and itoc conversion arrays.
     void init();
+    // Template method that initializes itoc conversion array.
+    // Note: The last element of itoc has to specify the "any" character.
     virtual void init_itoc() = 0;
 
     std::vector<int> ctoi_;

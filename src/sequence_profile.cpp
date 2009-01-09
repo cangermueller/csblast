@@ -15,14 +15,13 @@ SequenceProfile::SequenceProfile(int ncols, int ndim)
 
 SequenceProfile::SequenceProfile(int ncols,
                                  const SequenceAlphabet* alphabet)
-        : Profile(ncols, alphabet->size()),
+        : Profile(ncols, alphabet->size()-1),
           alphabet_(alphabet)
 {}
 
-SequenceProfile::SequenceProfile(const Sequence& sequence,
-                                 const SequenceAlphabet* alphabet)
-        : Profile(sequence.length(), alphabet->size()),
-          alphabet_(alphabet)
+SequenceProfile::SequenceProfile(const Sequence& sequence)
+        : Profile(sequence.length(), sequence.alphabet().size()-1),
+          alphabet_(&sequence.alphabet())
 {
     const int cols = ncols();
     const int dim  = ndim();

@@ -24,8 +24,7 @@ public:
     SequenceProfile(int ncols, int ndim);
     SequenceProfile(int ncols,
                     const SequenceAlphabet* alphabet);
-    SequenceProfile(const Sequence& sequence,
-                    const SequenceAlphabet* alphabet);
+    SequenceProfile(const Sequence& sequence);
     virtual ~SequenceProfile();
 
     const SequenceAlphabet& alphabet() const;
