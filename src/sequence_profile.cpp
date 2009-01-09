@@ -34,12 +34,16 @@ SequenceProfile::SequenceProfile(const Sequence& sequence)
 SequenceProfile::~SequenceProfile()
 {}
 
-// TODO: implement input operator >> for class SequenceProfile
-std::istream& operator>> (std::istream& i, SequenceProfile& profile)
-{ return i; }
+std::istream& operator>> (std::istream& in, SequenceProfile& profile)
+{
+    std::string data((std::istreambuf_iterator<char>(in)),
+                     std::istreambuf_iterator<char>());
+
+    return in;
+}
 
 // TODO: implement output operator << for class SequenceProfile
-std::ostream& operator<< (std::ostream& o, const SequenceProfile& profile)
-{ return o; }
+std::ostream& operator<< (std::ostream& out, const SequenceProfile& profile)
+{ return out; }
 
 }//cs

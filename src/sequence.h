@@ -9,12 +9,14 @@
 // A container class representing a sequence consisting of letters over a
 // sequence alphabet.
 
+#include <cstdlib>
 #include <cctype>
 #include <iostream>
 #include <streambuf>
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <utility>
 
 #include "sequence_alphabet.h"
 #include "my_exception.h"
@@ -33,11 +35,17 @@ public:
     Sequence(int length,
              const SequenceAlphabet* alphabet);
     Sequence(const std::string& header,
-             const std::vector<char>& sequence,
+             const std::string& sequence,
              const SequenceAlphabet* alphabet);
     Sequence(std::istream& in,
              const SequenceAlphabet* alphabet);
+    Sequence(std::string::const_iterator start,
+             std::string::const_iterator end,
+             const SequenceAlphabet* alphabet);
     virtual ~Sequence();
+
+    static std::vector<Sequence*> read(std::istream& in,
+                                       const SequenceAlphabet* alphabet);
 
     char&       operator() (int i);
     const char& operator() (int i) const;
@@ -52,8 +60,8 @@ public:
     iterator end();
 
 private:
-    // Initializes the sequence object with given header and sequence.
-    void init(const std::string& header, const std::vector<char>& sequence);
+    // Initializes the sequence object with a header and a sequence of characters.
+    void init(const std::string& header, const std::string& sequence);
 
     const SequenceAlphabet* alphabet_;
     std::string header_;
@@ -66,6 +74,10 @@ std::istream& operator>> (std::istream& in, Sequence& sequence);
 
 // Prints the sequence in FASTA format to output stream.
 std::ostream& operator<< (std::ostream& out, const Sequence& sequence);
+
+// Parse header and sequence from data starting from given index. After the parse index points to the start of
+// the next sequence or is zero if there is none.
+std::pair<std::string, std::string > parse_fasta_sequence(const std::string& data, size_t& index);
 
 
 inline char& Sequence::operator() (int i)

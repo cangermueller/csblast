@@ -17,14 +17,14 @@ class SequenceTestSuite : public CxxTest::TestSuite
         cs::AminoAcidAlphabet* aa = cs::AminoAcidAlphabet::instance();
 
         std::string header("dummy sequence header");
-        std::vector<char> charvec(aa->begin(), aa->end());
-        charvec.insert(charvec.begin()+1, ' ');
-        charvec.push_back('\n');
+        std::string seq(aa->begin(), aa->end());
+        seq.insert(seq.begin()+1, ' ');
+        seq.push_back('\n');
         std::vector<char> intvec;
         for (cs::AminoAcidAlphabet::const_iterator iter = aa->begin(); iter != aa->end(); ++iter)
             intvec.push_back(aa->ctoi(*iter));
 
-        const cs::Sequence sequence(header, charvec, aa);
+        const cs::Sequence sequence(header, seq, aa);
 
         TS_ASSERT_EQUALS( sequence.length(), aa->size() );
         TS_ASSERT_EQUALS( sequence(1), aa->ctoi('R') );
@@ -34,7 +34,7 @@ class SequenceTestSuite : public CxxTest::TestSuite
     void test_construction_from_input_stream( void )
     {
         cs::NucleicAcidAlphabet* na = cs::NucleicAcidAlphabet::instance();
-        std::istringstream data(">dummy header\nACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTAC");
+        std::istringstream data(">dummy header\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTAC");
         cs::Sequence sequence(data, na);
 
         TS_ASSERT_EQUALS( sequence.length(), 80 );
@@ -47,11 +47,11 @@ class SequenceTestSuite : public CxxTest::TestSuite
         cs::NucleicAcidAlphabet* na = cs::NucleicAcidAlphabet::instance();
 
         std::string header("dummy sequence header");
-        std::vector<char> charvec(na->begin(), na->end());
-        charvec.insert(charvec.begin()+1, ' ');
-        charvec.push_back('F'); //invalid character
-        charvec.push_back('\n');
+        std::string seq(na->begin(), na->end());
+        seq.insert(seq.begin()+1, ' ');
+        seq.push_back('F'); //invalid character
+        seq.push_back('\n');
 
-        TS_ASSERT_THROWS_ANYTHING( cs::Sequence(header, charvec, na) );
+        TS_ASSERT_THROWS_ANYTHING( cs::Sequence(header, seq, na) );
     }
 };
