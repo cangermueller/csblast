@@ -9,10 +9,8 @@
 // A container class representing a sequence consisting of letters over a
 // sequence alphabet.
 
-#include <cstdlib>
 #include <cctype>
 #include <iostream>
-#include <streambuf>
 #include <string>
 #include <vector>
 #include <algorithm>
@@ -39,9 +37,6 @@ public:
              const SequenceAlphabet* alphabet);
     Sequence(std::istream& in,
              const SequenceAlphabet* alphabet);
-    Sequence(std::string::const_iterator start,
-             std::string::const_iterator end,
-             const SequenceAlphabet* alphabet);
     virtual ~Sequence();
 
     static std::vector<Sequence*> read(std::istream& in,
@@ -60,13 +55,16 @@ public:
     iterator end();
 
 private:
-    // Initializes the sequence object with a header and a sequence of characters.
-    void init(const std::string& header, const std::string& sequence);
+    // Initializes the sequence object with a sequence in FASTA format read from given stream.
+    void init(std::istream& in);
+    // Convert the sequence in character representation to integer representation.
+    void check_and_convert();
 
     const SequenceAlphabet* alphabet_;
     std::string header_;
     std::vector<char> sequence_;
 };//Sequence
+
 
 
 // Initializes a sequence object from FASTA formatted sequence in input stream.
@@ -75,9 +73,6 @@ std::istream& operator>> (std::istream& in, Sequence& sequence);
 // Prints the sequence in FASTA format to output stream.
 std::ostream& operator<< (std::ostream& out, const Sequence& sequence);
 
-// Parse header and sequence from data starting from given index. After the parse index points to the start of
-// the next sequence or is zero if there is none.
-std::pair<std::string, std::string > parse_fasta_sequence(const std::string& data, size_t& index);
 
 
 inline char& Sequence::operator() (int i)

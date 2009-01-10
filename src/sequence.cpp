@@ -18,7 +18,17 @@ Sequence::Sequence(const std::string& header,
                    const std::string& sequence,
                    const SequenceAlphabet* alphabet)
         : alphabet_(alphabet)
-{ init(header, sequence); }
+{
+    //adjust capacity of header and sequence a minimum
+    std::string().swap(header_);
+    std::vector<char>().swap(sequence_);
+    sequence_.reserve(sequence.size());
+
+    header_.insert(header_.begin(), header.begin() + (header[0]=='>' ? 1 : 0), header.end());
+    sequence_.insert(sequence_.begin(), sequence.begin(), sequence.end());
+
+    check_and_convert();
+}
 
 Sequence::Sequence(std::istream& in,
                    const SequenceAlphabet* alphabet)
@@ -32,35 +42,22 @@ std::vector<Sequence*> Sequence::read(std::istream& in,
                                       const SequenceAlphabet* alphabet)
 {
     std::vector<Sequence*> sequences;
-    std::string data((std::istreambuf_iterator<char>(in)),
-                     std::istreambuf_iterator<char>());
-
-    size_t index = 0;
-    std::pair<std::string, std::string > header_seq_pair = parse_fasta_sequence(data, index);
-    Sequence* seq = new Sequence(header_seq_pair.first,
-                                 header_seq_pair.second,
-                                 alphabet);
-    sequences.push_back(seq);
+    while (in.good()) {
+        Sequence* seq = new Sequence(in, alphabet);
+        sequences.push_back(seq);
+    }
 
     return sequences;
 }
 
-// Initializes sequence object with given header string and sequence vector.
-// Note that the sequence undergoes a validation check: White space is silently
-// removed whereas invalid characters (according to the alphabet) trigger an
-// execption.
-void Sequence::init(const std::string& header, const std::string& sequence)
+// Convert the sequence in character representation to integer representation. This also
+// involves removing whitespace and checking for invalid characters. In the latter case
+// an exception is thrown.
+void Sequence::check_and_convert()
 {
-    std::string().swap(header_); //clear and minimize capacity
-    header_.insert(header_.begin(), header.begin() + (header[0]=='>' ? 1 : 0), header.end());
-
-    std::vector<char>().swap(sequence_); //clear and minimize capacity
-    sequence_.reserve(sequence.size());
-    sequence_.insert(sequence_.begin(), sequence.begin(), sequence.end());
     //strip whitespace and newlines from sequence.
     sequence_.erase(remove_if(sequence_.begin(), sequence_.end(), isspace),
-                       sequence_.end());
-
+                    sequence_.end());
     //validate each character and convert to integer representation
     int len = sequence_.size();
     for (int i = 0; i < len; ++i)
@@ -73,30 +70,38 @@ void Sequence::init(const std::string& header, const std::string& sequence)
         }
 }
 
-std::pair<std::string, std::string > parse_fasta_sequence(const std::string& data, size_t& index)
+// Initializes the sequence object from given stream with a sequence in FASTA format.
+// Note that the sequence undergoes a validation check: White space is silently
+// removed whereas invalid characters (according to the alphabet) trigger an
+// execption. After the initialization the stream points to begin of next FASTA
+// sequence or EOF.
+void Sequence::init(std::istream& in)
 {
-    size_t i = data.find_first_of('>', index); //find start of header
-    if (i == std::string::npos) throw MyException("Bad format: FASTA input does not contain '>'!");
-    size_t j = data.find_first_of('\n', i); //find end of header
-    if (j == std::string::npos) throw MyException("Bad format: FASTA header does not terminate with newline!");
-    size_t k = data.find_first_of('>', j); //find start of next sequence if there is one
-    index = k == std::string::npos ? 0 : k;
+    //clear and minimize capacity of header and sequence
+    std::string().swap(header_);
+    std::vector<char>().swap(sequence_);
 
-    std::string header(data.begin()+i, data.begin()+j);
-    std::string raw_sequence(data.begin()+j, k == std::string::npos ? data.end() : data.begin()+k);
+    const int kBufferSize = 2097152; //2MB
+    std::string buffer;
+    buffer.reserve(kBufferSize);
+    //read header
+    if (getline(in, buffer)) {
+        if (buffer.empty() ||  buffer[0] != '>')
+            throw MyException("Bad format: first line of FASTA sequence does not start with '>' character!");
+        header_.insert(header_.begin(), buffer.begin() + 1, buffer.end());
+    } else {
+        throw MyException("Failed to read from FASTA formatted input stream!");
+    }
+    //read sequence
+    while(in.peek() != '>' && getline(in, buffer))
+        sequence_.insert(sequence_.end(), buffer.begin(), buffer.end());
 
-    return std::make_pair(header, raw_sequence);
+    check_and_convert();
 }
 
 std::istream& operator>> (std::istream& in, Sequence& sequence)
 {
-    std::string data((std::istreambuf_iterator<char>(in)),
-                     std::istreambuf_iterator<char>());
-
-    size_t index = 0;
-    std::pair<std::string, std::string > header_seq_pair = parse_fasta_sequence(data, index);
-    sequence.init(header_seq_pair.first, header_seq_pair.second);
-
+    sequence.init(in);
     return in;
 }
 

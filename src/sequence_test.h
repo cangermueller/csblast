@@ -34,12 +34,26 @@ class SequenceTestSuite : public CxxTest::TestSuite
     void test_construction_from_input_stream( void )
     {
         cs::NucleicAcidAlphabet* na = cs::NucleicAcidAlphabet::instance();
-        std::istringstream data(">dummy header\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTAC");
-        cs::Sequence sequence(data, na);
+        std::istringstream ss(">dummy header\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTAC");
+        cs::Sequence sequence(ss, na);
 
         TS_ASSERT_EQUALS( sequence.length(), 80 );
         TS_ASSERT_EQUALS( sequence(1), na->ctoi('C') );
         TS_ASSERT_EQUALS( sequence(79), na->ctoi('C') );
+    }
+
+    void test_construction_of_multiple_sequences_from_input_stream( void )
+    {
+        cs::NucleicAcidAlphabet* na = cs::NucleicAcidAlphabet::instance();
+        std::string data;
+        data.append(">seq1\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
+        data.append(">seq2\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
+        std::istringstream ss(data);
+        std::vector<cs::Sequence*> seqs(cs::Sequence::read(ss, na));
+
+        TS_ASSERT_EQUALS( static_cast<int>(seqs.size()), 2 );
+        TS_ASSERT_EQUALS( (*seqs[0])(1), na->ctoi('C') );
+        TS_ASSERT_EQUALS( (*seqs[0])(79), na->ctoi('C') );
     }
 
     void test_construction_from_invalid_character_vector( void )
