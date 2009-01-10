@@ -84,19 +84,21 @@ std::istream& operator>> (std::istream& in, SequenceProfile& profile)
 
 std::ostream& operator<< (std::ostream& out, const SequenceProfile& profile)
 {
-    out << "#";
-    SequenceAlphabet::const_iterator end = profile.alphabet().end();
-    for (SequenceAlphabet::const_iterator iter = profile.alphabet().begin(); iter != end; ++iter)
-        out << "\t" << *iter;
-    out << std::endl;
     const int ncols = profile.ncols();
     const int ndim  = profile.ndim();
+
+    // print header with character alphabet
+    out << "#";
+    for (int j = 0; j < ndim; ++j)
+        out << "\t" << profile.alphabet().itoc(j);
+    out << std::endl;
+    // print profile values in log representation
     for (int i = 0; i < ncols; ++i) {
         out << i+1;
         for (int j = 0; j < ndim; ++j) {
             double logval = log2(profile(i,j));
             if (-logval == std::numeric_limits<double>::infinity())
-                out << "*\t";
+                out << "\t*";
             else
                 out << "\t" << -iround(logval * profile.kScaleFactor);
         }

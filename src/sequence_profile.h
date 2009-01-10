@@ -22,7 +22,7 @@ namespace cs
 
 class SequenceProfile : public Profile
 {
-public:
+  public:
     friend std::istream& operator>> (std::istream& in, SequenceProfile& profile);
     friend std::ostream& operator<< (std::ostream& out, const SequenceProfile& profile);
 
@@ -31,12 +31,12 @@ public:
                     const SequenceAlphabet* alphabet);
     SequenceProfile(const Sequence& sequence);
     SequenceProfile(std::istream& in,
-             const SequenceAlphabet* alphabet);
+                    const SequenceAlphabet* alphabet);
     virtual ~SequenceProfile();
 
     const SequenceAlphabet& alphabet() const;
 
-private:
+  private:
     // Initializes the profile object with a serialized profile read from stream.
     void init(std::istream& in);
 

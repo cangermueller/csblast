@@ -14,8 +14,7 @@
 
 template<typename T>
 class RowMajorMatrix {
-public:
-    RowMajorMatrix();
+  public:
     RowMajorMatrix(int nrows, int ncols);
 
     // Access methods to get the (i,j) element:
@@ -28,7 +27,10 @@ public:
     // Resize the matrix to given dimensions. Old data is NOT retained.
     void resize(int nrows, int ncols);
 
-private:
+  protected:
+    RowMajorMatrix();
+
+  private:
     int nrows_;
     int ncols_;
     std::vector<T> data_;
@@ -38,7 +40,7 @@ private:
 template<typename T>
 RowMajorMatrix<T>::RowMajorMatrix()
     : nrows_(0), ncols_(0), data_(0)
-{ }
+{}
 
 template<typename T>
 RowMajorMatrix<T>::RowMajorMatrix(int nrows, int ncols)

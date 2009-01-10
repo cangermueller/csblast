@@ -39,6 +39,7 @@ protected:
     // Note: The last element of itoc has to specify the "any" character.
     virtual void init_itoc() = 0;
 
+    static const int kInvalidChar = -1;
     std::vector<int> ctoi_;
     std::vector<char> itoc_;
 
@@ -51,13 +52,13 @@ private:
 
 
 inline bool SequenceAlphabet::valid(char letter) const
-{ return ctoi_[letter] != -1; }
+{ return ctoi_[letter] != kInvalidChar; }
 
 inline int SequenceAlphabet::size() const
 { return itoc_.size(); }
 
 inline int SequenceAlphabet::ctoi(char letter) const
-{ return ctoi_[letter]; }
+{ return ctoi_[static_cast<int>(letter)]; }
 
 inline char SequenceAlphabet::itoc(int letter) const
 { return itoc_[letter]; }

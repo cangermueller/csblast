@@ -16,11 +16,13 @@ SequenceAlphabet::~SequenceAlphabet()
 
 void SequenceAlphabet::init()
 {
-    init_itoc();
-    const int char_size = static_cast<int>(pow(2, 8*sizeof(char)));
-    for(int i=0; i<char_size; ++i) ctoi_.push_back(-1);
+    std::vector<char>().swap(itoc_); // clear and minimize capazity
+    init_itoc(); //subclasses define their alphabet and its integer representation
+
+    const int ctoi_size = static_cast<int>(pow(2, 8*sizeof(char)));
+    ctoi_ = std::vector<int>(ctoi_size, kInvalidChar);
     const int itoc_size = itoc_.size();
-    for(int i=0; i<itoc_size; ++i) ctoi_[itoc_[i]]=i;
+    for(int i = 0; i < itoc_size; ++i) ctoi_[static_cast<int>(itoc_[i])]=i;
 }
 
 }//cs

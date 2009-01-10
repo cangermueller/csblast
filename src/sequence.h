@@ -24,7 +24,7 @@ namespace cs
 
 class Sequence
 {
-public:
+  public:
     typedef std::vector<char>::const_iterator const_iterator;
     typedef std::vector<char>::iterator iterator;
 
@@ -54,7 +54,7 @@ public:
     iterator begin();
     iterator end();
 
-private:
+  private:
     // Initializes the sequence object with a sequence in FASTA format read from given stream.
     void init(std::istream& in);
     // Convert the sequence in character representation to integer representation.
