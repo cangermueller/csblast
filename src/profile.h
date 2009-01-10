@@ -16,10 +16,13 @@ namespace cs
 class Profile : private RowMajorMatrix<float>
 {
 public:
+    Profile();
     Profile(int ncols, int ndim);
     virtual ~Profile();
 
     using RowMajorMatrix<float>::operator();
+    using RowMajorMatrix<float>::resize;
+
     int ncols() const;
     int length() const;
     int ndim() const;

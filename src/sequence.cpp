@@ -93,7 +93,7 @@ void Sequence::init(std::istream& in)
         throw MyException("Failed to read from FASTA formatted input stream!");
     }
     //read sequence
-    while(in.peek() != '>' && getline(in, buffer))
+    while (in.peek() != '>' && getline(in, buffer))
         sequence_.insert(sequence_.end(), buffer.begin(), buffer.end());
 
     check_and_convert();

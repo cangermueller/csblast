@@ -8,6 +8,9 @@
 namespace cs
 {
 
+Profile::Profile()
+{}
+
 Profile::Profile(int ncols, int ndim) : RowMajorMatrix<float>(ncols, ndim)
 {}
 

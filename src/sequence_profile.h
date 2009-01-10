@@ -8,9 +8,11 @@
 // DESCRIPTION:
 // A profile class representing columns of frequencies over a sequence alphabet.
 
+#include <cctype>
 #include <iostream>
-#include <streambuf>
+#include <cmath>
 
+#include "util.h"
 #include "profile.h"
 #include "sequence.h"
 #include "sequence_alphabet.h"
@@ -22,16 +24,23 @@ class SequenceProfile : public Profile
 {
 public:
     friend std::istream& operator>> (std::istream& in, SequenceProfile& profile);
+    friend std::ostream& operator<< (std::ostream& out, const SequenceProfile& profile);
 
     SequenceProfile(int ncols, int ndim);
     SequenceProfile(int ncols,
                     const SequenceAlphabet* alphabet);
     SequenceProfile(const Sequence& sequence);
+    SequenceProfile(std::istream& in,
+             const SequenceAlphabet* alphabet);
     virtual ~SequenceProfile();
 
     const SequenceAlphabet& alphabet() const;
 
 private:
+    // Initializes the profile object with a serialized profile read from stream.
+    void init(std::istream& in);
+
+    static const int kScaleFactor = 1000;
     const SequenceAlphabet* alphabet_;
 };//SequenceProfile
 
