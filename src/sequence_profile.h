@@ -61,7 +61,7 @@ std::ostream& operator<< (std::ostream& out, const SequenceProfile& profile);
 
 // Transforms the profile values such that each column sum becomes equal to the
 // number of effective sequences in that column.
-void transform_to_counts(SequenceProfile& profile, const float* neff = 0);
+void transform_to_counts(SequenceProfile& profile, const float* neff = NULL);
 
 // Transforms the profile values such that each column sum becomes equal to the
 // number of effective sequences in that column.

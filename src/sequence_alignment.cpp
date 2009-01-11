@@ -31,6 +31,7 @@ void SequenceAlignment::init(std::istream& in)
     buffer.reserve(kBufferSize);
     std::vector< std::string >().swap(headers_);
     std::vector< std::vector<char> > sequences;
+    std::vector<char> sequence;
 
     while (in.good()) {
         //read header
@@ -42,13 +43,13 @@ void SequenceAlignment::init(std::istream& in)
             throw MyException("Failed to read from FASTA formatted input stream!");
         }
         //read sequence
-        std::vector<char> sequence;
         while (in.peek() != '>' && getline(in, buffer))
             sequence.insert(sequence.end(), buffer.begin(), buffer.end());
         //strip whitespace and newlines from sequence.
         sequence.erase(remove_if(sequence.begin(), sequence.end(), isspace),
                        sequence.end());
         sequences.push_back(sequence);
+        std::vector<char>().swap(sequence); //clear for next use
     }
 
     if (sequences.empty()) throw MyException("Unable to initialize alignment: no aligned sequences found!");

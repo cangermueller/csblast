@@ -18,24 +18,24 @@ inline double log2(double num) { return log(num)/log(2); }
 // Round to the nearest integer
 inline int iround(double x) { return static_cast<int>(floor(x+0.5)); }
 
-// Returns pointer to first non-white-space character in str OR to 0 if none found
+// Returns pointer to first non-white-space character in str OR to NULL if none found
 inline const char* strscn(const char* str)
 {
-    if (!str) return 0;
+    if (!str) return NULL;
     const char* ptr=str;
     while (*ptr!='\0' && isspace(*ptr)) ptr++;
-    return (*ptr=='\0') ? 0 : ptr;
+    return (*ptr=='\0') ? NULL : ptr;
 }
 
 // Returns leftmost integer in ptr and sets the pointer to first char after
-// the integer. If no integer is found, returns INT_MIN and sets ptr to 0
+// the integer. If no integer is found, returns INT_MIN and sets ptr to NULL
 inline int strtoi(const char*& ptr)
 {
     const char* ptr0=ptr;
     if (!ptr) return INT_MIN;
     while (*ptr!='\0' && !(*ptr>='0' && *ptr<='9')) ptr++;
     if (*ptr=='\0') {
-        ptr=0;
+        ptr=NULL;
         return INT_MIN;
     }
     int i = (ptr>ptr0 && *(ptr-1)=='-') ? atoi(ptr-1) : atoi(ptr);
@@ -50,7 +50,7 @@ inline int strtoi_asterix(const char*& ptr, int deflt=INT_MAX)
     if (!ptr) return INT_MIN;
     while (*ptr!='\0' && !(*ptr>='0' && *ptr<='9') && *ptr!='*') ptr++;
     if (*ptr=='\0') {
-        ptr=0;
+        ptr=NULL;
         return INT_MIN;
     }
     if (*ptr=='*') {
