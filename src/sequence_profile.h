@@ -16,6 +16,7 @@
 #include "profile.h"
 #include "sequence.h"
 #include "sequence_alphabet.h"
+#include "my_exception.h"
 
 namespace cs
 {
@@ -32,6 +33,9 @@ class SequenceProfile : public Profile
     SequenceProfile(const Sequence& sequence);
     SequenceProfile(std::istream& in,
                     const SequenceAlphabet* alphabet);
+    SequenceProfile(const SequenceProfile& other,
+                    int index,
+                    int length);
     virtual ~SequenceProfile();
 
     static std::vector<SequenceProfile*> read(std::istream& in,

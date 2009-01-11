@@ -51,6 +51,21 @@ std::vector<SequenceProfile*> SequenceProfile::read(std::istream& in,
     return profiles;
 }
 
+SequenceProfile::SequenceProfile(const SequenceProfile& other,
+                                 int index,
+                                 int length)
+        : Profile(length, other.ndim()),
+          alphabet_(other.alphabet_)
+{
+    if (index + length > other.ncols())
+        throw MyException("Arguments index=%i and length=%i for construction of sub-profile are out of bounds!", index, length);
+    const int cols = ncols();
+    const int dim  = ndim();
+    for(int i=0; i<cols; ++i)
+        for(int j=0; j<dim; ++j)
+            (*this)(i,j) = other(i+index,j);
+}
+
 void SequenceProfile::init(std::istream& in)
 {
     const int kBufferSize = 1048576; //1MB
@@ -117,6 +132,7 @@ std::ostream& operator<< (std::ostream& out, const SequenceProfile& profile)
         }
         out << std::endl;
     }
+    out << "//\n";
 
     return out;
 }

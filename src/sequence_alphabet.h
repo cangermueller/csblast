@@ -45,7 +45,7 @@ protected:
 
 private:
     // Not defined, to prevent copying
-    SequenceAlphabet(const SequenceAlphabet& );
+    SequenceAlphabet(const SequenceAlphabet& other);
     SequenceAlphabet& operator =(const SequenceAlphabet& other);
 };
 
