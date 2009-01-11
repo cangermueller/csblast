@@ -15,7 +15,7 @@ namespace cs
 
 class Profile : private RowMajorMatrix<float>
 {
-public:
+  public:
     Profile();
     Profile(int ncols, int ndim);
     virtual ~Profile();

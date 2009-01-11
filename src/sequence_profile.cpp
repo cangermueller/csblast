@@ -39,12 +39,12 @@ SequenceProfile::SequenceProfile(std::istream& in,
 SequenceProfile::~SequenceProfile()
 {}
 
-std::vector<SequenceProfile*> SequenceProfile::read(std::istream& in,
-                                                    const SequenceAlphabet* alphabet)
+std::vector< SmartPtr<SequenceProfile> > SequenceProfile::read(std::istream& in,
+                                                               const SequenceAlphabet* alphabet)
 {
-    std::vector<SequenceProfile*> profiles;
+    std::vector< SmartPtr<SequenceProfile> > profiles;
     while (in.peek() && in.good()) { //peek first to make sure that we don't read beyond '//'
-        SequenceProfile* p = new SequenceProfile(in, alphabet);
+        SmartPtr<SequenceProfile> p(new SequenceProfile(in, alphabet));
         profiles.push_back(p);
     }
 

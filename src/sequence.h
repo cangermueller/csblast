@@ -18,6 +18,7 @@
 
 #include "sequence_alphabet.h"
 #include "my_exception.h"
+#include "smart_ptr.h"
 
 namespace cs
 {
@@ -39,8 +40,8 @@ class Sequence
              const SequenceAlphabet* alphabet);
     virtual ~Sequence();
 
-    static std::vector<Sequence*> read(std::istream& in,
-                                       const SequenceAlphabet* alphabet);
+    static std::vector< SmartPtr<Sequence> > read(std::istream& in,
+                                                   const SequenceAlphabet* alphabet);
 
     char&       operator() (int i);
     const char& operator() (int i) const;

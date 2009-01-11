@@ -38,13 +38,13 @@ Sequence::Sequence(std::istream& in,
 Sequence::~Sequence()
 {}
 
-std::vector<Sequence*> Sequence::read(std::istream& in,
+std::vector< SmartPtr<Sequence> > Sequence::read(std::istream& in,
                                       const SequenceAlphabet* alphabet)
 {
-    std::vector<Sequence*> sequences;
+    std::vector< SmartPtr<Sequence> > sequences;
     while (in.good()) {
-        Sequence* seq = new Sequence(in, alphabet);
-        sequences.push_back(seq);
+        SmartPtr<Sequence> p(new Sequence(in, alphabet));
+        sequences.push_back(p);
     }
 
     return sequences;
@@ -110,7 +110,7 @@ std::ostream& operator<< (std::ostream& out, const Sequence& sequence)
     const int kLineLength = 80;
 
     out << '>' << sequence.header() << std::endl;
-    int len = sequence.length();
+    const int len = sequence.length();
     for (int i = 0; i < len; ++i) {
         out << sequence.chr(i);
         if ((i+1) % kLineLength == 0) out << std::endl;

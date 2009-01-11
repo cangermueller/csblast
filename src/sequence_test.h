@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <sstream>
 
+#include "smart_ptr.h"
 #include "amino_acid_alphabet.h"
 #include "nucleic_acid_alphabet.h"
 #include "sequence.h"
@@ -49,22 +50,18 @@ class SequenceTestSuite : public CxxTest::TestSuite
         data.append(">seq1\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
         data.append(">seq2\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
         std::istringstream ss(data);
-        std::vector<cs::Sequence*> seqs(cs::Sequence::read(ss, na));
+        std::vector< SmartPtr<cs::Sequence> > seqs(cs::Sequence::read(ss, na));
 
         TS_ASSERT_EQUALS( static_cast<int>(seqs.size()), 2 );
         TS_ASSERT_EQUALS( (*seqs[0])(1), na->ctoi('C') );
         TS_ASSERT_EQUALS( (*seqs[0])(79), na->ctoi('C') );
         TS_ASSERT_EQUALS( (*seqs[1])(1), na->ctoi('C') );
         TS_ASSERT_EQUALS( (*seqs[1])(79), na->ctoi('C') );
-
-        for (std::vector<cs::Sequence*>::iterator iter = seqs.begin(); iter != seqs.end(); ++iter)
-            delete *iter;
     }
 
     void test_construction_from_invalid_character_vector( void )
     {
         cs::NucleicAcidAlphabet* na = cs::NucleicAcidAlphabet::instance();
-
         std::string header("dummy sequence header");
         std::string seq(na->begin(), na->end());
         seq.insert(seq.begin()+1, ' ');

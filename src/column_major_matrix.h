@@ -73,7 +73,7 @@ void ColumnMajorMatrix<T>::resize(int nrows, int ncols)
         throw MyException("Bad size arguments for matrix: nrows=%i ncols=%i", nrows, ncols);
     nrows_ = nrows;
     ncols_ = ncols;
-    data_ = std::vector<T>(nrows * ncols);
+    data_.resize(nrows * ncols);
 }
 
 #endif

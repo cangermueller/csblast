@@ -6,6 +6,7 @@
 #include "amino_acid_alphabet.h"
 #include "nucleic_acid_alphabet.h"
 #include "sequence_profile.h"
+#include "smart_ptr.h"
 
 class SequenceProfileTestSuite : public CxxTest::TestSuite
 {
@@ -43,20 +44,17 @@ class SequenceProfileTestSuite : public CxxTest::TestSuite
         data.append("//\n");
         std::istringstream ss(data+data);
 
-        std::vector<cs::SequenceProfile*> profiles(cs::SequenceProfile::read(ss, cs::NucleicAcidAlphabet::instance()));
+        std::vector< SmartPtr<cs::SequenceProfile> > profiles(cs::SequenceProfile::read(ss, cs::NucleicAcidAlphabet::instance()));
 
         TS_ASSERT_EQUALS( static_cast<int>(profiles.size()), 2 );
-        TS_ASSERT_EQUALS( profiles[0]->ncols(), 6 );
-        TS_ASSERT_EQUALS( profiles[0]->ndim(), 4 );
-        TS_ASSERT_EQUALS( profiles[1]->ncols(), 6 );
-        TS_ASSERT_EQUALS( profiles[1]->ndim(), 4 );
+        TS_ASSERT_EQUALS( (*profiles[0]).ncols(), 6 );
+        TS_ASSERT_EQUALS( (*profiles[0]).ndim(), 4 );
+        TS_ASSERT_EQUALS( (*profiles[1]).ncols(), 6 );
+        TS_ASSERT_EQUALS( (*profiles[1]).ndim(), 4 );
         TS_ASSERT_EQUALS( (*profiles[0])(0,0), 1.0f );
         TS_ASSERT_EQUALS( (*profiles[0])(1,0), 0.0f );
         TS_ASSERT_EQUALS( (*profiles[1])(0,0), 1.0f );
         TS_ASSERT_EQUALS( (*profiles[1])(1,0), 0.0f );
-
-        for (std::vector<cs::SequenceProfile*>::iterator iter = profiles.begin(); iter != profiles.end(); ++iter)
-            delete *iter;
     }
 
     void test_construction_from_input_stream_with_improper_alphabet( void )

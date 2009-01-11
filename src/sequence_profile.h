@@ -17,6 +17,7 @@
 #include "sequence.h"
 #include "sequence_alphabet.h"
 #include "my_exception.h"
+#include "smart_ptr.h"
 
 namespace cs
 {
@@ -38,8 +39,8 @@ class SequenceProfile : public Profile
                     int length);
     virtual ~SequenceProfile();
 
-    static std::vector<SequenceProfile*> read(std::istream& in,
-                                              const SequenceAlphabet* alphabet);
+    static std::vector< SmartPtr<SequenceProfile> > read(std::istream& in,
+                                                         const SequenceAlphabet* alphabet);
 
     const SequenceAlphabet& alphabet() const;
 
