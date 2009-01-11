@@ -61,6 +61,13 @@ std::istream& operator>> (std::istream& in, SequenceAlignment& alignment);
 // Prints the alignment in multi FASTA format to output stream.
 std::ostream& operator<< (std::ostream& out, const SequenceAlignment& alignment);
 
+// Calculates column specific sequence weights from subalignments within the global alignment.
+ColumnMajorMatrix<float> column_specific_sequence_weights(const SequenceAlignment& alignment);
+
+// Calculates global sequence weights by maximum entropy weighting (Henikoff&Henikoff '94).
+std::vector<float> global_sequence_weights(const SequenceAlignment& alignment);
+
+
 
 inline char SequenceAlignment::chr(int i, int j) const
 { return alphabet_->itoc((*this)(i,j)); }

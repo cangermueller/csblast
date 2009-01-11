@@ -59,6 +59,14 @@ std::istream& operator>> (std::istream& in, SequenceProfile& profile);
 // Prints a sequence profile in human readable serialization format.
 std::ostream& operator<< (std::ostream& out, const SequenceProfile& profile);
 
+// Transforms the profile values such that each column sum becomes equal to the
+// number of effective sequences in that column.
+void transform_to_counts(SequenceProfile& profile, const float* neff = 0);
+
+// Transforms the profile values such that each column sum becomes equal to the
+// number of effective sequences in that column.
+std::vector<float> number_of_effective_sequences(SequenceProfile& profile);
+
 
 // Returns a reference to the underlying alphabet of the profile.
 inline const SequenceAlphabet& SequenceProfile::alphabet() const

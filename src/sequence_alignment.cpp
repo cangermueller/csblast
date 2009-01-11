@@ -67,6 +67,19 @@ std::ostream& operator<< (std::ostream& out, const SequenceAlignment& alignment)
     return out;
 }
 
+// Calculates column specific sequence weights from subalignments within the global alignment.
+ColumnMajorMatrix<float> column_specific_sequence_weights(const SequenceAlignment& alignment)
+{
+    //TODO
+}
+
+// Calculates global sequence weights by maximum entropy weighting (Henikoff&Henikoff '94).
+std::vector<float> global_sequence_weights(const SequenceAlignment& alignment)
+{
+
+    //TODO
+}
+
 }//cs
 
 

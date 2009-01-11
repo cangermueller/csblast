@@ -68,6 +68,8 @@ void Sequence::check_and_convert()
             sequence_.clear();
             throw MyException("Invalid character %c at position %i of sequence '%s'", c, i, header_.c_str());
         }
+    //trim excess capacity
+    std::vector<char>(sequence_.begin(), sequence_.end()).swap(sequence_);
 }
 
 // Initializes the sequence object from given stream with a sequence in FASTA format.
