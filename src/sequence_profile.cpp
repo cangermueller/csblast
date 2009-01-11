@@ -39,10 +39,23 @@ SequenceProfile::SequenceProfile(std::istream& in,
 SequenceProfile::~SequenceProfile()
 {}
 
+std::vector<SequenceProfile*> SequenceProfile::read(std::istream& in,
+                                                    const SequenceAlphabet* alphabet)
+{
+    std::vector<SequenceProfile*> profiles;
+    while (in.peek() && in.good()) { //peek first to make sure that we don't read beyond '//'
+        SequenceProfile* p = new SequenceProfile(in, alphabet);
+        profiles.push_back(p);
+    }
+
+    return profiles;
+}
+
 void SequenceProfile::init(std::istream& in)
 {
-    const int kBufferSize = 2097152; //2MB
-    char buffer[kBufferSize];
+    const int kBufferSize = 1048576; //1MB
+    std::vector<char> char_arr(kBufferSize, '\0');
+    char* buffer = &char_arr[0];
 
     //read column data records line by line
     std::vector< std::vector<int> > data;

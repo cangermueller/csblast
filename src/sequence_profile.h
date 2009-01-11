@@ -34,6 +34,9 @@ class SequenceProfile : public Profile
                     const SequenceAlphabet* alphabet);
     virtual ~SequenceProfile();
 
+    static std::vector<SequenceProfile*> read(std::istream& in,
+                                              const SequenceAlphabet* alphabet);
+
     const SequenceAlphabet& alphabet() const;
 
   private:

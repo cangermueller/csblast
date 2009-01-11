@@ -31,7 +31,6 @@ inline const char* strscn(const char* str)
 // the integer. If no integer is found, returns INT_MIN and sets ptr to 0
 inline int strtoi(const char*& ptr)
 {
-    int i;
     const char* ptr0=ptr;
     if (!ptr) return INT_MIN;
     while (*ptr!='\0' && !(*ptr>='0' && *ptr<='9')) ptr++;
@@ -39,7 +38,7 @@ inline int strtoi(const char*& ptr)
         ptr=0;
         return INT_MIN;
     }
-    if (*(ptr-1)=='-' && ptr>ptr0) i=-atoi(ptr); else i=atoi(ptr);
+    int i = (ptr>ptr0 && *(ptr-1)=='-') ? atoi(ptr-1) : atoi(ptr);
     while (*ptr>='0' && *ptr<='9') ptr++;
     return i;
 }
@@ -47,7 +46,7 @@ inline int strtoi(const char*& ptr)
 // Same as strtoi, but interpretes '*' as default.
 inline int strtoi_asterix(const char*& ptr, int deflt=INT_MAX)
 {
-    int i;
+    const char* ptr0=ptr;
     if (!ptr) return INT_MIN;
     while (*ptr!='\0' && !(*ptr>='0' && *ptr<='9') && *ptr!='*') ptr++;
     if (*ptr=='\0') {
@@ -58,8 +57,7 @@ inline int strtoi_asterix(const char*& ptr, int deflt=INT_MAX)
         ptr++;
         return deflt;
     }
-    if (*(ptr-1)=='-') i=atoi(ptr-1);
-    else i=atoi(ptr);
+    int i = (ptr>ptr0 && *(ptr-1)=='-') ? atoi(ptr-1) : atoi(ptr);
     while (*ptr>='0' && *ptr<='9') ptr++;
     return i;
 }

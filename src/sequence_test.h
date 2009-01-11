@@ -54,6 +54,9 @@ class SequenceTestSuite : public CxxTest::TestSuite
         TS_ASSERT_EQUALS( static_cast<int>(seqs.size()), 2 );
         TS_ASSERT_EQUALS( (*seqs[0])(1), na->ctoi('C') );
         TS_ASSERT_EQUALS( (*seqs[0])(79), na->ctoi('C') );
+
+        for (std::vector<cs::Sequence*>::iterator iter = seqs.begin(); iter != seqs.end(); ++iter)
+            delete *iter;
     }
 
     void test_construction_from_invalid_character_vector( void )
