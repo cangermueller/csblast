@@ -8,6 +8,7 @@
 // DESCRIPTION:
 // A container class for an alignment of sequences over an alphabet.
 
+#include <cctype>
 #include <vector>
 
 #include "smart_ptr.h"
@@ -34,6 +35,8 @@ class SequenceAlignment : private ColumnMajorMatrix<char>
     using ColumnMajorMatrix<char>::operator();
     // Returns the character in column j of sequence i (starting at index 0)
     char chr(int i, int j) const;
+    // Returns true if the character at position (i,j) is a gap.
+    bool gap(int i, int j) const;
     // Returns the number of sequences in the alignment.
     int nseqs() const;
     // Returns the number of alignment columns.
@@ -48,7 +51,10 @@ class SequenceAlignment : private ColumnMajorMatrix<char>
   private:
     // Initializes the alignment object with an alignment in FASTA format read from given stream.
     void init(std::istream& in);
+    // Returns integer representation of gap character.
+    int gaptoi() const;
 
+    static const char kGap = '-';
     std::vector< std::string > headers_;
     const SequenceAlphabet* alphabet_;
 };//SequenceAlignment
@@ -70,7 +76,10 @@ std::vector<float> global_sequence_weights(const SequenceAlignment& alignment);
 
 
 inline char SequenceAlignment::chr(int i, int j) const
-{ return alphabet_->itoc((*this)(i,j)); }
+{ return gap(i,j) ? kGap : alphabet_->itoc((*this)(i,j)); }
+
+inline bool SequenceAlignment::gap(int i, int j) const
+{ return (*this)(i,j) == gaptoi(); }
 
 inline int SequenceAlignment::nseqs() const
 { return ColumnMajorMatrix<char>::nrows(); }
@@ -86,6 +95,9 @@ inline const std::string& SequenceAlignment::header(int i) const
 
 inline const SequenceAlphabet& SequenceAlignment::alphabet() const
 { return *alphabet_; }
+
+inline int SequenceAlignment::gaptoi() const
+{ return alphabet_->size(); }
 
 }//cs
 

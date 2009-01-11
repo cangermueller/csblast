@@ -15,8 +15,8 @@ class SequenceAlignmentTestSuite : public CxxTest::TestSuite
     {
         cs::NucleicAcidAlphabet* na = cs::NucleicAcidAlphabet::instance();
         std::string data;
-        data.append(">seq1\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
-        data.append(">seq2\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
+        data.append(">seq1\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACA---ACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
+        data.append(">seq2\nACGT--GTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTA---GTACGTAC\n");
         std::istringstream ss(data);
         cs::SequenceAlignment alignment(ss, na);
 
@@ -24,5 +24,6 @@ class SequenceAlignmentTestSuite : public CxxTest::TestSuite
         TS_ASSERT_EQUALS( alignment.ncols(), 80 );
         TS_ASSERT_EQUALS( alignment(0,0), na->ctoi('A') );
         TS_ASSERT_EQUALS( alignment(1,1), na->ctoi('C') );
+        TS_ASSERT( alignment.gap(1,4) );
     }
 };
