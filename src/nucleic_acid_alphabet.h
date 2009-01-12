@@ -25,7 +25,7 @@ protected:
     virtual void init_itoc();
 
 private:
-    // Not defined, to prevent copying
+    // Disallow copy and assign
     NucleicAcidAlphabet(const NucleicAcidAlphabet& );
     NucleicAcidAlphabet& operator =(const NucleicAcidAlphabet& other);
 };

@@ -26,12 +26,12 @@ class SequenceAlignment
   public:
     friend std::istream& operator>> (std::istream& in, SequenceAlignment& alignment);
 
-    SequenceAlignment(int nseqs,
-                      int ncols,
-                      const SequenceAlphabet* alphabet);
-    SequenceAlignment(std::istream& in,
-                      const SequenceAlphabet* alphabet);
-    virtual ~SequenceAlignment();
+    // Consructs an alignment with nseq sequences ncols columns. Entries are left uninitialized.
+    SequenceAlignment(int nseqs, int ncols, const SequenceAlphabet* alphabet);
+    // Constructs an alignment from alignment in multi FASTA format read from input stream.
+    SequenceAlignment(std::istream& in, const SequenceAlphabet* alphabet);
+
+    virtual ~SequenceAlignment() {}
 
     // Access methods to get the integer representation in column j of sequence i (starting at index 0)
     char&       operator() (int i, int j) { return sequences_[i + j*nseqs_]; }
@@ -52,8 +52,12 @@ class SequenceAlignment
     const SequenceAlphabet* alphabet() const { return alphabet_; }
 
   private:
-    // Gap character
+    // Gap character.
     static const char kGap = '-';
+
+    // Disallow copy and assign
+    SequenceAlignment(const SequenceAlignment&);
+    void operator=(const SequenceAlignment&);
 
     // Initializes the alignment object with an alignment in FASTA format read from given stream.
     void init(std::istream& in);
@@ -62,17 +66,19 @@ class SequenceAlignment
     // Resize the sequence matrix and header vector to given dimensions. Attention: old data is lost!
     void resize(int ncseqs, int ncols);
 
-    // Number seqeuences in the alignment
+    // Number seqeuences in the alignment.
     int nseqs_;
-    // Number alignment columns
+    // Number alignment columns.
     int ncols_;
-    // Row major matrix with sequences in integer representation
+    // Row major matrix with sequences in integer representation.
     std::vector<char> sequences_;
-    // Headers of sequences in the alignment
+    // Headers of sequences in the alignment.
     std::vector< std::string > headers_;
-    // Alphabet of sequences in the alignment
+    // Alphabet of sequences in the alignment.
     const SequenceAlphabet* alphabet_;
 };//SequenceAlignment
+
+
 
 
 
@@ -82,11 +88,11 @@ std::istream& operator>> (std::istream& in, SequenceAlignment& alignment);
 // Prints the alignment in multi FASTA format to output stream.
 std::ostream& operator<< (std::ostream& out, const SequenceAlignment& alignment);
 
-// Calculates column specific sequence weights from subalignments within the global alignment.
-Matrix<float> column_specific_sequence_weights(const SequenceAlignment& alignment);
+// Calculates column specific sequence weights and number of effective sequences from subalignments within the global alignment.
+Matrix<float> column_specific_weights_and_neff(const SequenceAlignment& alignment);
 
 // Calculates global sequence weights by maximum entropy weighting (Henikoff&Henikoff '94).
-std::vector<float> global_sequence_weights(const SequenceAlignment& alignment);
+std::vector<float> global_weights(const SequenceAlignment& alignment);
 
 }//cs
 

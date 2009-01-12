@@ -26,7 +26,13 @@ SequenceProfile::SequenceProfile(int ncols,
           ndim_(alphabet->size()-1),
           data_(ncols * alphabet->size()-1),
           alphabet_(alphabet)
-{}
+{ reset(*this); }
+
+SequenceProfile::SequenceProfile(std::istream& in, const SequenceAlphabet* alphabet)
+            : ncols_(0),
+              ndim_(alphabet->size()-1),
+              alphabet_(alphabet)
+{ in >> *this; }
 
 SequenceProfile::SequenceProfile(const Sequence& sequence)
         : ncols_(sequence.length()),
@@ -39,16 +45,6 @@ SequenceProfile::SequenceProfile(const Sequence& sequence)
         (*this)(i, sequence(i));
     }
 }
-
-SequenceProfile::SequenceProfile(std::istream& in,
-                                 const SequenceAlphabet* alphabet)
-        : ncols_(0),
-          ndim_(alphabet->size()-1),
-          alphabet_(alphabet)
-{ in >> *this; }
-
-SequenceProfile::~SequenceProfile()
-{}
 
 SequenceProfile::SequenceProfile(const SequenceProfile& other,
                                  int index,
@@ -157,27 +153,13 @@ std::ostream& operator<< (std::ostream& out, const SequenceProfile& profile)
     return out;
 }
 
-void reset(SequenceProfile& profile)
+void reset(SequenceProfile& profile, float value)
 {
     const int ncols = profile.ncols();
     const int ndim = profile.ndim();
     for(int i=0; i<ncols; ++i)
         for(int j=0; i<ndim; ++j)
-            profile(i,j) = 0.0f;
-}
-
-// Transforms the profile values such that each column sum becomes equal to the
-// number of effective sequences in that column.
-void transform_to_counts(SequenceProfile& profile, const float* neff)
-{
-    //TODO
-}
-
-// Transforms the profile values such that each column sum becomes equal to the
-// number of effective sequences in that column.
-std::vector<float> number_of_effective_sequences(const SequenceProfile& profile)
-{
-    //TODO
+            profile(i,j) = value;
 }
 
 }//cs

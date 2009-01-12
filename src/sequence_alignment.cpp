@@ -19,9 +19,7 @@
 namespace cs
 {
 
-SequenceAlignment::SequenceAlignment(int nseqs,
-                                 int ncols,
-                                 const SequenceAlphabet* alphabet)
+SequenceAlignment::SequenceAlignment(int nseqs, int ncols, const SequenceAlphabet* alphabet)
         : nseqs_(nseqs),
           ncols_(ncols),
           sequences_(nseqs * ncols),
@@ -29,15 +27,11 @@ SequenceAlignment::SequenceAlignment(int nseqs,
           alphabet_(alphabet)
 {}
 
-SequenceAlignment::SequenceAlignment(std::istream& in,
-                                     const SequenceAlphabet* alphabet)
+SequenceAlignment::SequenceAlignment(std::istream& in, const SequenceAlphabet* alphabet)
         : nseqs_(0),
           ncols_(0),
           alphabet_(alphabet)
 { in >> *this; }
-
-SequenceAlignment::~SequenceAlignment()
-{}
 
 void SequenceAlignment::init(std::istream& in)
 {
@@ -119,18 +113,6 @@ std::ostream& operator<< (std::ostream& out, const SequenceAlignment& alignment)
         }
     }
     return out;
-}
-
-// Calculates column specific sequence weights from subalignments within the global alignment.
-Matrix<float> column_specific_sequence_weights(const SequenceAlignment& alignment)
-{
-    //TODO
-}
-
-// Calculates global sequence weights by maximum entropy weighting (Henikoff&Henikoff '94).
-std::vector<float> global_sequence_weights(const SequenceAlignment& alignment)
-{
-    //TODO
 }
 
 }//cs

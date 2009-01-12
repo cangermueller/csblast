@@ -19,56 +19,42 @@ class SequenceAlphabet
 public:
     typedef std::vector<char>::const_iterator const_iterator;
 
-    bool valid(char letter) const;
-    int size() const;
-    int ctoi(char letter) const;
-    char itoc(int letter) const;
-    int any() const;
-    const_iterator begin() const;
-    const_iterator end() const;
+    SequenceAlphabet() {}
+    virtual ~SequenceAlphabet() {}
+
+    // Returns true if the character belongs to the alphabet.
+    bool valid(char letter) const { return ctoi_[letter] != kInvalidChar; }
+    // Returns the number of letters in the alphabet (incl. ANY)
+    int size() const { return itoc_.size(); }
+    // Returns the integer representation of the given character.
+    int ctoi(char letter) const { return ctoi_[static_cast<int>(letter)]; }
+    // Returns the character representation of the given integer.
+    char itoc(int letter) const { return itoc_[letter]; }
+    int any() const { return ctoi_[itoc_[itoc_.size()-1]]; }
+    const_iterator begin() const { return itoc_.begin(); }
+    const_iterator end() const { return itoc_.end(); }
 
 protected:
-    SequenceAlphabet();
-    ~SequenceAlphabet();
+    // Denotes invalid characters in ctoi array
+    static const int kInvalidChar = -1;
 
     // Initializes ctoi and itoc conversion arrays.
     void init();
-    // Template method that initializes itoc conversion array.
-    // Note: The last element of itoc has to specify the "any" character.
+    // Initializes itoc conversion array. Should be implemented by derived classes.
+    // Note: Last element in itoc_ should be the ANY character.
     virtual void init_itoc() = 0;
 
-    static const int kInvalidChar = -1;
+    // Conversion array from character to iteger representation.
     std::vector<int> ctoi_;
+    // Conversion array from integer to character representation. Last element is
+    // ANY character.
     std::vector<char> itoc_;
 
 private:
-    // Not defined, to prevent copying
+    // Disallow copy and assign
     SequenceAlphabet(const SequenceAlphabet& other);
     SequenceAlphabet& operator =(const SequenceAlphabet& other);
 };
-
-
-
-inline bool SequenceAlphabet::valid(char letter) const
-{ return ctoi_[letter] != kInvalidChar; }
-
-inline int SequenceAlphabet::size() const
-{ return itoc_.size(); }
-
-inline int SequenceAlphabet::ctoi(char letter) const
-{ return ctoi_[static_cast<int>(letter)]; }
-
-inline char SequenceAlphabet::itoc(int letter) const
-{ return itoc_[letter]; }
-
-inline int SequenceAlphabet::any() const
-{ return ctoi_[itoc_[itoc_.size()-1]]; }
-
-inline SequenceAlphabet::const_iterator SequenceAlphabet::begin() const
-{ return itoc_.begin(); }
-
-inline SequenceAlphabet::const_iterator SequenceAlphabet::end() const
-{ return itoc_.end(); }
 
 }//cs
 

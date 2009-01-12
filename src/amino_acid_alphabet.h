@@ -25,9 +25,9 @@ protected:
     virtual void init_itoc();
 
 private:
-    // Not defined, to prevent copying
+    // Disallow copy and assign
     AminoAcidAlphabet(const AminoAcidAlphabet& );
-        AminoAcidAlphabet& operator =(const AminoAcidAlphabet& other);
+    AminoAcidAlphabet& operator =(const AminoAcidAlphabet& other);
 };
 
 }//cs

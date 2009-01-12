@@ -19,11 +19,14 @@
 namespace cs
 {
 
-Sequence::Sequence(int length,
-                   const SequenceAlphabet* alphabet)
+Sequence::Sequence(int length, const SequenceAlphabet* alphabet)
         : alphabet_(alphabet),
           sequence_(length)
 {}
+
+Sequence::Sequence(std::istream& in, const SequenceAlphabet* alphabet)
+        : alphabet_(alphabet)
+{ in >> *this; }
 
 Sequence::Sequence(const std::string& header,
                    const std::string& sequence,
@@ -40,14 +43,6 @@ Sequence::Sequence(const std::string& header,
 
     check_and_convert();
 }
-
-Sequence::Sequence(std::istream& in,
-                   const SequenceAlphabet* alphabet)
-        : alphabet_(alphabet)
-{ in >> *this; }
-
-Sequence::~Sequence()
-{}
 
 std::vector< SmartPtr<Sequence> > Sequence::read(std::istream& in,
                                       const SequenceAlphabet* alphabet)

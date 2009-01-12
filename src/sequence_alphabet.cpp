@@ -13,12 +13,6 @@
 namespace cs
 {
 
-SequenceAlphabet::SequenceAlphabet()
-{}
-
-SequenceAlphabet::~SequenceAlphabet()
-{}
-
 void SequenceAlphabet::init()
 {
     std::vector<char>().swap(itoc_); // clear and minimize capazity

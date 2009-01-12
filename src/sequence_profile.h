@@ -17,8 +17,8 @@ namespace cs
 {
 
 // Forward declarations
-class SequenceAlphabet;
 class Sequence;
+class SequenceAlphabet;
 
 class SequenceProfile
 {
@@ -26,15 +26,16 @@ class SequenceProfile
     friend std::istream& operator>> (std::istream& in, SequenceProfile& profile);
     friend std::ostream& operator<< (std::ostream& out, const SequenceProfile& profile);
 
-    SequenceProfile(int ncols,
-                    const SequenceAlphabet* alphabet);
-    SequenceProfile(const Sequence& sequence);
-    SequenceProfile(std::istream& in,
-                    const SequenceAlphabet* alphabet);
-    SequenceProfile(const SequenceProfile& other,
-                    int index,
-                    int length);
-    virtual ~SequenceProfile();
+    // Constructs a profile with ncols columns over alphabet with entries initialized to zero.
+    SequenceProfile(int ncols, const SequenceAlphabet* alphabet);
+    // Constructs profile from serialized profile read from input stream.
+    SequenceProfile(std::istream& in, const SequenceAlphabet* alphabet);
+    // Constructs a profile of the given sequence.
+    explicit SequenceProfile(const Sequence& sequence);
+    // Creates a profile from subprofile in other, starting at column index and length columns long.
+    SequenceProfile(const SequenceProfile& other, int index, int length);
+
+    virtual ~SequenceProfile() {}
 
     // Reads all available profiles from the input stream and returns them in a vector.
     static std::vector< SmartPtr<SequenceProfile> > read(std::istream& in,
@@ -52,6 +53,10 @@ class SequenceProfile
   private:
     // Scaling factor for serialization of profile log values
     static const int kScaleFactor = 1000;
+
+    // Disallow copy and assign
+    SequenceProfile(const SequenceProfile&);
+    void operator=(const SequenceProfile&);
 
     // Initializes the profile object with a serialized profile read from stream.
     void init(std::istream& in);
@@ -77,16 +82,8 @@ std::istream& operator>> (std::istream& in, SequenceProfile& profile);
 // Prints a sequence profile in human readable serialization format.
 std::ostream& operator<< (std::ostream& out, const SequenceProfile& profile);
 
-// Transforms the profile values such that each column sum becomes equal to the
-// number of effective sequences in that column.
-void transform_to_counts(SequenceProfile& profile, const float* neff = NULL);
-
-// Resets all entries in given profile to zero.
-void reset(SequenceProfile& profile);
-
-// Transforms the profile values such that each column sum becomes equal to the
-// number of effective sequences in that column.
-std::vector<float> number_of_effective_sequences(SequenceProfile& profile);
+// Resets all entries in given profile to the given value or zero if none is given.
+void reset(SequenceProfile& profile, float value = 0.0f);
 
 }//cs
 
