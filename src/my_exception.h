@@ -1,5 +1,5 @@
-#ifndef CS_EXCEPTION_H
-#define CS_EXCEPTION_H
+#ifndef MY_EXCEPTION_H
+#define MY_EXCEPTION_H
 /***************************************************************************
  *   Copyright (C) 2008 by Andreas Biegert                                 *
  *   andreas.biegert@googlemail.com                                        *

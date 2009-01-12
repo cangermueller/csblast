@@ -9,7 +9,6 @@
 // Singleton class that encapsulates meta information about nucleic acids
 
 #include "sequence_alphabet.h"
-#include <iostream>
 
 namespace cs
 {

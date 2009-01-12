@@ -9,15 +9,10 @@
 // A container class representing a sequence consisting of letters over a
 // sequence alphabet.
 
-#include <cctype>
-#include <iostream>
 #include <string>
 #include <vector>
-#include <algorithm>
-#include <utility>
 
 #include "sequence_alphabet.h"
-#include "my_exception.h"
 #include "smart_ptr.h"
 
 namespace cs
@@ -40,20 +35,20 @@ class Sequence
              const SequenceAlphabet* alphabet);
     virtual ~Sequence();
 
+    // Reads all available sequences from the input stream and returns them in a vector.
     static std::vector< SmartPtr<Sequence> > read(std::istream& in,
-                                                   const SequenceAlphabet* alphabet);
-
-    char&       operator() (int i);
-    const char& operator() (int i) const;
-    char chr(int i) const;
-    int length() const;
-    const std::string& header() const;
-    std::string& header();
-    const SequenceAlphabet& alphabet() const;
-    const_iterator begin() const;
-    const_iterator end() const;
-    iterator begin();
-    iterator end();
+                                                  const SequenceAlphabet* alphabet);
+    char&       operator() (int i) { return sequence_[i]; }
+    const char& operator() (int i) const { return sequence_[i]; }
+    char chr(int i) const { return alphabet_->itoc(sequence_[i]); }
+    int length() const { return sequence_.size(); }
+    std::string header() const { return header_; }
+    void set_header(const std::string& header) { header_ = header; }
+    const SequenceAlphabet* alphabet() const { return alphabet_; }
+    const_iterator begin() const { return sequence_.begin(); }
+    const_iterator end() const { return sequence_.end(); }
+    iterator begin() { return sequence_.begin(); }
+    iterator end() { return sequence_.begin(); }
 
   private:
     // Initializes the sequence object with a sequence in FASTA format read from given stream.
@@ -73,41 +68,6 @@ std::istream& operator>> (std::istream& in, Sequence& sequence);
 
 // Prints the sequence in FASTA format to output stream.
 std::ostream& operator<< (std::ostream& out, const Sequence& sequence);
-
-
-
-inline char& Sequence::operator() (int i)
-{ return sequence_[i]; }
-
-inline const char& Sequence::operator() (int i) const
-{ return sequence_[i]; }
-
-inline char Sequence::chr(int i) const
-{ return alphabet_->itoc(sequence_[i]); }
-
-inline int Sequence::length() const
-{ return sequence_.size(); }
-
-inline std::string& Sequence::header()
-{ return header_; }
-
-inline const std::string& Sequence::header() const
-{ return header_; }
-
-inline const SequenceAlphabet& Sequence::alphabet() const
-{ return *alphabet_; }
-
-inline Sequence::const_iterator Sequence::begin() const
-{ return sequence_.begin(); }
-
-inline Sequence::const_iterator Sequence::end() const
-{ return sequence_.end(); }
-
-inline Sequence::iterator Sequence::begin()
-{ return sequence_.begin(); }
-
-inline Sequence::iterator Sequence::end()
-{ return sequence_.end(); }
 
 }//cs
 

@@ -9,9 +9,7 @@
 // Abstract interface for alphabet classes whose elements can be represented
 // by a sequence of characters (e.g. amino acids or nucleic acids).
 
-#include <cstddef>
 #include <vector>
-#include <cmath>
 
 namespace cs
 {

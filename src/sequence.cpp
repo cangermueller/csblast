@@ -5,6 +5,17 @@
 
 #include "sequence.h"
 
+#include <cctype>
+
+#include <algorithm>
+#include <iostream>
+#include <string>
+#include <vector>
+
+#include "my_exception.h"
+#include "sequence_alphabet.h"
+#include "smart_ptr.h"
+
 namespace cs
 {
 
@@ -83,7 +94,7 @@ void Sequence::init(std::istream& in)
     std::string().swap(header_);
     std::vector<char>().swap(sequence_);
 
-    const int kBufferSize = 2097152; //2MB
+    const int kBufferSize = 1048576;  //1MB
     std::string buffer;
     buffer.reserve(kBufferSize);
     //read header

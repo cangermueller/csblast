@@ -5,20 +5,35 @@
 
 #include "sequence_alignment.h"
 
+#include <cctype>
+
+#include <iostream>
+#include <vector>
+
+#include "matrix.h"
+#include "my_exception.h"
+#include "sequence.h"
+#include "sequence_alphabet.h"
+#include "smart_ptr.h"
+
 namespace cs
 {
 
 SequenceAlignment::SequenceAlignment(int nseqs,
                                  int ncols,
                                  const SequenceAlphabet* alphabet)
-        : ColumnMajorMatrix<char>(nseqs, ncols),
+        : nseqs_(nseqs),
+          ncols_(ncols),
+          sequences_(nseqs * ncols),
           headers_(nseqs, ""),
           alphabet_(alphabet)
 {}
 
 SequenceAlignment::SequenceAlignment(std::istream& in,
                                      const SequenceAlphabet* alphabet)
-        : alphabet_(alphabet)
+        : nseqs_(0),
+          ncols_(0),
+          alphabet_(alphabet)
 { in >> *this; }
 
 SequenceAlignment::~SequenceAlignment()
@@ -74,6 +89,16 @@ void SequenceAlignment::init(std::istream& in)
         }
 }
 
+void SequenceAlignment::resize(int nseqs, int ncols)
+{
+    if (nseqs == 0 || ncols == 0)
+        throw MyException("Bad dimensions for alignment resizing: nseqs=%i ncols=%i", nseqs, ncols);
+    nseqs_ = nseqs;
+    ncols_ = ncols;
+    sequences_.resize(nseqs * ncols);
+    headers_.resize(nseqs);
+}
+
 std::istream& operator>> (std::istream& in, SequenceAlignment& alignment)
 {
     alignment.init(in);
@@ -97,7 +122,7 @@ std::ostream& operator<< (std::ostream& out, const SequenceAlignment& alignment)
 }
 
 // Calculates column specific sequence weights from subalignments within the global alignment.
-ColumnMajorMatrix<float> column_specific_sequence_weights(const SequenceAlignment& alignment)
+Matrix<float> column_specific_sequence_weights(const SequenceAlignment& alignment)
 {
     //TODO
 }

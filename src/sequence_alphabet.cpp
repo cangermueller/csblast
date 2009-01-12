@@ -5,6 +5,11 @@
 
 #include "sequence_alphabet.h"
 
+#include <cmath>
+#include <cstddef>
+
+#include <vector>
+
 namespace cs
 {
 
