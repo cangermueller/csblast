@@ -5,9 +5,9 @@
 #include <utility>
 #include <vector>
 
+#include "alignment.h"
 #include "matrix.h"
 #include "nucleic_acid_alphabet.h"
-#include "alignment.h"
 
 class AlignmentTestSuite : public CxxTest::TestSuite
 {

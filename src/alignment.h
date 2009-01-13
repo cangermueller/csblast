@@ -26,8 +26,9 @@ class Alignment
 {
   public:
     friend std::istream& operator>> (std::istream& in, Alignment& alignment);
+    friend std::ostream& operator<< (std::ostream& out, const Alignment& alignment);
 
-    // Constructs an alignment from alignment in multi FASTA format read from input stream.
+    // Constructs alignment multi FASTA formatted alignment read from input stream.
     Alignment(std::istream& in, const SequenceAlphabet* alphabet);
 
     virtual ~Alignment() {}
@@ -56,6 +57,12 @@ class Alignment
     // Returns the underlying sequence alphabet.
     const SequenceAlphabet* alphabet() const { return alphabet_; }
 
+  protected:
+    // Initializes the alignment object with an alignment in FASTA format read from given stream.
+    virtual void init(std::istream& in);
+    // Prints the alignment in multi FASTA format to ouput stream.
+    virtual void print(std::ostream& out) const;
+
   private:
     // Gap character.
     static const char kGap = '-';
@@ -64,8 +71,6 @@ class Alignment
     Alignment(const Alignment&);
     void operator=(const Alignment&);
 
-    // Initializes the alignment object with an alignment in FASTA format read from given stream.
-    void init(std::istream& in);
     // Replaces gap with endgap for all gaps at either end of a sequence.
     void set_endgaps();
     // Resize the sequence matrix and header vector to given dimensions. Attention: old data is lost!
@@ -97,8 +102,8 @@ std::ostream& operator<< (std::ostream& out, const Alignment& alignment);
 std::pair<std::vector<float>, float> global_weights_and_diversity(const Alignment& alignment);
 
 // Calculates position-dependent sequence weights and number of effective sequences on subalignments.
-// The return value is a pair consisting of a weights matrix (element (i,j) denotes the weight of
-// sequence j in column i) and a vector with the numbers of effective sequences in each alignment column.
+// The return value is a pair consisting of a weights matrix (element (i,k) denotes the weight of
+// sequence k in column i) and a vector with the number of effective sequences for alignment column.
 std::pair< Matrix<float>, std::vector<float> > position_dependent_weights_and_diversity(const Alignment& alignment);
 
 }//cs

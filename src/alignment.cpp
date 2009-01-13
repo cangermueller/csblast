@@ -32,7 +32,7 @@ Alignment::Alignment(std::istream& in, const SequenceAlphabet* alphabet)
         : nseqs_(0),
           ncols_(0),
           alphabet_(alphabet)
-{ in >> *this; }
+{ init(in); }
 
 void Alignment::init(std::istream& in)
 {
@@ -86,6 +86,19 @@ void Alignment::init(std::istream& in)
     set_endgaps();  // Replace gap with endgap for all gaps at either end of a sequence
 }
 
+void Alignment::print(std::ostream& out) const
+{
+    const int kLineLength = 80;
+
+    for (int i = 0; i < nseqs_; ++i) {
+        out << '>' << headers_[i] << std::endl;
+        for (int j = 0; j < ncols_; ++j) {
+            out << chr(i,j);
+            if ((j+1) % kLineLength == 0) out << std::endl;
+        }
+    }
+}
+
 void Alignment::set_endgaps()
 {
     for (int i = 0; i < nseqs_; ++i) {
@@ -112,17 +125,7 @@ std::istream& operator>> (std::istream& in, Alignment& alignment)
 
 std::ostream& operator<< (std::ostream& out, const Alignment& alignment)
 {
-    const int kLineLength = 80;
-    const int nseqs = alignment.nseqs();
-    const int ncols = alignment.ncols();
-
-    for (int i = 0; i < nseqs; ++i) {
-        out << '>' << alignment.header(i) << std::endl;
-        for (int j = 0; j < ncols; ++j) {
-            out << alignment.chr(i,j);
-            if ((j+1) % kLineLength == 0) out << std::endl;
-        }
-    }
+    alignment.print(out);
     return out;
 }
 

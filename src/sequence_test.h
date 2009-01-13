@@ -1,14 +1,15 @@
 #include <cxxtest/TestSuite.h>
 
-#include <vector>
-#include <string>
 #include <algorithm>
+#include <fstream>
 #include <sstream>
+#include <string>
+#include <vector>
 
-#include "smart_ptr.h"
 #include "amino_acid_alphabet.h"
 #include "nucleic_acid_alphabet.h"
 #include "sequence.h"
+#include "smart_ptr.h"
 
 class SequenceTestSuite : public CxxTest::TestSuite
 {

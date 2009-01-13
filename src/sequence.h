@@ -25,6 +25,7 @@ class Sequence
     typedef std::vector<char>::iterator iterator;
 
     friend std::istream& operator>> (std::istream& in, Sequence& sequence);
+    friend std::ostream& operator<< (std::ostream& out, const Sequence& sequence);
 
     // Constructs sequence with specified length and alphabet.
     Sequence(int length, const SequenceAlphabet* alphabet);
@@ -62,13 +63,17 @@ class Sequence
     // Returns an iterator just past the end of the sequence.
     iterator end() { return sequence_.begin(); }
 
+  protected:
+    // Initializes the sequence object with a sequence in FASTA format read from given stream.
+    virtual void init(std::istream& in);
+    // Prints the sequence in FASTA format to output stream.
+    virtual void print(std::ostream& out) const;
+
   private:
     // Disallow copy and assign
     Sequence(const Sequence&);
     void operator=(const Sequence&);
 
-    // Initializes the sequence object with a sequence in FASTA format read from given stream.
-    void init(std::istream& in);
     // Convert the sequence in character representation to integer representation.
     void check_and_convert();
 

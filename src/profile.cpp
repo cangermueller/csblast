@@ -5,7 +5,6 @@
 
 #include "profile.h"
 
-#include <cctype>
 #include <cmath>
 
 #include <iostream>
@@ -21,7 +20,7 @@ namespace cs
 {
 
 Profile::Profile(int ncols,
-                                 const SequenceAlphabet* alphabet)
+                 const SequenceAlphabet* alphabet)
         : ncols_(ncols),
           ndim_(alphabet->size()-1),
           data_(ncols * alphabet->size()-1),
@@ -31,24 +30,13 @@ Profile::Profile(int ncols,
 Profile::Profile(std::istream& in, const SequenceAlphabet* alphabet)
             : ncols_(0),
               ndim_(alphabet->size()-1),
+              data_(),
               alphabet_(alphabet)
-{ in >> *this; }
-
-Profile::Profile(const Sequence& sequence)
-        : ncols_(sequence.length()),
-          ndim_(sequence.alphabet()->size()-1),
-          data_(sequence.length() * sequence.alphabet()->size()-1),
-          alphabet_(sequence.alphabet())
-{
-    for(int i = 0; i < ncols_; ++i) {
-        for(int j = 0; j < ndim_; ++j) (*this)(i,j) = 0.0f;
-        (*this)(i, sequence(i));
-    }
-}
+{ init(in); }
 
 Profile::Profile(const Profile& other,
-                                 int index,
-                                 int length)
+                 int index,
+                 int length)
         : ncols_(length),
           ndim_(other.ndim_),
           data_(length * other.ndim_),
@@ -56,13 +44,13 @@ Profile::Profile(const Profile& other,
 {
     if (index + length > other.ncols_)
         throw MyException("Arguments index=%i and length=%i for construction of sub-profile are out of bounds!", index, length);
-    for(int i = 0; i < ncols_; ++i)
-        for(int j = 0; j < ndim_; ++j)
+    for (int i = 0; i < ncols_; ++i)
+        for (int j = 0; j < ndim_; ++j)
             (*this)(i,j) = other(i+index,j);
 }
 
 std::vector< SmartPtr<Profile> > Profile::read(std::istream& in,
-                                                               const SequenceAlphabet* alphabet)
+                                               const SequenceAlphabet* alphabet)
 {
     std::vector< SmartPtr<Profile> > profiles;
     while (in.peek() && in.good()) { //peek first to make sure that we don't read beyond '//'
@@ -111,6 +99,28 @@ void Profile::init(std::istream& in)
             (*this)(i,j) = pow(2.0, static_cast<float>(-data[i][j]) / kScaleFactor);
 }
 
+void Profile::print(std::ostream& out) const
+{
+    // print header with character alphabet
+    out << "#";
+    for (int j = 0; j < ndim_; ++j)
+        out << "\t" << alphabet_->itoc(j);
+    out << std::endl;
+    // print profile values in log representation
+    for (int i = 0; i < ncols_; ++i) {
+        out << i+1;
+        for (int j = 0; j < ndim_; ++j) {
+            double logval = log2((*this)(i,j));
+            if (-logval == std::numeric_limits<double>::infinity())
+                out << "\t*";
+            else
+                out << "\t" << -iround(logval * kScaleFactor);
+        }
+        out << std::endl;
+    }
+    out << "//\n";
+}
+
 void Profile::resize(int ncols, int ndim)
 {
     if (ncols == 0 || ndim == 0)
@@ -128,28 +138,7 @@ std::istream& operator>> (std::istream& in, Profile& profile)
 
 std::ostream& operator<< (std::ostream& out, const Profile& profile)
 {
-    const int ncols = profile.ncols();
-    const int ndim  = profile.ndim();
-
-    // print header with character alphabet
-    out << "#";
-    for (int j = 0; j < ndim; ++j)
-        out << "\t" << profile.alphabet()->itoc(j);
-    out << std::endl;
-    // print profile values in log representation
-    for (int i = 0; i < ncols; ++i) {
-        out << i+1;
-        for (int j = 0; j < ndim; ++j) {
-            double logval = log2(profile(i,j));
-            if (-logval == std::numeric_limits<double>::infinity())
-                out << "\t*";
-            else
-                out << "\t" << -iround(logval * profile.kScaleFactor);
-        }
-        out << std::endl;
-    }
-    out << "//\n";
-
+    profile.print(out);
     return out;
 }
 
@@ -160,6 +149,23 @@ void reset(Profile& profile, float value)
     for(int i=0; i<ncols; ++i)
         for(int j=0; i<ndim; ++j)
             profile(i,j) = value;
+}
+
+void normalize(Profile& profile, float value)
+{
+    const int ncols = profile.ncols();
+    const int ndim  = profile.ndim();
+
+    for (int i = 0; i < ncols; ++i) {
+        float sum = 0.0f;
+        for (int a = 0; a < ndim; ++a) sum += profile(i,a);
+        if (sum != 0.0f) {
+            float fac = value / sum;
+            for (int a = 0; a < ndim; ++a) profile(i,a) *= fac;
+        } else {
+            throw MyException("Unable to normalize profile to one. Sum of column %i is zero!", i);
+        }
+    }
 }
 
 }//cs

@@ -24,13 +24,12 @@ class SequenceAlphabet;
 class AlignmentProfile : public Profile
 {
   public:
-    friend std::istream& operator>> (std::istream& in, AlignmentProfile& profile);
-    friend std::ostream& operator<< (std::ostream& out, const AlignmentProfile& profile);
-
     // Constructs profile from serialized profile read from input stream.
     AlignmentProfile(std::istream& in, const SequenceAlphabet* alphabet);
-    // Constructs a profile of the given alignment.
-    explicit AlignmentProfile(const Alignment& alignment);
+    // Constructs a profile of the given sequence.
+    explicit AlignmentProfile(const Sequence& sequence);
+    // Constructs a profile of the given alignment with specified sequence weighting method.
+    explicit AlignmentProfile(const Alignment& alignment, bool position_dependent_weights = true);
     // Creates a profile from subprofile in other, starting at column index and length columns long.
     AlignmentProfile(const AlignmentProfile& other, int index, int length);
 
@@ -48,27 +47,22 @@ class AlignmentProfile : public Profile
     // Returns true if the profile contains counts.
     bool has_counts() const { return has_counts_; }
 
+  protected:
+    // Initializes the profile object with a serialized profile read from stream.
+    virtual void init(std::istream& in);
+    // Prints the profile in serialization format to output stream.
+    virtual void print(std::ostream& out) const;
+
   private:
     // Disallow copy and assign
     AlignmentProfile(const AlignmentProfile&);
     void operator=(const AlignmentProfile&);
-
-    // Initializes the profile object with a serialized profile read from stream.
-    virtual void init(std::istream& in);
 
     // Number of effective sequences in each alignment column.
     std::vector<float> neff_;
     // Flag indicating if the profile contains counts or (relative) frequencies.
     bool has_counts_;
 };//AlignmentProfile
-
-
-
-// Initializes an alignment profile from seralized profile in input stream.
-std::istream& operator>> (std::istream& in, AlignmentProfile& profile);
-
-// Prints an alignment profile in human readable serialization format.
-std::ostream& operator<< (std::ostream& out, const AlignmentProfile& profile);
 
 }//cs
 

@@ -26,7 +26,7 @@ Sequence::Sequence(int length, const SequenceAlphabet* alphabet)
 
 Sequence::Sequence(std::istream& in, const SequenceAlphabet* alphabet)
         : alphabet_(alphabet)
-{ in >> *this; }
+{ init(in); }
 
 Sequence::Sequence(const std::string& header,
                    const std::string& sequence,
@@ -107,6 +107,18 @@ void Sequence::init(std::istream& in)
     check_and_convert();
 }
 
+void Sequence::print(std::ostream& out) const
+{
+    const int kLineLength = 80;
+
+    out << '>' << header_ << std::endl;
+    const int len = length();
+    for (int i = 0; i < len; ++i) {
+        out << chr(i);
+        if ((i+1) % kLineLength == 0) out << std::endl;
+    }
+}
+
 std::istream& operator>> (std::istream& in, Sequence& sequence)
 {
     sequence.init(in);
@@ -115,15 +127,7 @@ std::istream& operator>> (std::istream& in, Sequence& sequence)
 
 std::ostream& operator<< (std::ostream& out, const Sequence& sequence)
 {
-    const int kLineLength = 80;
-
-    out << '>' << sequence.header() << std::endl;
-    const int len = sequence.length();
-    for (int i = 0; i < len; ++i) {
-        out << sequence.chr(i);
-        if ((i+1) % kLineLength == 0) out << std::endl;
-    }
-
+    sequence.print(out);
     return out;
 }
 

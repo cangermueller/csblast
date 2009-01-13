@@ -80,7 +80,7 @@ inline float normalize_to_one(float* array, int length, const float* default_arr
     for (int i = 0; i < length; ++i) sum += array[i];
     if (sum != 0.0f) {
         float fac = 1.0f / sum;
-        for (int  i = 0; i < length; ++i) array[i] *= fac;
+        for (int i = 0; i < length; ++i) array[i] *= fac;
     } else if (default_array) {
         for (int i = 0; i < length; ++i) array[i] = default_array[i];
     } else {

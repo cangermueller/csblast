@@ -30,8 +30,6 @@ class Profile
     Profile(int ncols, const SequenceAlphabet* alphabet);
     // Constructs profile from serialized profile read from input stream.
     Profile(std::istream& in, const SequenceAlphabet* alphabet);
-    // Constructs a profile of the given sequence.
-    explicit Profile(const Sequence& sequence);
     // Creates a profile from subprofile in other, starting at column index and length columns long.
     Profile(const Profile& other, int index, int length);
 
@@ -39,7 +37,7 @@ class Profile
 
     // Reads all available profiles from the input stream and returns them in a vector.
     static std::vector< SmartPtr<Profile> > read(std::istream& in,
-                                                         const SequenceAlphabet* alphabet);
+                                                 const SequenceAlphabet* alphabet);
     // Access methods to get the (i,j) element
     float&       operator() (int i, int j) { return data_[i*ndim_ + j]; }
     const float& operator() (int i, int j) const { return data_[i*ndim_ + j]; }
@@ -50,6 +48,14 @@ class Profile
     // Returns the underlying sequence alphabet of the profile.
     const SequenceAlphabet* alphabet() const { return alphabet_; }
 
+  protected:
+    // Initializes the profile object with a serialized profile read from stream.
+    virtual void init(std::istream& in);
+    // Prints the profile in serialization format to output stream.
+    virtual void print(std::ostream& out) const;
+    // Resize the profile matrix to given dimensions. Attention: old data is lost!
+    void resize(int ncols, int ndim);
+
   private:
     // Scaling factor for serialization of profile log values
     static const int kScaleFactor = 1000;
@@ -57,11 +63,6 @@ class Profile
     // Disallow copy and assign
     Profile(const Profile&);
     void operator=(const Profile&);
-
-    // Initializes the profile object with a serialized profile read from stream.
-    virtual void init(std::istream& in);
-    // Resize the profile matrix to given dimensions. Attention: old data is lost!
-    void resize(int ncols, int ndim);
 
     // Number of columns in the profile
     int ncols_;
@@ -84,6 +85,9 @@ std::ostream& operator<< (std::ostream& out, const Profile& profile);
 
 // Resets all entries in given profile to the given value or zero if none is given.
 void reset(Profile& profile, float value = 0.0f);
+
+// Normalize profile columns to value or to one if none provided.
+void normalize(Profile& profile, float value = 1.0f);
 
 }//cs
 
