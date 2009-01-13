@@ -30,7 +30,10 @@ public:
     int ctoi(char letter) const { return ctoi_[static_cast<int>(letter)]; }
     // Returns the character representation of the given integer.
     char itoc(int letter) const { return itoc_[letter]; }
+    // Returns the integer representation of the any character.
     int any() const { return ctoi_[itoc_[itoc_.size()-1]]; }
+    // Returns the any character.
+    int any_chr() const { return itoc_[itoc_.size()-1]; }
     const_iterator begin() const { return itoc_.begin(); }
     const_iterator end() const { return itoc_.end(); }
 

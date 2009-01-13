@@ -16,6 +16,7 @@ template<typename T>
 class Matrix {
   public:
     Matrix(int nrows, int ncols);
+    Matrix(int nrows, int ncols, const T& val);
 
     // Access methods to get the (i,j) element:
     T&       operator() (int i, int j);
@@ -41,6 +42,17 @@ Matrix<T>::Matrix(int nrows, int ncols)
 {
     if (nrows == 0 || ncols == 0)
         throw MyException("Bad size arguments for matrix: nrows=%i ncols=%i", nrows, ncols);
+}
+
+template<typename T>
+Matrix<T>::Matrix(int nrows, int ncols, const T& val)
+    : nrows_(nrows), ncols_(ncols), data_(nrows * ncols)
+{
+    if (nrows == 0 || ncols == 0)
+        throw MyException("Bad size arguments for matrix: nrows=%i ncols=%i", nrows, ncols);
+    for (int i = 0; i < nrows_; ++i)
+        for (int j = 0; j < ncols_; ++j)
+            (*this)(i,j) = val;
 }
 
 template<typename T>
