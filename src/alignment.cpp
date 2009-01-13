@@ -3,7 +3,7 @@
  *   andreas.biegert@googlemail.com                                        *
  ***************************************************************************/
 
-#include "sequence_alignment.h"
+#include "alignment.h"
 
 #include <cctype>
 #include <cstdio>
@@ -28,13 +28,13 @@ const bool kDebug = false;
 namespace cs
 {
 
-SequenceAlignment::SequenceAlignment(std::istream& in, const SequenceAlphabet* alphabet)
+Alignment::Alignment(std::istream& in, const SequenceAlphabet* alphabet)
         : nseqs_(0),
           ncols_(0),
           alphabet_(alphabet)
 { in >> *this; }
 
-void SequenceAlignment::init(std::istream& in)
+void Alignment::init(std::istream& in)
 {
     const int kBufferSize = 1048576; //1MB
     std::string buffer;
@@ -86,7 +86,7 @@ void SequenceAlignment::init(std::istream& in)
     set_endgaps();  // Replace gap with endgap for all gaps at either end of a sequence
 }
 
-void SequenceAlignment::set_endgaps()
+void Alignment::set_endgaps()
 {
     for (int i = 0; i < nseqs_; ++i) {
         for (int j = 0; j < ncols_ && gap(i,j); ++j)   (*this)(i,j) = endgap();
@@ -94,7 +94,7 @@ void SequenceAlignment::set_endgaps()
     }
 }
 
-void SequenceAlignment::resize(int nseqs, int ncols)
+void Alignment::resize(int nseqs, int ncols)
 {
     if (nseqs == 0 || ncols == 0)
         throw MyException("Bad dimensions for alignment resizing: nseqs=%i ncols=%i", nseqs, ncols);
@@ -104,13 +104,13 @@ void SequenceAlignment::resize(int nseqs, int ncols)
     headers_.resize(nseqs);
 }
 
-std::istream& operator>> (std::istream& in, SequenceAlignment& alignment)
+std::istream& operator>> (std::istream& in, Alignment& alignment)
 {
     alignment.init(in);
     return in;
 }
 
-std::ostream& operator<< (std::ostream& out, const SequenceAlignment& alignment)
+std::ostream& operator<< (std::ostream& out, const Alignment& alignment)
 {
     const int kLineLength = 80;
     const int nseqs = alignment.nseqs();
@@ -126,7 +126,7 @@ std::ostream& operator<< (std::ostream& out, const SequenceAlignment& alignment)
     return out;
 }
 
-std::vector<float> global_weights(const SequenceAlignment& alignment)
+std::vector<float> global_weights(const Alignment& alignment)
 {
     const int nseqs = alignment.nseqs();
     const int ncols = alignment.ncols();
@@ -164,7 +164,7 @@ std::vector<float> global_weights(const SequenceAlignment& alignment)
     return weights;
 }
 
-std::pair< Matrix<float>, std::vector<float> > position_dependent_weights_and_neff(const SequenceAlignment& alignment)
+std::pair< Matrix<float>, std::vector<float> > position_dependent_weights_and_neff(const Alignment& alignment)
 {
     const float kMaxEndgapFraction = 0.1;  // Maximal fraction of sequences with an endgap
     const int kMinNcols = 10;              // Minimum number of columns in subalignments

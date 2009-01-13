@@ -1,49 +1,89 @@
-#ifndef CS_PROFILE_H
-#define CS_PROFILE_H
+#ifndef CS_SEQUENCE_PROFILE_H
+#define CS_SEQUENCE_PROFILE_H
 /***************************************************************************
  *   Copyright (C) 2008 by Andreas Biegert                                 *
  *   andreas.biegert@googlemail.com                                        *
  ***************************************************************************/
 
 // DESCRIPTION:
-// A profile class representing plain columns of frequencies.
+// A profile class representing columns of frequencies over a sequence alphabet.
 
-#include "row_major_matrix.h"
+#include <iostream>
+#include <vector>
+
+#include "smart_ptr.h"
 
 namespace cs
 {
 
-class Profile : private RowMajorMatrix<float>
+// Forward declarations
+class Sequence;
+class SequenceAlphabet;
+
+class Profile
 {
   public:
-    Profile();
-    Profile(int ncols, int ndim);
-    virtual ~Profile();
+    friend std::istream& operator>> (std::istream& in, Profile& profile);
+    friend std::ostream& operator<< (std::ostream& out, const Profile& profile);
 
-    using RowMajorMatrix<float>::operator();
-    using RowMajorMatrix<float>::resize;
+    // Constructs a profile with ncols columns over alphabet with entries initialized to zero.
+    Profile(int ncols, const SequenceAlphabet* alphabet);
+    // Constructs profile from serialized profile read from input stream.
+    Profile(std::istream& in, const SequenceAlphabet* alphabet);
+    // Constructs a profile of the given sequence.
+    explicit Profile(const Sequence& sequence);
+    // Creates a profile from subprofile in other, starting at column index and length columns long.
+    Profile(const Profile& other, int index, int length);
 
-    int ncols() const;
-    int length() const;
-    int ndim() const;
+    virtual ~Profile() {}
+
+    // Reads all available profiles from the input stream and returns them in a vector.
+    static std::vector< SmartPtr<Profile> > read(std::istream& in,
+                                                         const SequenceAlphabet* alphabet);
+    // Access methods to get the (i,j) element
+    float&       operator() (int i, int j) { return data_[i*ndim_ + j]; }
+    const float& operator() (int i, int j) const { return data_[i*ndim_ + j]; }
+    // Returns #rows in this matrix
+    int ncols() const { return ncols_; }
+    // Returns #columns in this matrix
+    int ndim() const { return ndim_; }
+    // Returns the underlying sequence alphabet of the profile.
+    const SequenceAlphabet* alphabet() const { return alphabet_; }
+
+  private:
+    // Scaling factor for serialization of profile log values
+    static const int kScaleFactor = 1000;
+
+    // Disallow copy and assign
+    Profile(const Profile&);
+    void operator=(const Profile&);
+
+    // Initializes the profile object with a serialized profile read from stream.
+    void init(std::istream& in);
+    // Resize the profile matrix to given dimensions. Attention: old data is lost!
+    void resize(int ncols, int ndim);
+
+    // Number of columns in the profile
+    int ncols_;
+    // Number of entries per column
+    int ndim_;
+    // Profile matrix in row major format
+    std::vector<float> data_;
+    // Sequence alphabet over which the profile records probabilities. Note that the profile
+    // does not include the 'any' character (ndim = alphabet_.size()-1).
+    const SequenceAlphabet* alphabet_;
 };//Profile
 
 
 
-// Resets all entries in given profile to zero.
-void reset(Profile& profile);
+// Initializes a sequence profile from seralized profile in input stream.
+std::istream& operator>> (std::istream& in, Profile& profile);
 
-// Returns the number of columns in the profile.
-inline int Profile::ncols() const
-{ return RowMajorMatrix<float>::nrows(); }
+// Prints a sequence profile in human readable serialization format.
+std::ostream& operator<< (std::ostream& out, const Profile& profile);
 
-// Returns the number of columns in the profile.
-inline int Profile::length() const
-{ return RowMajorMatrix<float>::nrows(); }
-
-// Returns the number of entries per profile column.
-inline int Profile::ndim() const
-{ return RowMajorMatrix<float>::ncols(); }
+// Resets all entries in given profile to the given value or zero if none is given.
+void reset(Profile& profile, float value = 0.0f);
 
 }//cs
 

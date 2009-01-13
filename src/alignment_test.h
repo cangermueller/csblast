@@ -7,9 +7,9 @@
 
 #include "matrix.h"
 #include "nucleic_acid_alphabet.h"
-#include "sequence_alignment.h"
+#include "alignment.h"
 
-class SequenceAlignmentTestSuite : public CxxTest::TestSuite
+class AlignmentTestSuite : public CxxTest::TestSuite
 {
   public:
     void test_construction_from_input_stream( void )
@@ -19,7 +19,7 @@ class SequenceAlignmentTestSuite : public CxxTest::TestSuite
         data.append(">seq1\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACA---ACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
         data.append(">seq2\nACGT--GTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTA---GTACGT--\n");
         std::istringstream ss(data);
-        cs::SequenceAlignment alignment(ss, na);
+        cs::Alignment alignment(ss, na);
 
         TS_ASSERT_EQUALS( alignment.nseqs(), 2 );
         TS_ASSERT_EQUALS( alignment.ncols(), 80 );
@@ -38,7 +38,7 @@ class SequenceAlignmentTestSuite : public CxxTest::TestSuite
         data.append(">seq3\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACA---ACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
         data.append(">seq4\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACA---ACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
         std::istringstream ss(data);
-        cs::SequenceAlignment alignment(ss, na);
+        cs::Alignment alignment(ss, na);
 
         TS_ASSERT_EQUALS( alignment.nseqs(), 4 );
         TS_ASSERT_EQUALS( alignment.ncols(), 80 );
@@ -58,7 +58,7 @@ class SequenceAlignmentTestSuite : public CxxTest::TestSuite
         data.append(">seq3\n----GTACGTACACGTACGTACACGTACGT\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
         data.append(">seq4\n----CGTACGTACACGTACGTACACGTACG\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
         std::istringstream ss(data);
-        cs::SequenceAlignment alignment(ss, na);
+        cs::Alignment alignment(ss, na);
 
         TS_ASSERT_EQUALS( alignment.nseqs(), 4 );
         TS_ASSERT_EQUALS( alignment.ncols(), 80 );

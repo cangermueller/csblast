@@ -22,15 +22,15 @@
 namespace cs
 {
 
-class SequenceAlignment
+class Alignment
 {
   public:
-    friend std::istream& operator>> (std::istream& in, SequenceAlignment& alignment);
+    friend std::istream& operator>> (std::istream& in, Alignment& alignment);
 
     // Constructs an alignment from alignment in multi FASTA format read from input stream.
-    SequenceAlignment(std::istream& in, const SequenceAlphabet* alphabet);
+    Alignment(std::istream& in, const SequenceAlphabet* alphabet);
 
-    virtual ~SequenceAlignment() {}
+    virtual ~Alignment() {}
 
     // Access methods to get the integer representation of character in column j of sequence i.
     char&       operator() (int i, int j) { return sequences_[i + j*nseqs_]; }
@@ -61,8 +61,8 @@ class SequenceAlignment
     static const char kGap = '-';
 
     // Disallow copy and assign
-    SequenceAlignment(const SequenceAlignment&);
-    void operator=(const SequenceAlignment&);
+    Alignment(const Alignment&);
+    void operator=(const Alignment&);
 
     // Initializes the alignment object with an alignment in FASTA format read from given stream.
     void init(std::istream& in);
@@ -81,24 +81,24 @@ class SequenceAlignment
     std::vector< std::string > headers_;
     // Alphabet of sequences in the alignment.
     const SequenceAlphabet* alphabet_;
-};//SequenceAlignment
+};//Alignment
 
 
 
 // Initializes a sequence alignment object from FASTA formatted alignment in input stream.
-std::istream& operator>> (std::istream& in, SequenceAlignment& alignment);
+std::istream& operator>> (std::istream& in, Alignment& alignment);
 
 // Prints the alignment in multi FASTA format to output stream.
-std::ostream& operator<< (std::ostream& out, const SequenceAlignment& alignment);
+std::ostream& operator<< (std::ostream& out, const Alignment& alignment);
 
 // Calculates global sequence weights by maximum entropy weighting (Henikoff&Henikoff '94).
 // The returned vector specifies the sequence weight for each of the alignment sequences.
-std::vector<float> global_weights(const SequenceAlignment& alignment);
+std::vector<float> global_weights(const Alignment& alignment);
 
 // Calculates position-dependent sequence weights and number of effective sequences on subalignments.
 // The return value is a pair consisting of a weights matrix (element (i,j) denotes the weight of
 // sequence j in column i) and a vector with the numbers of effective sequences in each alignment column.
-std::pair< Matrix<float>, std::vector<float> > position_dependent_weights_and_neff(const SequenceAlignment& alignment);
+std::pair< Matrix<float>, std::vector<float> > position_dependent_weights_and_neff(const Alignment& alignment);
 
 }//cs
 
