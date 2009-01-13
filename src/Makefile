@@ -41,12 +41,12 @@ $(DEPS): $(BUILDDIR)/%.dep: %.$(EXT) $(BUILDDIR)/.tag
 run_tests: runner
 	./runner
 
-runner: runner.cpp $(OBJECTS) $(DEPS)
-	$(CXX) $(CXXFLAGS) -o $@ runner.cpp $(OBJECTS) $(LIBS)
+runner: runner.cc $(OBJECTS) $(DEPS)
+	$(CXX) $(CXXFLAGS) -o $@ runner.cc $(OBJECTS) $(LIBS)
 
-runner.cpp: $(TESTS)
+runner.cc: $(TESTS)
 	$(TESTGEN) -o $@ --error-printer $(TESTS)
 
 .PHONY: clean
 clean:
-	rm -rf $(BUILDDIR) $(TARGETS) runner runner.cpp
+	rm -rf $(BUILDDIR) $(TARGETS) runner runner.cc

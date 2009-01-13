@@ -126,9 +126,9 @@ std::ostream& operator<< (std::ostream& out, const Alignment& alignment)
     return out;
 }
 
-std::pair< std::vector<float>, float> global_weights_and_diversity(const Alignment& alignment)
+std::pair<std::vector<float>, float> global_weights_and_diversity(const Alignment& alignment)
 {
-    const float kZero = 1E-10;  // zero for calculation of entropy
+    const float kZero = 1E-10;  // for calculation of entropy
     const int nseqs = alignment.nseqs();
     const int ncols = alignment.ncols();
     const int nalph = alignment.alphabet()->size()-1;  // alphabet size without ANY character
@@ -183,7 +183,7 @@ std::pair< Matrix<float>, std::vector<float> > position_dependent_weights_and_di
 {
     const float kMaxEndgapFraction = 0.1;  // maximal fraction of sequences with an endgap
     const int kMinNcols = 10;  // minimum number of columns in subalignments
-    const float kZero = 1E-10;  // zero for calculation of entropy
+    const float kZero = 1E-10;  // for calculation of entropy
     const int nseqs  = alignment.nseqs();
     const int ncols  = alignment.ncols();
     const int nalph  = alignment.alphabet()->size()-1;  // alphabet size without ANY character
@@ -199,7 +199,7 @@ std::pair< Matrix<float>, std::vector<float> > position_dependent_weights_and_di
     std::vector<float> fj(nalph, 0.0f);   // to calculate entropy
     std::vector<float> neff(ncols, 0.0f); // diversity of subalignment i
     std::vector<float> wi(nseqs, 0.0f);   // weight of sequence k in column i, calculated from subalignment i
-    std::pair< std::vector<float>, float> wg_neff = global_weights_and_diversity(alignment);  // global weights
+    std::pair<std::vector<float>, float> wg_neff = global_weights_and_diversity(alignment);  // global weights
 
     std::vector<int> nseqi_debug(ncols, 0); // debugging
     std::vector<int> ncoli_debug(ncols, 0); // debugging

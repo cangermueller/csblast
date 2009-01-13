@@ -1,5 +1,5 @@
-#ifndef CS_SEQUENCE_PROFILE_H
-#define CS_SEQUENCE_PROFILE_H
+#ifndef CS_PROFILE_H
+#define CS_PROFILE_H
 /***************************************************************************
  *   Copyright (C) 2008 by Andreas Biegert                                 *
  *   andreas.biegert@googlemail.com                                        *
@@ -59,7 +59,7 @@ class Profile
     void operator=(const Profile&);
 
     // Initializes the profile object with a serialized profile read from stream.
-    void init(std::istream& in);
+    virtual void init(std::istream& in);
     // Resize the profile matrix to given dimensions. Attention: old data is lost!
     void resize(int ncols, int ndim);
 

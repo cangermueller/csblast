@@ -43,7 +43,7 @@ class AlignmentTestSuite : public CxxTest::TestSuite
         TS_ASSERT_EQUALS( alignment.nseqs(), 4 );
         TS_ASSERT_EQUALS( alignment.ncols(), 80 );
 
-        std::pair< std::vector<float>, float> wg_neff = cs::global_weights_and_diversity(alignment);
+        std::pair<std::vector<float>, float> wg_neff = cs::global_weights_and_diversity(alignment);
 
         TS_ASSERT_EQUALS( static_cast<int>(wg_neff.first.size()), 4 );
         TS_ASSERT_EQUALS( wg_neff.first[0], 0.25 );

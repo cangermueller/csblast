@@ -1,5 +1,5 @@
-#ifndef CS_SEQUENCE_ALIGNMENT_H
-#define CS_SEQUENCE_ALIGNMENT_H
+#ifndef CS_ALIGNMENT_H
+#define CS_ALIGNMENT_H
 /***************************************************************************
  *   Copyright (C) 2008 by Andreas Biegert                                 *
  *   andreas.biegert@googlemail.com                                        *
@@ -94,7 +94,7 @@ std::ostream& operator<< (std::ostream& out, const Alignment& alignment);
 // Calculates global sequence weights by maximum entropy weighting (Henikoff&Henikoff '94).
 // The returned pair vector specifies the sequence weights for each of the alignment sequences
 // and the overall number of effective sequences in the alignment.
-std::pair< std::vector<float>, float> global_weights_and_diversity(const Alignment& alignment);
+std::pair<std::vector<float>, float> global_weights_and_diversity(const Alignment& alignment);
 
 // Calculates position-dependent sequence weights and number of effective sequences on subalignments.
 // The return value is a pair consisting of a weights matrix (element (i,j) denotes the weight of
