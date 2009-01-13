@@ -92,13 +92,14 @@ std::istream& operator>> (std::istream& in, Alignment& alignment);
 std::ostream& operator<< (std::ostream& out, const Alignment& alignment);
 
 // Calculates global sequence weights by maximum entropy weighting (Henikoff&Henikoff '94).
-// The returned vector specifies the sequence weight for each of the alignment sequences.
-std::vector<float> global_weights(const Alignment& alignment);
+// The returned pair vector specifies the sequence weights for each of the alignment sequences
+// and the overall number of effective sequences in the alignment.
+std::pair< std::vector<float>, float> global_weights_and_diversity(const Alignment& alignment);
 
 // Calculates position-dependent sequence weights and number of effective sequences on subalignments.
 // The return value is a pair consisting of a weights matrix (element (i,j) denotes the weight of
 // sequence j in column i) and a vector with the numbers of effective sequences in each alignment column.
-std::pair< Matrix<float>, std::vector<float> > position_dependent_weights_and_neff(const Alignment& alignment);
+std::pair< Matrix<float>, std::vector<float> > position_dependent_weights_and_diversity(const Alignment& alignment);
 
 }//cs
 
