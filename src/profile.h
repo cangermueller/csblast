@@ -26,6 +26,8 @@ class Profile
     friend std::istream& operator>> (std::istream& in, Profile& profile);
     friend std::ostream& operator<< (std::ostream& out, const Profile& profile);
 
+    // Constructs a dummy profile with given alphabet.
+    Profile(const SequenceAlphabet* alphabet);
     // Constructs a profile with ncols columns over alphabet with entries initialized to zero.
     Profile(int ncols, const SequenceAlphabet* alphabet);
     // Constructs profile from serialized profile read from input stream.
@@ -49,16 +51,19 @@ class Profile
     const SequenceAlphabet* alphabet() const { return alphabet_; }
 
   protected:
+    // Scaling factor for serialization of profile log values
+    static const int kScaleFactor = 1000;
+
     // Initializes the profile object with a serialized profile read from stream.
-    virtual void init(std::istream& in);
+    virtual void unserialize(std::istream& in);
     // Prints the profile in serialization format to output stream.
-    virtual void print(std::ostream& out) const;
+    virtual void serialize(std::ostream& out) const;
     // Resize the profile matrix to given dimensions. Attention: old data is lost!
     void resize(int ncols, int ndim);
 
   private:
-    // Scaling factor for serialization of profile log values
-    static const int kScaleFactor = 1000;
+    // Class identifier for serialization
+    static const char kClass[];
 
     // Disallow copy and assign
     Profile(const Profile&);

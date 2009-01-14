@@ -49,11 +49,14 @@ class AlignmentProfile : public Profile
 
   protected:
     // Initializes the profile object with a serialized profile read from stream.
-    virtual void init(std::istream& in);
+    virtual void unserialize(std::istream& in);
     // Prints the profile in serialization format to output stream.
-    virtual void print(std::ostream& out) const;
+    virtual void serialize(std::ostream& out) const;
 
   private:
+    // Class identifier for serialization
+    static const char kClass[];
+
     // Disallow copy and assign
     AlignmentProfile(const AlignmentProfile&);
     void operator=(const AlignmentProfile&);

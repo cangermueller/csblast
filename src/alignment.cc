@@ -32,9 +32,9 @@ Alignment::Alignment(std::istream& in, const SequenceAlphabet* alphabet)
         : nseqs_(0),
           ncols_(0),
           alphabet_(alphabet)
-{ init(in); }
+{ unserialize(in); }
 
-void Alignment::init(std::istream& in)
+void Alignment::unserialize(std::istream& in)
 {
     const int kBufferSize = 1048576; //1MB
     std::string buffer;
@@ -86,7 +86,7 @@ void Alignment::init(std::istream& in)
     set_endgaps();  // Replace gap with endgap for all gaps at either end of a sequence
 }
 
-void Alignment::print(std::ostream& out) const
+void Alignment::serialize(std::ostream& out) const
 {
     const int kLineLength = 80;
 
@@ -119,13 +119,13 @@ void Alignment::resize(int nseqs, int ncols)
 
 std::istream& operator>> (std::istream& in, Alignment& alignment)
 {
-    alignment.init(in);
+    alignment.unserialize(in);
     return in;
 }
 
 std::ostream& operator<< (std::ostream& out, const Alignment& alignment)
 {
-    alignment.print(out);
+    alignment.serialize(out);
     return out;
 }
 

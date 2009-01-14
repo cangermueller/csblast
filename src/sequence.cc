@@ -26,7 +26,7 @@ Sequence::Sequence(int length, const SequenceAlphabet* alphabet)
 
 Sequence::Sequence(std::istream& in, const SequenceAlphabet* alphabet)
         : alphabet_(alphabet)
-{ init(in); }
+{ unserialize(in); }
 
 Sequence::Sequence(const std::string& header,
                    const std::string& sequence,
@@ -83,13 +83,13 @@ void Sequence::check_and_convert()
 // removed whereas invalid characters (according to the alphabet) trigger an
 // execption. After the initialization the stream points to begin of next FASTA
 // sequence or EOF.
-void Sequence::init(std::istream& in)
+void Sequence::unserialize(std::istream& in)
 {
     //clear and minimize capacity of header and sequence
     std::string().swap(header_);
     std::vector<char>().swap(sequence_);
 
-    const int kBufferSize = 1048576;  //1MB
+    const int kBufferSize = 1000;
     std::string buffer;
     buffer.reserve(kBufferSize);
     //read header
@@ -107,7 +107,7 @@ void Sequence::init(std::istream& in)
     check_and_convert();
 }
 
-void Sequence::print(std::ostream& out) const
+void Sequence::serialize(std::ostream& out) const
 {
     const int kLineLength = 80;
 
@@ -121,13 +121,13 @@ void Sequence::print(std::ostream& out) const
 
 std::istream& operator>> (std::istream& in, Sequence& sequence)
 {
-    sequence.init(in);
+    sequence.unserialize(in);
     return in;
 }
 
 std::ostream& operator<< (std::ostream& out, const Sequence& sequence)
 {
-    sequence.print(out);
+    sequence.serialize(out);
     return out;
 }
 

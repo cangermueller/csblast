@@ -65,9 +65,9 @@ class Sequence
 
   protected:
     // Initializes the sequence object with a sequence in FASTA format read from given stream.
-    virtual void init(std::istream& in);
+    virtual void unserialize(std::istream& in);
     // Prints the sequence in FASTA format to output stream.
-    virtual void print(std::ostream& out) const;
+    virtual void serialize(std::ostream& out) const;
 
   private:
     // Disallow copy and assign

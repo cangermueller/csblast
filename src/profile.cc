@@ -19,27 +19,34 @@
 namespace cs
 {
 
+const char Profile::kClass[] = "Profile";
+
+Profile::Profile(const SequenceAlphabet* alphabet)
+        : ncols_(0),
+          ndim_(0),
+          alphabet_(alphabet)
+{}
+
 Profile::Profile(int ncols,
                  const SequenceAlphabet* alphabet)
         : ncols_(ncols),
           ndim_(alphabet->size()-1),
-          data_(ncols * alphabet->size()-1),
+          data_(ncols * alphabet->size()-1, 0.0f),
           alphabet_(alphabet)
-{ reset(*this); }
+{}
 
 Profile::Profile(std::istream& in, const SequenceAlphabet* alphabet)
             : ncols_(0),
               ndim_(alphabet->size()-1),
-              data_(),
               alphabet_(alphabet)
-{ init(in); }
+{ unserialize(in); }
 
 Profile::Profile(const Profile& other,
                  int index,
                  int length)
         : ncols_(length),
           ndim_(other.ndim_),
-          data_(length * other.ndim_),
+          data_(length * other.ndim_, 0.0f),
           alphabet_(other.alphabet_)
 {
     if (index + length > other.ncols_)
@@ -61,16 +68,21 @@ std::vector< SmartPtr<Profile> > Profile::read(std::istream& in,
     return profiles;
 }
 
-void Profile::init(std::istream& in)
+void Profile::unserialize(std::istream& in)
 {
-    const int kBufferSize = 1048576;  //1MB
+    const int kBufferSize = 1000;
     std::vector<char> char_arr(kBufferSize, '\0');
     char* buffer = &char_arr[0];
 
-    //read column data records line by line
+    // Check if stream actually contains a serialized profile
+    while (in.getline(buffer, kBufferSize) && !strscn(buffer)) continue;
+    if (strcmp(buffer, "Profile") != 0)
+        throw MyException("Bad format: serialized profile does not start with '%x' class identifier!", kClass);
+
+    // Read column data records line by line
     std::vector< std::vector<int> > data;
     std::vector<int> column;
-    int i_prev = 0;  //index of previous column
+    int i_prev = 0;  // index of previous column
     while (in.getline(buffer, kBufferSize)) {
         int len = strlen(buffer);
         if (!strscn(buffer) || len > 0 && buffer[0] == '#') continue;
@@ -99,10 +111,10 @@ void Profile::init(std::istream& in)
             (*this)(i,j) = pow(2.0, static_cast<float>(-data[i][j]) / kScaleFactor);
 }
 
-void Profile::print(std::ostream& out) const
+void Profile::serialize(std::ostream& out) const
 {
-    // print header with character alphabet
-    out << "#";
+    // print identifier and header with character alphabet
+    out << kClass << "\n#";
     for (int j = 0; j < ndim_; ++j)
         out << "\t" << alphabet_->itoc(j);
     out << std::endl;
@@ -132,13 +144,13 @@ void Profile::resize(int ncols, int ndim)
 
 std::istream& operator>> (std::istream& in, Profile& profile)
 {
-    profile.init(in);
+    profile.unserialize(in);
     return in;
 }
 
 std::ostream& operator<< (std::ostream& out, const Profile& profile)
 {
-    profile.print(out);
+    profile.serialize(out);
     return out;
 }
 
@@ -146,8 +158,8 @@ void reset(Profile& profile, float value)
 {
     const int ncols = profile.ncols();
     const int ndim = profile.ndim();
-    for(int i=0; i<ncols; ++i)
-        for(int j=0; i<ndim; ++j)
+    for(int i = 0; i < ncols; ++i)
+        for(int j = 0; i < ndim; ++j)
             profile(i,j) = value;
 }
 

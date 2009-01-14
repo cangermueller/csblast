@@ -59,9 +59,9 @@ class Alignment
 
   protected:
     // Initializes the alignment object with an alignment in FASTA format read from given stream.
-    virtual void init(std::istream& in);
+    virtual void unserialize(std::istream& in);
     // Prints the alignment in multi FASTA format to ouput stream.
-    virtual void print(std::ostream& out) const;
+    virtual void serialize(std::ostream& out) const;
 
   private:
     // Gap character.
