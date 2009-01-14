@@ -1,3 +1,4 @@
 bin
 src/build
-src/runner*
+src/test
+src/*.a
