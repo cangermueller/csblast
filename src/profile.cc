@@ -107,8 +107,8 @@ void Profile::unserialize(std::istream& in)
             throw MyException("Bad format: malformed line after column record %i!", i-1);
 
         for (int a = 0; a < ndim_; ++a) {
-            int logval = strtoi_asterix(ptr);
-            (*this)(i,a) = pow(2.0, static_cast<float>(-logval) / kScaleFactor);
+            int log_p = strtoi_asterix(ptr);
+            (*this)(i,a) = pow(2.0, static_cast<float>(-log_p) / kScaleFactor);
         }
     }
     if (i != ncols_-1)
@@ -117,12 +117,14 @@ void Profile::unserialize(std::istream& in)
 
 void Profile::serialize(std::ostream& out) const
 {
-    // print identifier and header with character alphabet
-    out << "Profile\n" << "ncols\t" << ncols_ << "\nndim\t" << ndim_ << std::endl;
+    out << "Profile" << std::endl;
+    out << "ncols\t" << ncols_ << std::endl;
+    out << "ndim\t" << ndim_ << std::endl;
+
+    // print profile values in log representation
     for (int j = 0; j < ndim_; ++j)
         out << "\t" << alphabet_->itoc(j);
     out << std::endl;
-    // print profile values in log representation
     for (int i = 0; i < ncols_; ++i) {
         out << i+1;
         for (int j = 0; j < ndim_; ++j) {

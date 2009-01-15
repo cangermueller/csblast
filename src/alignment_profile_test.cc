@@ -16,21 +16,14 @@ TEST(AlignmentProfileTest, ConstructionFromInputStream)
 {
     std::string data;
     data.append("AlignmentProfile\n");
-    data.append("Profile\n");
     data.append("ncols\t4\n");
     data.append("ndim\t4\n");
-    data.append("\tA\tC\tG\tT\n");
-    data.append("1\t0\t*\t*\t*\n");
-    data.append("2\t*\t0\t*\t*\n");
-    data.append("3\t*\t*\t0\t*\n");
-    data.append("4\t*\t*\t*\t0\n");
-    data.append("//\n");
     data.append("has_counts\t0\n");
-    data.append("\tneff\n");
-    data.append("1\t0\n");
-    data.append("2\t0\n");
-    data.append("3\t0\n");
-    data.append("4\t0\n");
+    data.append(" \tA\tC\tG\tT\tneff\n");
+    data.append("1\t0\t*\t*\t*\t0\n");
+    data.append("2\t*\t0\t*\t*\t0\n");
+    data.append("3\t*\t*\t0\t*\t0\n");
+    data.append("4\t*\t*\t*\t0\t0\n");
     data.append("//\n");
     std::istringstream ss(data);
 
@@ -101,16 +94,6 @@ TEST(AlignmentProfileTest, DISABLED_Alignment1Q7L)
     cs::Alignment alignment(fin, aa);
     fin.close();
     cs::AlignmentProfile profile(alignment, true);
-
-    EXPECT_NEAR(0.61, profile(579, aa->ctoi('G')), kDelta);
-}
-
-TEST(AlignmentProfileTest, Profile1Q7L)
-{
-    cs::AminoAcidAlphabet* aa = cs::AminoAcidAlphabet::instance();
-    std::ifstream fin("../data/1Q7L.prf");
-    cs::AlignmentProfile profile(fin, aa);
-    fin.close();
 
     EXPECT_NEAR(0.61, profile(579, aa->ctoi('G')), kDelta);
 }

@@ -106,56 +106,85 @@ void AlignmentProfile::unserialize(std::istream& in)
     std::vector<char> char_arr(kBufferSize, '\0');
     char* buffer = &char_arr[0];
 
-    // Check if stream actually contains a serialized alignment profile
+    // Check if stream actually contains a serialized profile
     while (in.getline(buffer, kBufferSize) && !strscn(buffer)) continue;
     if (strcmp(buffer, "AlignmentProfile") != 0)
-        throw MyException("Bad format: serialized profile does not start with 'AlignmentProfile' class identifier!");
+        throw MyException("Bad format: serialized alignment profile does not start with 'AlignmentProfile' class identifier!");
 
-    Profile::unserialize(in);  // Initialize base class part
+    // Read ncols
+    int ncols = 0;
+    if (in.getline(buffer, kBufferSize) && strncmp(buffer, "ncols", 5) == 0)
+        ncols = atoi(buffer+5);
+    else
+        throw MyException("Bad format: serialized alignment profile does not contain 'ncols' record!");
+
+    // Read ndim
+    int ndim = 0;
+    if (in.getline(buffer, kBufferSize) && strncmp(buffer, "ndim", 4) == 0)
+        ndim = atoi(buffer+4);
+    else
+        throw MyException("Bad format: serialized alignment profile does not contain 'ndim' record!");
+    if (ndim != alphabet()->size() - 1)
+        throw MyException("Bad format: ndim=%i does not fit with provided alphabet!", ndim);
 
     // Read has_counts
     if (in.getline(buffer, kBufferSize) && strncmp(buffer, "has_counts", 10) == 0)
         has_counts_ = atoi(buffer+10) == 1;
 
-    // read column data records line by line
-    neff_.resize(ncols());
+    // Read column data records line by line
+    resize(ncols, ndim);
+    neff_.resize(ncols);
     in.getline(buffer, kBufferSize);  // Skip description line
     const char* ptr;  // for string traversal
     int i = 0;        // column index
     while (in.getline(buffer, kBufferSize)) {
         if (!strscn(buffer)) continue;
-        if (strlen(buffer) > 1 && buffer[0] == '/' && buffer[1] == '/' || buffer[0] == '#') break;
+        if (strlen(buffer) > 1 && buffer[0] == '/' && buffer[1] == '/') break;
 
         ptr = buffer;
         i = strtoi(ptr)-1;
         if (!ptr)
-            throw MyException("Bad format: malformed line after neff record %i!", i-1);
-
-        int logval = strtoi_asterix(ptr);
-        neff_[i] = pow(2.0, static_cast<float>(-logval) / kScaleFactor);
+            throw MyException("Bad format: malformed line after column record %i!", i-1);
+        // Read profile frequencies
+        for (int a = 0; a < ndim; ++a) {
+            int log_p = strtoi_asterix(ptr);
+            (*this)(i,a) = pow(2.0, static_cast<float>(-log_p) / kScaleFactor);
+        }
+        // Read neff
+        int log_neff = strtoi_asterix(ptr);
+        neff_[i] = pow(2.0, static_cast<float>(-log_neff) / kScaleFactor);
     }
-    if (i != ncols()-1)
-        throw MyException("Bad format: neff vector has %i column records but should have %i!", i+1, ncols());
+    if (i != ncols-1)
+        throw MyException("Bad format: alignment profile has %i column records but should have %i!", i+1, ncols);
 }
 
 void AlignmentProfile::serialize(std::ostream& out) const
 {
     out << "AlignmentProfile" << std::endl;
-    Profile::serialize(out);  // Print the profile part
+    out << "ncols\t" << ncols() << std::endl;
+    out << "ndim\t" << ndim() << std::endl;
+    out << "has_counts\t" << has_counts_ << std::endl;
 
-    // print has_counts
-    out << "has_counts\t" << (has_counts_ ? 1 : 0) << std::endl;
-    // print neff vector
-    out << "\tneff\n";
-    // print number of effective sequences in log representation
+    // print profile values in log representation
+    for (int j = 0; j < ndim(); ++j)
+        out << "\t" << alphabet()->itoc(j);
+    out << "\tneff" << std::endl;
     for (int i = 0; i < ncols(); ++i) {
-        double logval = log2(neff_[i]);
-        if (-logval == std::numeric_limits<double>::infinity())
-            out << i+1 << "\t*" << std::endl;
+        out << i+1;
+        for (int j = 0; j < ndim(); ++j) {
+            double log_p = log2((*this)(i,j));
+            if (-log_p == std::numeric_limits<double>::infinity())
+                out << "\t*";
+            else
+                out << "\t" << -iround(log_p * kScaleFactor);
+        }
+        double log_neff = log2(neff_[i]);
+        if (-log_neff == std::numeric_limits<double>::infinity())
+            out << "\t*" << std::endl;
         else
-            out << i+1 << "\t" << -iround(logval * kScaleFactor) << std::endl;
+            out << "\t" << -iround(log_neff * kScaleFactor) << std::endl;
     }
-    out << "//" << std::endl;;
+    out << "//" << std::endl;
 }
 
 }//cs
