@@ -13,8 +13,6 @@
 #include <climits>
 #include <cmath>
 
-#include "my_exception.h"
-
 // Returns the base 2 logarithm of num.
 inline double log2(double num)
 {
@@ -71,9 +69,8 @@ inline int strtoi_asterix(const char*& ptr, int deflt=INT_MAX)
     return i;
 }
 
-// Normalizes a float array to one and returns the array sum. In case the array sums to
-// zero and default_array is provided the array is set to default_array, otherwise an
-// exception is thrown.
+// Normalize a float array such that it sums to one
+// If it sums to 0 then assign def_array elements to array (optional)
 inline float normalize_to_one(float* array, int length, const float* default_array=NULL)
 {
     float sum = 0.0f;
@@ -83,8 +80,6 @@ inline float normalize_to_one(float* array, int length, const float* default_arr
         for (int i = 0; i < length; ++i) array[i] *= fac;
     } else if (default_array) {
         for (int i = 0; i < length; ++i) array[i] = default_array[i];
-    } else {
-        throw MyException("Unable to normalize array to one. Array sum is zero!");
     }
     return sum;
 }

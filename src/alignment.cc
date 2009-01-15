@@ -74,7 +74,7 @@ void Alignment::unserialize(std::istream& in)
     resize(seqs, cols);
     for (int i = 0; i < seqs; ++i)
         for (int j = 0; j < cols; ++j) {
-            const char c = sequences[i][j];
+            const char c = toupper(sequences[i][j]);
             if (c == kGap)
                 (*this)(i,j) = gap();
             else if (alphabet_->valid(c))
@@ -207,7 +207,10 @@ std::pair< Matrix<float>, std::vector<float> > position_dependent_weights_and_di
     std::vector<int> nseqi_debug(ncols, 0); // debugging
     std::vector<int> ncoli_debug(ncols, 0); // debugging
 
-    if (kDebug) fprintf(stderr,"\nCalculation of position-dependent weights and alignment diversity on subalignments:\n");
+    if (kDebug) {
+        fprintf(stderr,"\nCalculation of position-dependent weights and alignment diversity on subalignments:\n");
+        fprintf(stderr,"%-5s  %-5s  %-5s  %-5s\n", "i", "ncoli", "nseqi", "neff");
+    }
 
     for (int i = 0; i < ncols; ++i) {
         change = false;
@@ -242,7 +245,7 @@ std::pair< Matrix<float>, std::vector<float> > position_dependent_weights_and_di
                             fprintf(stderr, "Error: Mi=%i: n[%i][seqs[%i][%i]]=0! (seqs[%i][%i]=%c)\n",
                                     i, j, k, j, k, j, alignment(k,j) );
                         }
-                        wi[k] += 1.0f / (n(j, alignment(k,j)) * ndiff);
+                        wi[k] += 1.0f / static_cast<float>((n(j, alignment(k,j)) * ndiff));
                     }
                 }
             }  // for j over ncols
@@ -264,7 +267,6 @@ std::pair< Matrix<float>, std::vector<float> > position_dependent_weights_and_di
                     if (alignment(k,i) < any && alignment(k,j) < any)
                         fj[alignment(k,j)] += wi[k];
                 normalize_to_one(&fj[0], nalph);
-
                 for (int a = 0; a < nalph; ++a)
                     if (fj[a] > kZero) neff[i] -= fj[a] * log2(fj[a]);
             }  // for j over ncols
@@ -276,14 +278,11 @@ std::pair< Matrix<float>, std::vector<float> > position_dependent_weights_and_di
         }
 
         for (int k = 0; k < nseqs; ++k) w(i,k) = wi[k];
-        if (kDebug) ncoli_debug[i] = ncoli;
-    }  // for i over ncols
-
-    if (kDebug) {
-        fprintf(stderr,"%-5s  %-5s  %-5s  %-5s\n", "i", "ncoli", "nseqi", "neff");
-        for (int i = 0; i < ncols; ++i)
+        if (kDebug) {
+            ncoli_debug[i] = ncoli;
             fprintf(stderr,"%-5i  %-5i  %-5i  %-5.2f\n", i, ncoli_debug[i], nseqi_debug[i], neff[i]);
-    }
+        }
+    }  // for i over ncols
 
     return make_pair(w, neff);
 }

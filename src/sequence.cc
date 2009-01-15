@@ -66,14 +66,16 @@ void Sequence::check_and_convert()
                     sequence_.end());
     //validate each character and convert to integer representation
     int len = sequence_.size();
-    for (int i = 0; i < len; ++i)
-        if (alphabet_->valid(sequence_[i])) {
-            sequence_[i] = alphabet_->ctoi(sequence_[i]);
+    for (int i = 0; i < len; ++i) {
+        char c = toupper(sequence_[i]);
+        if (alphabet_->valid(c)) {
+            sequence_[i] = alphabet_->ctoi(c);
         } else {
-            char c = sequence_[i];
             sequence_.clear();
             throw MyException("Invalid character %c at position %i of sequence '%s'", c, i, header_.c_str());
         }
+    }
+
     //trim excess capacity
     std::vector<char>(sequence_.begin(), sequence_.end()).swap(sequence_);
 }

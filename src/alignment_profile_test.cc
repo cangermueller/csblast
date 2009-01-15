@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 
+#include <iostream>
+#include <fstream>
 #include <string>
 #include <sstream>
 
@@ -70,12 +72,24 @@ TEST(AlignmentProfileTest, ConversionToCounts)
     std::istringstream ss(data);
     cs::Alignment alignment(ss, na);
 
-    cs::AlignmentProfile profile(alignment, false); // use position-dependent weights
+    cs::AlignmentProfile profile(alignment, true); // use position-dependent weights
     ASSERT_EQ(0.25, profile(3, na->ctoi('A')));
 
     profile.convert_to_counts();
 
     EXPECT_TRUE(profile.has_counts());
     EXPECT_EQ(0.25*profile.neff(3), profile(3, na->ctoi('A')));
+}
+
+TEST(AlignmentProfileTest, RealAlignment1ena)
+{
+    cs::AminoAcidAlphabet* aa = cs::AminoAcidAlphabet::instance();
+    std::ifstream file;
+    file.open("../data/1ena.fas");
+    cs::Alignment alignment(file, aa);
+    file.close();
+    cs::AlignmentProfile profile(alignment, true); // use position-dependent weights
+
+    ASSERT_TRUE(profile(0, aa->ctoi('L')) > 0.8);
 }
 

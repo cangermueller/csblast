@@ -17,7 +17,7 @@
 GTEST_DIR = ../../../lib/gtest
 
 # Where to find user code.
-USER_DIR = 
+USER_DIR = .
 
 # Compiler to use
 CXX = g++

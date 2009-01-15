@@ -89,7 +89,7 @@ void Profile::unserialize(std::istream& in)
         ndim_ = atoi(buffer+4);
     else
         throw MyException("Bad format: serialized profile does not contain 'ndim' record!");
-    if (ndim_ != alphabet_->size()-1)
+    if (ndim_ != alphabet_->size() - 1)
         throw MyException("Bad format: ndim=%i does not fit with provided alphabet!", ndim_);
 
     // Read column data records line by line
