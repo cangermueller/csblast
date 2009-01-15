@@ -6,6 +6,7 @@
 #include "profile.h"
 
 #include <cmath>
+#include <cstring>
 
 #include <iostream>
 
@@ -18,8 +19,6 @@
 
 namespace cs
 {
-
-const char Profile::kClass[] = "Profile";
 
 Profile::Profile(const SequenceAlphabet* alphabet)
         : ncols_(0),
@@ -77,44 +76,49 @@ void Profile::unserialize(std::istream& in)
     // Check if stream actually contains a serialized profile
     while (in.getline(buffer, kBufferSize) && !strscn(buffer)) continue;
     if (strcmp(buffer, "Profile") != 0)
-        throw MyException("Bad format: serialized profile does not start with '%x' class identifier!", kClass);
+        throw MyException("Bad format: serialized profile does not start with 'Profile' class identifier!");
+
+    // Read ncols
+    if (in.getline(buffer, kBufferSize) && strncmp(buffer, "ncols", 5) == 0)
+        ncols_ = atoi(buffer+5);
+    else
+        throw MyException("Bad format: serialized profile does not contain 'ncols' record!");
+
+    // Read ndim
+    if (in.getline(buffer, kBufferSize) && strncmp(buffer, "ndim", 4) == 0)
+        ndim_ = atoi(buffer+4);
+    else
+        throw MyException("Bad format: serialized profile does not contain 'ndim' record!");
+    if (ndim_ != alphabet_->size()-1)
+        throw MyException("Bad format: ndim=%i does not fit with provided alphabet!", ndim_);
 
     // Read column data records line by line
-    std::vector< std::vector<int> > data;
-    std::vector<int> column;
-    int i_prev = 0;  // index of previous column
+    resize(ncols_, ndim_);
+    in.getline(buffer, kBufferSize);  // Skip description line
+    const char* ptr;  // for string traversal
+    int i = 0;        // column index
     while (in.getline(buffer, kBufferSize)) {
-        int len = strlen(buffer);
-        if (!strscn(buffer) || len > 0 && buffer[0] == '#') continue;
-        if (len > 1 && buffer[0] == '/' && buffer[1] == '/') break;
+        if (!strscn(buffer)) continue;
+        if (strlen(buffer) > 1 && buffer[0] == '/' && buffer[1] == '/') break;
 
-        const char* ptr = buffer;
-        std::vector<int> column;
-        column.reserve(alphabet_->size()-1);
-        int i = strtoi(ptr);
-        if(i != i_prev+1)
-            throw MyException("Bad format: column record %i is followed by column record %i!", i_prev, i);
-        while ((ptr = strscn(ptr)))  //read column values one by one
-            column.push_back(strtoi_asterix(ptr));
-        if(static_cast<int>(column.size()) != alphabet_->size()-1)
-            throw MyException("Bad format: column record contains %i values but should have %i!",
-                              static_cast<int>(column.size()), alphabet_->size()-1);
-        data.push_back(column);
-        std::vector<int>().swap(column);  //clear for next use
-        i_prev = i;
+        ptr = buffer;
+        i = strtoi(ptr)-1;
+        if (!ptr)
+            throw MyException("Bad format: malformed line after column record %i!", i-1);
+
+        for (int a = 0; a < ndim_; ++a) {
+            int logval = strtoi_asterix(ptr);
+            (*this)(i,a) = pow(2.0, static_cast<float>(-logval) / kScaleFactor);
+        }
     }
-
-    //transform data to lin space anf fill profile matrix
-    resize(data.size(), alphabet_->size()-1);
-    for (int i = 0; i < ncols_; ++i)
-        for (int j = 0; j < ndim_; ++j)
-            (*this)(i,j) = pow(2.0, static_cast<float>(-data[i][j]) / kScaleFactor);
+    if (i != ncols_-1)
+        throw MyException("Bad format: profile has %i column records but should have %i!", i+1, ncols_);
 }
 
 void Profile::serialize(std::ostream& out) const
 {
     // print identifier and header with character alphabet
-    out << kClass << "\n#";
+    out << "Profile\n" << "ncols\t" << ncols_ << "\nndim\t" << ndim_ << std::endl;
     for (int j = 0; j < ndim_; ++j)
         out << "\t" << alphabet_->itoc(j);
     out << std::endl;
@@ -130,7 +134,7 @@ void Profile::serialize(std::ostream& out) const
         }
         out << std::endl;
     }
-    out << "//\n";
+    out << "//" << std::endl;
 }
 
 void Profile::resize(int ncols, int ndim)

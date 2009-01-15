@@ -12,7 +12,9 @@ TEST(ProfileTest, ConstructionFromInputStream)
 {
     std::string data;
     data.append("Profile\n");
-    data.append("#\tA\tC\tG\tT\n");
+    data.append("ncols\t6\n");
+    data.append("ndim\t4\n");
+    data.append("\tA\tC\tG\tT\n");
     data.append("1\t0\t*\t*\t*\n");
     data.append("2\t*\t0\t*\t*\n");
     data.append("3\t*\t*\t0\t*\n");
@@ -33,7 +35,9 @@ TEST(ProfileTest, ConstructionOfMultipleProfilesFromInputStream)
 {
     std::string data;
     data.append("Profile\n");
-    data.append("#\tA\tC\tG\tT\n");
+    data.append("ncols\t6\n");
+    data.append("ndim\t4\n");
+    data.append("\tA\tC\tG\tT\n");
     data.append("1\t0\t*\t*\t*\n");
     data.append("2\t*\t0\t*\t*\n");
     data.append("3\t*\t*\t0\t*\n");
@@ -60,7 +64,9 @@ TEST(ProfileTest, ConstructionOfSubprofile)
 {
     std::string data;
     data.append("Profile\n");
-    data.append("#\tA\tC\tG\tT\n");
+    data.append("ncols\t3\n");
+    data.append("ndim\t4\n");
+    data.append("\tA\tC\tG\tT\n");
     data.append("1\t0\t*\t*\t*\n");
     data.append("2\t*\t0\t*\t*\n");
     data.append("3\t*\t*\t0\t*\n");

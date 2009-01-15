@@ -13,13 +13,16 @@ TEST(AlignmentProfileTest, ConstructionFromInputStream)
     std::string data;
     data.append("AlignmentProfile\n");
     data.append("Profile\n");
-    data.append("#\tA\tC\tG\tT\n");
+    data.append("ncols\t4\n");
+    data.append("ndim\t4\n");
+    data.append("\tA\tC\tG\tT\n");
     data.append("1\t0\t*\t*\t*\n");
     data.append("2\t*\t0\t*\t*\n");
     data.append("3\t*\t*\t0\t*\n");
     data.append("4\t*\t*\t*\t0\n");
     data.append("//\n");
-    data.append("#\tNEFF\n");
+    data.append("has_counts\t0\n");
+    data.append("\tneff\n");
     data.append("1\t0\n");
     data.append("2\t0\n");
     data.append("3\t0\n");
@@ -33,6 +36,7 @@ TEST(AlignmentProfileTest, ConstructionFromInputStream)
     EXPECT_EQ(4, profile.ndim());
     EXPECT_EQ(1.0f, profile(0,0));
     EXPECT_EQ(0.0f, profile(1,0));
+    EXPECT_FALSE(profile.has_counts());
 }
 
 TEST(AlignmentProfileTest, ConstructionFromAlignment)

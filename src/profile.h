@@ -62,9 +62,6 @@ class Profile
     void resize(int ncols, int ndim);
 
   private:
-    // Class identifier for serialization
-    static const char kClass[];
-
     // Disallow copy and assign
     Profile(const Profile&);
     void operator=(const Profile&);

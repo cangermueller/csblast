@@ -22,7 +22,7 @@ protected:
     AminoAcidAlphabet();
     ~AminoAcidAlphabet();
 
-    virtual void unserialize_itoc();
+    virtual void init_itoc();
 
 private:
     // Disallow copy and assign

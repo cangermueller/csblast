@@ -54,17 +54,14 @@ class AlignmentProfile : public Profile
     virtual void serialize(std::ostream& out) const;
 
   private:
-    // Class identifier for serialization
-    static const char kClass[];
-
     // Disallow copy and assign
     AlignmentProfile(const AlignmentProfile&);
     void operator=(const AlignmentProfile&);
 
-    // Number of effective sequences in each alignment column.
-    std::vector<float> neff_;
     // Flag indicating if the profile contains counts or (relative) frequencies.
     bool has_counts_;
+    // Number of effective sequences in each alignment column.
+    std::vector<float> neff_;
 };//AlignmentProfile
 
 }//cs

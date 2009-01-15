@@ -19,8 +19,6 @@
 namespace cs
 {
 
-const char AlignmentProfile::kClass[] = "AlignmentProfile";
-
 AlignmentProfile::AlignmentProfile(std::istream& in, const SequenceAlphabet* alphabet)
         : Profile(alphabet),
           has_counts_(false)
@@ -110,53 +108,56 @@ void AlignmentProfile::unserialize(std::istream& in)
 
     // Check if stream actually contains a serialized alignment profile
     while (in.getline(buffer, kBufferSize) && !strscn(buffer)) continue;
-    if (strcmp(buffer, kClass) != 0)
-        throw MyException("Bad format: serialized profile does not start with '%x' class identifier!", kClass);
+    if (strcmp(buffer, "AlignmentProfile") != 0)
+        throw MyException("Bad format: serialized profile does not start with 'AlignmentProfile' class identifier!");
 
     Profile::unserialize(in);  // Initialize base class part
 
-    // read column data records line by line
-    std::vector<float>().swap(neff_);  //clear neff
-    int i_prev = 0;  // index of previous column
-    while (in.getline(buffer, kBufferSize)) {
-        int len = strlen(buffer);
-        if (!strscn(buffer) || len > 0 && buffer[0] == '#') continue;
-        if (len > 1 && buffer[0] == '/' && buffer[1] == '/') break;
+    // Read has_counts
+    if (in.getline(buffer, kBufferSize) && strncmp(buffer, "has_counts", 10) == 0)
+        has_counts_ = atoi(buffer+10) == 1;
 
-        const char* ptr = buffer;
-        int i = strtoi(ptr);
-        if(i != i_prev+1)
-            throw MyException("Bad format: column record %i is followed by column record %i!", i_prev, i);
-        ptr = strscn(ptr); // advance pointer to integer
-        neff_.push_back(strtoi_asterix(ptr));
-        i_prev = i;
+    // read column data records line by line
+    neff_.resize(ncols());
+    in.getline(buffer, kBufferSize);  // Skip description line
+    const char* ptr;  // for string traversal
+    int i = 0;        // column index
+    while (in.getline(buffer, kBufferSize)) {
+        if (!strscn(buffer)) continue;
+        if (strlen(buffer) > 1 && buffer[0] == '/' && buffer[1] == '/' || buffer[0] == '#') break;
+
+        ptr = buffer;
+        i = strtoi(ptr)-1;
+        if (!ptr)
+            throw MyException("Bad format: malformed line after neff record %i!", i-1);
+
+        int logval = strtoi_asterix(ptr);
+        neff_[i] = pow(2.0, static_cast<float>(-logval) / kScaleFactor);
     }
-    if(static_cast<int>(neff_.size()) != ncols())
-            throw MyException("Bad format: found %i number of effective sequences but alignment profile has %i columns!",
-                              neff_.size(), ncols());
-    // transform neff to lin space
-    for (int i = 0; i < ncols(); ++i)
-        neff_[i] = pow(2.0, static_cast<float>(-neff_[i]) / kScaleFactor);
+    if (i != ncols()-1)
+        throw MyException("Bad format: neff vector has %i column records but should have %i!", i+1, ncols());
+
+    std::cout << *this;
 }
 
 void AlignmentProfile::serialize(std::ostream& out) const
 {
-    out << kClass << std::endl;
-    Profile::serialize(out);  // Print the base class part
+    out << "AlignmentProfile" << std::endl;
+    Profile::serialize(out);  // Print the profile part
 
-    // print header with character alphabet
-    out << "#\tNEFF\n";
+    // print has_counts
+    out << "has_counts\t" << (has_counts_ ? 1 : 0) << std::endl;
+    // print neff vector
+    out << "\tneff\n";
     // print number of effective sequences in log representation
     for (int i = 0; i < ncols(); ++i) {
-        out << i+1;
         double logval = log2(neff_[i]);
         if (-logval == std::numeric_limits<double>::infinity())
-            out << "\t*";
+            out << i+1 << "\t*" << std::endl;
         else
-            out << "\t" << -iround(logval * kScaleFactor);
-        out << std::endl;
+            out << i+1 << "\t" << -iround(logval * kScaleFactor) << std::endl;
     }
-    out << "//\n";
+    out << "//" << std::endl;;
 }
 
 }//cs
