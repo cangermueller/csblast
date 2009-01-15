@@ -136,8 +136,6 @@ void AlignmentProfile::unserialize(std::istream& in)
     }
     if (i != ncols()-1)
         throw MyException("Bad format: neff vector has %i column records but should have %i!", i+1, ncols());
-
-    std::cout << *this;
 }
 
 void AlignmentProfile::serialize(std::ostream& out) const
