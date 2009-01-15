@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "amino_acid_alphabet.h"
-#include "nucleic_acid_alphabet.h"
+#include "nucleotide_alphabet.h"
 #include "sequence.h"
 #include "smart_ptr.h"
 
@@ -32,7 +32,7 @@ TEST(SequenceTest, ConstructionFromAlphabetVector)
 
 TEST(SequenceTest, ConstructionFromInputStream)
 {
-    cs::NucleicAcidAlphabet* na = cs::NucleicAcidAlphabet::instance();
+    cs::NucleotideAlphabet* na = cs::NucleotideAlphabet::instance();
     std::istringstream ss(">dummy header\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTAC");
     cs::Sequence sequence(ss, na);
 
@@ -43,7 +43,7 @@ TEST(SequenceTest, ConstructionFromInputStream)
 
 TEST(SequenceTest, ConstructionOfMultipleSequencesFromInputStream)
 {
-    cs::NucleicAcidAlphabet* na = cs::NucleicAcidAlphabet::instance();
+    cs::NucleotideAlphabet* na = cs::NucleotideAlphabet::instance();
     std::string data;
     data.append(">seq1\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
     data.append(">seq2\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");

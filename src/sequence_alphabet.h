@@ -43,20 +43,21 @@ protected:
 
     // Initializes ctoi and itoc conversion arrays.
     void init();
-    // Initializes itoc conversion array. Should be implemented by derived classes.
-    // Note: Last element in itoc_ should be the ANY character.
-    virtual void init_itoc() = 0;
+    // Allows derived classes to set additional ctoi conversions.
+    void set_ctoi(char c, int i) { ctoi_[c] = i; }
+    // Gets ctoi conversion array from derived class.
+    virtual const char* get_itoc() const = 0;
+
+private:
+    // Disallow copy and assign
+    SequenceAlphabet(const SequenceAlphabet& other);
+    SequenceAlphabet& operator =(const SequenceAlphabet& other);
 
     // Conversion array from character to iteger representation.
     std::vector<int> ctoi_;
     // Conversion array from integer to character representation. Last element is
     // ANY character.
     std::vector<char> itoc_;
-
-private:
-    // Disallow copy and assign
-    SequenceAlphabet(const SequenceAlphabet& other);
-    SequenceAlphabet& operator =(const SequenceAlphabet& other);
 };
 
 }//cs

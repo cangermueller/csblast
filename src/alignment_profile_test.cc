@@ -6,7 +6,7 @@
 #include <sstream>
 
 #include "amino_acid_alphabet.h"
-#include "nucleic_acid_alphabet.h"
+#include "nucleotide_alphabet.h"
 #include "alignment_profile.h"
 #include "smart_ptr.h"
 
@@ -17,20 +17,20 @@ TEST(AlignmentProfileTest, ConstructionFromInputStream)
     std::string data;
     data.append("AlignmentProfile\n");
     data.append("ncols\t4\n");
-    data.append("ndim\t4\n");
+    data.append("ndim\t14\n");
     data.append("has_counts\t0\n");
-    data.append(" \tA\tC\tG\tT\tneff\n");
-    data.append("1\t0\t*\t*\t*\t0\n");
-    data.append("2\t*\t0\t*\t*\t0\n");
-    data.append("3\t*\t*\t0\t*\t0\n");
-    data.append("4\t*\t*\t*\t0\t0\n");
+    data.append(" \tA\tC\tG\tT\tR\tY\tS\tW\tK\tM\tB\tD\tH\tV\tneff\n");
+    data.append("1\t0\t*\t*\t*\t0\t0\t*\t*\t*\t0\t*\t*\t*\t0\t*\n");
+    data.append("2\t*\t0\t*\t*\t0\t0\t*\t*\t*\t0\t*\t*\t*\t0\t*\n");
+    data.append("3\t*\t*\t0\t*\t0\t0\t*\t*\t*\t0\t*\t*\t*\t0\t*\n");
+    data.append("4\t*\t*\t*\t0\t0\t0\t*\t*\t*\t0\t*\t*\t*\t0\t*\n");
     data.append("//\n");
     std::istringstream ss(data);
 
-    cs::AlignmentProfile profile(ss, cs::NucleicAcidAlphabet::instance());
+    cs::AlignmentProfile profile(ss, cs::NucleotideAlphabet::instance());
 
     EXPECT_EQ(4, profile.ncols());
-    EXPECT_EQ(4, profile.ndim());
+    EXPECT_EQ(14, profile.ndim());
     EXPECT_FLOAT_EQ(1.0f, profile(0,0));
     EXPECT_FLOAT_EQ(0.0f, profile(1,0));
     EXPECT_FALSE(profile.has_counts());
@@ -38,7 +38,7 @@ TEST(AlignmentProfileTest, ConstructionFromInputStream)
 
 TEST(AlignmentProfileTest, ConstructionFromAlignment)
 {
-    cs::NucleicAcidAlphabet* na = cs::NucleicAcidAlphabet::instance();
+    cs::NucleotideAlphabet* na = cs::NucleotideAlphabet::instance();
     std::string data;
     data.append(">seq1\nACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTAC\n");
     data.append(">seq2\nACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTAC\n");
@@ -58,7 +58,7 @@ TEST(AlignmentProfileTest, ConstructionFromAlignment)
 
 TEST(AlignmentProfileTest, ConversionToCounts)
 {
-    cs::NucleicAcidAlphabet* na = cs::NucleicAcidAlphabet::instance();
+    cs::NucleotideAlphabet* na = cs::NucleotideAlphabet::instance();
     std::string data;
     data.append(">seq1\nACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTAC\n");
     data.append(">seq2\nTACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTA\n");
@@ -100,7 +100,7 @@ TEST(AlignmentProfileTest, DISABLED_Alignment1Q7L)
 
 TEST(AlignmentProfileTest, AlignmentCelegansRefGene)
 {
-    cs::NucleicAcidAlphabet* aa = cs::NucleicAcidAlphabet::instance();
+    cs::NucleotideAlphabet* aa = cs::NucleotideAlphabet::instance();
     std::ifstream fin("../data/ce_refgene.fas");
     cs::Alignment alignment(fin, aa);
     fin.close();

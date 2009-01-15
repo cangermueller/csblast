@@ -15,16 +15,19 @@ namespace cs
 
 class AminoAcidAlphabet : public SequenceAlphabet
 {
-public:
+  public:
     static AminoAcidAlphabet* instance();
 
-protected:
+  protected:
+    // Gets ctoi conversion array from derived class.
+    virtual const char* get_itoc() const { return amino_acids_; }
+
+  private:
+    // IUPAC amino acid code
+    static const char amino_acids_[];
+
     AminoAcidAlphabet();
-    ~AminoAcidAlphabet();
-
-    virtual void init_itoc();
-
-private:
+    ~AminoAcidAlphabet() {}
     // Disallow copy and assign
     AminoAcidAlphabet(const AminoAcidAlphabet& );
     AminoAcidAlphabet& operator =(const AminoAcidAlphabet& other);

@@ -7,6 +7,8 @@
 
 #include <cmath>
 #include <cstddef>
+#include <cstring>
+#include <iostream>
 
 #include <vector>
 
@@ -15,13 +17,15 @@ namespace cs
 
 void SequenceAlphabet::init()
 {
-    std::vector<char>().swap(itoc_); // clear and minimize capazity
-    init_itoc(); //subclasses define their alphabet and its integer representation
+    std::vector<char>().swap(itoc_);  // clear and minimize capazity
 
-    const int ctoi_size = static_cast<int>(pow(2, 8*sizeof(char)));
-    ctoi_ = std::vector<int>(ctoi_size, kInvalidChar);
+    const char* itoc = get_itoc();  // derived classes decide how to fil itoc array
+    itoc_.insert(itoc_.begin(), itoc, itoc + strlen(itoc));
+
+    const int ctoi_size = static_cast<int>( pow(2, 8*sizeof(char)) );
     const int itoc_size = itoc_.size();
-    for(int i = 0; i < itoc_size; ++i) ctoi_[static_cast<int>(itoc_[i])]=i;
+    ctoi_ = std::vector<int>(ctoi_size, kInvalidChar);
+    for (int i = 0; i < itoc_size; ++i) ctoi_[static_cast<int>(itoc_[i])]=i;
 }
 
 }//cs

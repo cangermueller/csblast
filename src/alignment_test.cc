@@ -8,11 +8,11 @@
 
 #include "alignment.h"
 #include "matrix.h"
-#include "nucleic_acid_alphabet.h"
+#include "nucleotide_alphabet.h"
 
 TEST(AlignmentTest, ConstructionFromInputStream)
 {
-    cs::NucleicAcidAlphabet* na = cs::NucleicAcidAlphabet::instance();
+    cs::NucleotideAlphabet* na = cs::NucleotideAlphabet::instance();
     std::string data;
     data.append(">seq1\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACA---ACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
     data.append(">seq2\nACGT--GTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTA---GTACGT--\n");
@@ -29,7 +29,7 @@ TEST(AlignmentTest, ConstructionFromInputStream)
 
 TEST(AlignmentTest, CalculationOfGlobalWeights)
 {
-    cs::NucleicAcidAlphabet* na = cs::NucleicAcidAlphabet::instance();
+    cs::NucleotideAlphabet* na = cs::NucleotideAlphabet::instance();
     std::string data;
     data.append(">seq1\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
     data.append(">seq2\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
@@ -50,7 +50,7 @@ TEST(AlignmentTest, CalculationOfGlobalWeights)
 
 TEST(AlignmentTest, CalculationOfPositionDependentWeights)
 {
-    cs::NucleicAcidAlphabet* na = cs::NucleicAcidAlphabet::instance();
+    cs::NucleotideAlphabet* na = cs::NucleotideAlphabet::instance();
     std::string data;
     data.append(">seq1\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
     data.append(">seq2\nACGTTACGTACACGTACGTACACGTACGTA\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
@@ -69,7 +69,7 @@ TEST(AlignmentTest, CalculationOfPositionDependentWeights)
 
 TEST(AlignmentTest, ConstructionFromCelegansRefGene)
 {
-    cs::NucleicAcidAlphabet* na = cs::NucleicAcidAlphabet::instance();
+    cs::NucleotideAlphabet* na = cs::NucleotideAlphabet::instance();
     std::ifstream fin("../data/ce_refgene.fas");
     cs::Alignment alignment(fin, na);
     fin.close();
