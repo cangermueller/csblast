@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include <fstream>
 #include <string>
 #include <sstream>
 #include <utility>
@@ -43,8 +44,8 @@ TEST(AlignmentTest, CalculationOfGlobalWeights)
     std::pair<std::vector<float>, float> wg_neff = cs::global_weights_and_diversity(alignment);
 
     EXPECT_EQ(4, static_cast<int>(wg_neff.first.size()));
-    EXPECT_EQ(0.25, wg_neff.first[0]);
-    EXPECT_EQ(1.0, wg_neff.second);
+    EXPECT_FLOAT_EQ(0.25, wg_neff.first[0]);
+    EXPECT_FLOAT_EQ(1.0, wg_neff.second);
 }
 
 TEST(AlignmentTest, CalculationOfPositionDependentWeights)
@@ -63,5 +64,17 @@ TEST(AlignmentTest, CalculationOfPositionDependentWeights)
 
     std::pair< Matrix<float>, std::vector<float> > wi_neff = cs::position_dependent_weights_and_diversity(alignment);
 
-    EXPECT_EQ(0.5, wi_neff.first(0,0));
+    EXPECT_FLOAT_EQ(0.5, wi_neff.first(0,0));
 }
+
+TEST(AlignmentTest, ConstructionFromCelegansRefGene)
+{
+    cs::NucleicAcidAlphabet* na = cs::NucleicAcidAlphabet::instance();
+    std::ifstream fin("../data/ce_refgene.fas");
+    cs::Alignment alignment(fin, na);
+    fin.close();
+
+    EXPECT_EQ(na->ctoi('C'), alignment(0,0));
+}
+
+

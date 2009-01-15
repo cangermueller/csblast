@@ -27,8 +27,8 @@ TEST(ProfileTest, ConstructionFromInputStream)
 
     EXPECT_EQ(6, profile.ncols());
     EXPECT_EQ(4, profile.ndim());
-    EXPECT_EQ(1.0f, profile(0,0));
-    EXPECT_EQ(0.0f, profile(1,0));
+    EXPECT_FLOAT_EQ(1.0f, profile(0,0));
+    EXPECT_FLOAT_EQ(0.0f, profile(1,0));
 }
 
 TEST(ProfileTest, ConstructionOfMultipleProfilesFromInputStream)
@@ -54,10 +54,10 @@ TEST(ProfileTest, ConstructionOfMultipleProfilesFromInputStream)
     EXPECT_EQ(4, (*profiles[0]).ndim());
     EXPECT_EQ(6, (*profiles[1]).ncols());
     EXPECT_EQ(4, (*profiles[1]).ndim());
-    EXPECT_EQ(1.0f, (*profiles[0])(0,0));
-    EXPECT_EQ(0.0f, (*profiles[0])(1,0));
-    EXPECT_EQ(1.0f, (*profiles[1])(0,0));
-    EXPECT_EQ(0.0f, (*profiles[1])(1,0));
+    EXPECT_FLOAT_EQ(1.0f, (*profiles[0])(0,0));
+    EXPECT_FLOAT_EQ(0.0f, (*profiles[0])(1,0));
+    EXPECT_FLOAT_EQ(1.0f, (*profiles[1])(0,0));
+    EXPECT_FLOAT_EQ(0.0f, (*profiles[1])(1,0));
 }
 
 TEST(ProfileTest, ConstructionOfSubprofile)
@@ -77,6 +77,6 @@ TEST(ProfileTest, ConstructionOfSubprofile)
 
     EXPECT_EQ(2, subprofile.ncols());
     EXPECT_EQ(4, subprofile.ndim());
-    EXPECT_EQ(0.0f, subprofile(0,0));
-    EXPECT_EQ(1.0f, subprofile(0,1));
+    EXPECT_FLOAT_EQ(0.0f, subprofile(0,0));
+    EXPECT_FLOAT_EQ(1.0f, subprofile(0,1));
 }
