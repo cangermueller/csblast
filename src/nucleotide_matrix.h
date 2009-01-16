@@ -1,5 +1,5 @@
-#ifndef CS_BLOSUM_MATRIX_H
-#define CS_BLOSUM_MATRIX_H
+#ifndef CS_NUCLEOTIDE_MATRIX_H
+#define CS_NUCLEOTIDE_MATRIX_H
 /***************************************************************************
  *   Copyright (C) 2008 by Andreas Biegert                                 *
  *   andreas.biegert@googlemail.com                                        *
@@ -15,25 +15,28 @@
 namespace cs
 {
 
-class BlosumMatrix : public SubstitutionMatrix
+class NucleotideMatrix : public SubstitutionMatrix
 {
   public:
     enum Type {
-        BLOSUM45 = 0,
-        BLOSUM62 = 1,
-        BLOSUM80 = 2
+        MATCH1_MISMATCH1 = 0,
+        MATCH1_MISMATCH2 = 1,
+        MATCH1_MISMATCH3 = 2,
+        MATCH1_MISMATCH4 = 3,
+        MATCH3_MISMATCH3 = 4,
+        MATCH4_MISMATCH5 = 5
     };
 
-    BlosumMatrix(Type matrix = BLOSUM62);
-    ~BlosumMatrix() {}
+    NucleotideMatrix(Type matrix = MATCH1_MISMATCH2);
+    ~NucleotideMatrix() {}
 
 private:
     // Disallow copy and assign.
-    BlosumMatrix(const BlosumMatrix& other);
-    BlosumMatrix operator =(const BlosumMatrix& other);
+    NucleotideMatrix(const NucleotideMatrix& other);
+    NucleotideMatrix operator =(const NucleotideMatrix& other);
 
     // Initializes all matrix data members.
-    void init(const float* blosum_xx);
+    void init(float match, float mismatch, const float* m);
 };
 
 }//cs

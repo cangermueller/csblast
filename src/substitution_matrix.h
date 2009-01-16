@@ -8,6 +8,8 @@
 // DESCRIPTION:
 // Abstract base class for substitution matrix classes.
 
+#include <cmath>
+
 #include <vector>
 
 #include "matrix.h"
@@ -18,11 +20,11 @@ namespace cs
 class SubstitutionMatrix
 {
   public:
-    // Return substitution score s(a,b).
+    // Return substitution score S(a,b).
     float s(int a, int b) const { return s_(a,b); }
-    // Returns joint probability p(a,b).
+    // Returns joint probability P(a,b).
     float p(int a, int b) const { return p_(a,b); }
-    // Returns probability p(a|b) "a given b".
+    // Returns probability P(a|b) "a given b".
     float r(int a, int b) const { return r_(a,b); }
     // Returns background frequency of a.
     float f(int a) const { return f_[a]; }
@@ -35,16 +37,16 @@ protected:
     SubstitutionMatrix(int size);
     ~SubstitutionMatrix() {}
 
-    // Initializes other matrix data members from matrix p_. Can be called by constructors in derived classes.
+    // Initializes other matrix data members from matrix P.
     void init_from_target_frequencies();
-    // Initializes other matrix data members from score matrix s_. Can be called by constructors in derived classes.
-    void init_from_score_matrix();
+    // Initializes other matrix data members from substitution matrix S and background frequencies.
+    void init_from_substitution_matrix_and_background_frequencies();
 
     // Size of the matrix.
     const int size_;
-    // Target frequency matrix p(a,b).
+    // Target frequency matrix P(a,b).
     Matrix<float> p_;
-    // Substitution matrix s(a,b).
+    // Substitution matrix S(a,b).
     Matrix<float> s_;
     // "a given b" probability matrix.
     Matrix<float> r_;
@@ -55,6 +57,8 @@ private:
     // Disallow copy and assign.
     SubstitutionMatrix(const SubstitutionMatrix& other);
     SubstitutionMatrix operator =(const SubstitutionMatrix& other);
+
+    void print_debug() const;
 };
 
 }//cs

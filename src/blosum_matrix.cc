@@ -11,7 +11,7 @@
 namespace
 {
 
-const float g_blosum45[]= {
+const float g_blosum45[] = {
     //A    R      N      D      C      Q      E      G      H      I      L      K      M      F      P      S      T      W      Y      V
     0.0181,
     0.0029,0.0130,
@@ -34,7 +34,7 @@ const float g_blosum45[]= {
     0.0017,0.0014,0.0009,0.0011,0.0004,0.0010,0.0012,0.0014,0.0012,0.0019,0.0031,0.0015,0.0009,0.0034,0.0007,0.0015,0.0013,0.0008,0.0066,
     0.0055,0.0021,0.0016,0.0017,0.0012,0.0014,0.0023,0.0025,0.0008,0.0094,0.0088,0.0025,0.0022,0.0031,0.0016,0.0031,0.0038,0.0004,0.0019,0.0141 };
 
-const float g_blosum62[]= {
+const float g_blosum62[] = {
     //A    R      N      D      C      Q      E      G      H      I      L      K      M      F      P      S      T      W      Y      V
     0.0215,
     0.0023,0.0178,
@@ -57,7 +57,7 @@ const float g_blosum62[]= {
     0.0013,0.0009,0.0007,0.0006,0.0003,0.0007,0.0009,0.0008,0.0015,0.0014,0.0022,0.0010,0.0006,0.0042,0.0005,0.0010,0.0009,0.0009,0.0102,
     0.0051,0.0016,0.0012,0.0013,0.0014,0.0012,0.0017,0.0018,0.0006,0.0120,0.0095,0.0019,0.0023,0.0026,0.0012,0.0024,0.0036,0.0004,0.0015,0.0196 };
 
-const float g_blosum80[]= {
+const float g_blosum80[] = {
     //A    R      N      D      C      Q      E      G      H      I      L      K      M      F      P      S      T      W      Y      V
     0.0252,
     0.0020,0.0210,
@@ -90,30 +90,33 @@ BlosumMatrix::BlosumMatrix(Type matrix)
 {
     switch (matrix) {
         case BLOSUM45:
-            set_target_frequencies(g_blosum45);
+            init(g_blosum45);
             break;
         case BLOSUM62:
-            set_target_frequencies(g_blosum62);
+            init(g_blosum62);
             break;
         case BLOSUM80:
-            set_target_frequencies(g_blosum80);
+            init(g_blosum80);
             break;
         default:
             throw MyException("Unsupported BLOSUM matrix!");
     }
-    init_from_target_frequencies();
 }
 
-void BlosumMatrix::set_target_frequencies(const float* blosum_xx)
+void BlosumMatrix::init(const float* blosum_xx)
 {
+    // Read raw BLOSUM data vector
     int n = 0;
     for (int a = 0; a < size_; ++a)
         for (int b = 0; b <= a; ++b, ++n)
             p_(a,b) = blosum_xx[n];
 
+    // Add uppper right matrix part
     for (int a = 0; a < size_-1; ++a)
         for (int b = a+1; b < size_; ++b)
             p_(a,b) = p_(b,a);
+
+    init_from_target_frequencies();
 }
 
 }  // cs
