@@ -6,7 +6,7 @@
  ***************************************************************************/
 
 // DESCRIPTION:
-// Abstract interface for alphabet classes whose elements can be represented
+// Abstract base class for alphabet classes whose elements can be represented
 // by a sequence of characters (e.g. amino acids or nucleic acids).
 
 #include <vector>
@@ -16,11 +16,8 @@ namespace cs
 
 class SequenceAlphabet
 {
-public:
+  public:
     typedef std::vector<char>::const_iterator const_iterator;
-
-    SequenceAlphabet() {}
-    virtual ~SequenceAlphabet() {}
 
     // Returns true if the character belongs to the alphabet.
     bool valid(char letter) const { return ctoi_[letter] != kInvalidChar; }
@@ -37,7 +34,7 @@ public:
     const_iterator begin() const { return itoc_.begin(); }
     const_iterator end() const { return itoc_.end(); }
 
-protected:
+  protected:
     // Denotes invalid characters in ctoi array
     static const int kInvalidChar = -1;
 
@@ -48,7 +45,7 @@ protected:
     // Gets ctoi conversion array from derived class.
     virtual const char* get_itoc() const = 0;
 
-private:
+  private:
     // Disallow copy and assign
     SequenceAlphabet(const SequenceAlphabet& other);
     SequenceAlphabet& operator =(const SequenceAlphabet& other);
