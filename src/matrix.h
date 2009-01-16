@@ -38,7 +38,7 @@ class Matrix {
 
 template<typename T>
 Matrix<T>::Matrix(int nrows, int ncols)
-    : nrows_(nrows), ncols_(ncols), data_(nrows * ncols)
+        : nrows_(nrows), ncols_(ncols), data_(nrows * ncols)
 {
     if (nrows == 0 || ncols == 0)
         throw MyException("Bad size arguments for matrix: nrows=%i ncols=%i", nrows, ncols);
@@ -46,13 +46,10 @@ Matrix<T>::Matrix(int nrows, int ncols)
 
 template<typename T>
 Matrix<T>::Matrix(int nrows, int ncols, const T& val)
-    : nrows_(nrows), ncols_(ncols), data_(nrows * ncols)
+        : nrows_(nrows), ncols_(ncols), data_(nrows * ncols, val)
 {
     if (nrows == 0 || ncols == 0)
         throw MyException("Bad size arguments for matrix: nrows=%i ncols=%i", nrows, ncols);
-    for (int i = 0; i < nrows_; ++i)
-        for (int j = 0; j < ncols_; ++j)
-            (*this)(i,j) = val;
 }
 
 template<typename T>

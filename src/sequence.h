@@ -77,10 +77,13 @@ class Sequence
     // Convert the sequence in character representation to integer representation.
     void check_and_convert();
 
+    // The underlying alphabet of the sequence.
     const SequenceAlphabet* alphabet_;
+    // The header without leading '>'.
     std::string header_;
+    // The sequence itself in integer representation.
     std::vector<char> sequence_;
-};//Sequence
+};  // Sequence
 
 
 

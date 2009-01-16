@@ -8,14 +8,18 @@
 namespace cs
 {
 
-const char AminoAcidAlphabet::amino_acids_[] = "ARNDCQEGHILKMFPSTWYVBJZX";
+const char AminoAcidAlphabet::amino_acids_[] = "ARNDCQEGHILKMFPSTWYVX";
 
 AminoAcidAlphabet::AminoAcidAlphabet()
+        : SequenceAlphabet(21)
 {
     init();
     // Conversion of non-standard amino acids to integers
     set_ctoi('O', any());
+    set_ctoi('J', any());
     set_ctoi('U', ctoi('C'));
+    set_ctoi('B', ctoi('D'));
+    set_ctoi('Z', ctoi('E'));
 }
 
 AminoAcidAlphabet* AminoAcidAlphabet::instance()

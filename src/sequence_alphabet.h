@@ -22,19 +22,22 @@ class SequenceAlphabet
     // Returns true if the character belongs to the alphabet.
     bool valid(char letter) const { return ctoi_[letter] != kInvalidChar; }
     // Returns the number of letters in the alphabet (incl. ANY)
-    int size() const { return itoc_.size(); }
+    int size() const { return size_; }
     // Returns the integer representation of the given character.
     int ctoi(char letter) const { return ctoi_[static_cast<int>(letter)]; }
     // Returns the character representation of the given integer.
     char itoc(int letter) const { return itoc_[letter]; }
     // Returns the integer representation of the any character.
-    int any() const { return ctoi_[itoc_[itoc_.size()-1]]; }
+    int any() const { return size_ - 1; }
     // Returns the any character.
-    int any_chr() const { return itoc_[itoc_.size()-1]; }
+    int any_chr() const { return itoc_[size_ - 1]; }
     const_iterator begin() const { return itoc_.begin(); }
     const_iterator end() const { return itoc_.end(); }
 
   protected:
+    SequenceAlphabet(int size);
+    ~SequenceAlphabet() {}
+
     // Denotes invalid characters in ctoi array
     static const int kInvalidChar = -1;
 
@@ -50,6 +53,8 @@ class SequenceAlphabet
     SequenceAlphabet(const SequenceAlphabet& other);
     SequenceAlphabet& operator =(const SequenceAlphabet& other);
 
+    // Size of alphabet (incl. ANY character)
+    const int size_;
     // Conversion array from character to iteger representation.
     std::vector<int> ctoi_;
     // Conversion array from integer to character representation. Last element is

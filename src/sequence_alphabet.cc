@@ -10,22 +10,27 @@
 #include <cstring>
 #include <iostream>
 
+#include <algorithm>
 #include <vector>
+
+#include "my_exception.h"
 
 namespace cs
 {
 
+SequenceAlphabet::SequenceAlphabet(int size)
+        : size_(size),
+          ctoi_(static_cast<int>(pow(2, 8*sizeof(char))), kInvalidChar),
+          itoc_(size, '\0')
+{}
+
 void SequenceAlphabet::init()
 {
-    std::vector<char>().swap(itoc_);  // clear and minimize capazity
-
     const char* itoc = get_itoc();  // derived classes decide how to fil itoc array
-    itoc_.insert(itoc_.begin(), itoc, itoc + strlen(itoc));
-
-    const int ctoi_size = static_cast<int>( pow(2, 8*sizeof(char)) );
-    const int itoc_size = itoc_.size();
-    ctoi_ = std::vector<int>(ctoi_size, kInvalidChar);
-    for (int i = 0; i < itoc_size; ++i) ctoi_[static_cast<int>(itoc_[i])]=i;
+    if (static_cast<int>(strlen(itoc)) != size_)
+        throw MyException("Provided itoc array has length %i but should have length %i!", strlen(itoc), size_);
+    copy(itoc, itoc + strlen(itoc), itoc_.begin());
+    for (int i = 0; i < size_; ++i) ctoi_[static_cast<int>(itoc_[i])]=i;
 }
 
 }//cs

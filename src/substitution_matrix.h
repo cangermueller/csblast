@@ -31,12 +31,21 @@ class SubstitutionMatrix
     int size() const { return size_; }
 
 protected:
+    // To be used by derived classes.
+    SubstitutionMatrix(int size);
+    ~SubstitutionMatrix() {}
+
+    // Initializes other matrix data members from matrix p_. Can be called by constructors in derived classes.
+    void init_from_target_frequencies();
+    // Initializes other matrix data members from score matrix s_. Can be called by constructors in derived classes.
+    void init_from_score_matrix();
+
     // Size of the matrix.
-    int size_;
+    const int size_;
+    // Target frequency matrix p(a,b).
+    Matrix<float> p_;
     // Substitution matrix s(a,b).
     Matrix<float> s_;
-    // Joint probability matrix p(a,b).
-    Matrix<float> p_;
     // "a given b" probability matrix.
     Matrix<float> r_;
     // Background frequencies of alphabet.

@@ -8,9 +8,10 @@
 namespace cs
 {
 
-const char NucleotideAlphabet::nucleotides_[] = "ACGTRYSWKMBDHVN";
+const char NucleotideAlphabet::nucleotides_[] = "ACGTN";
 
 NucleotideAlphabet::NucleotideAlphabet()
+        : SequenceAlphabet(5)
 { init(); }
 
 NucleotideAlphabet* NucleotideAlphabet::instance()
