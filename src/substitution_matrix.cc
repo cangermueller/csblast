@@ -5,6 +5,19 @@
 
 #include "substitution_matrix.h"
 
+#include <cstdio>
+
+#include <iostream>
+
+#include "util.h"
+
+namespace
+{
+
+const bool kDebug = false;
+
+} // namespace
+
 namespace cs
 {
 
@@ -18,30 +31,42 @@ SubstitutionMatrix::SubstitutionMatrix(int size)
 
 void SubstitutionMatrix::init_from_target_frequencies()
 {
-    // // Check transition probability matrix, renormalize p and calculate f[a]
-    // float sumab = 0.0f;
-    // for (int a = 0; a <20; a++)
-    //     for (b=0; b<20; ++b) sumab+=P[a][b];
-    // for (a=0; a<20; a++)
-    //     for (b=0; b<20; ++b) P[a][b]/=sumab;
-    // for (a=0; a<20; a++)
-    // for (pb[a]=0.0f, b=0; b<20; ++b) pb[a]+=P[a][b];
+    // Check transition probability matrix, renormalize P and calculate f[a]
+    float sumab = 0.0f;
+    for (int a = 0; a < size_; a++)
+        for (int b = 0; b < size_; ++b) sumab += p_(a,b);
+    for (int a = 0; a < size_; ++a)
+         for (int b = 0; b < size_; ++b) p_(a,b) /= sumab;
 
-    // //Compute similarity matrix for amino acid pairs (for calculating consensus sequence)
-    // for (a=0; a<20; ++a)
-    //     for (b=0; b<20; ++b)
-    //   Sim[a][b] = P[a][b]*P[a][b]/P[a][a]/P[b][b];
+    // Calculate background frequencies
+    for (int a = 0; a < size_; ++a) {
+        f_[a] = 0.0f;
+        for (int b = 0; b < size_; ++b) f_[a] += p_(a,b);
+    }
 
-    // //Precompute matrix R for amino acid pseudocounts:
-    // for (a=0; a<20; ++a)
-    //     for (b=0; b<20; ++b)
-    //         R[a][b] = P[a][b]/pb[b]; //R[a][b]=P(a|b)
+    // Precompute matrix R for amino acid pseudocounts:
+    for (int a = 0; a < size_; ++a)
+        for (int b = 0; b < size_; ++b)
+            r_(a,b) = p_(a,b) / f_[b]; // R[a][b] = P(a|b)
 
-    // //Precompute matrix R for amino acid pseudocounts:
-    // for (a=0; a<20; ++a)
-    //     for (b=0; b<20; ++b)
-    //         S[a][b] = log2(R[a][b]/pb[a]); // S[a][b] = log2(P(a,b)/P(a)/P(b))
+    // Calculate scoring matrix
+    for (int a = 0; a < size_; ++a)
+        for (int b = 0; b < size_; ++b)
+            s_(a,b) = log2(r_(a,b) / f_[a]); // S[a][b] = log2(P(a,b) / P(a)*P(b))
 
+    if (kDebug) {  // Debugging: probability matrix and dissimilarity matrix
+        std::cerr << "Check matrix: before renormalization sum P(a,b)= " << sumab << std::endl;
+
+        std::cerr << "f[] ";
+        for (int a = 0; a < size_; ++a) fprintf(stderr, "%4.1f ", 100 * f_[a]);
+
+        std::cerr << std::endl << "\nSubstitution matrix log2( P(a,b) / p(a)*p(b) ) (in bits):\n";
+        for (int b = 0; b < size_; ++b) {
+            //            for (int a = 0; a < size_; ++a)  fprintf(stderr, "%4.1f ", s_(a,b));
+            for (int a = 0; a < size_; ++a)  fprintf(stderr, "%6.3f ", s_(a,b));
+            std::cerr << std::endl;
+        }
+    }
 }
 
 }  // cs
