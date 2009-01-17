@@ -75,9 +75,7 @@ void Alignment::unserialize(std::istream& in)
     for (int i = 0; i < seqs; ++i)
         for (int j = 0; j < cols; ++j) {
             const char c = toupper(sequences[i][j]);
-            if (c == kGap)
-                (*this)(i,j) = gap();
-            else if (alphabet_->valid(c))
+            if (alphabet_->valid(c, true))
                 (*this)(i,j) = alphabet_->ctoi(c);
             else
                 throw MyException("Invalid character %c at position %i of sequence '%s'", c, j, headers_[i].c_str());
@@ -102,8 +100,8 @@ void Alignment::serialize(std::ostream& out) const
 void Alignment::set_endgaps()
 {
     for (int i = 0; i < nseqs_; ++i) {
-        for (int j = 0; j < ncols_ && gap(i,j); ++j)   (*this)(i,j) = endgap();
-        for (int j = ncols_-1; j >=0 && gap(i,j); --j) (*this)(i,j) = endgap();
+        for (int j = 0; j < ncols_ && gap(i,j); ++j)   (*this)(i,j) = alphabet_->endgap();
+        for (int j = ncols_-1; j >=0 && gap(i,j); --j) (*this)(i,j) = alphabet_->endgap();
     }
 }
 
@@ -134,7 +132,7 @@ std::pair<std::vector<float>, float> global_weights_and_diversity(const Alignmen
     const float kZero = 1E-10;  // for calculation of entropy
     const int nseqs = alignment.nseqs();
     const int ncols = alignment.ncols();
-    const int nalph = alignment.alphabet()->size()-1;  // alphabet size without ANY character
+    const int nalph = alignment.alphabet()->size();
     const int any   = alignment.alphabet()->any();
 
     float neff = 0.0f;                        // diversity of alignment
@@ -189,15 +187,15 @@ std::pair< Matrix<float>, std::vector<float> > position_dependent_weights_and_di
     const float kZero = 1E-10;  // for calculation of entropy
     const int nseqs  = alignment.nseqs();
     const int ncols  = alignment.ncols();
-    const int nalph  = alignment.alphabet()->size()-1;  // alphabet size without ANY character
+    const int nalph  = alignment.alphabet()->size();
     const int any    = alignment.alphabet()->any();
-    const int endgap = alignment.endgap();
+    const int endgap = alignment.alphabet()->endgap();
 
     int ncoli = 0;        // number of columns j that contribute to neff[i]
     int nseqi = 0;        // number of sequences in subalignment i
     int ndiff = 0;        // number of different alphabet letters
     bool change = false;  // has the set of sequences in subalignment changed?
-    Matrix<int> n(ncols, endgap+1, 0);    // n(j,a) = number of seq's with some residue at column i AND a at position j
+    Matrix<int> n(ncols, endgap + 1, 0);  // n(j,a) = number of seq's with some residue at column i AND a at position j
     Matrix<float> w(ncols, nseqs, 0.0f);  // w(i,k) weight of sequence k in column i, calculated from subalignment i
     std::vector<float> fj(nalph, 0.0f);   // to calculate entropy
     std::vector<float> neff(ncols, 0.0f); // diversity of subalignment i
@@ -260,7 +258,7 @@ std::pair< Matrix<float>, std::vector<float> > position_dependent_weights_and_di
 
             neff[i] = 0.0f;
             for (int j = 0; j < ncols; ++j) {
-                if (n(j, endgap) > kMaxEndgapFraction * nseqi) continue;
+                if (n(j,endgap) > kMaxEndgapFraction * nseqi) continue;
                 reset(&fj[0], nalph);
 
                 for (int k = 0; k < nseqs; ++k)

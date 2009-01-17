@@ -18,19 +18,30 @@
 namespace cs
 {
 
-SequenceAlphabet::SequenceAlphabet(int size)
+SequenceAlphabet::SequenceAlphabet(int size, char any, char gap)
         : size_(size),
+          any_(any),
+          gap_(gap),
           ctoi_(static_cast<int>(pow(2, 8*sizeof(char))), kInvalidChar),
-          itoc_(size, '\0')
+          itoc_(size + 3, '\0')
 {}
 
 void SequenceAlphabet::init()
 {
-    const char* itoc = get_itoc();  // derived classes decide how to fil itoc array
+    const char* itoc = get_itoc();  // derived classes decide how to fill itoc array
     if (static_cast<int>(strlen(itoc)) != size_)
         throw MyException("Provided itoc array has length %i but should have length %i!", strlen(itoc), size_);
+
+    // Setup itoc vector
     copy(itoc, itoc + strlen(itoc), itoc_.begin());
-    for (int i = 0; i < size_; ++i) ctoi_[static_cast<int>(itoc_[i])]=i;
+    itoc_[size_]   = any_;    // ANY
+    itoc_[size_ + 1] = gap_;  // GAP
+    itoc_[size_ + 2] = gap_;  // ENDGAP
+
+    // Setup ctoi vector
+    for (int i = 0; i < size_; ++i) ctoi_[static_cast<int>(itoc_[i])] = i;
+    ctoi_[static_cast<int>(any_)] = size_;      // ANY
+    ctoi_[static_cast<int>(gap_)] = size_ + 1;  // GAP
 }
 
 }//cs

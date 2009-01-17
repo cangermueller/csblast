@@ -29,14 +29,14 @@ Profile::Profile(const SequenceAlphabet* alphabet)
 Profile::Profile(int ncols,
                  const SequenceAlphabet* alphabet)
         : ncols_(ncols),
-          ndim_(alphabet->size()-1),
-          data_(ncols * alphabet->size()-1, 0.0f),
+          ndim_(alphabet->size()),
+          data_(ncols * alphabet->size(), 0.0f),
           alphabet_(alphabet)
 {}
 
 Profile::Profile(std::istream& in, const SequenceAlphabet* alphabet)
             : ncols_(0),
-              ndim_(alphabet->size()-1),
+              ndim_(alphabet->size()),
               alphabet_(alphabet)
 { unserialize(in); }
 
@@ -89,7 +89,7 @@ void Profile::unserialize(std::istream& in)
         ndim_ = atoi(buffer+4);
     else
         throw MyException("Bad format: serialized profile does not contain 'ndim' record!");
-    if (ndim_ != alphabet_->size() - 1)
+    if (ndim_ != alphabet_->size())
         throw MyException("Bad format: ndim=%i does not fit with provided alphabet!", ndim_);
 
     // Read column data records line by line
@@ -102,16 +102,16 @@ void Profile::unserialize(std::istream& in)
         if (strlen(buffer) > 1 && buffer[0] == '/' && buffer[1] == '/') break;
 
         ptr = buffer;
-        i = strtoi(ptr)-1;
+        i = strtoi(ptr) - 1;
         if (!ptr)
-            throw MyException("Bad format: malformed line after column record %i!", i-1);
+            throw MyException("Bad format: malformed line after column record %i!", i - 1);
 
         for (int a = 0; a < ndim_; ++a) {
             int log_p = strtoi_asterix(ptr);
             (*this)(i,a) = pow(2.0, static_cast<float>(-log_p) / kScaleFactor);
         }
     }
-    if (i != ncols_-1)
+    if (i != ncols_ - 1)
         throw MyException("Bad format: profile has %i column records but should have %i!", i+1, ncols_);
 }
 

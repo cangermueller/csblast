@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
 
-#include <algorithm>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -16,18 +15,14 @@ TEST(SequenceTest, ConstructionFromAlphabetVector)
     cs::AminoAcidAlphabet* aa = cs::AminoAcidAlphabet::instance();
 
     std::string header("dummy sequence header");
-    std::string seq(aa->begin(), aa->end());
+    std::string seq("ARNDCQEGHILKMFPSTWYV");
     seq.insert(seq.begin()+1, ' ');
     seq.push_back('\n');
-    std::vector<char> intvec;
-    for (cs::AminoAcidAlphabet::const_iterator iter = aa->begin(); iter != aa->end(); ++iter)
-        intvec.push_back(aa->ctoi(*iter));
 
     const cs::Sequence sequence(header, seq, aa);
 
     EXPECT_EQ(aa->size(), sequence.length());
     EXPECT_EQ(aa->ctoi('R'), sequence(1));
-    EXPECT_TRUE(equal(sequence.begin(), sequence.end(), intvec.begin()));
 }
 
 TEST(SequenceTest, ConstructionFromInputStream)

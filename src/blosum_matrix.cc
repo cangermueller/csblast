@@ -86,7 +86,7 @@ namespace cs
 {
 
 BlosumMatrix::BlosumMatrix(Type matrix)
-        : SubstitutionMatrix(AminoAcidAlphabet::instance()->size() - 1)
+        : SubstitutionMatrix(AminoAcidAlphabet::instance()->size())
 {
     switch (matrix) {
         case BLOSUM45:

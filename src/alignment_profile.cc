@@ -124,7 +124,7 @@ void AlignmentProfile::unserialize(std::istream& in)
         ndim = atoi(buffer+4);
     else
         throw MyException("Bad format: serialized alignment profile does not contain 'ndim' record!");
-    if (ndim != alphabet()->size() - 1)
+    if (ndim != alphabet()->size())
         throw MyException("Bad format: ndim=%i does not fit with provided alphabet!", ndim);
 
     // Read has_counts
@@ -142,9 +142,9 @@ void AlignmentProfile::unserialize(std::istream& in)
         if (strlen(buffer) > 1 && buffer[0] == '/' && buffer[1] == '/') break;
 
         ptr = buffer;
-        i = strtoi(ptr)-1;
+        i = strtoi(ptr) - 1;
         if (!ptr)
-            throw MyException("Bad format: malformed line after column record %i!", i-1);
+            throw MyException("Bad format: malformed line after column record %i!", i - 1);
         // Read profile frequencies
         for (int a = 0; a < ndim; ++a) {
             int log_p = strtoi_asterix(ptr);
@@ -154,7 +154,7 @@ void AlignmentProfile::unserialize(std::istream& in)
         int log_neff = strtoi_asterix(ptr);
         neff_[i] = pow(2.0, static_cast<float>(-log_neff) / kScaleFactor);
     }
-    if (i != ncols-1)
+    if (i != ncols - 1)
         throw MyException("Bad format: alignment profile has %i column records but should have %i!", i+1, ncols);
 }
 

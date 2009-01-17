@@ -26,9 +26,16 @@ TEST(BlosumMatrixTest, Blosum80)
     EXPECT_NEAR(2.2549, matrix.s(0,0), kDelta);
 }
 
+TEST(NucleotideMatrixTest, Match1Mismatch1)
+{
+    cs::NucleotideMatrix matrix(1, -1);
+    EXPECT_EQ(4, matrix.size());
+    EXPECT_FLOAT_EQ(0.25, matrix.f(0));
+}
+
 TEST(NucleotideMatrixTest, Match1Mismatch2)
 {
-    cs::NucleotideMatrix matrix;
+    cs::NucleotideMatrix matrix(1, -2);
     EXPECT_EQ(4, matrix.size());
     EXPECT_FLOAT_EQ(0.25, matrix.f(0));
 }

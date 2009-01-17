@@ -37,15 +37,15 @@ class Alignment
     char&       operator() (int i, int j) { return sequences_[i + j*nseqs_]; }
     const char& operator() (int i, int j) const { return sequences_[i + j*nseqs_]; }
     // Returns the character in column j of sequence i.
-    char chr(int i, int j) const { return gap(i,j) ? kGap : alphabet_->itoc((*this)(i,j)); }
-    // Returns true if the character at position (i,j) is a gap.
-    bool gap(int i, int j) const { return (*this)(i,j) == gap(); }
-    // Returns true if the character at position (i,j) is an endgap.
-    bool endgap(int i, int j) const { return (*this)(i,j) == endgap(); }
-    // Returns integer representation of gap.
-    int gap() const { return alphabet_->size(); }
-    // Returns integer representation of endgap.
-    int endgap() const { return gap()+1; }
+    char chr(int i, int j) const { return alphabet_->itoc((*this)(i,j)); }
+     // Returns true if the character at position (i,j) is a real symbol (letter < ANY)
+    bool less_any(int i, int j) const { return alphabet_->less_any((*this)(i,j)); }
+    // Returns true if the character at position (i,j) is GAP.
+    bool gap(int i, int j) const { return alphabet_->gap((*this)(i,j)); }
+    // Returns true if the character at position (i,j) is ANY.
+    bool any(int i, int j) const { return alphabet_->gap((*this)(i,j)); }
+    // Returns true if the character at position (i,j) is ENDGAP.
+    bool endgap(int i, int j) const { return alphabet_->endgap((*this)(i,j)); }
     // Returns the number of sequences in the alignment.
     int nseqs() const { return nseqs_; }
     // Returns the number of alignment columns.
@@ -64,9 +64,6 @@ class Alignment
     virtual void serialize(std::ostream& out) const;
 
   private:
-    // Gap character.
-    static const char kGap = '-';
-
     // Disallow copy and assign
     Alignment(const Alignment&);
     void operator=(const Alignment&);

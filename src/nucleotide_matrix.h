@@ -18,16 +18,7 @@ namespace cs
 class NucleotideMatrix : public SubstitutionMatrix
 {
   public:
-    enum Type {
-        MATCH1_MISMATCH1 = 0,
-        MATCH1_MISMATCH2 = 1,
-        MATCH1_MISMATCH3 = 2,
-        MATCH1_MISMATCH4 = 3,
-        MATCH3_MISMATCH3 = 4,
-        MATCH4_MISMATCH5 = 5
-    };
-
-    NucleotideMatrix(Type matrix = MATCH1_MISMATCH2);
+    NucleotideMatrix(float match, float mismatch);
     ~NucleotideMatrix() {}
 
 private:
@@ -36,7 +27,7 @@ private:
     NucleotideMatrix operator =(const NucleotideMatrix& other);
 
     // Initializes all matrix data members.
-    void init(float match, float mismatch, const float* m);
+    void init(float match, float mismatch);
 };
 
 }//cs

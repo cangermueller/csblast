@@ -8,10 +8,10 @@
 namespace cs
 {
 
-const char AminoAcidAlphabet::amino_acids_[] = "ARNDCQEGHILKMFPSTWYVX";
+const char AminoAcidAlphabet::amino_acids_[] = "ARNDCQEGHILKMFPSTWYV";
 
 AminoAcidAlphabet::AminoAcidAlphabet()
-        : SequenceAlphabet(21)
+        : SequenceAlphabet(20, 'X', '-')
 {
     init();
     // Conversion of non-standard amino acids to integers
