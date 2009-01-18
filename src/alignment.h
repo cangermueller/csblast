@@ -54,6 +54,10 @@ class Alignment
     std::string header(int i) const { return headers_[i]; }
     // Sets the header of sequence i.
     void set_header(int i, const std::string& header) { headers_[i] = header; }
+    // Remove all columns with a gap in the first sequence.
+    void remove_columns_with_gap_in_first();
+    // Remove all columns with more than X% gaps.
+    void remove_columns_by_gap_percentage(int p = 50);
     // Returns the underlying sequence alphabet.
     const SequenceAlphabet* alphabet() const { return alphabet_; }
 
