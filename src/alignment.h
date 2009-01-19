@@ -40,8 +40,8 @@ class Alignment
     char chr(int i, int j) const { return alphabet_->itoc((*this)(i,j)); }
      // Returns true if the character at position (i,j) is a real symbol (letter < ANY)
     bool less_any(int i, int j) const { return alphabet_->less_any((*this)(i,j)); }
-    // Returns true if the character at position (i,j) is GAP.
-    bool gap(int i, int j) const { return alphabet_->gap((*this)(i,j)); }
+    // Returns true if the character at position (i,j) is a GAP or ENDGAP.
+    bool gap(int i, int j) const { return alphabet_->gap((*this)(i,j)) || alphabet_->endgap((*this)(i,j)); }
     // Returns true if the character at position (i,j) is ANY.
     bool any(int i, int j) const { return alphabet_->gap((*this)(i,j)); }
     // Returns true if the character at position (i,j) is ENDGAP.
@@ -57,7 +57,7 @@ class Alignment
     // Remove all columns with a gap in the first sequence.
     void remove_columns_with_gap_in_first();
     // Remove all columns with more than X% gaps.
-    void remove_columns_by_gap_percentage(int p = 50);
+    void remove_columns_by_gap_rule(int gap_threshold = 50);
     // Returns the underlying sequence alphabet.
     const SequenceAlphabet* alphabet() const { return alphabet_; }
 
@@ -105,7 +105,7 @@ std::pair<std::vector<float>, float> global_weights_and_diversity(const Alignmen
 // Calculates position-dependent sequence weights and number of effective sequences on subalignments.
 // The return value is a pair consisting of a weights matrix (element (i,k) denotes the weight of
 // sequence k in column i) and a vector with the number of effective sequences for alignment column.
-std::pair< Matrix<float>, std::vector<float> > position_dependent_weights_and_diversity(const Alignment& alignment);
+std::pair< Matrix<float>, std::vector<float> > position_specific_weights_and_diversity(const Alignment& alignment);
 
 }//cs
 

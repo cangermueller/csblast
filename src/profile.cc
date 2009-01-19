@@ -69,14 +69,19 @@ std::vector< SmartPtr<Profile> > Profile::read(std::istream& in,
 
 void Profile::unserialize(std::istream& in)
 {
+    // Check if stream actually contains a serialized profile
+    std::string buffer;
+    while (getline(in, buffer) && !strscn(buffer.c_str())) continue;
+    if (buffer != "Profile")
+        throw MyException("Bad format: serialized profile does not start with 'Profile' class identifier!");
+    read_data(in);  // Read column data records line by line
+}
+
+void Profile::read_data(std::istream& in)
+{
     const int kBufferSize = 1000;
     std::vector<char> char_arr(kBufferSize, '\0');
     char* buffer = &char_arr[0];
-
-    // Check if stream actually contains a serialized profile
-    while (in.getline(buffer, kBufferSize) && !strscn(buffer)) continue;
-    if (strcmp(buffer, "Profile") != 0)
-        throw MyException("Bad format: serialized profile does not start with 'Profile' class identifier!");
 
     // Read ncols
     if (in.getline(buffer, kBufferSize) && strncmp(buffer, "ncols", 5) == 0)
@@ -92,8 +97,8 @@ void Profile::unserialize(std::istream& in)
     if (ndim_ != alphabet_->size())
         throw MyException("Bad format: ndim=%i does not fit with provided alphabet!", ndim_);
 
-    // Read column data records line by line
     resize(ncols_, ndim_);
+
     in.getline(buffer, kBufferSize);  // Skip description line
     const char* ptr;  // for string traversal
     int i = 0;        // column index
@@ -118,9 +123,15 @@ void Profile::unserialize(std::istream& in)
 void Profile::serialize(std::ostream& out) const
 {
     out << "Profile" << std::endl;
+    print_data(out);
+    out << "//" << std::endl;
+}
+
+void Profile::print_data(std::ostream& out) const
+{
+    // print dimensions
     out << "ncols\t" << ncols_ << std::endl;
     out << "ndim\t" << ndim_ << std::endl;
-
     // print profile values in log representation
     for (int j = 0; j < ndim_; ++j)
         out << "\t" << alphabet_->itoc(j);
@@ -136,7 +147,6 @@ void Profile::serialize(std::ostream& out) const
         }
         out << std::endl;
     }
-    out << "//" << std::endl;
 }
 
 void Profile::resize(int ncols, int ndim)

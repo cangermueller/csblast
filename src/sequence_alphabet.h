@@ -57,13 +57,14 @@ class SequenceAlphabet
     void init();
     // Allows derived classes to set additional ctoi conversions.
     void set_ctoi(char c, int i) { ctoi_[c] = i; }
-    // Gets ctoi conversion array from derived class.
-    virtual const char* get_itoc() const = 0;
 
   private:
     // Disallow copy and assign
     SequenceAlphabet(const SequenceAlphabet& other);
     SequenceAlphabet& operator =(const SequenceAlphabet& other);
+
+    // Gets ctoi conversion array from derived class.
+    virtual const char* get_itoc() const = 0;
 
     // Size of alphabet (incl. ANY character).
     const int size_;

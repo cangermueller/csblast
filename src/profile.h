@@ -58,6 +58,10 @@ class Profile
     virtual void unserialize(std::istream& in);
     // Prints the profile in serialization format to output stream.
     virtual void serialize(std::ostream& out) const;
+    // Reads a serialized profile without prior check for correct class identifier.
+    void read_data(std::istream& in);
+    // Prints serialized profile data without leading class identifier and trailing '//' marker.
+    void print_data(std::ostream& out) const;
     // Resize the profile matrix to given dimensions. Attention: old data is lost!
     void resize(int ncols, int ndim);
 

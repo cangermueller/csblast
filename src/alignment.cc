@@ -8,6 +8,7 @@
 #include <cctype>
 #include <cstdio>
 
+#include <algorithm>
 #include <iostream>
 #include <vector>
 
@@ -99,9 +100,9 @@ void Alignment::serialize(std::ostream& out) const
 
 void Alignment::set_endgaps()
 {
-    for (int i = 0; i < nseqs_; ++i) {
-        for (int j = 0; j < ncols_ && gap(i,j); ++j)   (*this)(i,j) = alphabet_->endgap();
-        for (int j = ncols_-1; j >=0 && gap(i,j); --j) (*this)(i,j) = alphabet_->endgap();
+    for (int k = 0; k < nseqs_; ++k) {
+        for (int i = 0; i < ncols_ && gap(k,i); ++i)   (*this)(k,i) = alphabet_->endgap();
+        for (int i = ncols_-1; i >=0 && gap(k,i); --i) (*this)(k,i) = alphabet_->endgap();
     }
 }
 
@@ -113,6 +114,55 @@ void Alignment::resize(int nseqs, int ncols)
     ncols_ = ncols;
     sequences_.resize(nseqs * ncols);
     headers_.resize(nseqs);
+}
+
+void Alignment::remove_columns_with_gap_in_first()
+{
+    const int kRemove = -1;
+    int matchcols = ncols_;
+    for (int i = 0; i < ncols_; ++i) {
+        if (gap(0,i)) {
+            --matchcols;
+            for (int k = 0; k < nseqs_; ++k)
+                (*this)(k,i) = kRemove;
+        }
+    }
+    sequences_.erase(std::remove(sequences_.begin(), sequences_.end(), static_cast<char>(kRemove)), sequences_.end());
+    std::vector<char>(sequences_.begin(), sequences_.end()).swap(sequences_); // shrink to fit
+    ncols_ = matchcols;
+}
+
+void Alignment::remove_columns_by_gap_rule(int gap_threshold)
+{
+    if (kDebug) std::cerr << "Removing collumns with more than " << gap_threshold << "% of gaps:" << std::endl;
+
+    // global weights are sufficient for calculation of gap percentage
+    std::pair<std::vector<float>, float> wg_neff = global_weights_and_diversity(*this);
+    int matchcols = ncols_;
+    const int kRemove = -1;
+
+    for (int i = 0; i < ncols_; ++i) {
+        float gap = 0.0f;
+        float res = 0.0f;
+
+        for (int k = 0; k < nseqs_; ++k)
+            if (less_any(k,i))
+                res += wg_neff.first[k];
+            else
+                gap += wg_neff.first[k];
+
+        float percent_gaps = 100.0f * gap / (res + gap);
+        if (kDebug) fprintf(stderr,"percent gaps[%i]=%-4.1f\n", i, percent_gaps);
+
+        if (percent_gaps > static_cast<float>(gap_threshold)) {
+            --matchcols;
+            for (int k = 0; k < nseqs_; ++k)
+                (*this)(k,i) = kRemove;
+        }
+    }
+    sequences_.erase(std::remove(sequences_.begin(), sequences_.end(), static_cast<char>(kRemove)), sequences_.end());
+    std::vector<char>(sequences_.begin(), sequences_.end()).swap(sequences_); // shrink to fit
+    ncols_ = matchcols;
 }
 
 std::istream& operator>> (std::istream& in, Alignment& alignment)
@@ -180,7 +230,7 @@ std::pair<std::vector<float>, float> global_weights_and_diversity(const Alignmen
     return make_pair(weights, neff);
 }
 
-std::pair< Matrix<float>, std::vector<float> > position_dependent_weights_and_diversity(const Alignment& alignment)
+std::pair< Matrix<float>, std::vector<float> > position_specific_weights_and_diversity(const Alignment& alignment)
 {
     const float kMaxEndgapFraction = 0.1;  // maximal fraction of sequences with an endgap
     const int kMinNcols = 10;  // minimum number of columns in subalignments
@@ -206,7 +256,7 @@ std::pair< Matrix<float>, std::vector<float> > position_dependent_weights_and_di
     std::vector<int> ncoli_debug(ncols, 0); // debugging
 
     if (kDebug) {
-        fprintf(stderr,"\nCalculation of position-dependent weights and alignment diversity on subalignments:\n");
+        fprintf(stderr,"\nCalculation of position-specific weights and alignment diversity on subalignments:\n");
         fprintf(stderr,"%-5s  %-5s  %-5s  %-5s\n", "i", "ncoli", "nseqi", "neff");
     }
 

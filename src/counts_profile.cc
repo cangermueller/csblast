@@ -3,7 +3,7 @@
  *   andreas.biegert@googlemail.com                                        *
  ***************************************************************************/
 
-#include "alignment_profile.h"
+#include "counts_profile.h"
 
 #include <cmath>
 
@@ -19,12 +19,12 @@
 namespace cs
 {
 
-AlignmentProfile::AlignmentProfile(std::istream& in, const SequenceAlphabet* alphabet)
+CountsProfile::CountsProfile(std::istream& in, const SequenceAlphabet* alphabet)
         : Profile(alphabet),
           has_counts_(false)
 { unserialize(in); }
 
-AlignmentProfile::AlignmentProfile(const Sequence& sequence)
+CountsProfile::CountsProfile(const Sequence& sequence)
         : Profile(sequence.length(), sequence.alphabet()),
           has_counts_(false)
 {
@@ -34,7 +34,7 @@ AlignmentProfile::AlignmentProfile(const Sequence& sequence)
     }
 }
 
-AlignmentProfile::AlignmentProfile(const Alignment& alignment, bool position_dependent_weights)
+CountsProfile::CountsProfile(const Alignment& alignment, bool position_specific_weights)
         : Profile(alignment.ncols(), alignment.alphabet()),
           has_counts_(false)
 {
@@ -42,15 +42,15 @@ AlignmentProfile::AlignmentProfile(const Alignment& alignment, bool position_dep
     const int nseqs = alignment.nseqs();
     const int any   = alphabet()->any();
 
-    if (position_dependent_weights) {
-        std::pair< Matrix<float>, std::vector<float> > wi_neff = cs::position_dependent_weights_and_diversity(alignment);
+    if (position_specific_weights) {
+        std::pair< Matrix<float>, std::vector<float> > wi_neff = position_specific_weights_and_diversity(alignment);
         neff_.insert(neff_.begin(), wi_neff.second.begin(), wi_neff.second.end());
         for (int i = 0; i < ncols; ++i)
             for (int k = 0; k < nseqs; ++k)
                 if (alignment(k,i) < any)
                     (*this)(i, alignment(k,i)) += wi_neff.first(i,k);
     } else {
-        std::pair<std::vector<float>, float> wg_neff = cs::global_weights_and_diversity(alignment);
+        std::pair<std::vector<float>, float> wg_neff = global_weights_and_diversity(alignment);
         neff_.insert(neff_.begin(), ncols, wg_neff.second);
         for (int i = 0; i < ncols; ++i)
             for (int k = 0; k < nseqs; ++k)
@@ -61,7 +61,7 @@ AlignmentProfile::AlignmentProfile(const Alignment& alignment, bool position_dep
     normalize(*this);
 }
 
-AlignmentProfile::AlignmentProfile(const AlignmentProfile& other,
+CountsProfile::CountsProfile(const CountsProfile& other,
                                    int index,
                                    int length)
         : Profile(other, index, length)
@@ -70,19 +70,19 @@ AlignmentProfile::AlignmentProfile(const AlignmentProfile& other,
     has_counts_ = other.has_counts_;
 }
 
-std::vector< SmartPtr<AlignmentProfile> > AlignmentProfile::read(std::istream& in,
+std::vector< SmartPtr<CountsProfile> > CountsProfile::read(std::istream& in,
                                                                  const SequenceAlphabet* alphabet)
 {
-    std::vector< SmartPtr<AlignmentProfile> > profiles;
+    std::vector< SmartPtr<CountsProfile> > profiles;
     while (in.peek() && in.good()) { //peek first to make sure that we don't read beyond '//'
-        SmartPtr<AlignmentProfile> p(new AlignmentProfile(in, alphabet));
+        SmartPtr<CountsProfile> p(new CountsProfile(in, alphabet));
         profiles.push_back(p);
     }
 
     return profiles;
 }
 
-void AlignmentProfile::convert_to_counts()
+void CountsProfile::convert_to_counts()
 {
     if (!has_counts_) {
         for (int i = 0; i < ncols(); ++i)
@@ -92,7 +92,7 @@ void AlignmentProfile::convert_to_counts()
     }
 }
 
-void AlignmentProfile::convert_to_frequencies()
+void CountsProfile::convert_to_frequencies()
 {
     if (has_counts_) {
         normalize(*this);
@@ -100,7 +100,7 @@ void AlignmentProfile::convert_to_frequencies()
     }
 }
 
-void AlignmentProfile::unserialize(std::istream& in)
+void CountsProfile::unserialize(std::istream& in)
 {
     const int kBufferSize = 1000;
     std::vector<char> char_arr(kBufferSize, '\0');
@@ -108,8 +108,8 @@ void AlignmentProfile::unserialize(std::istream& in)
 
     // Check if stream actually contains a serialized profile
     while (in.getline(buffer, kBufferSize) && !strscn(buffer)) continue;
-    if (strcmp(buffer, "AlignmentProfile") != 0)
-        throw MyException("Bad format: serialized alignment profile does not start with 'AlignmentProfile' class identifier!");
+    if (strcmp(buffer, "CountsProfile") != 0)
+        throw MyException("Bad format: serialized alignment profile does not start with 'CountsProfile' class identifier!");
 
     // Read ncols
     int ncols = 0;
@@ -158,9 +158,9 @@ void AlignmentProfile::unserialize(std::istream& in)
         throw MyException("Bad format: alignment profile has %i column records but should have %i!", i+1, ncols);
 }
 
-void AlignmentProfile::serialize(std::ostream& out) const
+void CountsProfile::serialize(std::ostream& out) const
 {
-    out << "AlignmentProfile" << std::endl;
+    out << "CountsProfile" << std::endl;
     out << "ncols\t" << ncols() << std::endl;
     out << "ndim\t" << ndim() << std::endl;
     out << "has_counts\t" << has_counts_ << std::endl;

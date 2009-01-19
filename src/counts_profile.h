@@ -1,5 +1,5 @@
-#ifndef CS_ALIGNMENT_PROFILE_H
-#define CS_ALIGNMENT_PROFILE_H
+#ifndef CS_COUNTS_PROFILE_H
+#define CS_COUNTS_PROFILE_H
 /***************************************************************************
  *   Copyright (C) 2008 by Andreas Biegert                                 *
  *   andreas.biegert@googlemail.com                                        *
@@ -21,22 +21,22 @@ namespace cs
 // Forward declarations
 class SequenceAlphabet;
 
-class AlignmentProfile : public Profile
+class CountsProfile : public Profile
 {
   public:
     // Constructs profile from serialized profile read from input stream.
-    AlignmentProfile(std::istream& in, const SequenceAlphabet* alphabet);
+    CountsProfile(std::istream& in, const SequenceAlphabet* alphabet);
     // Constructs a profile of the given sequence.
-    explicit AlignmentProfile(const Sequence& sequence);
+    explicit CountsProfile(const Sequence& sequence);
     // Constructs a profile of the given alignment with specified sequence weighting method.
-    explicit AlignmentProfile(const Alignment& alignment, bool position_dependent_weights = true);
+    explicit CountsProfile(const Alignment& alignment, bool position_specific_weights = true);
     // Creates a profile from subprofile in other, starting at column index and length columns long.
-    AlignmentProfile(const AlignmentProfile& other, int index, int length);
+    CountsProfile(const CountsProfile& other, int index, int length);
 
-    virtual ~AlignmentProfile() {}
+    virtual ~CountsProfile() {}
 
     // Reads all available profiles from the input stream and returns them in a vector.
-    static std::vector< SmartPtr<AlignmentProfile> > read(std::istream& in,
+    static std::vector< SmartPtr<CountsProfile> > read(std::istream& in,
                                                           const SequenceAlphabet* alphabet);
     // Returns the number of effective sequences in alignment column i
     float neff(int i) const { return neff_[i]; }
@@ -55,14 +55,14 @@ class AlignmentProfile : public Profile
 
   private:
     // Disallow copy and assign
-    AlignmentProfile(const AlignmentProfile&);
-    void operator=(const AlignmentProfile&);
+    CountsProfile(const CountsProfile&);
+    void operator=(const CountsProfile&);
 
     // Flag indicating if the profile contains counts or (relative) frequencies.
     bool has_counts_;
     // Number of effective sequences in each alignment column.
     std::vector<float> neff_;
-};//AlignmentProfile
+};//CountsProfile
 
 }//cs
 
