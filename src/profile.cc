@@ -9,6 +9,7 @@
 #include <cstring>
 
 #include <iostream>
+#include <limits>
 
 #include "my_exception.h"
 #include "profile.h"
@@ -65,6 +66,29 @@ std::vector< SmartPtr<Profile> > Profile::read(std::istream& in,
     }
 
     return profiles;
+}
+
+void Profile::transform_to_logspace()
+{
+    if (!logspace_) {
+        for(int i = 0; i < ncols_; ++i)
+            for(int a = 0; a < ndim_; ++a)
+                if ((*this)(i,a) == 0.0f)
+                    (*this)(i,a) = std::numeric_limits<double>::infinity();
+                else
+                    (*this)(i,a) = log2((*this)(i,a));
+        logspace_ = true;
+    }
+}
+
+void Profile::transform_to_linspace()
+{
+    if (logspace_) {
+        for(int i = 0; i < ncols_; ++i)
+            for(int a = 0; a < ndim_; ++a)
+                (*this)(i,a) = pow(2.0, (*this)(i,a));
+        logspace_ = false;
+    }
 }
 
 void Profile::unserialize(std::istream& in)

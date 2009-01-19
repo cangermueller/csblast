@@ -47,6 +47,12 @@ class Profile
     int ncols() const { return ncols_; }
     // Returns #columns in this matrix
     int ndim() const { return ndim_; }
+    // Transforms profile to logspace
+    virtual void transform_to_logspace();
+    // Transforms profile to linspace
+    virtual void transform_to_linspace();
+    // Returns true if the profile is in logspace
+    bool logspace() const { return logspace_; }
     // Returns the underlying sequence alphabet of the profile.
     const SequenceAlphabet* alphabet() const { return alphabet_; }
 
@@ -76,6 +82,8 @@ class Profile
     int ndim_;
     // Profile matrix in row major format
     std::vector<float> data_;
+    // Flag indicating if profile is in log- or linspace
+    bool logspace_;
     // Sequence alphabet over which the profile records probabilities. Note that the profile
     // does not include the 'any' character (ndim = alphabet_.size()-1).
     const SequenceAlphabet* alphabet_;

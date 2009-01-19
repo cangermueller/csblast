@@ -10,19 +10,20 @@
 
 #include <cstdlib>
 #include <cctype>
-#include <climits>
 #include <cmath>
+
+#include <limits>
 
 // Returns the base 2 logarithm of num.
 inline double log2(double num)
 {
-    return log(num)/log(2);
+    return log(num) / log(2);
 }
 
 // Round to the nearest integer.
 inline int iround(double x)
 {
-    return static_cast<int>(floor(x+0.5));
+    return static_cast<int>(floor(x + 0.5));
 }
 
 // Returns pointer to first non-white-space character in str OR to NULL if none found
@@ -39,11 +40,11 @@ inline const char* strscn(const char* str)
 inline int strtoi(const char*& ptr)
 {
     const char* ptr0=ptr;
-    if (!ptr) return INT_MIN;
+    if (!ptr) return std::numeric_limits<int>::min();
     while (*ptr!='\0' && !(*ptr>='0' && *ptr<='9')) ptr++;
     if (*ptr=='\0') {
         ptr=NULL;
-        return INT_MIN;
+        return std::numeric_limits<int>::min();
     }
     int i = (ptr>ptr0 && *(ptr-1)=='-') ? atoi(ptr-1) : atoi(ptr);
     while (*ptr>='0' && *ptr<='9') ptr++;
@@ -51,14 +52,14 @@ inline int strtoi(const char*& ptr)
 }
 
 // Same as strtoi, but interpretes '*' as default.
-inline int strtoi_asterix(const char*& ptr, int deflt=INT_MAX)
+inline int strtoi_asterix(const char*& ptr, int deflt = std::numeric_limits<int>::max())
 {
     const char* ptr0=ptr;
-    if (!ptr) return INT_MIN;
+    if (!ptr) return std::numeric_limits<int>::min();
     while (*ptr!='\0' && !(*ptr>='0' && *ptr<='9') && *ptr!='*') ptr++;
     if (*ptr=='\0') {
         ptr=NULL;
-        return INT_MIN;
+        return std::numeric_limits<int>::min();
     }
     if (*ptr=='*') {
         ptr++;
@@ -71,7 +72,7 @@ inline int strtoi_asterix(const char*& ptr, int deflt=INT_MAX)
 
 // Normalize a float array such that it sums to one
 // If it sums to 0 then assign def_array elements to array (optional)
-inline float normalize_to_one(float* array, int length, const float* default_array=NULL)
+inline float normalize_to_one(float* array, int length, const float* default_array = NULL)
 {
     float sum = 0.0f;
     for (int i = 0; i < length; ++i) sum += array[i];

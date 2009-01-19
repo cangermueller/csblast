@@ -37,11 +37,6 @@ class ContextProfile : public Profile
     static std::vector< SmartPtr<ContextProfile> > read(std::istream& in,
                                                         const SequenceAlphabet* alphabet);
 
-
-    // Access methods to get the (i,j) element
-    float&       operator() (int i, int j) { return data_[i*ndim_ + j]; }
-    const float& operator() (int i, int j) const { return data_[i*ndim_ + j]; }
-
     // Access methods to get the element j of central column
     float&       operator() (int j) { return data_[central_ * ndim_ + j]; }
     const float& operator() (int j) const { return data_[central_ * ndim_ + j]; }
