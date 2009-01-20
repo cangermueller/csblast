@@ -34,8 +34,8 @@ class Alignment
     virtual ~Alignment() {}
 
     // Access methods to get the integer representation of character in column j of sequence i.
-    char&       operator() (int i, int j) { return sequences_[i + j*nseqs_]; }
-    const char& operator() (int i, int j) const { return sequences_[i + j*nseqs_]; }
+    char&       operator() (int i, int j) { return sequences_(i,j); }
+    const char& operator() (int i, int j) const { return sequences_(i,j); }
     // Returns the character in column j of sequence i.
     char chr(int i, int j) const { return alphabet_->itoc((*this)(i,j)); }
      // Returns true if the character at position (i,j) is a real symbol (letter < ANY)
@@ -82,7 +82,7 @@ class Alignment
     // Number alignment columns.
     int ncols_;
     // Row major matrix with sequences in integer representation.
-    std::vector<char> sequences_;
+    Matrix<char> sequences_;
     // Headers of sequences in the alignment.
     std::vector< std::string > headers_;
     // Alphabet of sequences in the alignment.

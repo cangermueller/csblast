@@ -76,7 +76,7 @@ TEST(CountsProfileTest, ConversionToCounts)
     EXPECT_FLOAT_EQ(0.25*profile.neff(3), profile(3, na->ctoi('A')));
 }
 
-TEST(CountsProfileTest, AlignmentBpdS)
+TEST(CountsProfileTest, DISABLED_AlignmentBpdS)
 {
     cs::AminoAcidAlphabet* aa = cs::AminoAcidAlphabet::instance();
     std::ifstream fin("../data/BpdS.fas");

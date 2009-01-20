@@ -112,7 +112,8 @@ void Alignment::resize(int nseqs, int ncols)
         throw MyException("Bad dimensions for alignment resizing: nseqs=%i ncols=%i", nseqs, ncols);
     nseqs_ = nseqs;
     ncols_ = ncols;
-    sequences_.resize(nseqs * ncols);
+    //    sequences_.resize(nseqs * ncols);
+    sequences_.resize(nseqs, ncols);
     headers_.resize(nseqs);
 }
 
@@ -127,8 +128,8 @@ void Alignment::remove_columns_with_gap_in_first()
                 (*this)(k,i) = kRemove;
         }
     }
-    sequences_.erase(std::remove(sequences_.begin(), sequences_.end(), static_cast<char>(kRemove)), sequences_.end());
-    std::vector<char>(sequences_.begin(), sequences_.end()).swap(sequences_); // shrink to fit
+    //    sequences_.erase(std::remove(sequences_.begin(), sequences_.end(), static_cast<char>(kRemove)), sequences_.end());
+    //std::vector<char>(sequences_.begin(), sequences_.end()).swap(sequences_); // shrink to fit
     ncols_ = matchcols;
 }
 
@@ -160,8 +161,8 @@ void Alignment::remove_columns_by_gap_rule(int gap_threshold)
                 (*this)(k,i) = kRemove;
         }
     }
-    sequences_.erase(std::remove(sequences_.begin(), sequences_.end(), static_cast<char>(kRemove)), sequences_.end());
-    std::vector<char>(sequences_.begin(), sequences_.end()).swap(sequences_); // shrink to fit
+    //sequences_.erase(std::remove(sequences_.begin(), sequences_.end(), static_cast<char>(kRemove)), sequences_.end());
+    //std::vector<char>(sequences_.begin(), sequences_.end()).swap(sequences_); // shrink to fit
     ncols_ = matchcols;
 }
 

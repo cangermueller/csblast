@@ -15,6 +15,7 @@
 template<typename T>
 class Matrix {
   public:
+    Matrix();
     Matrix(int nrows, int ncols);
     Matrix(int nrows, int ncols, const T& val);
 
@@ -35,6 +36,11 @@ class Matrix {
 };
 
 
+
+template<typename T>
+Matrix<T>::Matrix()
+        : nrows_(0), ncols_(0)
+{}
 
 template<typename T>
 Matrix<T>::Matrix(int nrows, int ncols)
