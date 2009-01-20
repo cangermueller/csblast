@@ -76,7 +76,7 @@ TEST(CountsProfileTest, ConversionToCounts)
     EXPECT_FLOAT_EQ(0.25*profile.neff(3), profile(3, na->ctoi('A')));
 }
 
-TEST(CountsProfileTest, DISABLED_AlignmentBpdS)
+TEST(CountsProfileTest, AlignmentBpdS)
 {
     cs::AminoAcidAlphabet* aa = cs::AminoAcidAlphabet::instance();
     std::ifstream fin("../data/BpdS.fas");
@@ -87,7 +87,7 @@ TEST(CountsProfileTest, DISABLED_AlignmentBpdS)
     EXPECT_NEAR(0.92, profile(122, aa->ctoi('H')), kDelta);
 }
 
-TEST(CountsProfileTest, DISABLED_Alignment1Q7L)
+TEST(CountsProfileTest, Alignment1Q7L)
 {
     cs::AminoAcidAlphabet* aa = cs::AminoAcidAlphabet::instance();
     std::ifstream fin("../data/1Q7L.fas");
