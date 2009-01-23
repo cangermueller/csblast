@@ -25,8 +25,8 @@ namespace cs
 class Alignment
 {
   public:
-    typedef matrix<char>::row_type alignment_row;
-    typedef matrix<char>::const_row_type const_alignment_row;
+    typedef matrix<char>::row_type col_type;
+    typedef matrix<char>::const_row_type const_col_type;
 
     // Constructs alignment multi FASTA formatted alignment read from input stream.
     Alignment(std::istream& in, const SequenceAlphabet* alphabet);
@@ -34,18 +34,18 @@ class Alignment
     virtual ~Alignment() {}
 
     // Access methods to get the integer representation of character in column i of sequence k.
-    alignment_row operator[](int k) { return seqs_[k]; }
-    const_alignment_row operator[](int k) const { return seqs_[k]; }
-    // Returns the character in column j of sequence i.
-    char chr(int i, int j) const { return alphabet_->itoc(seqs_[i][j]); }
+    col_type operator[](int i) { return seqs_[i]; }
+    const_col_type operator[](int i) const { return seqs_[i]; }
+    // Returns the character in column i of sequence k.
+    char chr(int k, int i) const { return alphabet_->itoc(seqs_[i][k]); }
     // Returns the number of sequences in the alignment.
-    int nseqs() const { return seqs_.nrows(); }
+    int nseqs() const { return seqs_.ncols(); }
     // Returns the number of alignment columns.
-    int ncols() const { return seqs_.ncols(); }
-    // Returns the header of sequence i.
-    std::string header(int i) const { return headers_[i]; }
-    // Sets the header of sequence i.
-    void set_header(int i, const std::string& header) { headers_[i] = header; }
+    int ncols() const { return seqs_.nrows(); }
+    // Returns the header of sequence k.
+    std::string header(int k) const { return headers_[k]; }
+    // Sets the header of sequence k.
+    void set_header(int k, const std::string& header) { headers_[k] = header; }
     // Remove all columns with a gap in the first sequence.
     void remove_columns_with_gap_in_first();
     // Remove all columns with more than X% gaps.

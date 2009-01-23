@@ -23,8 +23,8 @@ TEST(AlignmentTest, ConstructionFromInputStream)
     EXPECT_EQ(80, alignment.ncols());
     EXPECT_EQ(na->ctoi('A'), alignment[0][0]);
     EXPECT_EQ(na->ctoi('C'), alignment[1][1]);
-    EXPECT_EQ(na->gap(), alignment[1][4]);
-    EXPECT_EQ(na->endgap(), alignment[1][78]);
+    EXPECT_EQ(na->gap(), alignment[4][1]);
+    EXPECT_EQ(na->endgap(), alignment[78][1]);
 }
 
 TEST(AlignmentTest, CalculationOfGlobalWeights)
@@ -92,7 +92,7 @@ TEST(AlignmentTest, DISABLED_RemoveColumnsWithGapInFirst)
     alignment.remove_columns_with_gap_in_first();
 
     EXPECT_EQ(76, alignment.ncols());
-    EXPECT_EQ(na->gap(), alignment[0][1]);
+    EXPECT_EQ(na->gap(), alignment[1][0]);
     EXPECT_EQ(na->ctoi('G'), alignment[1][1]);
 }
 
@@ -112,7 +112,7 @@ TEST(AlignmentTest, DISABLED_RemoveColumnsByGapRule)
     alignment.remove_columns_by_gap_rule();
 
     EXPECT_EQ(76, alignment.ncols());
-    EXPECT_EQ(na->ctoi('G'), alignment[0][4]);
+    EXPECT_EQ(na->ctoi('G'), alignment[4][0]);
 }
 
 

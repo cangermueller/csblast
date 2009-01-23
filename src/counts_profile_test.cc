@@ -91,7 +91,7 @@ TEST(CountsProfileTest, DISABLED_AlignmentBpdS)
     EXPECT_FLOAT_EQ(1.0f, std::accumulate(profile.col_begin(122), profile.col_end(122), 0.0f));
 }
 
-TEST(CountsProfileTest, DISABLED_Alignment1Q7L)
+TEST(CountsProfileTest, Alignment1Q7L)
 {
     cs::AminoAcidAlphabet* aa = cs::AminoAcidAlphabet::instance();
     std::ifstream fin("../data/1Q7L.fas");

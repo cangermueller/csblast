@@ -47,15 +47,15 @@ CountsProfile::CountsProfile(const Alignment& alignment, bool position_specific_
         neff_.insert(neff_.begin(), wi_neff.second.begin(), wi_neff.second.end());
         for (int i = 0; i < ncols; ++i)
             for (int k = 0; k < nseqs; ++k)
-                if (alignment[k][i] < any)
-                    data_[i][alignment[k][i]] += wi_neff.first[i][k];
+                if (alignment[i][k] < any)
+                    data_[i][alignment[i][k]] += wi_neff.first[i][k];
     } else {
         std::pair<std::vector<float>, float> wg_neff = global_weights_and_diversity(alignment);
         neff_.insert(neff_.begin(), ncols, wg_neff.second);
         for (int i = 0; i < ncols; ++i)
             for (int k = 0; k < nseqs; ++k)
-                if (alignment[k][i] < any)
-                    data_[i][alignment[k][i]] += wg_neff.first[k];
+                if (alignment[i][k] < any)
+                    data_[i][alignment[i][k]] += wg_neff.first[k];
     }
 
     normalize(*this);
