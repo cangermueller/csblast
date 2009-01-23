@@ -13,7 +13,7 @@
 #include <vector>
 
 #include "matrix.h"
-#include "my_exception.h"
+#include "exception.h"
 #include "sequence.h"
 #include "sequence_alphabet.h"
 #include "shared_ptr.h"
@@ -46,10 +46,10 @@ void Alignment::unserialize(std::istream& in)
         //read header
         if (getline(in, buffer)) {
             if (buffer.empty() ||  buffer[0] != '>')
-                throw MyException("Bad format: first line of aligned FASTA sequence does not start with '>' character!");
+                throw Exception("Bad format: first line of aligned FASTA sequence does not start with '>' character!");
             headers_.push_back(std::string(buffer.begin()+1, buffer.end()));
         } else {
-            throw MyException("Failed to read from FASTA formatted input stream!");
+            throw Exception("Failed to read from FASTA formatted input stream!");
         }
         //read sequence
         while (in.peek() != '>' && getline(in, buffer))
@@ -61,13 +61,13 @@ void Alignment::unserialize(std::istream& in)
         std::vector<char>().swap(sequence); //clear for next use
     }
 
-    if (sequences.empty()) throw MyException("Unable to initialize alignment: no aligned sequences found!");
-    if (headers_.size() != sequences.size()) throw MyException("Unequal number of headers and sequences!");
+    if (sequences.empty()) throw Exception("Unable to initialize alignment: no aligned sequences found!");
+    if (headers_.size() != sequences.size()) throw Exception("Unequal number of headers and sequences!");
     const int seqs = sequences.size();
     const int cols = sequences[0].size();
     for (int i = 1; i < seqs; ++i)
         if (static_cast<int>(sequences[i].size()) != cols)
-            throw MyException("Bad alignment format: sequence %i has length %i but should have length %i!", i, sequences[i].size(), cols);
+            throw Exception("Bad alignment format: sequence %i has length %i but should have length %i!", i, sequences[i].size(), cols);
 
     //validate characters and convert to integer representation
     resize(seqs, cols);
@@ -77,7 +77,7 @@ void Alignment::unserialize(std::istream& in)
             if (alphabet_->valid(c, true))
                 seqs_[i][j] = alphabet_->ctoi(c);
             else
-                throw MyException("Invalid character %c at position %i of sequence '%s'", c, j, headers_[i].c_str());
+                throw Exception("Invalid character %c at position %i of sequence '%s'", c, j, headers_[i].c_str());
         }
 
     set_endgaps();  // Replace gap with endgap for all gaps at either end of a sequence
@@ -109,7 +109,7 @@ void Alignment::set_endgaps()
 void Alignment::resize(int nseqs, int ncols)
 {
     if (nseqs == 0 || ncols == 0)
-        throw MyException("Bad dimensions for alignment resizing: nseqs=%i ncols=%i", nseqs, ncols);
+        throw Exception("Bad dimensions for alignment resizing: nseqs=%i ncols=%i", nseqs, ncols);
     seqs_ = matrix<char>(nseqs, ncols);
     headers_.resize(nseqs);
 }

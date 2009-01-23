@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -74,6 +75,7 @@ TEST(CountsProfileTest, ConversionToCounts)
 
     EXPECT_TRUE(profile.has_counts());
     EXPECT_FLOAT_EQ(0.25*profile.neff(3), profile[3][na->ctoi('A')]);
+    EXPECT_FLOAT_EQ(profile.neff(3), std::accumulate(profile.col_begin(3), profile.col_end(3), 0.0f));
 }
 
 TEST(CountsProfileTest, DISABLED_AlignmentBpdS)
@@ -85,6 +87,7 @@ TEST(CountsProfileTest, DISABLED_AlignmentBpdS)
     cs::CountsProfile profile(alignment, true);
 
     EXPECT_NEAR(0.92, profile[122][aa->ctoi('H')], kDelta);
+    EXPECT_FLOAT_EQ(1.0f, std::accumulate(profile.col_begin(122), profile.col_end(122), 0.0f));
 }
 
 TEST(CountsProfileTest, DISABLED_Alignment1Q7L)

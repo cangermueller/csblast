@@ -12,7 +12,7 @@
 #include <string>
 #include <vector>
 
-#include "my_exception.h"
+#include "exception.h"
 #include "sequence_alphabet.h"
 #include "shared_ptr.h"
 
@@ -58,11 +58,11 @@ void Sequence::init(std::string header, std::string sequence)
     const int seqlen = sequence.length();
     seq_.resize(seqlen);
     for (int i = 0; i < seqlen; ++i) {
-        char c = toupper(sequence[i]);
+        char c = match_chr(sequence[i]);
         if (alphabet_->valid(c)) {
             seq_[i] = alphabet_->ctoi(c);
         } else {
-            throw MyException("Invalid character %c at position %i of sequence '%s'", c, i, header_.c_str());
+            throw Exception("Invalid character %c at position %i of sequence '%s'", c, i, header_.c_str());
         }
     }
 }
@@ -78,10 +78,10 @@ void Sequence::read(std::istream& in)
     //read header
     if (getline(in, buffer)) {
         if (buffer.empty() ||  buffer[0] != '>')
-            throw MyException("Bad format: first line of FASTA sequence does not start with '>' character!");
+            throw Exception("Bad format: first line of FASTA sequence does not start with '>' character!");
         header.append(buffer.begin() + 1, buffer.end());
     } else {
-        throw MyException("Failed to read from FASTA formatted input stream!");
+        throw Exception("Failed to read from FASTA formatted input stream!");
     }
     //read sequence
     while (in.peek() != '>' && getline(in, buffer))

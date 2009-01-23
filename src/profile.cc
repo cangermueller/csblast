@@ -11,7 +11,7 @@
 #include <iostream>
 #include <limits>
 
-#include "my_exception.h"
+#include "exception.h"
 #include "profile.h"
 #include "sequence_alphabet.h"
 #include "shared_ptr.h"
@@ -41,7 +41,7 @@ Profile::Profile(const Profile& other,
           alphabet_(other.alphabet_)
 {
     if (index + length > other.ncols())
-        throw MyException("Arguments index=%i and length=%i for construction of sub-profile are out of bounds!", index, length);
+        throw Exception("Arguments index=%i and length=%i for construction of sub-profile are out of bounds!", index, length);
     for (int i = 0; i < ncols(); ++i)
         for (int a = 0; a < nalph(); ++a)
             data_[i][a] = other[i+index][a];
@@ -88,7 +88,7 @@ void Profile::unserialize(std::istream& in)
     std::string buffer;
     while (getline(in, buffer) && !strscn(buffer.c_str())) continue;
     if (buffer != "Profile")
-        throw MyException("Bad format: serialized profile does not start with 'Profile' class identifier!");
+        throw Exception("Bad format: serialized profile does not start with 'Profile' class identifier!");
     read_data(in);  // Read column data records line by line
 }
 
@@ -103,16 +103,16 @@ void Profile::read_data(std::istream& in)
     if (in.getline(buffer, kBufferSize) && strncmp(buffer, "ncols", 5) == 0)
         ncols = atoi(buffer + 5);
     else
-        throw MyException("Bad format: serialized profile does not contain 'ncols' record!");
+        throw Exception("Bad format: serialized profile does not contain 'ncols' record!");
 
     // Read nalph
     int nalph = 0;
     if (in.getline(buffer, kBufferSize) && strncmp(buffer, "nalph", 5) == 0)
         nalph = atoi(buffer + 5);
     else
-        throw MyException("Bad format: serialized profile does not contain 'nalph' record!");
+        throw Exception("Bad format: serialized profile does not contain 'nalph' record!");
     if (nalph != alphabet_->size())
-        throw MyException("Bad format: nalph=%i does not fit with provided alphabet!", nalph);
+        throw Exception("Bad format: nalph=%i does not fit with provided alphabet!", nalph);
 
     resize(ncols, nalph);
 
@@ -126,7 +126,7 @@ void Profile::read_data(std::istream& in)
         ptr = buffer;
         i = strtoi(ptr) - 1;
         if (!ptr)
-            throw MyException("Bad format: malformed line after column record %i!", i - 1);
+            throw Exception("Bad format: malformed line after column record %i!", i - 1);
 
         for (int a = 0; a < nalph; ++a) {
             int log_p = strtoi_asterix(ptr);
@@ -134,7 +134,7 @@ void Profile::read_data(std::istream& in)
         }
     }
     if (i != ncols - 1)
-        throw MyException("Bad format: profile has %i column records but should have %i!", i+1, ncols);
+        throw Exception("Bad format: profile has %i column records but should have %i!", i+1, ncols);
 }
 
 void Profile::serialize(std::ostream& out) const
@@ -169,7 +169,7 @@ void Profile::print_data(std::ostream& out) const
 void Profile::resize(int ncols, int nalph)
 {
     if (ncols == 0 || nalph == 0)
-        throw MyException("Bad dimensions for profile resizing: ncols=%i nalph=%i", ncols, nalph);
+        throw Exception("Bad dimensions for profile resizing: ncols=%i nalph=%i", ncols, nalph);
     data_ = matrix<float>(ncols, nalph);
 }
 
@@ -206,7 +206,7 @@ void normalize(Profile& profile, float value)
             float fac = value / sum;
             for (int a = 0; a < nalph; ++a) profile[i][a] *= fac;
         } else {
-            throw MyException("Unable to normalize profile to one. Sum of column %i is zero!", i);
+            throw Exception("Unable to normalize profile to one. Sum of column %i is zero!", i);
         }
     }
 }

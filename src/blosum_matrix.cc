@@ -6,7 +6,7 @@
 #include "blosum_matrix.h"
 
 #include "amino_acid_alphabet.h"
-#include "my_exception.h"
+#include "exception.h"
 #include "substitution_matrix.h"
 
 namespace
@@ -100,7 +100,7 @@ BlosumMatrix::BlosumMatrix(Type matrix)
             init(g_blosum80);
             break;
         default:
-            throw MyException("Unsupported BLOSUM matrix!");
+            throw Exception("Unsupported BLOSUM matrix!");
     }
 }
 

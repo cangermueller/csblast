@@ -13,7 +13,7 @@
 #include <algorithm>
 #include <vector>
 
-#include "my_exception.h"
+#include "exception.h"
 
 namespace cs
 {
@@ -30,7 +30,7 @@ void SequenceAlphabet::init()
 {
     const char* itoc = get_itoc();  // derived classes decide how to fill itoc array
     if (static_cast<int>(strlen(itoc)) != size_)
-        throw MyException("Provided itoc array has length %i but should have length %i!", strlen(itoc), size_);
+        throw Exception("Provided itoc array has length %i but should have length %i!", strlen(itoc), size_);
 
     // Setup itoc vector
     copy(itoc, itoc + strlen(itoc), itoc_.begin());

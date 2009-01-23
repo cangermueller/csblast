@@ -24,8 +24,10 @@ class SequenceAlphabet;
 class Profile
 {
   public:
-    typedef matrix<float>::row_type profile_column;
-    typedef matrix<float>::const_row_type const_profile_column;
+    typedef matrix<float>::row_type col_type;
+    typedef matrix<float>::const_row_type const_col_type;
+    typedef matrix<float>::iterator iterator;
+    typedef matrix<float>::const_iterator const_iterator;
 
     // Constructs a dummy profile with given alphabet.
     Profile(const SequenceAlphabet* alphabet);
@@ -43,12 +45,14 @@ class Profile
                                                       const SequenceAlphabet* alphabet);
 
     // Access methods to get the (i,j) element
-    profile_column operator[](int i) { return data_[i]; }
-    const_profile_column operator[](int i) const { return data_[i]; }
+    col_type operator[](int i) { return data_[i]; }
+    const_col_type operator[](int i) const { return data_[i]; }
     // Returns #columns in the profile
     int ncols() const { return data_.nrows(); }
     // Returns #entries per column
     int nalph() const { return data_.ncols(); }
+    // Returns the total number of elements in the profile.
+    int size() const { return data_.size(); }
     // Transforms profile to logspace
     virtual void transform_to_logspace();
     // Transforms profile to linspace
@@ -57,6 +61,22 @@ class Profile
     bool logspace() const { return logspace_; }
     // Returns the underlying sequence alphabet of the profile.
     const SequenceAlphabet* alphabet() const { return alphabet_; }
+    // Returns an iterator to the first element in profile column i.
+    col_type col_begin(int i) { return data_.row_begin(i); }
+    // Returns an iterator just past the end of profile column i.
+    col_type col_end(int i) { return data_.row_end(i); }
+    // Returns a const iterator to the first element in profile column i.
+    const_col_type col_begin(int i) const { return data_.row_begin(i); }
+    // Returns a const iterator just past the end of profile column i.
+    const_col_type col_end(int i) const { return data_.row_end(i); }
+    // Returns an iterator to the first element in the profile matrix.
+    iterator begin() { return data_.begin(); }
+    // Returns an iterator just past the end of the profile matrix.
+    iterator end() { return data_.end(); }
+    // Returns a const iterator to the first element in the profile matrix.
+    const_iterator begin() const { return data_.begin(); }
+    // Returns a const iterator just past the end of the profile matrix.
+    const_iterator end() const { return data_.end(); }
 
     // friends
     friend std::istream& operator>> (std::istream& in, Profile& profile);

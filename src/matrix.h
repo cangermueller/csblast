@@ -50,23 +50,23 @@ class matrix
     }
 
     // public functions
-    int nrows( ) const { return nrows_; }
-    int ncols( ) const { return ncols_; }
-    int size( ) const { return nrows_ * ncols_; }
+    int nrows() const { return nrows_; }
+    int ncols() const { return ncols_; }
+    int size() const { return nrows_ * ncols_; }
 
     // element access
     row_type row_begin(int n) { return &m_[n * ncols()]; }
-    row_type row_end(int n) { return row_begin() + ncols(); }
+    row_type row_end(int n) { return row_begin(n) + ncols(); }
     col_type col_begin(int n) { return col_type(&m_[n], ncols()); }
     col_type col_end(int n) { return col_begin(n) + ncols(); }
     const_row_type row_begin(int n) const { return &m_[n * ncols()]; }
-    const_row_type row_end(int n) const { return row_begin() + ncols( ); }
+    const_row_type row_end(int n) const { return row_begin(n) + ncols( ); }
     const_col_type col_begin(int n) const { return col_type(&m_[n], ncols( )); }
-    const_col_type col_end(int n) const { return col_begin() + ncols( ); }
+    const_col_type col_end(int n) const { return col_begin(n) + ncols( ); }
     iterator begin() { return &m_[0]; }
     iterator end() { return begin() + size(); }
     const_iterator begin() const { return &m_[0]; }
-    const_iterator end() const { return begin( ) + size( ); }
+    const_iterator end() const { return begin() + size( ); }
 
     // operators
     self& operator=(const self& x) {

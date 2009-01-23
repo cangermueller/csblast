@@ -1,5 +1,5 @@
-#ifndef CS_MY_EXCEPTION_H
-#define CS_MY_EXCEPTION_H
+#ifndef CS_EXCEPTION_H
+#define CS_EXCEPTION_H
 /***************************************************************************
  *   Copyright (C) 2008 by Andreas Biegert                                 *
  *   andreas.biegert@googlemail.com                                        *
@@ -17,12 +17,12 @@
 namespace cs
 {
 
-class MyException : public std::exception
+class Exception : public std::exception
 {
 public:
-    MyException(const std::string &m) : msg(m), c(0) {}
+    Exception(const std::string &m) : msg(m), c(0) {}
 
-    MyException(const char *str, ...) : c(0)
+    Exception(const char *str, ...) : c(0)
     {
         char *buffer = new char[1000];
         va_list ap;
@@ -33,7 +33,7 @@ public:
         delete [] buffer;
     }
 
-    MyException(const int type, const char *str, ...) : c(type)
+    Exception(const int type, const char *str, ...) : c(type)
     {
         char *buffer = new char[1000];
         va_list ap;
@@ -44,7 +44,7 @@ public:
         delete [] buffer;
     }
 
-    virtual ~MyException() throw() {};
+    virtual ~Exception() throw() {};
 
     virtual const char* what() const throw()
     { return msg.c_str(); }

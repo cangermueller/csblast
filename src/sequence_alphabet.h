@@ -9,6 +9,8 @@
 // Abstract base class for alphabet classes whose elements can be represented
 // by a sequence of characters (e.g. amino acids or nucleic acids).
 
+#include <cctype>
+
 #include <vector>
 
 namespace cs
@@ -77,6 +79,12 @@ class SequenceAlphabet
     // Conversion array from integer to character representation (incl. ANY, GAP, and ENDGAP).
     std::vector<char> itoc_;
 };
+
+// Converts a character to uppercase and '.' to '-'.
+inline char match_chr(char c) { return (isalpha(c) ? toupper(c) : (c == '.' ? '-' : c)); }
+
+// Converts a character to lowercase and '-' to '.'.
+inline char insert_chr(char c) { return (isalpha(c) ? tolower(c) : (c == '-' ? '.' : c)); }
 
 }  // cs
 

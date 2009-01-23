@@ -10,7 +10,7 @@
 #include <iostream>
 
 #include "alignment.h"
-#include "my_exception.h"
+#include "exception.h"
 #include "profile.h"
 #include "sequence.h"
 #include "sequence_alphabet.h"
@@ -108,23 +108,23 @@ void CountsProfile::unserialize(std::istream& in)
     // Check if stream actually contains a serialized profile
     while (in.getline(buffer, kBufferSize) && !strscn(buffer)) continue;
     if (strcmp(buffer, "CountsProfile") != 0)
-        throw MyException("Bad format: serialized alignment profile does not start with 'CountsProfile' class identifier!");
+        throw Exception("Bad format: serialized alignment profile does not start with 'CountsProfile' class identifier!");
 
     // Read ncols
     int ncols = 0;
     if (in.getline(buffer, kBufferSize) && strncmp(buffer, "ncols", 5) == 0)
         ncols = atoi(buffer + 5);
     else
-        throw MyException("Bad format: serialized alignment profile does not contain 'ncols' record!");
+        throw Exception("Bad format: serialized alignment profile does not contain 'ncols' record!");
 
     // Read nalph
     int nalph = 0;
     if (in.getline(buffer, kBufferSize) && strncmp(buffer, "nalph", 5) == 0)
         nalph = atoi(buffer + 5);
     else
-        throw MyException("Bad format: serialized alignment profile does not contain 'nalph' record!");
+        throw Exception("Bad format: serialized alignment profile does not contain 'nalph' record!");
     if (nalph != alphabet()->size())
-        throw MyException("Bad format: nalph=%i does not fit with provided alphabet!", nalph);
+        throw Exception("Bad format: nalph=%i does not fit with provided alphabet!", nalph);
 
     // Read has_counts
     if (in.getline(buffer, kBufferSize) && strncmp(buffer, "has_counts", 10) == 0)
@@ -143,7 +143,7 @@ void CountsProfile::unserialize(std::istream& in)
         ptr = buffer;
         i = strtoi(ptr) - 1;
         if (!ptr)
-            throw MyException("Bad format: malformed line after column record %i!", i - 1);
+            throw Exception("Bad format: malformed line after column record %i!", i - 1);
         // Read profile frequencies
         for (int a = 0; a < nalph; ++a) {
             int log_p = strtoi_asterix(ptr);
@@ -154,7 +154,7 @@ void CountsProfile::unserialize(std::istream& in)
         neff_[i] = pow(2.0, static_cast<float>(-log_neff) / kScaleFactor);
     }
     if (i != ncols - 1)
-        throw MyException("Bad format: alignment profile has %i column records but should have %i!", i+1, ncols);
+        throw Exception("Bad format: alignment profile has %i column records but should have %i!", i+1, ncols);
 }
 
 void CountsProfile::serialize(std::ostream& out) const

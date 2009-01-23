@@ -17,7 +17,7 @@
 #include "sequence.h"
 #include "sequence_alphabet.h"
 #include "matrix.h"
-#include "my_exception.h"
+#include "exception.h"
 
 namespace cs
 {
