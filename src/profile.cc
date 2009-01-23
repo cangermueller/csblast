@@ -209,7 +209,7 @@ void Profile::resize(int ncols, int nalph)
 {
     if (ncols == 0 || nalph == 0)
         throw Exception("Bad dimensions for profile resizing: ncols=%i nalph=%i", ncols, nalph);
-    data_ = matrix<float>(ncols, nalph);
+    data_.resize(ncols, nalph);
 }
 
 void reset(Profile& profile, float value)

@@ -10,7 +10,9 @@
 
 #include <algorithm>
 #include <iostream>
+#include <valarray>
 #include <vector>
+#include <string>
 
 #include "matrix.h"
 #include "exception.h"
@@ -22,87 +24,131 @@
 namespace
 {
 
+// Debug flag
 const bool kDebug = false;
+
+// Converts a character to uppercase and '.' to '-'.
+inline char match_chr(char c) { return (isalpha(c) ? toupper(c) : (c == '.' ? '-' : c)); }
+
+// Converts a character to lowercase and '-' to '.'.
+inline char insert_chr(char c) { return (isalpha(c) ? tolower(c) : (c == '-' ? '.' : c)); }
+
+// Predicate indicating if character belongs to match column.
+inline bool is_match_chr(char c) { return isalpha(c) && isupper(c) || c == '-'; }
+
+// Predicate indicating if character belongs to insert column.
+inline char is_insert_chr(char c) { return isalpha(c) && islower(c) || c == '.'; }
 
 } // namespace
 
 namespace cs
 {
 
-Alignment::Alignment(std::istream& in, const SequenceAlphabet* alphabet)
+Alignment::Alignment(std::istream& in, InputFormat format, const SequenceAlphabet* alphabet)
         : alphabet_(alphabet)
-{ unserialize(in); }
+{ read(in, format); }
 
-void Alignment::unserialize(std::istream& in)
+void Alignment::init(std::vector<std::string> headers, std::vector<std::string> seqs, bool case_insens)
 {
-    const int kBufferSize = 1048576; //1MB
-    std::string buffer;
-    buffer.reserve(kBufferSize);
-    std::vector< std::string >().swap(headers_);
-    std::vector< std::vector<char> > sequences;
-    std::vector<char> sequence;
+    if (seqs.empty()) throw Exception("Unable to initialize alignment: no aligned sequences found!");
+    if (headers.size() != seqs.size())
+        throw Exception("Unable to initialize alignment: unequal number of headers and sequences!");
+    // Remove whitespace from sequences
+    for (std::vector<std::string>::iterator iter = seqs.begin(); iter != seqs.end(); ++iter)
+        iter->erase(remove_if(iter->begin(), iter->end(), isspace), iter->end());
 
-    while (in.good()) {
-        //read header
-        if (getline(in, buffer)) {
-            if (buffer.empty() ||  buffer[0] != '>')
-                throw Exception("Bad format: first line of aligned FASTA sequence does not start with '>' character!");
-            headers_.push_back(std::string(buffer.begin()+1, buffer.end()));
-        } else {
-            throw Exception("Failed to read from FASTA formatted input stream!");
-        }
-        //read sequence
-        while (in.peek() != '>' && getline(in, buffer))
-            sequence.insert(sequence.end(), buffer.begin(), buffer.end());
-        //strip whitespace and newlines from sequence.
-        sequence.erase(remove_if(sequence.begin(), sequence.end(), isspace),
-                       sequence.end());
-        sequences.push_back(sequence);
-        std::vector<char>().swap(sequence); //clear for next use
-    }
+    const int nseqs = seqs.size();
+    const int ncols = seqs[0].length();
+    for (int k = 1; k < nseqs; ++k)
+        if (static_cast<int>(seqs[k].length()) != ncols)
+            throw Exception("Bad alignment: sequence %i has length %i but should have %i!", k, seqs[k].length(), ncols);
 
-    if (sequences.empty()) throw Exception("Unable to initialize alignment: no aligned sequences found!");
-    if (headers_.size() != sequences.size()) throw Exception("Unequal number of headers and sequences!");
-    const int seqs = sequences.size();
-    const int cols = sequences[0].size();
-    for (int i = 1; i < seqs; ++i)
-        if (static_cast<int>(sequences[i].size()) != cols)
-            throw Exception("Bad alignment format: sequence %i has length %i but should have length %i!", i, sequences[i].size(), cols);
-
-    //validate characters and convert to integer representation
-    resize(seqs, cols);
-    for (int k = 0; k < seqs; ++k)
-        for (int i = 0; i < cols; ++i) {
-            const char c = toupper(sequences[k][i]);
+    // Validate characters and convert to integer representation
+    headers_.resize(nseqs);
+    resize(seqs.size(), seqs[0].length());
+    for (int k = 0; k < nseqs; ++k) {
+        headers_[k] = headers[k];
+        for (int i = 0; i < ncols; ++i) {
+            const char c = seqs[k][i];
+            cols_[i] = i;
+            mask_[i] = case_insens || is_match_chr(c);
             if (alphabet_->valid(c, true))
                 seqs_[i][k] = alphabet_->ctoi(c);
             else
                 throw Exception("Invalid character %c at position %i of sequence '%s'", c, i, headers_[k].c_str());
         }
+    }
 
-    set_endgaps();  // Replace gap with endgap for all gaps at either end of a sequence
+    // Initialize index array for match columns
+    const int num_match_cols = std::count(&mask_[0], &mask_[0] + ncols, true);
+    match_cols_.resize(num_match_cols);
+    match_cols_ =cols_[mask_];
+
+    // Replace gap with endgap for all gaps at either end of a sequence
+    for (int k = 0; k < nseqs; ++k) {
+        for (int i = 0; i < ncols && seqs_[i][k] == alphabet_->gap(); ++i)
+            seqs_[i][k] = alphabet_->endgap();
+        for (int i = ncols - 1; i >= 0 && seqs_[i][k] == alphabet_->gap(); --i)
+            seqs_[i][k] = alphabet_->endgap();
+    }
 }
 
-void Alignment::serialize(std::ostream& out) const
+void Alignment::read(std::istream& in, InputFormat format)
 {
-    const int kLineLength = 80;
+    switch (format) {
+        case FASTA_INPUT:
+            read_fasta(in);
+            break;
+        default:
+            throw Exception("Unsupported alignment input format!");
+    }
+}
 
+void Alignment::read_fasta(std::istream& in)
+{
+    const int kBufferSize = 1048576; //1MB
+    std::string buffer;
+    buffer.reserve(kBufferSize);
+
+    std::vector<std::string> headers; // temporary for headers
+    std::vector<std::string> seqs;    // temporary for sequences
+    while (in.good()) {
+        //read header
+        if (getline(in, buffer)) {
+            if (buffer.empty() ||  buffer[0] != '>')
+                throw Exception("Bad format: first line of aligned FASTA sequence does not start with '>' character!");
+            headers.push_back(std::string(buffer.begin()+1, buffer.end()));
+        } else {
+            throw Exception("Failed to read from FASTA formatted input stream!");
+        }
+        //read sequence
+        seqs.push_back("");
+        while (in.peek() != '>' && getline(in, buffer))
+            seqs[seqs.size()-1].append(buffer.begin(), buffer.end());
+    }
+
+    init(headers, seqs, true);
+}
+
+void Alignment::write(std::ostream& out, OutputFormat format, int width) const
+{
+    switch (format) {
+        case FASTA_OUTPUT:
+            write_fasta(out, width);
+            break;
+        default:
+            throw Exception("Unsupported alignment output format!");
+    }
+}
+
+void Alignment::write_fasta(std::ostream& out, int width) const
+{
     for (int k = 0; k < nseqs(); ++k) {
         out << '>' << headers_[k] << std::endl;
         for (int i = 0; i < ncols(); ++i) {
             out << chr(k,i);
-            if ((i+1) % kLineLength == 0) out << std::endl;
+            if ((i+1) % width == 0) out << std::endl;
         }
-    }
-}
-
-void Alignment::set_endgaps()
-{
-    for (int k = 0; k < nseqs(); ++k) {
-        for (int i = 0; i < ncols() && seqs_[i][k] == alphabet_->gap(); ++i)
-            seqs_[i][k] = alphabet_->endgap();
-        for (int i = ncols()-1; i >=0 && seqs_[i][k] == alphabet_->gap(); --i)
-            seqs_[i][k] = alphabet_->endgap();
     }
 }
 
@@ -110,7 +156,11 @@ void Alignment::resize(int nseqs, int ncols)
 {
     if (nseqs == 0 || ncols == 0)
         throw Exception("Bad dimensions for alignment resizing: nseqs=%i ncols=%i", nseqs, ncols);
-    seqs_ = matrix<char>(ncols, nseqs);
+
+    seqs_.resize(ncols, nseqs);
+    cols_.resize(ncols);
+    match_cols_.resize(ncols);
+    mask_.resize(ncols);
     headers_.resize(nseqs);
 }
 
@@ -159,18 +209,6 @@ void Alignment::remove_columns_by_gap_rule(int gap_threshold)
     }
     //seqs_.erase(std::remove(seqs_.begin(), seqs_.end(), static_cast<char>(kRemove)), seqs_.end());
     //std::vector<char>(seqs_.begin(), seqs_.end()).swap(seqs_); // shrink to fit
-}
-
-std::istream& operator>> (std::istream& in, Alignment& alignment)
-{
-    alignment.unserialize(in);
-    return in;
-}
-
-std::ostream& operator<< (std::ostream& out, const Alignment& alignment)
-{
-    alignment.serialize(out);
-    return out;
 }
 
 std::pair<std::vector<float>, float> global_weights_and_diversity(const Alignment& alignment)

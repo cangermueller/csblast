@@ -5,6 +5,7 @@
 
 #include "sequence_alphabet.h"
 
+#include <cctype>
 #include <cmath>
 #include <cstddef>
 #include <cstring>
@@ -40,9 +41,9 @@ void SequenceAlphabet::init()
     itoc_[size_ + 2] = gap_;  // ENDGAP
 
     // Setup ctoi vector
-    for (int i = 0; i < size_; ++i) ctoi_[static_cast<int>(itoc_[i])] = i;
-    ctoi_[static_cast<int>(any_)] = size_;      // ANY
-    ctoi_[static_cast<int>(gap_)] = size_ + 1;  // GAP
+    for (int i = 0; i < size_; ++i) ctoi_[toupper(itoc_[i])] = i;
+    ctoi_[toupper(any_)] = size_;      // ANY
+    ctoi_[toupper(gap_)] = size_ + 1;  // GAP
 }
 
 void SequenceAlphabet::print(std::ostream& out, const std::string& delim) const

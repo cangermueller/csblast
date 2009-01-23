@@ -47,7 +47,7 @@ TEST(CountsProfileTest, ConstructionFromAlignment)
     data.append(">seq3\nACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTAC\n");
     data.append(">seq4\nACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTAC\n");
     std::istringstream ss(data);
-    cs::Alignment alignment(ss, na);
+    cs::Alignment alignment(ss, cs::Alignment::FASTA_INPUT, na);
 
     cs::CountsProfile profile(alignment, true); // use position-dependent weights
 
@@ -67,7 +67,7 @@ TEST(CountsProfileTest, ConversionToCounts)
     data.append(">seq3\nGTACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGT\n");
     data.append(">seq4\nCGTACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACG\n");
     std::istringstream ss(data);
-    cs::Alignment alignment(ss, na);
+    cs::Alignment alignment(ss, cs::Alignment::FASTA_INPUT, na);
 
     cs::CountsProfile profile(alignment, true);
     ASSERT_EQ(0.25f, profile[3][na->ctoi('A')]);
@@ -83,7 +83,7 @@ TEST(CountsProfileTest, DISABLED_AlignmentBpdS)
 {
     cs::AminoAcidAlphabet* aa = cs::AminoAcidAlphabet::instance();
     std::ifstream fin("../data/BpdS.fas");
-    cs::Alignment alignment(fin, aa);
+    cs::Alignment alignment(fin, cs::Alignment::FASTA_INPUT, aa);
     fin.close();
     cs::CountsProfile profile(alignment, true);
 
@@ -91,11 +91,11 @@ TEST(CountsProfileTest, DISABLED_AlignmentBpdS)
     EXPECT_FLOAT_EQ(1.0f, std::accumulate(profile.col_begin(122), profile.col_end(122), 0.0f));
 }
 
-TEST(CountsProfileTest, Alignment1Q7L)
+TEST(CountsProfileTest, DISABLED_Alignment1Q7L)
 {
     cs::AminoAcidAlphabet* aa = cs::AminoAcidAlphabet::instance();
     std::ifstream fin("../data/1Q7L.fas");
-    cs::Alignment alignment(fin, aa);
+    cs::Alignment alignment(fin, cs::Alignment::FASTA_INPUT, aa);
     fin.close();
     cs::CountsProfile profile(alignment, true);
 
@@ -106,7 +106,7 @@ TEST(CountsProfileTest, AlignmentCelegansRefGene)
 {
     cs::NucleotideAlphabet* aa = cs::NucleotideAlphabet::instance();
     std::ifstream fin("../data/ce_refgene.fas");
-    cs::Alignment alignment(fin, aa);
+    cs::Alignment alignment(fin, cs::Alignment::FASTA_INPUT, aa);
     fin.close();
     cs::CountsProfile profile(alignment, false);
 

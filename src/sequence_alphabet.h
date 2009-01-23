@@ -24,7 +24,7 @@ class SequenceAlphabet
     // Returns the number of letters in the alphabet (incl. ANY)
     int size() const { return size_; }
     // Returns the integer representation of the given character.
-    int ctoi(char letter) const { return ctoi_[static_cast<int>(letter)]; }
+    int ctoi(char letter) const { return ctoi_[toupper(letter)]; }
     // Returns the character representation of the given integer.
     char itoc(int letter) const { return itoc_[letter]; }
     // Returns the integer representation of the any character.
@@ -47,7 +47,7 @@ class SequenceAlphabet
     char gap_chr() const { return gap_; }
     // Returns true if the character belongs to the alphabet.
     bool valid(char letter, bool allow_gap = false) const
-    { return ctoi_[letter] != kInvalidChar && (allow_gap || letter != gap_); }
+    { return ctoi_[toupper(letter)] != kInvalidChar && (allow_gap || letter != gap_); }
     // Returns a const iterator to the first character in the alphabet.
     const_iterator begin() const { return itoc_.begin(); }
     // Returns a const iterator just past the end of last distinct character in the alphabet.
@@ -66,7 +66,7 @@ class SequenceAlphabet
     // Initializes ctoi and itoc conversion arrays.
     void init();
     // Allows derived classes to set additional ctoi conversions.
-    void set_ctoi(char c, int i) { ctoi_[c] = i; }
+    void set_ctoi(char letter, int i) { ctoi_[toupper(letter)] = i; }
 
   private:
     // Disallow copy and assign
@@ -87,12 +87,6 @@ class SequenceAlphabet
     // Conversion array from integer to character representation (incl. ANY, GAP, and ENDGAP).
     std::vector<char> itoc_;
 };
-
-// Converts a character to uppercase and '.' to '-'.
-inline char match_chr(char c) { return (isalpha(c) ? toupper(c) : (c == '.' ? '-' : c)); }
-
-// Converts a character to lowercase and '-' to '.'.
-inline char insert_chr(char c) { return (isalpha(c) ? tolower(c) : (c == '-' ? '.' : c)); }
 
 }  // cs
 

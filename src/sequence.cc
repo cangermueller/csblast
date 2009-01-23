@@ -58,7 +58,7 @@ void Sequence::init(std::string header, std::string sequence)
     const int seqlen = sequence.length();
     seq_.resize(seqlen);
     for (int i = 0; i < seqlen; ++i) {
-        char c = match_chr(sequence[i]);
+        char c = sequence[i];
         if (alphabet_->valid(c)) {
             seq_[i] = alphabet_->ctoi(c);
         } else {
