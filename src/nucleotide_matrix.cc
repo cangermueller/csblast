@@ -27,7 +27,7 @@ void NucleotideMatrix::init(float match, float mismatch)
     // Fill substitution matrix
     for (int a = 0; a < size_; ++a)
         for (int b = 0; b < size_; ++b)
-            s_(a,b) = a==b ? match : mismatch;
+            s_[a][b] = a==b ? match : mismatch;
 
     init_from_substitution_matrix_and_background_frequencies();
 }

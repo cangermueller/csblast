@@ -1,87 +1,109 @@
 #ifndef MATRIX_H
 #define MATRIX_H
-/***************************************************************************
- *   Copyright (C) 2008 by Andreas Biegert                                 *
- *   andreas.biegert@googlemail.com                                        *
- ***************************************************************************/
 
-// DESCRIPTION:
-// Matrix template class with continuous memory footprint in row major layout.
+#include "stride_iter.h"
 
-#include <vector>
+#include <valarray>
+#include <numeric>
+#include <algorithm>
 
-#include "my_exception.h"
+using std::valarray;
 
-template<typename T>
-class Matrix {
+template<class Value_T>
+class matrix
+{
   public:
-    Matrix();
-    Matrix(int nrows, int ncols);
-    Matrix(int nrows, int ncols, const T& val);
+    // public typedefs
+    typedef Value_T value_type;
+    typedef matrix self;
+    typedef value_type* iterator;
+    typedef const value_type* const_iterator;
+    typedef Value_T* row_type;
+    typedef stride_iter<value_type*> col_type;
+    typedef const value_type* const_row_type;
+    typedef stride_iter<const value_type*> const_col_type;
 
-    // Access methods to get the (i,j) element:
-    T&       operator() (int i, int j);
-    const T& operator() (int i, int j) const;
-    // Returns #rows in this matrix
-    int nrows() const;
-    // Returns #columns in this matrix
-    int ncols() const;
-    // Resizes the matrix to given dimensions. Old data is lost.
-    void resize(int nrows, int ncols);
+    // constructors
+    matrix() : nrows(0), ncols(0), m() { }
+    matrix(int r, int c) : nrows(r), ncols(c), m(r * c) { }
+    matrix(const self& x) : nrows(x.nrows), ncols(x.ncols), m(x.m) { }
+
+    matrix(int r, int c, const Value_T& val)
+            : nrows(r), ncols(c), m(r * c)
+    {
+        for (int i = 0; i < r * c; ++i) m[i] = val;
+    }
+
+    template<typename T>
+    explicit matrix(const valarray<T>& x)
+            : nrows(x.size()), ncols(1), m(x.size() + 1)
+    {
+        for (int i =0 ; i < x.size(); ++i) m[i] = x[i];
+    }
+
+    // allow construction from matricies of other types
+    template<typename T>
+    explicit matrix(const matrix<T>& x)
+            : nrows(x.nrows), ncols(x.ncols), m(x.size() + 1)
+    {
+        copy(x.begin(), x.end(), m.begin());
+    }
+
+    // public functions
+    int rows( ) const { return nrows; }
+    int cols( ) const { return ncols; }
+    int size( ) const { return nrows * ncols; }
+
+    // element access
+    row_type row_begin(int n) { return &m[n * cols()]; }
+    row_type row_end(int n) { return row_begin() + cols(); }
+    col_type col_begin(int n) { return col_type(&m[n], cols()); }
+    col_type col_end(int n) { return col_begin(n) + cols(); }
+    const_row_type row_begin(int n) const { return &m[n * cols()]; }
+    const_row_type row_end(int n) const { return row_begin() + cols( ); }
+    const_col_type col_begin(int n) const { return col_type(&m[n], cols( )); }
+    const_col_type col_end(int n) const { return col_begin() + cols( ); }
+    iterator begin() { return &m[0]; }
+    iterator end() { return begin() + size(); }
+    const_iterator begin() const { return &m[0]; }
+    const_iterator end() const { return begin( ) + size( ); }
+
+    // operators
+    self& operator=(const self& x) {
+        m.resize(x.size());
+        m = x.m;
+        nrows = x.nrows;
+        ncols = x.ncols;
+        return *this;
+    }
+    self& operator=(value_type x) { m = x; return *this; }
+    row_type operator[](int n) { return row_begin(n); }
+    const_row_type operator[](int n) const { return row_begin(n); }
+    self& operator+=(const self& x) { m += x.m; return *this; }
+    self& operator-=(const self& x) { m -= x.m; return *this; }
+    self& operator+=(value_type x) { m += x; return *this; }
+    self& operator-=(value_type x) { m -= x; return *this; }
+    self& operator*=(value_type x) { m *= x; return *this; }
+    self& operator/=(value_type x) { m /= x; return *this; }
+    self& operator%=(value_type x) { m %= x; return *this; }
+    self operator-( ) { return -m; }
+    self operator+( ) { return +m; }
+    self operator!( ) { return !m; }
+    self operator~( ) { return ~m; }
+
+    // friend operators
+    friend self operator+(const self& x, const self& y) { return self(x) += y; }
+    friend self operator-(const self& x, const self& y) { return self(x) -= y; }
+    friend self operator+(const self& x, value_type y) { return self(x) += y; }
+    friend self operator-(const self& x, value_type y) { return self(x) -= y; }
+    friend self operator*(const self& x, value_type y) { return self(x) *= y; }
+    friend self operator/(const self& x, value_type y) { return self(x) /= y; }
+    friend self operator%(const self& x, value_type y) { return self(x) %= y; }
 
   private:
-    int nrows_;
-    int ncols_;
-    std::vector<T> data_;
+    int nrows;
+    int ncols;
+    mutable valarray<Value_T> m;
 };
-
-
-
-template<typename T>
-Matrix<T>::Matrix()
-        : nrows_(0), ncols_(0)
-{}
-
-template<typename T>
-Matrix<T>::Matrix(int nrows, int ncols)
-        : nrows_(nrows), ncols_(ncols), data_(nrows * ncols)
-{
-    if (nrows == 0 || ncols == 0)
-        throw MyException("Bad size arguments for matrix: nrows=%i ncols=%i", nrows, ncols);
-}
-
-template<typename T>
-Matrix<T>::Matrix(int nrows, int ncols, const T& val)
-        : nrows_(nrows), ncols_(ncols), data_(nrows * ncols, val)
-{
-    if (nrows == 0 || ncols == 0)
-        throw MyException("Bad size arguments for matrix: nrows=%i ncols=%i", nrows, ncols);
-}
-
-template<typename T>
-inline int Matrix<T>::nrows() const
-{ return nrows_; }
-
-template<typename T>
-inline int Matrix<T>::ncols() const
-{ return ncols_; }
-
-template<typename T>
-inline T& Matrix<T>::operator() (int i, int j)
-{ return data_[i*ncols_ + j]; }
-
-template<typename T>
-inline const T& Matrix<T>::operator() (int i, int j) const
-{ return data_[i*ncols_ + j]; }
-
-template<typename T>
-void Matrix<T>::resize(int nrows, int ncols)
-{
-    if (nrows == 0 || ncols == 0)
-        throw MyException("Bad size arguments for matrix: nrows=%i ncols=%i", nrows, ncols);
-    nrows_ = nrows;
-    ncols_ = ncols;
-    data_.resize(nrows * ncols);
-}
 
 #endif

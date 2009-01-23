@@ -6,6 +6,7 @@
 #include "blosum_matrix.h"
 
 #include "amino_acid_alphabet.h"
+#include "my_exception.h"
 #include "substitution_matrix.h"
 
 namespace
@@ -109,12 +110,12 @@ void BlosumMatrix::init(const float* blosum_xx)
     int n = 0;
     for (int a = 0; a < size_; ++a)
         for (int b = 0; b <= a; ++b, ++n)
-            p_(a,b) = blosum_xx[n];
+            p_[a][b] = blosum_xx[n];
 
     // Add uppper right matrix part
     for (int a = 0; a < size_-1; ++a)
         for (int b = a+1; b < size_; ++b)
-            p_(a,b) = p_(b,a);
+            p_[a][b] = p_[b][a];
 
     init_from_target_frequencies();
 }

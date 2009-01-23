@@ -43,19 +43,19 @@ CountsProfile::CountsProfile(const Alignment& alignment, bool position_specific_
     const int any   = alphabet()->any();
 
     if (position_specific_weights) {
-        std::pair< Matrix<float>, std::vector<float> > wi_neff = position_specific_weights_and_diversity(alignment);
+        std::pair< matrix<float>, std::vector<float> > wi_neff = position_specific_weights_and_diversity(alignment);
         neff_.insert(neff_.begin(), wi_neff.second.begin(), wi_neff.second.end());
         for (int i = 0; i < ncols; ++i)
             for (int k = 0; k < nseqs; ++k)
-                if (alignment(k,i) < any)
-                    (*this)(i, alignment(k,i)) += wi_neff.first(i,k);
+                if (alignment[k][i] < any)
+                    (*this)(i, alignment[k][i]) += wi_neff.first[i][k];
     } else {
         std::pair<std::vector<float>, float> wg_neff = global_weights_and_diversity(alignment);
         neff_.insert(neff_.begin(), ncols, wg_neff.second);
         for (int i = 0; i < ncols; ++i)
             for (int k = 0; k < nseqs; ++k)
-                if (alignment(k,i) < any)
-                    (*this)(i, alignment(k,i)) += wg_neff.first[k];
+                if (alignment[k][i] < any)
+                    (*this)(i, alignment[k][i]) += wg_neff.first[k];
     }
 
     normalize(*this);

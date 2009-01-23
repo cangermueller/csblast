@@ -21,11 +21,11 @@ class SubstitutionMatrix
 {
   public:
     // Return substitution score S(a,b).
-    float s(int a, int b) const { return s_(a,b); }
+    float s(int a, int b) const { return s_[a][b]; }
     // Returns joint probability P(a,b).
-    float p(int a, int b) const { return p_(a,b); }
+    float p(int a, int b) const { return p_[a][b]; }
     // Returns probability P(a|b) "a given b".
-    float r(int a, int b) const { return r_(a,b); }
+    float r(int a, int b) const { return r_[a][b]; }
     // Returns background frequency of a.
     float f(int a) const { return f_[a]; }
 
@@ -45,11 +45,11 @@ protected:
     // Size of the matrix.
     const int size_;
     // Target frequency matrix P(a,b).
-    Matrix<float> p_;
+    matrix<float> p_;
     // Substitution matrix S(a,b).
-    Matrix<float> s_;
+    matrix<float> s_;
     // "a given b" probability matrix.
-    Matrix<float> r_;
+    matrix<float> r_;
     // Background frequencies of alphabet.
     std::vector<float> f_;
 

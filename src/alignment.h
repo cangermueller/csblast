@@ -34,22 +34,22 @@ class Alignment
     virtual ~Alignment() {}
 
     // Access methods to get the integer representation of character in column j of sequence i.
-    char&       operator() (int i, int j) { return sequences_(i,j); }
-    const char& operator() (int i, int j) const { return sequences_(i,j); }
+    matrix<char>::row_type operator[](int n) { return sequences_[n]; }
+    matrix<char>::const_row_type operator[](int n) const { return sequences_[n]; }
     // Returns the character in column j of sequence i.
-    char chr(int i, int j) const { return alphabet_->itoc((*this)(i,j)); }
+    char chr(int i, int j) const { return alphabet_->itoc(sequences_[i][j]); }
      // Returns true if the character at position (i,j) is a real symbol (letter < ANY)
-    bool less_any(int i, int j) const { return alphabet_->less_any((*this)(i,j)); }
+    bool less_any(int i, int j) const { return alphabet_->less_any(sequences_[i][j]); }
     // Returns true if the character at position (i,j) is a GAP or ENDGAP.
-    bool gap(int i, int j) const { return alphabet_->gap((*this)(i,j)) || alphabet_->endgap((*this)(i,j)); }
+    bool gap(int i, int j) const { return alphabet_->gap(sequences_[i][j]) || alphabet_->endgap(sequences_[i][j]); }
     // Returns true if the character at position (i,j) is ANY.
-    bool any(int i, int j) const { return alphabet_->gap((*this)(i,j)); }
+    bool any(int i, int j) const { return alphabet_->gap(sequences_[i][j]); }
     // Returns true if the character at position (i,j) is ENDGAP.
-    bool endgap(int i, int j) const { return alphabet_->endgap((*this)(i,j)); }
+    bool endgap(int i, int j) const { return alphabet_->endgap(sequences_[i][j]); }
     // Returns the number of sequences in the alignment.
-    int nseqs() const { return nseqs_; }
+    int nseqs() const { return sequences_.rows(); }
     // Returns the number of alignment columns.
-    int ncols() const { return ncols_; }
+    int ncols() const { return sequences_.cols(); }
     // Returns the header of sequence i.
     std::string header(int i) const { return headers_[i]; }
     // Sets the header of sequence i.
@@ -75,14 +75,10 @@ class Alignment
     // Replaces gap with endgap for all gaps at either end of a sequence.
     void set_endgaps();
     // Resize the sequence matrix and header vector to given dimensions. Attention: old data is lost!
-    void resize(int ncseqs, int ncols);
+    void resize(int nseqs, int ncols);
 
-    // Number seqeuences in the alignment.
-    int nseqs_;
-    // Number alignment columns.
-    int ncols_;
     // Row major matrix with sequences in integer representation.
-    Matrix<char> sequences_;
+    matrix<char> sequences_;
     // Headers of sequences in the alignment.
     std::vector< std::string > headers_;
     // Alphabet of sequences in the alignment.
@@ -105,7 +101,7 @@ std::pair<std::vector<float>, float> global_weights_and_diversity(const Alignmen
 // Calculates position-dependent sequence weights and number of effective sequences on subalignments.
 // The return value is a pair consisting of a weights matrix (element (i,k) denotes the weight of
 // sequence k in column i) and a vector with the number of effective sequences for alignment column.
-std::pair< Matrix<float>, std::vector<float> > position_specific_weights_and_diversity(const Alignment& alignment);
+std::pair< matrix<float>, std::vector<float> > position_specific_weights_and_diversity(const Alignment& alignment);
 
 }//cs
 
