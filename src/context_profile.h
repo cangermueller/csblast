@@ -13,7 +13,7 @@
 
 #include "alignment.h"
 #include "profile.h"
-#include "smart_ptr.h"
+#include "shared_ptr.h"
 
 namespace cs
 {
@@ -34,12 +34,12 @@ class ContextProfile : public Profile
     virtual ~ContextProfile() {}
 
     // Reads all available profiles from the input stream and returns them in a vector.
-    static std::vector< SmartPtr<ContextProfile> > read(std::istream& in,
+    static std::vector< shared_ptr<ContextProfile> > read(std::istream& in,
                                                         const SequenceAlphabet* alphabet);
 
     // Access methods to get the element j of central column
-    float&       operator() (int j) { return data_[central_ * ndim_ + j]; }
-    const float& operator() (int j) const { return data_[central_ * ndim_ + j]; }
+    float&       operator() (int j) { return data_[central_ * nrows_ + j]; }
+    const float& operator() (int j) const { return data_[central_ * nrows_ + j]; }
 
   protected:
     // Initializes the profile object with a serialized profile read from stream.

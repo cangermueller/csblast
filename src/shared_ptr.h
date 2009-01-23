@@ -6,20 +6,20 @@
  ***************************************************************************/
 
 // DESCRIPTION:
-// The SmartPtr class template stores a pointer to a dynamically allocated
+// The shared_ptr class template stores a pointer to a dynamically allocated
 // object, typically with a C++ new-expression. The object pointed to is
-// guaranteed to be deleted when the last SmartPtr pointing to it is destroyed
+// guaranteed to be deleted when the last shared_ptr pointing to it is destroyed
 // or reset.
 
 template <class T>
-class SmartPtr
+class shared_ptr
 {
 public:
-    SmartPtr(T *p) : p_(p), c_(new long(1)) {}
-    ~SmartPtr() { if(!--*c_) { delete c_; delete p_; } }
-    SmartPtr(const SmartPtr &init) : p_(init.p_), c_(init.c_) { ++*c_; }
+    shared_ptr(T *p) : p_(p), c_(new long(1)) {}
+    ~shared_ptr() { if(!--*c_) { delete c_; delete p_; } }
+    shared_ptr(const shared_ptr &init) : p_(init.p_), c_(init.c_) { ++*c_; }
 
-    SmartPtr &operator =(const SmartPtr &rhs)
+    shared_ptr &operator =(const shared_ptr &rhs)
     {
         if (this != &rhs) {
             if (!--*c_) { delete c_; delete p_; }

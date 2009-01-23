@@ -13,7 +13,7 @@
 #include <iostream>
 #include <vector>
 
-#include "smart_ptr.h"
+#include "shared_ptr.h"
 #include "sequence.h"
 #include "sequence_alphabet.h"
 #include "matrix.h"
@@ -25,31 +25,23 @@ namespace cs
 class Alignment
 {
   public:
-    friend std::istream& operator>> (std::istream& in, Alignment& alignment);
-    friend std::ostream& operator<< (std::ostream& out, const Alignment& alignment);
+    typedef matrix<char>::row_type alignment_row;
+    typedef matrix<char>::const_row_type const_alignment_row;
 
     // Constructs alignment multi FASTA formatted alignment read from input stream.
     Alignment(std::istream& in, const SequenceAlphabet* alphabet);
 
     virtual ~Alignment() {}
 
-    // Access methods to get the integer representation of character in column j of sequence i.
-    matrix<char>::row_type operator[](int n) { return sequences_[n]; }
-    matrix<char>::const_row_type operator[](int n) const { return sequences_[n]; }
+    // Access methods to get the integer representation of character in column i of sequence k.
+    alignment_row operator[](int k) { return seqs_[k]; }
+    const_alignment_row operator[](int k) const { return seqs_[k]; }
     // Returns the character in column j of sequence i.
-    char chr(int i, int j) const { return alphabet_->itoc(sequences_[i][j]); }
-     // Returns true if the character at position (i,j) is a real symbol (letter < ANY)
-    bool less_any(int i, int j) const { return alphabet_->less_any(sequences_[i][j]); }
-    // Returns true if the character at position (i,j) is a GAP or ENDGAP.
-    bool gap(int i, int j) const { return alphabet_->gap(sequences_[i][j]) || alphabet_->endgap(sequences_[i][j]); }
-    // Returns true if the character at position (i,j) is ANY.
-    bool any(int i, int j) const { return alphabet_->gap(sequences_[i][j]); }
-    // Returns true if the character at position (i,j) is ENDGAP.
-    bool endgap(int i, int j) const { return alphabet_->endgap(sequences_[i][j]); }
+    char chr(int i, int j) const { return alphabet_->itoc(seqs_[i][j]); }
     // Returns the number of sequences in the alignment.
-    int nseqs() const { return sequences_.rows(); }
+    int nseqs() const { return seqs_.nrows(); }
     // Returns the number of alignment columns.
-    int ncols() const { return sequences_.cols(); }
+    int ncols() const { return seqs_.ncols(); }
     // Returns the header of sequence i.
     std::string header(int i) const { return headers_[i]; }
     // Sets the header of sequence i.
@@ -60,6 +52,10 @@ class Alignment
     void remove_columns_by_gap_rule(int gap_threshold = 50);
     // Returns the underlying sequence alphabet.
     const SequenceAlphabet* alphabet() const { return alphabet_; }
+
+    // friends
+    friend std::istream& operator>> (std::istream& in, Alignment& alignment);
+    friend std::ostream& operator<< (std::ostream& out, const Alignment& alignment);
 
   protected:
     // Initializes the alignment object with an alignment in FASTA format read from given stream.
@@ -78,7 +74,7 @@ class Alignment
     void resize(int nseqs, int ncols);
 
     // Row major matrix with sequences in integer representation.
-    matrix<char> sequences_;
+    matrix<char> seqs_;
     // Headers of sequences in the alignment.
     std::vector< std::string > headers_;
     // Alphabet of sequences in the alignment.

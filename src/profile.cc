@@ -13,55 +13,46 @@
 
 #include "my_exception.h"
 #include "profile.h"
-#include "sequence.h"
 #include "sequence_alphabet.h"
-#include "smart_ptr.h"
+#include "shared_ptr.h"
 #include "util.h"
 
 namespace cs
 {
 
 Profile::Profile(const SequenceAlphabet* alphabet)
-        : ncols_(0),
-          ndim_(0),
-          alphabet_(alphabet)
+        : alphabet_(alphabet)
 {}
 
 Profile::Profile(int ncols,
                  const SequenceAlphabet* alphabet)
-        : ncols_(ncols),
-          ndim_(alphabet->size()),
-          data_(ncols * alphabet->size(), 0.0f),
+        : data_(ncols, alphabet->size(), 0.0f),
           alphabet_(alphabet)
 {}
 
 Profile::Profile(std::istream& in, const SequenceAlphabet* alphabet)
-            : ncols_(0),
-              ndim_(alphabet->size()),
-              alphabet_(alphabet)
+        : alphabet_(alphabet)
 { unserialize(in); }
 
 Profile::Profile(const Profile& other,
                  int index,
                  int length)
-        : ncols_(length),
-          ndim_(other.ndim_),
-          data_(length * other.ndim_, 0.0f),
+        : data_(length, other.nalph(), 0.0f),
           alphabet_(other.alphabet_)
 {
-    if (index + length > other.ncols_)
+    if (index + length > other.ncols())
         throw MyException("Arguments index=%i and length=%i for construction of sub-profile are out of bounds!", index, length);
-    for (int i = 0; i < ncols_; ++i)
-        for (int j = 0; j < ndim_; ++j)
-            (*this)(i,j) = other(i+index,j);
+    for (int i = 0; i < ncols(); ++i)
+        for (int a = 0; a < nalph(); ++a)
+            data_[i][a] = other[i+index][a];
 }
 
-std::vector< SmartPtr<Profile> > Profile::read(std::istream& in,
-                                               const SequenceAlphabet* alphabet)
+std::vector< shared_ptr<Profile> > Profile::readall(std::istream& in,
+                                                 const SequenceAlphabet* alphabet)
 {
-    std::vector< SmartPtr<Profile> > profiles;
+    std::vector< shared_ptr<Profile> > profiles;
     while (in.peek() && in.good()) { //peek first to make sure that we don't read beyond '//'
-        SmartPtr<Profile> p(new Profile(in, alphabet));
+        shared_ptr<Profile> p(new Profile(in, alphabet));
         profiles.push_back(p);
     }
 
@@ -71,12 +62,12 @@ std::vector< SmartPtr<Profile> > Profile::read(std::istream& in,
 void Profile::transform_to_logspace()
 {
     if (!logspace_) {
-        for(int i = 0; i < ncols_; ++i)
-            for(int a = 0; a < ndim_; ++a)
-                if ((*this)(i,a) == 0.0f)
-                    (*this)(i,a) = std::numeric_limits<double>::infinity();
+        for(int i = 0; i < ncols(); ++i)
+            for(int a = 0; a < nalph(); ++a)
+                if (data_[i][a] == 0.0f)
+                    data_[i][a] = std::numeric_limits<double>::infinity();
                 else
-                    (*this)(i,a) = log2((*this)(i,a));
+                    data_[i][a] = log2(data_[i][a]);
         logspace_ = true;
     }
 }
@@ -84,9 +75,9 @@ void Profile::transform_to_logspace()
 void Profile::transform_to_linspace()
 {
     if (logspace_) {
-        for(int i = 0; i < ncols_; ++i)
-            for(int a = 0; a < ndim_; ++a)
-                (*this)(i,a) = pow(2.0, (*this)(i,a));
+        for(int i = 0; i < ncols(); ++i)
+            for(int a = 0; a < nalph(); ++a)
+                data_[i][a] = pow(2.0, data_[i][a]);
         logspace_ = false;
     }
 }
@@ -108,20 +99,22 @@ void Profile::read_data(std::istream& in)
     char* buffer = &char_arr[0];
 
     // Read ncols
+    int ncols = 0;
     if (in.getline(buffer, kBufferSize) && strncmp(buffer, "ncols", 5) == 0)
-        ncols_ = atoi(buffer+5);
+        ncols = atoi(buffer + 5);
     else
         throw MyException("Bad format: serialized profile does not contain 'ncols' record!");
 
-    // Read ndim
-    if (in.getline(buffer, kBufferSize) && strncmp(buffer, "ndim", 4) == 0)
-        ndim_ = atoi(buffer+4);
+    // Read nalph
+    int nalph = 0;
+    if (in.getline(buffer, kBufferSize) && strncmp(buffer, "nalph", 5) == 0)
+        nalph = atoi(buffer + 5);
     else
-        throw MyException("Bad format: serialized profile does not contain 'ndim' record!");
-    if (ndim_ != alphabet_->size())
-        throw MyException("Bad format: ndim=%i does not fit with provided alphabet!", ndim_);
+        throw MyException("Bad format: serialized profile does not contain 'nalph' record!");
+    if (nalph != alphabet_->size())
+        throw MyException("Bad format: nalph=%i does not fit with provided alphabet!", nalph);
 
-    resize(ncols_, ndim_);
+    resize(ncols, nalph);
 
     in.getline(buffer, kBufferSize);  // Skip description line
     const char* ptr;  // for string traversal
@@ -135,13 +128,13 @@ void Profile::read_data(std::istream& in)
         if (!ptr)
             throw MyException("Bad format: malformed line after column record %i!", i - 1);
 
-        for (int a = 0; a < ndim_; ++a) {
+        for (int a = 0; a < nalph; ++a) {
             int log_p = strtoi_asterix(ptr);
-            (*this)(i,a) = pow(2.0, static_cast<float>(-log_p) / kScaleFactor);
+            data_[i][a] = pow(2.0, static_cast<float>(-log_p) / kScaleFactor);
         }
     }
-    if (i != ncols_ - 1)
-        throw MyException("Bad format: profile has %i column records but should have %i!", i+1, ncols_);
+    if (i != ncols - 1)
+        throw MyException("Bad format: profile has %i column records but should have %i!", i+1, ncols);
 }
 
 void Profile::serialize(std::ostream& out) const
@@ -154,16 +147,16 @@ void Profile::serialize(std::ostream& out) const
 void Profile::print_data(std::ostream& out) const
 {
     // print dimensions
-    out << "ncols\t" << ncols_ << std::endl;
-    out << "ndim\t" << ndim_ << std::endl;
+    out << "ncols\t" << ncols() << std::endl;
+    out << "nalph\t" << nalph() << std::endl;
     // print profile values in log representation
-    for (int j = 0; j < ndim_; ++j)
-        out << "\t" << alphabet_->itoc(j);
+    for (int a = 0; a < nalph(); ++a)
+        out << "\t" << alphabet_->itoc(a);
     out << std::endl;
-    for (int i = 0; i < ncols_; ++i) {
+    for (int i = 0; i < ncols(); ++i) {
         out << i+1;
-        for (int j = 0; j < ndim_; ++j) {
-            double logval = log2((*this)(i,j));
+        for (int a = 0; a < nalph(); ++a) {
+            double logval = log2(data_[i][a]);
             if (-logval == std::numeric_limits<double>::infinity())
                 out << "\t*";
             else
@@ -173,13 +166,11 @@ void Profile::print_data(std::ostream& out) const
     }
 }
 
-void Profile::resize(int ncols, int ndim)
+void Profile::resize(int ncols, int nalph)
 {
-    if (ncols == 0 || ndim == 0)
-        throw MyException("Bad dimensions for profile resizing: ncols=%i ndim=%i", ncols, ndim);
-    ncols_ = ncols;
-    ndim_  = ndim;
-    data_.resize(ncols * ndim);
+    if (ncols == 0 || nalph == 0)
+        throw MyException("Bad dimensions for profile resizing: ncols=%i nalph=%i", ncols, nalph);
+    data_ = matrix<float>(ncols, nalph);
 }
 
 std::istream& operator>> (std::istream& in, Profile& profile)
@@ -197,23 +188,23 @@ std::ostream& operator<< (std::ostream& out, const Profile& profile)
 void reset(Profile& profile, float value)
 {
     const int ncols = profile.ncols();
-    const int ndim = profile.ndim();
+    const int nalph = profile.nalph();
     for(int i = 0; i < ncols; ++i)
-        for(int j = 0; i < ndim; ++j)
-            profile(i,j) = value;
+        for(int a = 0; a < nalph; ++a)
+            profile[i][a] = value;
 }
 
 void normalize(Profile& profile, float value)
 {
     const int ncols = profile.ncols();
-    const int ndim  = profile.ndim();
+    const int nalph  = profile.nalph();
 
     for (int i = 0; i < ncols; ++i) {
         float sum = 0.0f;
-        for (int a = 0; a < ndim; ++a) sum += profile(i,a);
+        for (int a = 0; a < nalph; ++a) sum += profile[i][a];
         if (sum != 0.0f) {
             float fac = value / sum;
-            for (int a = 0; a < ndim; ++a) profile(i,a) *= fac;
+            for (int a = 0; a < nalph; ++a) profile[i][a] *= fac;
         } else {
             throw MyException("Unable to normalize profile to one. Sum of column %i is zero!", i);
         }

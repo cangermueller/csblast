@@ -13,7 +13,7 @@
 
 #include "alignment.h"
 #include "profile.h"
-#include "smart_ptr.h"
+#include "shared_ptr.h"
 
 namespace cs
 {
@@ -36,7 +36,7 @@ class CountsProfile : public Profile
     virtual ~CountsProfile() {}
 
     // Reads all available profiles from the input stream and returns them in a vector.
-    static std::vector< SmartPtr<CountsProfile> > read(std::istream& in,
+    static std::vector< shared_ptr<CountsProfile> > readall(std::istream& in,
                                                           const SequenceAlphabet* alphabet);
     // Returns the number of effective sequences in alignment column i
     float neff(int i) const { return neff_[i]; }

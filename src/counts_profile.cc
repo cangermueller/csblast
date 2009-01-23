@@ -12,8 +12,9 @@
 #include "alignment.h"
 #include "my_exception.h"
 #include "profile.h"
+#include "sequence.h"
 #include "sequence_alphabet.h"
-#include "smart_ptr.h"
+#include "shared_ptr.h"
 #include "util.h"
 
 namespace cs
@@ -28,10 +29,8 @@ CountsProfile::CountsProfile(const Sequence& sequence)
         : Profile(sequence.length(), sequence.alphabet()),
           has_counts_(false)
 {
-    for(int i = 0; i < ncols(); ++i) {
-        for(int j = 0; j < ndim(); ++j) (*this)(i,j) = 0.0f;
-        (*this)(i, sequence(i));
-    }
+    for(int i = 0; i < ncols(); ++i)
+        data_[i][sequence[i]] = 1.0f;
 }
 
 CountsProfile::CountsProfile(const Alignment& alignment, bool position_specific_weights)
@@ -48,14 +47,14 @@ CountsProfile::CountsProfile(const Alignment& alignment, bool position_specific_
         for (int i = 0; i < ncols; ++i)
             for (int k = 0; k < nseqs; ++k)
                 if (alignment[k][i] < any)
-                    (*this)(i, alignment[k][i]) += wi_neff.first[i][k];
+                    data_[i][alignment[k][i]] += wi_neff.first[i][k];
     } else {
         std::pair<std::vector<float>, float> wg_neff = global_weights_and_diversity(alignment);
         neff_.insert(neff_.begin(), ncols, wg_neff.second);
         for (int i = 0; i < ncols; ++i)
             for (int k = 0; k < nseqs; ++k)
                 if (alignment[k][i] < any)
-                    (*this)(i, alignment[k][i]) += wg_neff.first[k];
+                    data_[i][alignment[k][i]] += wg_neff.first[k];
     }
 
     normalize(*this);
@@ -70,12 +69,12 @@ CountsProfile::CountsProfile(const CountsProfile& other,
     has_counts_ = other.has_counts_;
 }
 
-std::vector< SmartPtr<CountsProfile> > CountsProfile::read(std::istream& in,
+std::vector< shared_ptr<CountsProfile> > CountsProfile::readall(std::istream& in,
                                                                  const SequenceAlphabet* alphabet)
 {
-    std::vector< SmartPtr<CountsProfile> > profiles;
+    std::vector< shared_ptr<CountsProfile> > profiles;
     while (in.peek() && in.good()) { //peek first to make sure that we don't read beyond '//'
-        SmartPtr<CountsProfile> p(new CountsProfile(in, alphabet));
+        shared_ptr<CountsProfile> p(new CountsProfile(in, alphabet));
         profiles.push_back(p);
     }
 
@@ -86,8 +85,8 @@ void CountsProfile::convert_to_counts()
 {
     if (!has_counts_) {
         for (int i = 0; i < ncols(); ++i)
-            for (int a = 0; a < ndim(); ++a)
-                (*this)(i,a) *= neff_[i];
+            for (int a = 0; a < nalph(); ++a)
+                data_[i][a] *= neff_[i];
         has_counts_ = true;
     }
 }
@@ -114,25 +113,25 @@ void CountsProfile::unserialize(std::istream& in)
     // Read ncols
     int ncols = 0;
     if (in.getline(buffer, kBufferSize) && strncmp(buffer, "ncols", 5) == 0)
-        ncols = atoi(buffer+5);
+        ncols = atoi(buffer + 5);
     else
         throw MyException("Bad format: serialized alignment profile does not contain 'ncols' record!");
 
-    // Read ndim
-    int ndim = 0;
-    if (in.getline(buffer, kBufferSize) && strncmp(buffer, "ndim", 4) == 0)
-        ndim = atoi(buffer+4);
+    // Read nalph
+    int nalph = 0;
+    if (in.getline(buffer, kBufferSize) && strncmp(buffer, "nalph", 5) == 0)
+        nalph = atoi(buffer + 5);
     else
-        throw MyException("Bad format: serialized alignment profile does not contain 'ndim' record!");
-    if (ndim != alphabet()->size())
-        throw MyException("Bad format: ndim=%i does not fit with provided alphabet!", ndim);
+        throw MyException("Bad format: serialized alignment profile does not contain 'nalph' record!");
+    if (nalph != alphabet()->size())
+        throw MyException("Bad format: nalph=%i does not fit with provided alphabet!", nalph);
 
     // Read has_counts
     if (in.getline(buffer, kBufferSize) && strncmp(buffer, "has_counts", 10) == 0)
-        has_counts_ = atoi(buffer+10) == 1;
+        has_counts_ = atoi(buffer + 10) == 1;
 
     // Read column data records line by line
-    resize(ncols, ndim);
+    resize(ncols, nalph);
     neff_.resize(ncols);
     in.getline(buffer, kBufferSize);  // Skip description line
     const char* ptr;  // for string traversal
@@ -146,9 +145,9 @@ void CountsProfile::unserialize(std::istream& in)
         if (!ptr)
             throw MyException("Bad format: malformed line after column record %i!", i - 1);
         // Read profile frequencies
-        for (int a = 0; a < ndim; ++a) {
+        for (int a = 0; a < nalph; ++a) {
             int log_p = strtoi_asterix(ptr);
-            (*this)(i,a) = pow(2.0, static_cast<float>(-log_p) / kScaleFactor);
+            data_[i][a] = pow(2.0, static_cast<float>(-log_p) / kScaleFactor);
         }
         // Read neff
         int log_neff = strtoi_asterix(ptr);
@@ -162,17 +161,17 @@ void CountsProfile::serialize(std::ostream& out) const
 {
     out << "CountsProfile" << std::endl;
     out << "ncols\t" << ncols() << std::endl;
-    out << "ndim\t" << ndim() << std::endl;
+    out << "nalph\t" << nalph() << std::endl;
     out << "has_counts\t" << has_counts_ << std::endl;
 
     // print profile values in log representation
-    for (int j = 0; j < ndim(); ++j)
-        out << "\t" << alphabet()->itoc(j);
+    for (int a = 0; a < nalph(); ++a)
+        out << "\t" << alphabet()->itoc(a);
     out << "\tneff" << std::endl;
     for (int i = 0; i < ncols(); ++i) {
         out << i+1;
-        for (int j = 0; j < ndim(); ++j) {
-            double log_p = log2((*this)(i,j));
+        for (int a = 0; a < nalph(); ++a) {
+            double log_p = log2(data_[i][a]);
             if (-log_p == std::numeric_limits<double>::infinity())
                 out << "\t*";
             else

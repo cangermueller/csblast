@@ -11,7 +11,8 @@
 #include <iostream>
 #include <vector>
 
-#include "smart_ptr.h"
+#include "matrix.h"
+#include "shared_ptr.h"
 
 namespace cs
 {
@@ -23,8 +24,8 @@ class SequenceAlphabet;
 class Profile
 {
   public:
-    friend std::istream& operator>> (std::istream& in, Profile& profile);
-    friend std::ostream& operator<< (std::ostream& out, const Profile& profile);
+    typedef matrix<float>::row_type profile_column;
+    typedef matrix<float>::const_row_type const_profile_column;
 
     // Constructs a dummy profile with given alphabet.
     Profile(const SequenceAlphabet* alphabet);
@@ -38,15 +39,16 @@ class Profile
     virtual ~Profile() {}
 
     // Reads all available profiles from the input stream and returns them in a vector.
-    static std::vector< SmartPtr<Profile> > read(std::istream& in,
-                                                 const SequenceAlphabet* alphabet);
+    static std::vector< shared_ptr<Profile> > readall(std::istream& in,
+                                                      const SequenceAlphabet* alphabet);
+
     // Access methods to get the (i,j) element
-    float&       operator() (int i, int j) { return data_[i*ndim_ + j]; }
-    const float& operator() (int i, int j) const { return data_[i*ndim_ + j]; }
-    // Returns #rows in this matrix
-    int ncols() const { return ncols_; }
-    // Returns #columns in this matrix
-    int ndim() const { return ndim_; }
+    profile_column operator[](int i) { return data_[i]; }
+    const_profile_column operator[](int i) const { return data_[i]; }
+    // Returns #columns in the profile
+    int ncols() const { return data_.nrows(); }
+    // Returns #entries per column
+    int nalph() const { return data_.ncols(); }
     // Transforms profile to logspace
     virtual void transform_to_logspace();
     // Transforms profile to linspace
@@ -55,6 +57,10 @@ class Profile
     bool logspace() const { return logspace_; }
     // Returns the underlying sequence alphabet of the profile.
     const SequenceAlphabet* alphabet() const { return alphabet_; }
+
+    // friends
+    friend std::istream& operator>> (std::istream& in, Profile& profile);
+    friend std::ostream& operator<< (std::ostream& out, const Profile& profile);
 
   protected:
     // Scaling factor for serialization of profile log values
@@ -69,25 +75,21 @@ class Profile
     // Prints serialized profile data without leading class identifier and trailing '//' marker.
     void print_data(std::ostream& out) const;
     // Resize the profile matrix to given dimensions. Attention: old data is lost!
-    void resize(int ncols, int ndim);
+    void resize(int ncols, int nalph);
+
+     // Profile matrix in row major format
+    matrix<float> data_;
+    // Flag indicating if profile is in log- or linspace
+    bool logspace_;
+    // Sequence alphabet over which the profile records probabilities. Note that the profile
+    // does not include the 'any' character (nrows = alphabet_.size()-1).
+    const SequenceAlphabet* alphabet_;
 
   private:
     // Disallow copy and assign
     Profile(const Profile&);
     void operator=(const Profile&);
-
-    // Number of columns in the profile
-    int ncols_;
-    // Number of entries per column
-    int ndim_;
-    // Profile matrix in row major format
-    std::vector<float> data_;
-    // Flag indicating if profile is in log- or linspace
-    bool logspace_;
-    // Sequence alphabet over which the profile records probabilities. Note that the profile
-    // does not include the 'any' character (ndim = alphabet_.size()-1).
-    const SequenceAlphabet* alphabet_;
-};//Profile
+};  // Profile
 
 
 

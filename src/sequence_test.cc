@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include <iostream>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -8,7 +9,7 @@
 #include "amino_acid_alphabet.h"
 #include "nucleotide_alphabet.h"
 #include "sequence.h"
-#include "smart_ptr.h"
+#include "shared_ptr.h"
 
 TEST(SequenceTest, ConstructionFromAlphabetVector)
 {
@@ -22,7 +23,7 @@ TEST(SequenceTest, ConstructionFromAlphabetVector)
     const cs::Sequence sequence(header, seq, aa);
 
     EXPECT_EQ(aa->size(), sequence.length());
-    EXPECT_EQ(aa->ctoi('R'), sequence(1));
+    EXPECT_EQ(aa->ctoi('R'), sequence[1]);
 }
 
 TEST(SequenceTest, ConstructionFromInputStream)
@@ -32,8 +33,8 @@ TEST(SequenceTest, ConstructionFromInputStream)
     cs::Sequence sequence(ss, na);
 
     EXPECT_EQ(80, sequence.length());
-    EXPECT_EQ(na->ctoi('C'), sequence(1));
-    EXPECT_EQ(na->ctoi('C'), sequence(79));
+    EXPECT_EQ(na->ctoi('C'), sequence[1]);
+    EXPECT_EQ(na->ctoi('C'), sequence[79]);
 }
 
 TEST(SequenceTest, ConstructionOfMultipleSequencesFromInputStream)
@@ -43,11 +44,11 @@ TEST(SequenceTest, ConstructionOfMultipleSequencesFromInputStream)
     data.append(">seq1\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
     data.append(">seq2\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
     std::istringstream ss(data);
-    std::vector< SmartPtr<cs::Sequence> > seqs(cs::Sequence::read(ss, na));
+    std::vector< shared_ptr<cs::Sequence> > seqs(cs::Sequence::readall(ss, na));
 
     EXPECT_EQ(2, static_cast<int>(seqs.size()));
-    EXPECT_EQ(na->ctoi('C'), (*seqs[0])(1));
-    EXPECT_EQ(na->ctoi('C'), (*seqs[0])(79));
-    EXPECT_EQ(na->ctoi('C'), (*seqs[1])(1));
-    EXPECT_EQ(na->ctoi('C'), (*seqs[1])(79));
+    EXPECT_EQ(na->ctoi('C'), (*seqs[0])[1]);
+    EXPECT_EQ(na->ctoi('C'), (*seqs[0])[79]);
+    EXPECT_EQ(na->ctoi('C'), (*seqs[1])[1]);
+    EXPECT_EQ(na->ctoi('C'), (*seqs[1])[79]);
 }

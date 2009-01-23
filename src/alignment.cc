@@ -16,7 +16,7 @@
 #include "my_exception.h"
 #include "sequence.h"
 #include "sequence_alphabet.h"
-#include "smart_ptr.h"
+#include "shared_ptr.h"
 #include "util.h"
 
 namespace
@@ -75,7 +75,7 @@ void Alignment::unserialize(std::istream& in)
         for (int j = 0; j < cols; ++j) {
             const char c = toupper(sequences[i][j]);
             if (alphabet_->valid(c, true))
-                sequences_[i][j] = alphabet_->ctoi(c);
+                seqs_[i][j] = alphabet_->ctoi(c);
             else
                 throw MyException("Invalid character %c at position %i of sequence '%s'", c, j, headers_[i].c_str());
         }
@@ -99,8 +99,10 @@ void Alignment::serialize(std::ostream& out) const
 void Alignment::set_endgaps()
 {
     for (int k = 0; k < nseqs(); ++k) {
-        for (int i = 0; i < ncols() && gap(k,i); ++i)   sequences_[k][i] = alphabet_->endgap();
-        for (int i = ncols()-1; i >=0 && gap(k,i); --i) sequences_[k][i] = alphabet_->endgap();
+        for (int i = 0; i < ncols() && seqs_[k][i] == alphabet_->gap(); ++i)
+            seqs_[k][i] = alphabet_->endgap();
+        for (int i = ncols()-1; i >=0 && seqs_[k][i] == alphabet_->gap(); --i)
+            seqs_[k][i] = alphabet_->endgap();
     }
 }
 
@@ -108,7 +110,7 @@ void Alignment::resize(int nseqs, int ncols)
 {
     if (nseqs == 0 || ncols == 0)
         throw MyException("Bad dimensions for alignment resizing: nseqs=%i ncols=%i", nseqs, ncols);
-    sequences_ = matrix<char>(nseqs, ncols);
+    seqs_ = matrix<char>(nseqs, ncols);
     headers_.resize(nseqs);
 }
 
@@ -117,14 +119,14 @@ void Alignment::remove_columns_with_gap_in_first()
     const int kRemove = -1;
     int matchcols = ncols();
     for (int i = 0; i < ncols(); ++i) {
-        if (gap(0,i)) {
+        if (seqs_[0][1] >= alphabet_->gap()) {
             --matchcols;
             for (int k = 0; k < nseqs(); ++k)
-                sequences_[k][i] = kRemove;
+                seqs_[k][i] = kRemove;
         }
     }
-    //    sequences_.erase(std::remove(sequences_.begin(), sequences_.end(), static_cast<char>(kRemove)), sequences_.end());
-    //std::vector<char>(sequences_.begin(), sequences_.end()).swap(sequences_); // shrink to fit
+    //    seqs_.erase(std::remove(seqs_.begin(), seqs_.end(), static_cast<char>(kRemove)), seqs_.end());
+    //std::vector<char>(seqs_.begin(), seqs_.end()).swap(seqs_); // shrink to fit
 }
 
 void Alignment::remove_columns_by_gap_rule(int gap_threshold)
@@ -133,7 +135,7 @@ void Alignment::remove_columns_by_gap_rule(int gap_threshold)
 
     // global weights are sufficient for calculation of gap percentage
     std::pair<std::vector<float>, float> wg_neff = global_weights_and_diversity(*this);
-    int matchcols = sequences_.cols();
+    int matchcols = ncols();
     const int kRemove = -1;
 
     for (int i = 0; i < ncols(); ++i) {
@@ -141,7 +143,7 @@ void Alignment::remove_columns_by_gap_rule(int gap_threshold)
         float res = 0.0f;
 
         for (int k = 0; k < nseqs(); ++k)
-            if (less_any(k,i))
+            if (seqs_[k][i] < alphabet_->any())
                 res += wg_neff.first[k];
             else
                 gap += wg_neff.first[k];
@@ -152,11 +154,11 @@ void Alignment::remove_columns_by_gap_rule(int gap_threshold)
         if (percent_gaps > static_cast<float>(gap_threshold)) {
             --matchcols;
             for (int k = 0; k < nseqs(); ++k)
-                sequences_[k][i] = kRemove;
+                seqs_[k][i] = kRemove;
         }
     }
-    //sequences_.erase(std::remove(sequences_.begin(), sequences_.end(), static_cast<char>(kRemove)), sequences_.end());
-    //std::vector<char>(sequences_.begin(), sequences_.end()).swap(sequences_); // shrink to fit
+    //seqs_.erase(std::remove(seqs_.begin(), seqs_.end(), static_cast<char>(kRemove)), seqs_.end());
+    //std::vector<char>(seqs_.begin(), seqs_.end()).swap(seqs_); // shrink to fit
 }
 
 std::istream& operator>> (std::istream& in, Alignment& alignment)

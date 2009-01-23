@@ -33,6 +33,6 @@ class AminoAcidAlphabet : public SequenceAlphabet
     AminoAcidAlphabet& operator =(const AminoAcidAlphabet& other);
 };
 
-}//cs
+}  // cs
 
 #endif

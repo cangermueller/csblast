@@ -33,6 +33,6 @@ class NucleotideAlphabet : public SequenceAlphabet
     NucleotideAlphabet& operator =(const NucleotideAlphabet& other);
 };
 
-}//cs
+}  // cs
 
 #endif

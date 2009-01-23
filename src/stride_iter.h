@@ -18,48 +18,48 @@ class stride_iter
     typedef stride_iter self;
 
     // constructors
-    stride_iter( ) : m(NULL), step(0) { };
-    stride_iter(const self& x) : m(x.m), step(x.step) { }
-    stride_iter(Iter_T x, difference_type n) : m(x), step(n) { }
+    stride_iter( ) : m_(NULL), step_(0) { };
+    stride_iter(const self& x) : m_(x.m_), step_(x.step_) { }
+    stride_iter(Iter_T x, difference_type n) : m_(x), step_(n) { }
 
     // operators
-    self& operator++( ) { m += step; return *this; }
-    self operator++(int) { self tmp = *this; m += step; return tmp; }
-    self& operator+=(difference_type x) { m += x * step; return *this; }
-    self& operator--( ) { m -= step; return *this; }
-    self operator--(int) { self tmp = *this; m -= step; return tmp; }
-    self& operator-=(difference_type x) { m -= x * step; return *this; }
-    reference operator[](difference_type n) { return m[n * step]; }
-    reference operator*( ) { return *m; }
+    self& operator++( ) { m_ += step_; return *this; }
+    self operator++(int) { self tmp = *this; m_ += step_; return tmp; }
+    self& operator+=(difference_type x) { m_ += x * step_; return *this; }
+    self& operator--( ) { m_ -= step_; return *this; }
+    self operator--(int) { self tmp = *this; m_ -= step_; return tmp; }
+    self& operator-=(difference_type x) { m_ -= x * step_; return *this; }
+    reference operator[](difference_type n) { return m_[n * step_]; }
+    reference operator*( ) { return *m_; }
 
     // friend operators
     friend bool operator==(const self& x, const self& y) {
-        assert(x.step == y.step);
-        return x.m == y.m;
+        assert(x.step_ == y.step_);
+        return x.m_ == y.m_;
     }
     friend bool operator!=(const self& x, const self& y) {
-        assert(x.step == y.step);
-        return x.m != y.m;
+        assert(x.step_ == y.step_);
+        return x.m_ != y.m_;
     }
     friend bool operator<(const self& x, const self& y) {
-        assert(x.step == y.step);
-        return x.m < y.m;
+        assert(x.step_ == y.step_);
+        return x.m_ < y.m_;
     }
     friend difference_type operator-(const self& x, const self& y) {
-        assert(x.step == y.step);
-        return (x.m - y.m) / x.step;
+        assert(x.step_ == y.step_);
+        return (x.m_ - y.m_) / x.step_;
     }
     friend self operator+(const self& x, difference_type y) {
-        assert(x.step == y.step);
-        return x += y * x.step;
+        assert(x.step_ == y.step_);
+        return x += y * x.step_;
     }
     friend self operator+(difference_type x, const self& y) {
-        assert(x.step == y.step);
-        return y += x * x.step;
+        assert(x.step_ == y.step_);
+        return y += x * x.step_;
     }
   private:
-    Iter_T m;
-    difference_type step;
+    Iter_T m_;
+    difference_type step_;
 };
 
 #endif

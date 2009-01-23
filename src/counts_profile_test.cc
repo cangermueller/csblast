@@ -8,7 +8,7 @@
 #include "amino_acid_alphabet.h"
 #include "nucleotide_alphabet.h"
 #include "counts_profile.h"
-#include "smart_ptr.h"
+#include "shared_ptr.h"
 
 const float kDelta = 0.01f;
 
@@ -17,7 +17,7 @@ TEST(CountsProfileTest, ConstructionFromInputStream)
     std::string data;
     data.append("CountsProfile\n");
     data.append("ncols\t4\n");
-    data.append("ndim\t4\n");
+    data.append("nalph\t4\n");
     data.append("has_counts\t0\n");
     data.append(" \tA\tC\tG\tT\tneff\n");
     data.append("1\t0\t*\t*\t*\t0\n");
@@ -30,9 +30,9 @@ TEST(CountsProfileTest, ConstructionFromInputStream)
     cs::CountsProfile profile(ss, cs::NucleotideAlphabet::instance());
 
     EXPECT_EQ(4, profile.ncols());
-    EXPECT_EQ(4, profile.ndim());
-    EXPECT_FLOAT_EQ(1.0f, profile(0,0));
-    EXPECT_FLOAT_EQ(0.0f, profile(1,0));
+    EXPECT_EQ(4, profile.nalph());
+    EXPECT_FLOAT_EQ(1.0f, profile[0][0]);
+    EXPECT_FLOAT_EQ(0.0f, profile[1][0]);
     EXPECT_FALSE(profile.has_counts());
 }
 
@@ -50,10 +50,10 @@ TEST(CountsProfileTest, ConstructionFromAlignment)
     cs::CountsProfile profile(alignment, true); // use position-dependent weights
 
     EXPECT_FLOAT_EQ(1.0, profile.neff(3));
-    EXPECT_FLOAT_EQ(0.0, profile(3, na->ctoi('A')));
-    EXPECT_FLOAT_EQ(0.0, profile(3, na->ctoi('C')));
-    EXPECT_FLOAT_EQ(0.0, profile(3, na->ctoi('G')));
-    EXPECT_FLOAT_EQ(1.0, profile(3, na->ctoi('T')));
+    EXPECT_FLOAT_EQ(0.0, profile[3][na->ctoi('A')]);
+    EXPECT_FLOAT_EQ(0.0, profile[3][na->ctoi('C')]);
+    EXPECT_FLOAT_EQ(0.0, profile[3][na->ctoi('G')]);
+    EXPECT_FLOAT_EQ(1.0, profile[3][na->ctoi('T')]);
 }
 
 TEST(CountsProfileTest, ConversionToCounts)
@@ -68,12 +68,12 @@ TEST(CountsProfileTest, ConversionToCounts)
     cs::Alignment alignment(ss, na);
 
     cs::CountsProfile profile(alignment, true);
-    ASSERT_EQ(0.25, profile(3, na->ctoi('A')));
+    ASSERT_EQ(0.25, profile[3][na->ctoi('A')]);
 
     profile.convert_to_counts();
 
     EXPECT_TRUE(profile.has_counts());
-    EXPECT_FLOAT_EQ(0.25*profile.neff(3), profile(3, na->ctoi('A')));
+    EXPECT_FLOAT_EQ(0.25*profile.neff(3), profile[3][na->ctoi('A')]);
 }
 
 TEST(CountsProfileTest, DISABLED_AlignmentBpdS)
@@ -84,10 +84,10 @@ TEST(CountsProfileTest, DISABLED_AlignmentBpdS)
     fin.close();
     cs::CountsProfile profile(alignment, true);
 
-    EXPECT_NEAR(0.92, profile(122, aa->ctoi('H')), kDelta);
+    EXPECT_NEAR(0.92, profile[122][aa->ctoi('H')], kDelta);
 }
 
-TEST(CountsProfileTest, Alignment1Q7L)
+TEST(CountsProfileTest, DISABLED_Alignment1Q7L)
 {
     cs::AminoAcidAlphabet* aa = cs::AminoAcidAlphabet::instance();
     std::ifstream fin("../data/1Q7L.fas");
@@ -95,7 +95,7 @@ TEST(CountsProfileTest, Alignment1Q7L)
     fin.close();
     cs::CountsProfile profile(alignment, true);
 
-    EXPECT_NEAR(0.61, profile(579, aa->ctoi('G')), kDelta);
+    EXPECT_NEAR(0.61, profile[579][aa->ctoi('G')], kDelta);
 }
 
 TEST(CountsProfileTest, AlignmentCelegansRefGene)
@@ -106,5 +106,5 @@ TEST(CountsProfileTest, AlignmentCelegansRefGene)
     fin.close();
     cs::CountsProfile profile(alignment, false);
 
-    EXPECT_FLOAT_EQ(1.0, profile(1, aa->ctoi('T')));
+    EXPECT_FLOAT_EQ(1.0, profile[1][aa->ctoi('T')]);
 }

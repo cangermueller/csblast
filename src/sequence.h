@@ -10,10 +10,11 @@
 // sequence alphabet.
 
 #include <string>
+#include <valarray>
 #include <vector>
 
 #include "sequence_alphabet.h"
-#include "smart_ptr.h"
+#include "shared_ptr.h"
 
 namespace cs
 {
@@ -21,11 +22,8 @@ namespace cs
 class Sequence
 {
   public:
-    typedef std::vector<char>::const_iterator const_iterator;
-    typedef std::vector<char>::iterator iterator;
-
-    friend std::istream& operator>> (std::istream& in, Sequence& sequence);
-    friend std::ostream& operator<< (std::ostream& out, const Sequence& sequence);
+    typedef char* iterator;
+    typedef const char* const_iterator;
 
     // Constructs sequence with specified length and alphabet.
     Sequence(int length, const SequenceAlphabet* alphabet);
@@ -36,18 +34,19 @@ class Sequence
              const std::string& sequence,
              const SequenceAlphabet* alphabet);
 
-    virtual ~Sequence() {}
+    ~Sequence() {}
 
     // Reads all available sequences from the input stream and returns them in a vector.
-    static std::vector< SmartPtr<Sequence> > read(std::istream& in,
-                                                  const SequenceAlphabet* alphabet);
-    // Accessors for character at position i of the sequence in integer representation.
-    char&       operator() (int i) { return sequence_[i]; }
-    const char& operator() (int i) const { return sequence_[i]; }
+    static std::vector< shared_ptr<Sequence> > readall(std::istream& in,
+                                                       const SequenceAlphabet* alphabet);
+
+    // Accessors for integer at position i of the sequence.
+    char& operator[](int i) { return seq_[i]; }
+    const char& operator[](int i) const { return seq_[i]; }
     // Returns the character at position i of the sequence.
-    char chr(int i) const { return alphabet_->itoc(sequence_[i]); }
+    char chr(int i) const { return alphabet_->itoc(seq_[i]); }
     // Returns the sequence length.
-    int length() const { return sequence_.size(); }
+    int length() const { return seq_.size(); }
     // Returns the header string of the sequence.
     std::string header() const { return header_; }
     // Sets the header to given string.
@@ -55,19 +54,17 @@ class Sequence
     // Returns the sequence alphabet.
     const SequenceAlphabet* alphabet() const { return alphabet_; }
     // Returns a const iterator to the first integer element of the sequence.
-    const_iterator begin() const { return sequence_.begin(); }
+    const_iterator begin() const { return &seq_[0]; }
     // Returns a const iterator just past the end of the sequence.
-    const_iterator end() const { return sequence_.end(); }
+    const_iterator end() const { return begin() + length(); }
     // Returns an iterator to the first integer element of the sequence.
-    iterator begin() { return sequence_.begin(); }
+    iterator begin() { return &seq_[0]; }
     // Returns an iterator just past the end of the sequence.
-    iterator end() { return sequence_.begin(); }
-
-  protected:
+    iterator end() { return begin() + length(); }
     // Initializes the sequence object with a sequence in FASTA format read from given stream.
-    virtual void unserialize(std::istream& in);
+    void read(std::istream& in);
     // Prints the sequence in FASTA format to output stream.
-    virtual void serialize(std::ostream& out) const;
+    void write(std::ostream& out, int width = 100) const;
 
   private:
     // Disallow copy and assign
@@ -75,23 +72,15 @@ class Sequence
     void operator=(const Sequence&);
 
     // Convert the sequence in character representation to integer representation.
-    void check_and_convert();
+    void init(std::string header, std::string sequence);
 
     // The underlying alphabet of the sequence.
     const SequenceAlphabet* alphabet_;
     // The header without leading '>'.
     std::string header_;
     // The sequence itself in integer representation.
-    std::vector<char> sequence_;
+    std::valarray<char> seq_;
 };  // Sequence
-
-
-
-// Initializes a sequence object from FASTA formatted sequence in input stream.
-std::istream& operator>> (std::istream& in, Sequence& sequence);
-
-// Prints the sequence in FASTA format to output stream.
-std::ostream& operator<< (std::ostream& out, const Sequence& sequence);
 
 }//cs
 

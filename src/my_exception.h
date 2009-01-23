@@ -1,5 +1,5 @@
-#ifndef MY_EXCEPTION_H
-#define MY_EXCEPTION_H
+#ifndef CS_MY_EXCEPTION_H
+#define CS_MY_EXCEPTION_H
 /***************************************************************************
  *   Copyright (C) 2008 by Andreas Biegert                                 *
  *   andreas.biegert@googlemail.com                                        *
@@ -13,6 +13,9 @@
 #include <exception>
 #include <string>
 #include <cstdarg>
+
+namespace cs
+{
 
 class MyException : public std::exception
 {
@@ -53,5 +56,7 @@ private:
     std::string msg;
     int c;
 };
+
+}  // cs
 
 #endif

@@ -24,72 +24,72 @@ class matrix
     typedef stride_iter<const value_type*> const_col_type;
 
     // constructors
-    matrix() : nrows(0), ncols(0), m() { }
-    matrix(int r, int c) : nrows(r), ncols(c), m(r * c) { }
-    matrix(const self& x) : nrows(x.nrows), ncols(x.ncols), m(x.m) { }
+    matrix() : nrows_(0), ncols_(0), m_() { }
+    matrix(int r, int c) : nrows_(r), ncols_(c), m_(r * c) { }
+    matrix(const self& x) : nrows_(x.nrows_), ncols_(x.ncols_), m_(x.m_) { }
 
     matrix(int r, int c, const Value_T& val)
-            : nrows(r), ncols(c), m(r * c)
+            : nrows_(r), ncols_(c), m_(r * c)
     {
-        for (int i = 0; i < r * c; ++i) m[i] = val;
+        for (int i = 0; i < r * c; ++i) m_[i] = val;
     }
 
     template<typename T>
     explicit matrix(const valarray<T>& x)
-            : nrows(x.size()), ncols(1), m(x.size() + 1)
+            : nrows_(x.size()), ncols_(1), m_(x.size() + 1)
     {
-        for (int i =0 ; i < x.size(); ++i) m[i] = x[i];
+        for (int i =0 ; i < x.size(); ++i) m_[i] = x[i];
     }
 
     // allow construction from matricies of other types
     template<typename T>
     explicit matrix(const matrix<T>& x)
-            : nrows(x.nrows), ncols(x.ncols), m(x.size() + 1)
+            : nrows_(x.nrows_), ncols_(x.ncols_), m_(x.size() + 1)
     {
-        copy(x.begin(), x.end(), m.begin());
+        copy(x.begin(), x.end(), m_.begin());
     }
 
     // public functions
-    int rows( ) const { return nrows; }
-    int cols( ) const { return ncols; }
-    int size( ) const { return nrows * ncols; }
+    int nrows( ) const { return nrows_; }
+    int ncols( ) const { return ncols_; }
+    int size( ) const { return nrows_ * ncols_; }
 
     // element access
-    row_type row_begin(int n) { return &m[n * cols()]; }
-    row_type row_end(int n) { return row_begin() + cols(); }
-    col_type col_begin(int n) { return col_type(&m[n], cols()); }
-    col_type col_end(int n) { return col_begin(n) + cols(); }
-    const_row_type row_begin(int n) const { return &m[n * cols()]; }
-    const_row_type row_end(int n) const { return row_begin() + cols( ); }
-    const_col_type col_begin(int n) const { return col_type(&m[n], cols( )); }
-    const_col_type col_end(int n) const { return col_begin() + cols( ); }
-    iterator begin() { return &m[0]; }
+    row_type row_begin(int n) { return &m_[n * ncols()]; }
+    row_type row_end(int n) { return row_begin() + ncols(); }
+    col_type col_begin(int n) { return col_type(&m_[n], ncols()); }
+    col_type col_end(int n) { return col_begin(n) + ncols(); }
+    const_row_type row_begin(int n) const { return &m_[n * ncols()]; }
+    const_row_type row_end(int n) const { return row_begin() + ncols( ); }
+    const_col_type col_begin(int n) const { return col_type(&m_[n], ncols( )); }
+    const_col_type col_end(int n) const { return col_begin() + ncols( ); }
+    iterator begin() { return &m_[0]; }
     iterator end() { return begin() + size(); }
-    const_iterator begin() const { return &m[0]; }
+    const_iterator begin() const { return &m_[0]; }
     const_iterator end() const { return begin( ) + size( ); }
 
     // operators
     self& operator=(const self& x) {
-        m.resize(x.size());
-        m = x.m;
-        nrows = x.nrows;
-        ncols = x.ncols;
+        m_.resize(x.size());
+        m_ = x.m_;
+        nrows_ = x.nrows_;
+        ncols_ = x.ncols_;
         return *this;
     }
-    self& operator=(value_type x) { m = x; return *this; }
+    self& operator=(value_type x) { m_ = x; return *this; }
     row_type operator[](int n) { return row_begin(n); }
     const_row_type operator[](int n) const { return row_begin(n); }
-    self& operator+=(const self& x) { m += x.m; return *this; }
-    self& operator-=(const self& x) { m -= x.m; return *this; }
-    self& operator+=(value_type x) { m += x; return *this; }
-    self& operator-=(value_type x) { m -= x; return *this; }
-    self& operator*=(value_type x) { m *= x; return *this; }
-    self& operator/=(value_type x) { m /= x; return *this; }
-    self& operator%=(value_type x) { m %= x; return *this; }
-    self operator-( ) { return -m; }
-    self operator+( ) { return +m; }
-    self operator!( ) { return !m; }
-    self operator~( ) { return ~m; }
+    self& operator+=(const self& x) { m_ += x.m_; return *this; }
+    self& operator-=(const self& x) { m_ -= x.m_; return *this; }
+    self& operator+=(value_type x) { m_ += x; return *this; }
+    self& operator-=(value_type x) { m_ -= x; return *this; }
+    self& operator*=(value_type x) { m_ *= x; return *this; }
+    self& operator/=(value_type x) { m_ /= x; return *this; }
+    self& operator%=(value_type x) { m_ %= x; return *this; }
+    self operator-( ) { return -m_; }
+    self operator+( ) { return +m_; }
+    self operator!( ) { return !m_; }
+    self operator~( ) { return ~m_; }
 
     // friend operators
     friend self operator+(const self& x, const self& y) { return self(x) += y; }
@@ -101,9 +101,9 @@ class matrix
     friend self operator%(const self& x, value_type y) { return self(x) %= y; }
 
   private:
-    int nrows;
-    int ncols;
-    mutable valarray<Value_T> m;
+    int nrows_;
+    int ncols_;
+    mutable valarray<Value_T> m_;
 };
 
 #endif
