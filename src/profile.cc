@@ -9,6 +9,7 @@
 #include <cstring>
 
 #include <iostream>
+#include <iomanip>
 #include <limits>
 
 #include "exception.h"
@@ -32,7 +33,7 @@ Profile::Profile(int ncols,
 
 Profile::Profile(std::istream& in, const SequenceAlphabet* alphabet)
         : alphabet_(alphabet)
-{ unserialize(in); }
+{ read(in); }
 
 Profile::Profile(const Profile& other,
                  int index,
@@ -82,17 +83,19 @@ void Profile::transform_to_linspace()
     }
 }
 
-void Profile::unserialize(std::istream& in)
+void Profile::read(std::istream& in)
 {
     // Check if stream actually contains a serialized profile
     std::string buffer;
     while (getline(in, buffer) && !strscn(buffer.c_str())) continue;
-    if (buffer != "Profile")
-        throw Exception("Bad format: serialized profile does not start with 'Profile' class identifier!");
-    read_data(in);  // Read column data records line by line
+    if (buffer != class_identity())
+        throw Exception("Bad format: serialized profile does not start with '%s'!", class_identity().c_str());
+
+    read_header(in);
+    read_body(in);
 }
 
-void Profile::read_data(std::istream& in)
+void Profile::read_header(std::istream& in)
 {
     const int kBufferSize = 1000;
     std::vector<char> char_arr(kBufferSize, '\0');
@@ -115,6 +118,13 @@ void Profile::read_data(std::istream& in)
         throw Exception("Bad format: nalph=%i does not fit with provided alphabet!", nalph);
 
     resize(ncols, nalph);
+}
+
+void Profile::read_body(std::istream& in)
+{
+    const int kBufferSize = 1000;
+    std::vector<char> char_arr(kBufferSize, '\0');
+    char* buffer = &char_arr[0];
 
     in.getline(buffer, kBufferSize);  // Skip description line
     const char* ptr;  // for string traversal
@@ -128,30 +138,33 @@ void Profile::read_data(std::istream& in)
         if (!ptr)
             throw Exception("Bad format: malformed line after column record %i!", i - 1);
 
-        for (int a = 0; a < nalph; ++a) {
+        for (int a = 0; a < nalph(); ++a) {
             int log_p = strtoi_asterix(ptr);
             data_[i][a] = pow(2.0, static_cast<float>(-log_p) / kScaleFactor);
         }
     }
-    if (i != ncols - 1)
-        throw Exception("Bad format: profile has %i column records but should have %i!", i+1, ncols);
+    if (i != ncols() - 1)
+        throw Exception("Bad format: profile has %i column records but should have %i!", i+1, ncols());
 }
 
-void Profile::serialize(std::ostream& out) const
+void Profile::write(std::ostream& out) const
 {
-    out << "Profile" << std::endl;
-    print_data(out);
-    out << "//" << std::endl;
+    out << class_identity() << std::endl;
+    write_header(out);
+    write_body(out);
 }
 
-void Profile::print_data(std::ostream& out) const
+void Profile::write_header(std::ostream& out) const
 {
     // print dimensions
-    out << "ncols\t" << ncols() << std::endl;
-    out << "nalph\t" << nalph() << std::endl;
-    // print profile values in log representation
-    for (int a = 0; a < nalph(); ++a)
-        out << "\t" << alphabet_->itoc(a);
+    out << "ncols\t\t" << ncols() << std::endl;
+    out << "nalph\t\t" << nalph() << std::endl;
+}
+
+void Profile::write_body(std::ostream& out) const
+{
+    out << "\t";
+    alphabet_->print(out, "\t");
     out << std::endl;
     for (int i = 0; i < ncols(); ++i) {
         out << i+1;
@@ -166,23 +179,29 @@ void Profile::print_data(std::ostream& out) const
     }
 }
 
+void Profile::print(std::ostream& out) const
+{
+    const int kWidth = 6;
+    std::ios_base::fmtflags flags = out.flags(); // save old flags
+
+    out << std::string(2*kWidth-2, ' ');
+    alphabet_->print(out, std::string(kWidth-1, ' '));
+    out << std::endl;
+    for (int i = 0; i < ncols(); ++i) {
+        out << std::left << std::setw(kWidth-1) << i+1;
+        for (int a = 0; a < nalph(); ++a)
+            out << std::right << std::setw(kWidth) << std::fixed << std::setprecision(3) << data_[i][a];
+        out << std::endl;
+    }
+
+    out.flags(flags);
+}
+
 void Profile::resize(int ncols, int nalph)
 {
     if (ncols == 0 || nalph == 0)
         throw Exception("Bad dimensions for profile resizing: ncols=%i nalph=%i", ncols, nalph);
     data_ = matrix<float>(ncols, nalph);
-}
-
-std::istream& operator>> (std::istream& in, Profile& profile)
-{
-    profile.unserialize(in);
-    return in;
-}
-
-std::ostream& operator<< (std::ostream& out, const Profile& profile)
-{
-    profile.serialize(out);
-    return out;
 }
 
 void reset(Profile& profile, float value)

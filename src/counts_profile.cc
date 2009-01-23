@@ -7,6 +7,7 @@
 
 #include <cmath>
 
+#include <iomanip>
 #include <iostream>
 
 #include "alignment.h"
@@ -23,7 +24,7 @@ namespace cs
 CountsProfile::CountsProfile(std::istream& in, const SequenceAlphabet* alphabet)
         : Profile(alphabet),
           has_counts_(false)
-{ unserialize(in); }
+{ read(in); }
 
 CountsProfile::CountsProfile(const Sequence& sequence)
         : Profile(sequence.length(), sequence.alphabet()),
@@ -99,40 +100,27 @@ void CountsProfile::convert_to_frequencies()
     }
 }
 
-void CountsProfile::unserialize(std::istream& in)
+void CountsProfile::read_header(std::istream& in)
+{
+    Profile::read_header(in);
+
+    const int kBufferSize = 1000;
+    std::vector<char> char_arr(kBufferSize, '\0');
+    char* buffer = &char_arr[0];
+
+    // Read has_counts
+    if (in.getline(buffer, kBufferSize) && strncmp(buffer, "has_counts", 10) == 0)
+        has_counts_ = atoi(buffer + 10) == 1;
+}
+
+void CountsProfile::read_body(std::istream& in)
 {
     const int kBufferSize = 1000;
     std::vector<char> char_arr(kBufferSize, '\0');
     char* buffer = &char_arr[0];
 
-    // Check if stream actually contains a serialized profile
-    while (in.getline(buffer, kBufferSize) && !strscn(buffer)) continue;
-    if (strcmp(buffer, "CountsProfile") != 0)
-        throw Exception("Bad format: serialized alignment profile does not start with 'CountsProfile' class identifier!");
-
-    // Read ncols
-    int ncols = 0;
-    if (in.getline(buffer, kBufferSize) && strncmp(buffer, "ncols", 5) == 0)
-        ncols = atoi(buffer + 5);
-    else
-        throw Exception("Bad format: serialized alignment profile does not contain 'ncols' record!");
-
-    // Read nalph
-    int nalph = 0;
-    if (in.getline(buffer, kBufferSize) && strncmp(buffer, "nalph", 5) == 0)
-        nalph = atoi(buffer + 5);
-    else
-        throw Exception("Bad format: serialized alignment profile does not contain 'nalph' record!");
-    if (nalph != alphabet()->size())
-        throw Exception("Bad format: nalph=%i does not fit with provided alphabet!", nalph);
-
-    // Read has_counts
-    if (in.getline(buffer, kBufferSize) && strncmp(buffer, "has_counts", 10) == 0)
-        has_counts_ = atoi(buffer + 10) == 1;
-
     // Read column data records line by line
-    resize(ncols, nalph);
-    neff_.resize(ncols);
+    neff_.resize(ncols());
     in.getline(buffer, kBufferSize);  // Skip description line
     const char* ptr;  // for string traversal
     int i = 0;        // column index
@@ -145,7 +133,7 @@ void CountsProfile::unserialize(std::istream& in)
         if (!ptr)
             throw Exception("Bad format: malformed line after column record %i!", i - 1);
         // Read profile frequencies
-        for (int a = 0; a < nalph; ++a) {
+        for (int a = 0; a < nalph(); ++a) {
             int log_p = strtoi_asterix(ptr);
             data_[i][a] = pow(2.0, static_cast<float>(-log_p) / kScaleFactor);
         }
@@ -153,20 +141,21 @@ void CountsProfile::unserialize(std::istream& in)
         int log_neff = strtoi_asterix(ptr);
         neff_[i] = pow(2.0, static_cast<float>(-log_neff) / kScaleFactor);
     }
-    if (i != ncols - 1)
-        throw Exception("Bad format: alignment profile has %i column records but should have %i!", i+1, ncols);
+    if (i != ncols() - 1)
+        throw Exception("Bad format: alignment profile has %i column records but should have %i!", i+1, ncols());
 }
 
-void CountsProfile::serialize(std::ostream& out) const
+void CountsProfile::write_header(std::ostream& out) const
 {
-    out << "CountsProfile" << std::endl;
-    out << "ncols\t" << ncols() << std::endl;
-    out << "nalph\t" << nalph() << std::endl;
+    Profile::write_header(out);
     out << "has_counts\t" << has_counts_ << std::endl;
+}
 
+void CountsProfile::write_body(std::ostream& out) const
+{
     // print profile values in log representation
-    for (int a = 0; a < nalph(); ++a)
-        out << "\t" << alphabet()->itoc(a);
+    out << "\t";
+    alphabet_->print(out, "\t");
     out << "\tneff" << std::endl;
     for (int i = 0; i < ncols(); ++i) {
         out << i+1;
@@ -186,6 +175,24 @@ void CountsProfile::serialize(std::ostream& out) const
     out << "//" << std::endl;
 }
 
-}//cs
+void CountsProfile::print(std::ostream& out) const
+{
+    const int kWidth = 6;
+    std::ios_base::fmtflags flags = out.flags(); // save old flags
+
+    out << std::string(2*kWidth-2, ' ');
+    alphabet_->print(out, std::string(kWidth-1, ' '));
+    out << std::string(kWidth-4, ' ') + "neff" << std::endl;
+    for (int i = 0; i < ncols(); ++i) {
+        out << std::left << std::setw(kWidth-1) << i+1;
+        for (int a = 0; a < nalph(); ++a)
+            out << std::right << std::setw(kWidth) << std::fixed << std::setprecision(2) << data_[i][a];
+        out << std::right << std::setw(kWidth-1) << std::setprecision(1) << neff_[i] << std::endl;
+    }
+
+    out.flags(flags);
+}
+
+}  // cs
 
 

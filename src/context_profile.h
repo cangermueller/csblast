@@ -41,16 +41,13 @@ class ContextProfile : public Profile
     float&       operator() (int j) { return data_[central_ * nrows_ + j]; }
     const float& operator() (int j) const { return data_[central_ * nrows_ + j]; }
 
-  protected:
-    // Initializes the profile object with a serialized profile read from stream.
-    virtual void unserialize(std::istream& in);
-    // Prints the profile in serialization format to output stream.
-    virtual void serialize(std::ostream& out) const;
-
   private:
     // Disallow copy and assign
     ContextProfile(const ContextProfile&);
     void operator=(const ContextProfile&);
+
+    // Return serialization class identity.
+    virtual const std::string& class_identity() { static std::string id("ContextProfile"); return id;}
 
     // Index of central column
     int center_;

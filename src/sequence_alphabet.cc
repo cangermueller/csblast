@@ -11,6 +11,7 @@
 #include <iostream>
 
 #include <algorithm>
+#include <string>
 #include <vector>
 
 #include "exception.h"
@@ -42,6 +43,13 @@ void SequenceAlphabet::init()
     for (int i = 0; i < size_; ++i) ctoi_[static_cast<int>(itoc_[i])] = i;
     ctoi_[static_cast<int>(any_)] = size_;      // ANY
     ctoi_[static_cast<int>(gap_)] = size_ + 1;  // GAP
+}
+
+void SequenceAlphabet::print(std::ostream& out, const std::string& delim) const
+{
+    out << *begin();
+    for (const_iterator iter = begin() + 1; iter != end(); ++iter)
+        out << delim << *iter;
 }
 
 }//cs

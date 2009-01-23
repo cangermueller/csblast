@@ -46,17 +46,26 @@ class CountsProfile : public Profile
     void convert_to_frequencies();
     // Returns true if the profile contains counts.
     bool has_counts() const { return has_counts_; }
+    // Prints the profile in human-readable format to output stream.
+    virtual void print(std::ostream& out) const;
 
   protected:
-    // Initializes the profile object with a serialized profile read from stream.
-    virtual void unserialize(std::istream& in);
-    // Prints the profile in serialization format to output stream.
-    virtual void serialize(std::ostream& out) const;
+    // Reads and initializes serialized scalar data members from stream.
+    virtual void read_header(std::istream& in);
+    // Reads and initializes array data members from stream.
+    virtual void read_body(std::istream& in);
+    // Writes serialized scalar data members to stream.
+    virtual void write_header(std::ostream& out) const;
+    // Writes serialized array data members to stream.
+    virtual void write_body(std::ostream& out) const;
 
   private:
     // Disallow copy and assign
     CountsProfile(const CountsProfile&);
     void operator=(const CountsProfile&);
+
+    // Return serialization class identity.
+    virtual const std::string& class_identity() const { static std::string id("CountsProfile"); return id;}
 
     // Flag indicating if the profile contains counts or (relative) frequencies.
     bool has_counts_;

@@ -77,23 +77,25 @@ class Profile
     const_iterator begin() const { return data_.begin(); }
     // Returns a const iterator just past the end of the profile matrix.
     const_iterator end() const { return data_.end(); }
-
-    // friends
-    friend std::istream& operator>> (std::istream& in, Profile& profile);
-    friend std::ostream& operator<< (std::ostream& out, const Profile& profile);
+    // Initializes the profile object with a serialized profile read from stream.
+    void read(std::istream& in);
+    // Writes the profile in serialization format to output stream.
+    void write(std::ostream& out) const;
+    // Prints the profile in human-readable format to output stream.
+    virtual void print(std::ostream& out) const;
 
   protected:
     // Scaling factor for serialization of profile log values
     static const int kScaleFactor = 1000;
 
-    // Initializes the profile object with a serialized profile read from stream.
-    virtual void unserialize(std::istream& in);
-    // Prints the profile in serialization format to output stream.
-    virtual void serialize(std::ostream& out) const;
-    // Reads a serialized profile without prior check for correct class identifier.
-    void read_data(std::istream& in);
-    // Prints serialized profile data without leading class identifier and trailing '//' marker.
-    void print_data(std::ostream& out) const;
+    // Reads and initializes serialized scalar data members from stream.
+    virtual void read_header(std::istream& in);
+    // Reads and initializes array data members from stream.
+    virtual void read_body(std::istream& in);
+    // Writes serialized scalar data members to stream.
+    virtual void write_header(std::ostream& out) const;
+    // Writes serialized array data members to stream.
+    virtual void write_body(std::ostream& out) const;
     // Resize the profile matrix to given dimensions. Attention: old data is lost!
     void resize(int ncols, int nalph);
 
@@ -101,23 +103,19 @@ class Profile
     matrix<float> data_;
     // Flag indicating if profile is in log- or linspace
     bool logspace_;
-    // Sequence alphabet over which the profile records probabilities. Note that the profile
-    // does not include the 'any' character (nrows = alphabet_.size()-1).
+    // Sequence alphabet over which the profile records probabilities are recorded.
     const SequenceAlphabet* alphabet_;
 
   private:
     // Disallow copy and assign
     Profile(const Profile&);
     void operator=(const Profile&);
+
+    // Returns serialization class identity.
+    virtual const std::string& class_identity() const { static std::string id("Profile"); return id;}
 };  // Profile
 
 
-
-// Initializes a sequence profile from seralized profile in input stream.
-std::istream& operator>> (std::istream& in, Profile& profile);
-
-// Prints a sequence profile in human readable serialization format.
-std::ostream& operator<< (std::ostream& out, const Profile& profile);
 
 // Resets all entries in given profile to the given value or zero if none is given.
 void reset(Profile& profile, float value = 0.0f);

@@ -19,6 +19,8 @@ namespace cs
 class SequenceAlphabet
 {
   public:
+    typedef std::vector<char>::const_iterator const_iterator;
+
     // Returns the number of letters in the alphabet (incl. ANY)
     int size() const { return size_; }
     // Returns the integer representation of the given character.
@@ -46,6 +48,12 @@ class SequenceAlphabet
     // Returns true if the character belongs to the alphabet.
     bool valid(char letter, bool allow_gap = false) const
     { return ctoi_[letter] != kInvalidChar && (allow_gap || letter != gap_); }
+    // Returns a const iterator to the first character in the alphabet.
+    const_iterator begin() const { return itoc_.begin(); }
+    // Returns a const iterator just past the end of last distinct character in the alphabet.
+    const_iterator end() const { return itoc_.begin() + size(); }
+    // Prints the characters of the alphabet to outstream.
+    void print(std::ostream& out, const std::string& delim) const;
 
   protected:
     // Denotes invalid characters in ctoi array
