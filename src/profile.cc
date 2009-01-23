@@ -22,12 +22,14 @@ namespace cs
 {
 
 Profile::Profile(const SequenceAlphabet* alphabet)
-        : alphabet_(alphabet)
+        : logspace_(false),
+          alphabet_(alphabet)
 {}
 
 Profile::Profile(int ncols,
                  const SequenceAlphabet* alphabet)
         : data_(ncols, alphabet->size(), 0.0f),
+          logspace_(false),
           alphabet_(alphabet)
 {}
 
@@ -65,10 +67,7 @@ void Profile::transform_to_logspace()
     if (!logspace_) {
         for(int i = 0; i < ncols(); ++i)
             for(int a = 0; a < nalph(); ++a)
-                if (data_[i][a] == 0.0f)
-                    data_[i][a] = std::numeric_limits<double>::infinity();
-                else
-                    data_[i][a] = log2(data_[i][a]);
+                data_[i][a] = data_[i][a] == 0.0f ? -std::numeric_limits<float>::infinity() : log2(data_[i][a]);
         logspace_ = true;
     }
 }
@@ -117,6 +116,10 @@ void Profile::read_header(std::istream& in)
     if (nalph != alphabet_->size())
         throw Exception("Bad format: nalph=%i does not fit with provided alphabet!", nalph);
 
+    // Read logspace
+    if (in.getline(buffer, kBufferSize) && strncmp(buffer, "logspace", 8) == 0)
+        logspace_ = atoi(buffer + 8) == 1;
+
     resize(ncols, nalph);
 }
 
@@ -140,7 +143,10 @@ void Profile::read_body(std::istream& in)
 
         for (int a = 0; a < nalph(); ++a) {
             int log_p = strtoi_asterix(ptr);
-            data_[i][a] = pow(2.0, static_cast<float>(-log_p) / kScaleFactor);
+            if (logspace_)
+                data_[i][a] = static_cast<float>(-log_p) / kScaleFactor;
+            else
+                data_[i][a] = pow(2.0, static_cast<float>(-log_p) / kScaleFactor);
         }
     }
     if (i != ncols() - 1)
@@ -159,6 +165,7 @@ void Profile::write_header(std::ostream& out) const
     // print dimensions
     out << "ncols\t\t" << ncols() << std::endl;
     out << "nalph\t\t" << nalph() << std::endl;
+    out << "logspace\t" << (logspace() ? 1 : 0) << std::endl;
 }
 
 void Profile::write_body(std::ostream& out) const
@@ -169,8 +176,8 @@ void Profile::write_body(std::ostream& out) const
     for (int i = 0; i < ncols(); ++i) {
         out << i+1;
         for (int a = 0; a < nalph(); ++a) {
-            double logval = log2(data_[i][a]);
-            if (-logval == std::numeric_limits<double>::infinity())
+            float logval = logspace_ ? data_[i][a] : log2(data_[i][a]);
+            if (-logval == std::numeric_limits<float>::infinity())
                 out << "\t*";
             else
                 out << "\t" << -iround(logval * kScaleFactor);
@@ -190,7 +197,8 @@ void Profile::print(std::ostream& out) const
     for (int i = 0; i < ncols(); ++i) {
         out << std::left << std::setw(kWidth-1) << i+1;
         for (int a = 0; a < nalph(); ++a)
-            out << std::right << std::setw(kWidth) << std::fixed << std::setprecision(3) << data_[i][a];
+            out << std::right << std::setw(kWidth) << std::fixed << std::setprecision(3)
+                << (logspace_ ? pow(2.0, data_[i][a]) : data_[i][a]);
         out << std::endl;
     }
 
@@ -215,9 +223,11 @@ void reset(Profile& profile, float value)
 
 void normalize(Profile& profile, float value)
 {
+    const bool logspace = profile.logspace();
+    if (logspace) profile.transform_to_linspace();
+
     const int ncols = profile.ncols();
     const int nalph  = profile.nalph();
-
     for (int i = 0; i < ncols; ++i) {
         float sum = 0.0f;
         for (int a = 0; a < nalph; ++a) sum += profile[i][a];
@@ -228,6 +238,8 @@ void normalize(Profile& profile, float value)
             throw Exception("Unable to normalize profile to one. Sum of column %i is zero!", i);
         }
     }
+
+    if (logspace) profile.transform_to_logspace();
 }
 
 }//cs

@@ -17,8 +17,9 @@ TEST(CountsProfileTest, ConstructionFromInputStream)
 {
     std::string data;
     data.append("CountsProfile\n");
-    data.append("ncols\t4\n");
-    data.append("nalph\t4\n");
+    data.append("ncols\t\t4\n");
+    data.append("nalph\t\t4\n");
+    data.append("logspace\t0\n");
     data.append("has_counts\t0\n");
     data.append(" \tA\tC\tG\tT\tneff\n");
     data.append("1\t0\t*\t*\t*\t0\n");
@@ -50,11 +51,11 @@ TEST(CountsProfileTest, ConstructionFromAlignment)
 
     cs::CountsProfile profile(alignment, true); // use position-dependent weights
 
-    EXPECT_FLOAT_EQ(1.0, profile.neff(3));
-    EXPECT_FLOAT_EQ(0.0, profile[3][na->ctoi('A')]);
-    EXPECT_FLOAT_EQ(0.0, profile[3][na->ctoi('C')]);
-    EXPECT_FLOAT_EQ(0.0, profile[3][na->ctoi('G')]);
-    EXPECT_FLOAT_EQ(1.0, profile[3][na->ctoi('T')]);
+    EXPECT_FLOAT_EQ(1.0f, profile.neff(3));
+    EXPECT_FLOAT_EQ(0.0f, profile[3][na->ctoi('A')]);
+    EXPECT_FLOAT_EQ(0.0f, profile[3][na->ctoi('C')]);
+    EXPECT_FLOAT_EQ(0.0f, profile[3][na->ctoi('G')]);
+    EXPECT_FLOAT_EQ(1.0f, profile[3][na->ctoi('T')]);
 }
 
 TEST(CountsProfileTest, ConversionToCounts)
@@ -69,7 +70,7 @@ TEST(CountsProfileTest, ConversionToCounts)
     cs::Alignment alignment(ss, na);
 
     cs::CountsProfile profile(alignment, true);
-    ASSERT_EQ(0.25, profile[3][na->ctoi('A')]);
+    ASSERT_EQ(0.25f, profile[3][na->ctoi('A')]);
 
     profile.convert_to_counts();
 
@@ -86,7 +87,7 @@ TEST(CountsProfileTest, DISABLED_AlignmentBpdS)
     fin.close();
     cs::CountsProfile profile(alignment, true);
 
-    EXPECT_NEAR(0.92, profile[122][aa->ctoi('H')], kDelta);
+    EXPECT_NEAR(0.92f, profile[122][aa->ctoi('H')], kDelta);
     EXPECT_FLOAT_EQ(1.0f, std::accumulate(profile.col_begin(122), profile.col_end(122), 0.0f));
 }
 
@@ -98,7 +99,7 @@ TEST(CountsProfileTest, DISABLED_Alignment1Q7L)
     fin.close();
     cs::CountsProfile profile(alignment, true);
 
-    EXPECT_NEAR(0.61, profile[579][aa->ctoi('G')], kDelta);
+    EXPECT_NEAR(0.61f, profile[579][aa->ctoi('G')], kDelta);
 }
 
 TEST(CountsProfileTest, AlignmentCelegansRefGene)
@@ -109,5 +110,9 @@ TEST(CountsProfileTest, AlignmentCelegansRefGene)
     fin.close();
     cs::CountsProfile profile(alignment, false);
 
-    EXPECT_FLOAT_EQ(1.0, profile[1][aa->ctoi('T')]);
+    EXPECT_FLOAT_EQ(1.0f, profile[1][aa->ctoi('T')]);
+
+    profile.transform_to_logspace();
+
+    EXPECT_FLOAT_EQ(0.0f, profile[1][aa->ctoi('T')]);
 }

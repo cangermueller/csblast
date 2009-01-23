@@ -85,10 +85,15 @@ std::vector< shared_ptr<CountsProfile> > CountsProfile::readall(std::istream& in
 void CountsProfile::convert_to_counts()
 {
     if (!has_counts_) {
+        const bool islog = logspace();
+        if (islog) transform_to_linspace();
+
         for (int i = 0; i < ncols(); ++i)
             for (int a = 0; a < nalph(); ++a)
                 data_[i][a] *= neff_[i];
         has_counts_ = true;
+
+        if (islog) transform_to_logspace();
     }
 }
 
@@ -135,7 +140,10 @@ void CountsProfile::read_body(std::istream& in)
         // Read profile frequencies
         for (int a = 0; a < nalph(); ++a) {
             int log_p = strtoi_asterix(ptr);
-            data_[i][a] = pow(2.0, static_cast<float>(-log_p) / kScaleFactor);
+            if (logspace_)
+                data_[i][a] = static_cast<float>(-log_p) / kScaleFactor;
+            else
+                data_[i][a] = pow(2.0, static_cast<float>(-log_p) / kScaleFactor);
         }
         // Read neff
         int log_neff = strtoi_asterix(ptr);
@@ -160,14 +168,14 @@ void CountsProfile::write_body(std::ostream& out) const
     for (int i = 0; i < ncols(); ++i) {
         out << i+1;
         for (int a = 0; a < nalph(); ++a) {
-            double log_p = log2(data_[i][a]);
-            if (-log_p == std::numeric_limits<double>::infinity())
+            float log_p = logspace_ ? data_[i][a] : log2(data_[i][a]);
+            if (-log_p == std::numeric_limits<float>::infinity())
                 out << "\t*";
             else
                 out << "\t" << -iround(log_p * kScaleFactor);
         }
-        double log_neff = log2(neff_[i]);
-        if (-log_neff == std::numeric_limits<double>::infinity())
+        float log_neff = log2(neff_[i]);
+        if (-log_neff == std::numeric_limits<float>::infinity())
             out << "\t*" << std::endl;
         else
             out << "\t" << -iround(log_neff * kScaleFactor) << std::endl;
@@ -186,7 +194,9 @@ void CountsProfile::print(std::ostream& out) const
     for (int i = 0; i < ncols(); ++i) {
         out << std::left << std::setw(kWidth-1) << i+1;
         for (int a = 0; a < nalph(); ++a)
-            out << std::right << std::setw(kWidth) << std::fixed << std::setprecision(2) << data_[i][a];
+            out << std::right << std::setw(kWidth) << std::fixed << std::setprecision(2)
+                << (logspace_ ? pow(2.0, data_[i][a]) : data_[i][a]);
+        // print neff
         out << std::right << std::setw(kWidth-1) << std::setprecision(1) << neff_[i] << std::endl;
     }
 
