@@ -77,7 +77,7 @@ TEST(AlignmentTest, ConstructionFromCelegansRefGene)
     EXPECT_EQ(na->ctoi('C'), alignment[0][0]);
 }
 
-TEST(AlignmentTest, DISABLED_RemoveColumnsWithGapInFirst)
+TEST(AlignmentTest, RemoveColumnsWithGapInFirst)
 {
     cs::NucleotideAlphabet* na = cs::NucleotideAlphabet::instance();
     std::string data;
@@ -89,14 +89,14 @@ TEST(AlignmentTest, DISABLED_RemoveColumnsWithGapInFirst)
     ASSERT_EQ(2, alignment.nseqs());
     ASSERT_EQ(80, alignment.ncols());
 
-    alignment.remove_columns_with_gap_in_first();
+    alignment.assign_match_columns_by_first_sequence();
 
-    EXPECT_EQ(76, alignment.ncols());
-    EXPECT_EQ(na->gap(), alignment[1][0]);
+    EXPECT_EQ(76, alignment.nmatch());
+    EXPECT_EQ(na->gap(), alignment.seq(0,1));
     EXPECT_EQ(na->ctoi('G'), alignment[1][1]);
 }
 
-TEST(AlignmentTest, DISABLED_RemoveColumnsByGapRule)
+TEST(AlignmentTest, RemoveColumnsByGapRule)
 {
     cs::NucleotideAlphabet* na = cs::NucleotideAlphabet::instance();
     std::string data;
@@ -109,9 +109,9 @@ TEST(AlignmentTest, DISABLED_RemoveColumnsByGapRule)
     ASSERT_EQ(3, alignment.nseqs());
     ASSERT_EQ(80, alignment.ncols());
 
-    alignment.remove_columns_by_gap_rule();
+    alignment.assign_match_columns_by_gap_rule();
 
-    EXPECT_EQ(76, alignment.ncols());
+    EXPECT_EQ(76, alignment.nmatch());
     EXPECT_EQ(na->ctoi('G'), alignment[4][0]);
 }
 

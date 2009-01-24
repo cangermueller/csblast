@@ -79,27 +79,29 @@ TEST(CountsProfileTest, ConversionToCounts)
     EXPECT_FLOAT_EQ(profile.neff(3), std::accumulate(profile.col_begin(3), profile.col_end(3), 0.0f));
 }
 
-TEST(CountsProfileTest, DISABLED_AlignmentBpdS)
+TEST(CountsProfileTest, AlignmentBpdS)
 {
     cs::AminoAcidAlphabet* aa = cs::AminoAcidAlphabet::instance();
     std::ifstream fin("../data/BpdS.fas");
     cs::Alignment alignment(fin, cs::Alignment::FASTA_INPUT, aa);
     fin.close();
+    alignment.assign_match_columns_by_gap_rule();
     cs::CountsProfile profile(alignment, true);
 
-    EXPECT_NEAR(0.92f, profile[122][aa->ctoi('H')], kDelta);
+    EXPECT_NEAR(0.0f, profile[10][aa->ctoi('H')], kDelta);
     EXPECT_FLOAT_EQ(1.0f, std::accumulate(profile.col_begin(122), profile.col_end(122), 0.0f));
 }
 
-TEST(CountsProfileTest, DISABLED_Alignment1Q7L)
+TEST(CountsProfileTest, Alignment1Q7L)
 {
     cs::AminoAcidAlphabet* aa = cs::AminoAcidAlphabet::instance();
     std::ifstream fin("../data/1Q7L.fas");
     cs::Alignment alignment(fin, cs::Alignment::FASTA_INPUT, aa);
     fin.close();
+    alignment.assign_match_columns_by_gap_rule();
     cs::CountsProfile profile(alignment, true);
 
-    EXPECT_NEAR(0.61f, profile[579][aa->ctoi('G')], kDelta);
+    EXPECT_NEAR(0.05f, profile[10][aa->ctoi('G')], kDelta);
 }
 
 TEST(CountsProfileTest, AlignmentCelegansRefGene)

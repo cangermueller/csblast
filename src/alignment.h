@@ -51,9 +51,11 @@ class Alignment
 
     ~Alignment() {}
 
-    // Access methods to get the integer representation of character in column i of sequence k.
-    col_type operator[](int i) { return seqs_[match_cols_[i]]; }
-    const_col_type operator[](int i) const { return seqs_[match_cols_[i]]; }
+    // Access methods to get the integer representation of character in match column i of sequence k.
+    col_type operator[](int i) { return seqs_[match_indexes[i]]; }
+    const_col_type operator[](int i) const { return seqs_[match_indexes[i]]; }
+    // Returns the integer in column i of sequence k.
+    char seq(int k, int i) const { return seqs_[i][k]; }
     // Returns the character in column i of sequence k.
     char chr(int k, int i) const { return alphabet_->itoc(seqs_[i][k]); }
     // Returns the number of sequences in the alignment.
@@ -61,17 +63,17 @@ class Alignment
     // Returns the total number of alignment columns.
     int ncols() const { return seqs_.nrows(); }
     // Returns the number of match columns.
-    int nmatch() const { return match_cols_.size(); }
+    int nmatch() const { return match_indexes.size(); }
     // Returns the number of insert columns.
     int ninsert() const { return ncols() - nmatch(); }
     // Returns the header of sequence k.
     std::string header(int k) const { return headers_[k]; }
     // Sets the header of sequence k.
     void set_header(int k, const std::string& header) { headers_[k] = header; }
-    // Remove all columns with a gap in the first sequence.
-    void remove_columns_with_gap_in_first();
-    // Remove all columns with more than X% gaps.
-    void remove_columns_by_gap_rule(int gap_threshold = 50);
+    // Makes all columns with a residue in first sequence match columns.
+    void assign_match_columns_by_first_sequence();
+    // Makes all columns with less than X% gaps match columns.
+    void assign_match_columns_by_gap_rule(int gap_threshold = 50);
     // Initializes the alignment object with an alignment in FASTA format read from given stream.
     void read(std::istream& in, InputFormat format);
     // Writes the alignment in given format to ouput stream.
@@ -88,17 +90,20 @@ class Alignment
     void init(std::vector<std::string> headers, std::vector<std::string> seqs, bool case_insens = true);
     // Resize the sequence matrix and header vector to given dimensions. Attention: old data is lost!
     void resize(int nseqs, int ncols);
-    // Reads an alignment in FASTA format read from given stream.
-    void read_fasta(std::istream& in);
+    // Fills match_indexes_ with the indexes of all match columns.
+    void set_match_indexes();
+
+    // Reads an alignment in FASTA format from given stream.
+    void read_fasta_or_a2m(std::istream& in, bool fasta);
     // Writes the alignment in FASTA format to output stream.
-    void write_fasta(std::ostream& out, int width = 100) const;
+    void write_fasta_or_a2m(std::ostream& out, bool fasta, int width = 100) const;
 
     // Row major matrix with sequences in integer representation.
     matrix<char> seqs_;
     // Array with indices of all columns [0,1,2,...,ncols-1].
-    std::valarray<int> cols_;
-    // Array with indices of match alignment columns.
-    std::valarray<int> match_cols_;
+    std::valarray<int> column_indexes_;
+    // Array with indices of match columns.
+    std::valarray<int> match_indexes;
     // Array mask indicating match and insert columns with true and false respectively.
     std::valarray<bool> mask_;
     // Headers of sequences in the alignment.

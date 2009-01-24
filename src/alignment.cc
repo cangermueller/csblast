@@ -70,7 +70,7 @@ void Alignment::init(std::vector<std::string> headers, std::vector<std::string> 
         headers_[k] = headers[k];
         for (int i = 0; i < ncols; ++i) {
             const char c = seqs[k][i];
-            cols_[i] = i;
+            column_indexes_[i] = i;
             mask_[i] = case_insens || is_match_chr(c);
             if (alphabet_->valid(c, true))
                 seqs_[i][k] = alphabet_->ctoi(c);
@@ -79,11 +79,6 @@ void Alignment::init(std::vector<std::string> headers, std::vector<std::string> 
         }
     }
 
-    // Initialize index array for match columns
-    const int num_match_cols = std::count(&mask_[0], &mask_[0] + ncols, true);
-    match_cols_.resize(num_match_cols);
-    match_cols_ =cols_[mask_];
-
     // Replace gap with endgap for all gaps at either end of a sequence
     for (int k = 0; k < nseqs; ++k) {
         for (int i = 0; i < ncols && seqs_[i][k] == alphabet_->gap(); ++i)
@@ -91,21 +86,35 @@ void Alignment::init(std::vector<std::string> headers, std::vector<std::string> 
         for (int i = ncols - 1; i >= 0 && seqs_[i][k] == alphabet_->gap(); --i)
             seqs_[i][k] = alphabet_->endgap();
     }
+
+    // Initialize index array for match columns
+    set_match_indexes();
+}
+
+void Alignment::set_match_indexes()
+{
+    const int match_cols = std::count(&mask_[0], &mask_[0] + ncols(), true);
+    match_indexes.resize(match_cols);
+    match_indexes = column_indexes_[mask_];
 }
 
 void Alignment::read(std::istream& in, InputFormat format)
 {
     switch (format) {
         case FASTA_INPUT:
-            read_fasta(in);
+            read_fasta_or_a2m(in, true);
+            break;
+        case A2M_INPUT:
+            read_fasta_or_a2m(in, false);
             break;
         default:
             throw Exception("Unsupported alignment input format!");
     }
 }
 
-void Alignment::read_fasta(std::istream& in)
+void Alignment::read_fasta_or_a2m(std::istream& in, bool fasta)
 {
+    const std::string format = fasta ? "FASTA" : "A2M";
     const int kBufferSize = 1048576; //1MB
     std::string buffer;
     buffer.reserve(kBufferSize);
@@ -116,10 +125,10 @@ void Alignment::read_fasta(std::istream& in)
         //read header
         if (getline(in, buffer)) {
             if (buffer.empty() ||  buffer[0] != '>')
-                throw Exception("Bad format: first line of aligned FASTA sequence does not start with '>' character!");
+                throw Exception("Bad format: first sequence of %s alignment does not start with '>' character!", format.c_str());
             headers.push_back(std::string(buffer.begin()+1, buffer.end()));
         } else {
-            throw Exception("Failed to read from FASTA formatted input stream!");
+            throw Exception("Failed to read from %s formatted input stream!", format.c_str());
         }
         //read sequence
         seqs.push_back("");
@@ -127,28 +136,32 @@ void Alignment::read_fasta(std::istream& in)
             seqs[seqs.size()-1].append(buffer.begin(), buffer.end());
     }
 
-    init(headers, seqs, true);
+    init(headers, seqs, fasta);
 }
 
 void Alignment::write(std::ostream& out, OutputFormat format, int width) const
 {
     switch (format) {
         case FASTA_OUTPUT:
-            write_fasta(out, width);
+            write_fasta_or_a2m(out, true, width);
+            break;
+        case A2M_OUTPUT:
+            write_fasta_or_a2m(out, false, width);
             break;
         default:
             throw Exception("Unsupported alignment output format!");
     }
 }
 
-void Alignment::write_fasta(std::ostream& out, int width) const
+void Alignment::write_fasta_or_a2m(std::ostream& out, bool fasta, int width) const
 {
     for (int k = 0; k < nseqs(); ++k) {
         out << '>' << headers_[k] << std::endl;
         for (int i = 0; i < ncols(); ++i) {
-            out << chr(k,i);
+            out << (fasta || mask_[i] ? match_chr(chr(k,i)) : insert_chr(chr(k,i)));
             if ((i+1) % width == 0) out << std::endl;
         }
+        if (ncols() % width != 0) out << std::endl;
     }
 }
 
@@ -158,36 +171,25 @@ void Alignment::resize(int nseqs, int ncols)
         throw Exception("Bad dimensions for alignment resizing: nseqs=%i ncols=%i", nseqs, ncols);
 
     seqs_.resize(ncols, nseqs);
-    cols_.resize(ncols);
-    match_cols_.resize(ncols);
+    column_indexes_.resize(ncols);
+    match_indexes.resize(ncols);
     mask_.resize(ncols);
     headers_.resize(nseqs);
 }
 
-void Alignment::remove_columns_with_gap_in_first()
+void Alignment::assign_match_columns_by_first_sequence()
 {
-    const int kRemove = -1;
-    int matchcols = ncols();
-    for (int i = 0; i < ncols(); ++i) {
-        if (seqs_[i][0] >= alphabet_->gap()) {
-            --matchcols;
-            for (int k = 0; k < nseqs(); ++k)
-                seqs_[i][k] = kRemove;
-        }
-    }
-    //    seqs_.erase(std::remove(seqs_.begin(), seqs_.end(), static_cast<char>(kRemove)), seqs_.end());
-    //std::vector<char>(seqs_.begin(), seqs_.end()).swap(seqs_); // shrink to fit
+    for (int i = 0; i < ncols(); ++i)
+        mask_[i] = seqs_[i][0] < alphabet_->gap();
+    set_match_indexes();
 }
 
-void Alignment::remove_columns_by_gap_rule(int gap_threshold)
+void Alignment::assign_match_columns_by_gap_rule(int gap_threshold)
 {
     if (kDebug) std::cerr << "Removing collumns with more than " << gap_threshold << "% of gaps:" << std::endl;
 
     // global weights are sufficient for calculation of gap percentage
     std::pair<std::vector<float>, float> wg_neff = global_weights_and_diversity(*this);
-    int matchcols = ncols();
-    const int kRemove = -1;
-
     for (int i = 0; i < ncols(); ++i) {
         float gap = 0.0f;
         float res = 0.0f;
@@ -199,23 +201,18 @@ void Alignment::remove_columns_by_gap_rule(int gap_threshold)
                 gap += wg_neff.first[k];
 
         float percent_gaps = 100.0f * gap / (res + gap);
-        if (kDebug) fprintf(stderr,"percent gaps[%i]=%-4.1f\n", i, percent_gaps);
 
-        if (percent_gaps > static_cast<float>(gap_threshold)) {
-            --matchcols;
-            for (int k = 0; k < nseqs(); ++k)
-                seqs_[i][k] = kRemove;
-        }
+        if (kDebug) fprintf(stderr,"percent gaps[%i]=%-4.1f\n", i, percent_gaps);
+        mask_[i] = percent_gaps <= static_cast<float>(gap_threshold);
     }
-    //seqs_.erase(std::remove(seqs_.begin(), seqs_.end(), static_cast<char>(kRemove)), seqs_.end());
-    //std::vector<char>(seqs_.begin(), seqs_.end()).swap(seqs_); // shrink to fit
+    set_match_indexes();
 }
 
 std::pair<std::vector<float>, float> global_weights_and_diversity(const Alignment& alignment)
 {
     const float kZero = 1E-10;  // for calculation of entropy
     const int nseqs = alignment.nseqs();
-    const int ncols = alignment.ncols();
+    const int ncols = alignment.nmatch();
     const int nalph = alignment.alphabet()->size();
     const int any   = alignment.alphabet()->any();
 
@@ -270,7 +267,7 @@ std::pair< matrix<float>, std::vector<float> > position_specific_weights_and_div
     const int kMinNcols = 10;  // minimum number of columns in subalignments
     const float kZero = 1E-10;  // for calculation of entropy
     const int nseqs  = alignment.nseqs();
-    const int ncols  = alignment.ncols();
+    const int ncols  = alignment.nmatch();
     const int nalph  = alignment.alphabet()->size();
     const int any    = alignment.alphabet()->any();
     const int endgap = alignment.alphabet()->endgap();

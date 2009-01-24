@@ -97,6 +97,7 @@ void Sequence::write(std::ostream& out, int width) const
         out << chr(i);
         if ((i+1) % width == 0) out << std::endl;
     }
+    if (length() % width != 0) out << std::endl;
 }
 
 }//cs

@@ -35,10 +35,10 @@ CountsProfile::CountsProfile(const Sequence& sequence)
 }
 
 CountsProfile::CountsProfile(const Alignment& alignment, bool position_specific_weights)
-        : Profile(alignment.ncols(), alignment.alphabet()),
+        : Profile(alignment.nmatch(), alignment.alphabet()),
           has_counts_(false)
 {
-    const int ncols = alignment.ncols();
+    const int ncols = alignment.nmatch();
     const int nseqs = alignment.nseqs();
     const int any   = alphabet()->any();
 
