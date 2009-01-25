@@ -6,7 +6,7 @@
 #include "profile.h"
 
 #include <cmath>
-#include <cstring>
+#include <cstdlib>
 
 #include <iostream>
 #include <iomanip>
@@ -85,9 +85,9 @@ void Profile::transform_to_linspace()
 void Profile::read(std::istream& in)
 {
     // Check if stream actually contains a serialized profile
-    std::string buffer;
-    while (getline(in, buffer) && !strscn(buffer.c_str())) continue;
-    if (buffer != class_identity())
+    std::string tmp;
+    while (getline(in, tmp) && tmp.empty()) continue;
+    if (tmp.find(class_identity()) == std::string::npos)
         throw Exception("Bad format: serialized profile does not start with '%s'!", class_identity().c_str());
 
     read_header(in);
@@ -96,58 +96,48 @@ void Profile::read(std::istream& in)
 
 void Profile::read_header(std::istream& in)
 {
-    const int kBufferSize = 1000;
-    std::vector<char> char_arr(kBufferSize, '\0');
-    char* buffer = &char_arr[0];
+    std::string tmp;
 
     // Read ncols
     int ncols = 0;
-    if (in.getline(buffer, kBufferSize) && strncmp(buffer, "ncols", 5) == 0)
-        ncols = atoi(buffer + 5);
+    if (getline(in, tmp) && tmp.find("ncols") != std::string::npos)
+        ncols = atoi(tmp.c_str() + 5);
     else
         throw Exception("Bad format: serialized profile does not contain 'ncols' record!");
 
     // Read nalph
     int nalph = 0;
-    if (in.getline(buffer, kBufferSize) && strncmp(buffer, "nalph", 5) == 0)
-        nalph = atoi(buffer + 5);
+    if (getline(in, tmp) && tmp.find("nalph") != std::string::npos)
+        nalph = atoi(tmp.c_str() + 5);
     else
         throw Exception("Bad format: serialized profile does not contain 'nalph' record!");
     if (nalph != alphabet_->size())
         throw Exception("Bad format: nalph=%i does not fit with provided alphabet!", nalph);
 
     // Read logspace
-    if (in.getline(buffer, kBufferSize) && strncmp(buffer, "logspace", 8) == 0)
-        logspace_ = atoi(buffer + 8) == 1;
+    if (getline(in, tmp) && tmp.find("logspace") != std::string::npos)
+        logspace_ = atoi(tmp.c_str() + 8) == 1;
 
     resize(ncols, nalph);
 }
 
 void Profile::read_body(std::istream& in)
 {
-    const int kBufferSize = 1000;
-    std::vector<char> char_arr(kBufferSize, '\0');
-    char* buffer = &char_arr[0];
+    std::string tmp;
+    std::vector<std::string> tokens;
+    int i = 0;
+    getline(in, tmp);  // skip alphabet description line
+    while (getline(in, tmp)) {
+        if (tmp.empty()) continue;
+        if (tmp.length() > 1 && tmp[0] == '/' && tmp[1] == '/') break;
 
-    in.getline(buffer, kBufferSize);  // Skip description line
-    const char* ptr;  // for string traversal
-    int i = 0;        // column index
-    while (in.getline(buffer, kBufferSize)) {
-        if (!strscn(buffer)) continue;
-        if (strlen(buffer) > 1 && buffer[0] == '/' && buffer[1] == '/') break;
-
-        ptr = buffer;
-        i = strtoi(ptr) - 1;
-        if (!ptr)
-            throw Exception("Bad format: malformed line after column record %i!", i - 1);
-
+        split(tmp, '\t', tokens);
+        i = atoi(tokens[0].c_str()) - 1;
         for (int a = 0; a < nalph(); ++a) {
-            int log_p = strtoi_asterix(ptr);
-            if (logspace_)
-                data_[i][a] = static_cast<float>(-log_p) / kScaleFactor;
-            else
-                data_[i][a] = pow(2.0, static_cast<float>(-log_p) / kScaleFactor);
+            float log_p = tokens[a+1][0] == '*' ? std::numeric_limits<int>::max() : atoi(tokens[a+1].c_str());
+            data_[i][a] = (logspace_ ? -log_p / kScaleFactor : pow(2.0, -log_p / kScaleFactor)) ;
         }
+        tokens.clear();
     }
     if (i != ncols() - 1)
         throw Exception("Bad format: profile has %i column records but should have %i!", i+1, ncols());

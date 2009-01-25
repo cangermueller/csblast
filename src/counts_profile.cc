@@ -108,48 +108,35 @@ void CountsProfile::convert_to_frequencies()
 void CountsProfile::read_header(std::istream& in)
 {
     Profile::read_header(in);
-
-    const int kBufferSize = 1000;
-    std::vector<char> char_arr(kBufferSize, '\0');
-    char* buffer = &char_arr[0];
+    neff_.resize(ncols());
 
     // Read has_counts
-    if (in.getline(buffer, kBufferSize) && strncmp(buffer, "has_counts", 10) == 0)
-        has_counts_ = atoi(buffer + 10) == 1;
+   std::string tmp;
+   if (getline(in, tmp) && tmp.find("has_counts") != std::string::npos)
+        has_counts_ = atoi(tmp.c_str() + 10) == 1;
 }
 
 void CountsProfile::read_body(std::istream& in)
 {
-    const int kBufferSize = 1000;
-    std::vector<char> char_arr(kBufferSize, '\0');
-    char* buffer = &char_arr[0];
+    std::string tmp;
+    std::vector<std::string> tokens;
+    int i = 0;
+    getline(in, tmp);  // skip alphabet description line
+    while (getline(in, tmp)) {
+        if (tmp.empty()) continue;
+        if (tmp.length() > 1 && tmp[0] == '/' && tmp[1] == '/') break;
 
-    // Read column data records line by line
-    neff_.resize(ncols());
-    in.getline(buffer, kBufferSize);  // Skip description line
-    const char* ptr;  // for string traversal
-    int i = 0;        // column index
-    while (in.getline(buffer, kBufferSize)) {
-        if (!strscn(buffer)) continue;
-        if (strlen(buffer) > 1 && buffer[0] == '/' && buffer[1] == '/') break;
-
-        ptr = buffer;
-        i = strtoi(ptr) - 1;
-        if (!ptr)
-            throw Exception("Bad format: malformed line after column record %i!", i - 1);
-        // Read profile frequencies
+        split(tmp, '\t', tokens);
+        i = atoi(tokens[0].c_str()) - 1;
         for (int a = 0; a < nalph(); ++a) {
-            int log_p = strtoi_asterix(ptr);
-            if (logspace_)
-                data_[i][a] = static_cast<float>(-log_p) / kScaleFactor;
-            else
-                data_[i][a] = pow(2.0, static_cast<float>(-log_p) / kScaleFactor);
+            float log_p = tokens[a+1][0] == '*' ? std::numeric_limits<int>::max() : atoi(tokens[a+1].c_str());
+            data_[i][a] = (logspace_ ? -log_p / kScaleFactor : pow(2.0, -log_p / kScaleFactor)) ;
         }
-        // Read neff
-        neff_[i] = static_cast<float>(strtoi_asterix(ptr)) / kScaleFactor;
+        neff_[i] = atof(tokens[nalph()+1].c_str()) / kScaleFactor;
+        tokens.clear();
     }
     if (i != ncols() - 1)
-        throw Exception("Bad format: alignment profile has %i column records but should have %i!", i+1, ncols());
+        throw Exception("Bad format: profile has %i column records but should have %i!", i+1, ncols());
 }
 
 void CountsProfile::write_header(std::ostream& out) const

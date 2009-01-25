@@ -122,6 +122,6 @@ std::pair<std::vector<float>, float> global_weights_and_diversity(const Alignmen
 // sequence k in column i) and a vector with the number of effective sequences for alignment column.
 std::pair< matrix<float>, std::vector<float> > position_specific_weights_and_diversity(const Alignment& alignment);
 
-}//cs
+}  // cs
 
 #endif
