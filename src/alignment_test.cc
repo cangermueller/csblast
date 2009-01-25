@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "alignment.h"
+#include "amino_acid_alphabet.h"
 #include "matrix.h"
 #include "nucleotide_alphabet.h"
 
@@ -115,4 +116,22 @@ TEST(AlignmentTest, RemoveColumnsByGapRule)
     EXPECT_EQ(na->ctoi('G'), alignment[4][0]);
 }
 
+TEST(AlignmentTest, ConstructionFromA2M)
+{
+    cs::AminoAcidAlphabet* aa = cs::AminoAcidAlphabet::instance();
+    std::ifstream fin("../data/d1alx.a2m");
+    cs::Alignment alignment(fin, cs::Alignment::A2M, aa);
+    fin.close();
 
+    EXPECT_EQ(aa->gap(), alignment.seq(0,27));
+}
+
+TEST(AlignmentTest, ConstructionFromA3M)
+{
+    cs::AminoAcidAlphabet* aa = cs::AminoAcidAlphabet::instance();
+    std::ifstream fin("../data/d1alx.a3m");
+    cs::Alignment alignment(fin, cs::Alignment::A3M, aa);
+    fin.close();
+
+    EXPECT_EQ(aa->gap(), alignment.seq(0,27));
+}

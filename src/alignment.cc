@@ -121,6 +121,9 @@ void Alignment::read(std::istream& in, Format format)
         case A2M:
             read_a2m(in, headers, seqs);
             break;
+        case A3M:
+            read_a3m(in, headers, seqs);
+            break;
         default:
             throw Exception("Unsupported alignment input format %i!", format);
     }
@@ -162,8 +165,8 @@ void Alignment::read_fasta(std::istream& in, std::vector<std::string>& headers, 
 {
     read_fasta_flavors(in, headers, seqs);
     // convert all characters to match characters
-    for (std::vector<std::string>::iterator iter = seqs.begin(); iter != seqs.end(); ++iter)
-        transform(iter->begin(), iter->end(), iter->begin(), to_match_chr);
+    for (std::vector<std::string>::iterator it = seqs.begin(); it != seqs.end(); ++it)
+        transform(it->begin(), it->end(), it->begin(), to_match_chr);
 }
 
 void Alignment::read_a2m(std::istream& in, std::vector<std::string>& headers, std::vector<std::string>& seqs)
@@ -174,7 +177,63 @@ void Alignment::read_a2m(std::istream& in, std::vector<std::string>& headers, st
 void Alignment::read_a3m(std::istream& in, std::vector<std::string>& headers, std::vector<std::string>& seqs)
 {
     read_fasta_flavors(in, headers, seqs);
-    // TODO
+
+    // Check number of match states
+    const int nseqs = seqs.size();
+    const int nmatch = count_if(seqs[0].begin(), seqs[0].end(), match_chr);
+    for (int k = 1; k < nseqs; ++k) {
+        const int nmatch_k = count_if(seqs[k].begin(), seqs[k].end(), match_chr);
+        if (nmatch_k != nmatch)
+            throw Exception("Bad alignment: sequence %i has %i match columns but should have %i!", k, nmatch_k, nmatch);
+        if (count(seqs[k].begin(), seqs[k].end(), '.') > 0)
+            throw Exception("Bad alignment: sequence %i in A3M formatted alignment contains gap characters '.'!", k);
+    }
+
+    // Insert gaps into A3M alignment
+    std::vector<std::string> seqs_a2m(seqs.size(), "");     // sequences in A2M format
+    matrix<std::string> inserts(seqs.size(), nmatch, "");   // inserts of sequence k after match state i
+    std::vector<int> max_insert_len(nmatch, 0);             // maximal length of inserts after match state i
+
+    // Move inserts BEFORE first match state into seqs_a2m
+    for (int k = 0; k < nseqs; ++k) {
+        std::string::iterator i = find_if(seqs[k].begin(), seqs[k].end(), match_chr);
+        if (i != seqs[k].end()) {
+            seqs_a2m[k].append(seqs[k].begin(), i);
+            seqs[k].erase(seqs[k].begin(), i);
+        }
+    }
+
+    // Extract all inserts and keep track of longest insert after each match column
+    for (int k = 0; k < nseqs; ++k) {
+        int i = -1;
+        std::string::iterator insert_end = seqs[k].begin();
+        std::string::iterator insert_start = find_if(insert_end, seqs[k].end(), insert_chr);
+        while (insert_start != seqs[k].end() && insert_end != seqs[k].end()) {
+            i += insert_start - insert_end;
+            insert_end = find_if(insert_start, seqs[k].end(), match_chr);
+            inserts[k][i] = std::string(insert_start, insert_end);
+            max_insert_len[i] = std::max(static_cast<int>(inserts[k][i].length()), max_insert_len[i]);
+            insert_start = find_if(insert_end, seqs[k].end(), insert_chr);
+        }
+    }
+
+    // Build new A2M alignment
+    for (int k = 0; k < nseqs; ++k) {
+        int i = 0;
+        std::string::iterator match = seqs[k].begin();
+        while (match != seqs[k].end()) {
+            seqs_a2m[k].append(1, *match);
+            if (max_insert_len[i] > 0) {
+                seqs_a2m[k].append(inserts[k][i]);
+                seqs_a2m[k].append(max_insert_len[i] - inserts[k][i].length(), '.');
+            }
+            match = find_if(match+1, seqs[k].end(), match_chr);
+            ++i;
+        }
+    }
+
+    // Overwrite original A3M alignment with new A2M alignment
+    seqs = seqs_a2m;
 }
 
 void Alignment::write(std::ostream& out, Format format, int width) const

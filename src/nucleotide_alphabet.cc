@@ -11,7 +11,7 @@ namespace cs
 const char NucleotideAlphabet::nucleotides_[] = "ACGT";
 
 NucleotideAlphabet::NucleotideAlphabet()
-        : SequenceAlphabet(4, 'N', '-')
+        : SequenceAlphabet(4, 'N')
 { init(); }
 
 NucleotideAlphabet* NucleotideAlphabet::instance()

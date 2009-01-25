@@ -20,10 +20,9 @@
 namespace cs
 {
 
-SequenceAlphabet::SequenceAlphabet(int size, char any, char gap)
+SequenceAlphabet::SequenceAlphabet(int size, char any)
         : size_(size),
           any_(any),
-          gap_(gap),
           ctoi_(static_cast<int>(pow(2, 8*sizeof(char))), kInvalidChar),
           itoc_(size + 3, '\0')
 {}
@@ -36,14 +35,15 @@ void SequenceAlphabet::init()
 
     // Setup itoc vector
     copy(itoc, itoc + strlen(itoc), itoc_.begin());
-    itoc_[size_]   = any_;    // ANY
-    itoc_[size_ + 1] = gap_;  // GAP
-    itoc_[size_ + 2] = gap_;  // ENDGAP
+    itoc_[size_]   = any_;   // ANY
+    itoc_[size_ + 1] = '-';  // GAP
+    itoc_[size_ + 2] = '-';  // ENDGAP
 
     // Setup ctoi vector
     for (int i = 0; i < size_; ++i) ctoi_[toupper(itoc_[i])] = i;
     ctoi_[toupper(any_)] = size_;      // ANY
-    ctoi_[toupper(gap_)] = size_ + 1;  // GAP
+    ctoi_['-']           = size_ + 1;  // MATCH GAP
+    ctoi_['.']           = size_ + 1;  // INSERT GAP
 }
 
 void SequenceAlphabet::print(std::ostream& out, const std::string& delim) const

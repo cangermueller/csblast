@@ -43,11 +43,9 @@ class SequenceAlphabet
     bool endgap(int letter) const { return letter == size_ + 2; }
     // Returns the any character.
     char any_chr() const { return any_; }
-    // Returns the gap character.
-    char gap_chr() const { return gap_; }
     // Returns true if the character belongs to the alphabet.
     bool valid(char letter, bool allow_gap = false) const
-    { return ctoi_[toupper(letter)] != kInvalidChar && (allow_gap || letter != gap_); }
+    { return ctoi_[toupper(letter)] != kInvalidChar && (allow_gap || letter != '-' && letter != '.'); }
     // Returns a const iterator to the first character in the alphabet.
     const_iterator begin() const { return itoc_.begin(); }
     // Returns a const iterator just past the end of last distinct character in the alphabet.
@@ -60,7 +58,7 @@ class SequenceAlphabet
     static const int kInvalidChar = -1;
 
     // Constructor to be used by derived classes to setup alphabet.
-    SequenceAlphabet(int size, char any, char gap = '-');
+    SequenceAlphabet(int size, char any);
     ~SequenceAlphabet() {}
 
     // Initializes ctoi and itoc conversion arrays.
@@ -80,8 +78,6 @@ class SequenceAlphabet
     const int size_;
     // Any character of alphabet in character representation.
     const char any_;
-    // Gap character of alphabet in character representation.
-    const char gap_;
     // Conversion array from character to iteger representation.
     std::vector<int> ctoi_;
     // Conversion array from integer to character representation (incl. ANY, GAP, and ENDGAP).

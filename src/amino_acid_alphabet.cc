@@ -11,7 +11,7 @@ namespace cs
 const char AminoAcidAlphabet::amino_acids_[] = "ARNDCQEGHILKMFPSTWYV";
 
 AminoAcidAlphabet::AminoAcidAlphabet()
-        : SequenceAlphabet(20, 'X', '-')
+        : SequenceAlphabet(20, 'X')
 {
     init();
     // Conversion of non-standard amino acids to integers
