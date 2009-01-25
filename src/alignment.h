@@ -113,14 +113,10 @@ class Alignment
 
 
 // Calculates global sequence weights by maximum entropy weighting (Henikoff&Henikoff '94).
-// The returned pair vector specifies the sequence weights for each of the alignment sequences
-// and the overall number of effective sequences in the alignment.
-std::pair<std::vector<float>, float> global_weights_and_diversity(const Alignment& alignment);
+float global_weights_and_diversity(const Alignment& alignment, std::vector<float>& wg);
 
 // Calculates position-dependent sequence weights and number of effective sequences on subalignments.
-// The return value is a pair consisting of a weights matrix (element (i,k) denotes the weight of
-// sequence k in column i) and a vector with the number of effective sequences for alignment column.
-std::pair< matrix<float>, std::vector<float> > position_specific_weights_and_diversity(const Alignment& alignment);
+std::vector<float> position_specific_weights_and_diversity(const Alignment& alignment, matrix<float>& w);
 
 }  // cs
 

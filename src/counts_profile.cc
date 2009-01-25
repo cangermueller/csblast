@@ -12,6 +12,7 @@
 
 #include "alignment.h"
 #include "exception.h"
+#include "matrix.h"
 #include "profile.h"
 #include "sequence.h"
 #include "sequence_alphabet.h"
@@ -43,19 +44,19 @@ CountsProfile::CountsProfile(const Alignment& alignment, bool position_specific_
     const int any   = alphabet()->any();
 
     if (position_specific_weights) {
-        std::pair< matrix<float>, std::vector<float> > wi_neff = position_specific_weights_and_diversity(alignment);
-        neff_.insert(neff_.begin(), wi_neff.second.begin(), wi_neff.second.end());
+        matrix<float> w;  // position-specific sequence weights
+        neff_ = position_specific_weights_and_diversity(alignment, w);
         for (int i = 0; i < ncols; ++i)
             for (int k = 0; k < nseqs; ++k)
                 if (alignment[i][k] < any)
-                    data_[i][alignment[i][k]] += wi_neff.first[i][k];
+                    data_[i][alignment[i][k]] += w[i][k];
     } else {
-        std::pair<std::vector<float>, float> wg_neff = global_weights_and_diversity(alignment);
-        neff_.insert(neff_.begin(), ncols, wg_neff.second);
+        std::vector<float> wg;  // global sequence weights
+        neff_.assign(ncols, global_weights_and_diversity(alignment, wg));
         for (int i = 0; i < ncols; ++i)
             for (int k = 0; k < nseqs; ++k)
                 if (alignment[i][k] < any)
-                    data_[i][alignment[i][k]] += wg_neff.first[k];
+                    data_[i][alignment[i][k]] += wg[k];
     }
 
     normalize(*this);

@@ -3,7 +3,6 @@
 #include <fstream>
 #include <string>
 #include <sstream>
-#include <utility>
 #include <vector>
 
 #include "alignment.h"
@@ -42,11 +41,12 @@ TEST(AlignmentTest, CalculationOfGlobalWeights)
     EXPECT_EQ(4, alignment.nseqs());
     EXPECT_EQ(80, alignment.ncols());
 
-    std::pair<std::vector<float>, float> wg_neff = cs::global_weights_and_diversity(alignment);
+    std::vector<float> wg;
+    float neff = cs::global_weights_and_diversity(alignment, wg);
 
-    EXPECT_EQ(4, static_cast<int>(wg_neff.first.size()));
-    EXPECT_FLOAT_EQ(0.25, wg_neff.first[0]);
-    EXPECT_FLOAT_EQ(1.0, wg_neff.second);
+    EXPECT_EQ(4, static_cast<int>(wg.size()));
+    EXPECT_FLOAT_EQ(0.25, wg[0]);
+    EXPECT_FLOAT_EQ(1.0, neff);
 }
 
 TEST(AlignmentTest, CalculationOfPositionSpecificWeights)
@@ -63,9 +63,10 @@ TEST(AlignmentTest, CalculationOfPositionSpecificWeights)
     EXPECT_EQ(4, alignment.nseqs());
     EXPECT_EQ(80, alignment.ncols());
 
-    std::pair< matrix<float>, std::vector<float> > wi_neff = cs::position_specific_weights_and_diversity(alignment);
+    matrix<float> w;
+    cs::position_specific_weights_and_diversity(alignment, w);
 
-    EXPECT_FLOAT_EQ(0.5, wi_neff.first[0][0]);
+    EXPECT_FLOAT_EQ(0.5, w[0][0]);
 }
 
 TEST(AlignmentTest, ConstructionFromCelegansRefGene)

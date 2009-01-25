@@ -306,16 +306,17 @@ void Alignment::assign_match_columns_by_gap_rule(int gap_threshold)
     if (kDebug) std::cerr << "Removing collumns with more than " << gap_threshold << "% of gaps:" << std::endl;
 
     // global weights are sufficient for calculation of gap percentage
-    std::pair<std::vector<float>, float> wg_neff = global_weights_and_diversity(*this);
+    std::vector<float> wg;
+    global_weights_and_diversity(*this, wg);
     for (int i = 0; i < ncols(); ++i) {
         float gap = 0.0f;
         float res = 0.0f;
 
         for (int k = 0; k < nseqs(); ++k)
             if (seqs_[i][k] < alphabet_->any())
-                res += wg_neff.first[k];
+                res += wg[k];
             else
-                gap += wg_neff.first[k];
+                gap += wg[k];
 
         float percent_gaps = 100.0f * gap / (res + gap);
 
@@ -325,7 +326,7 @@ void Alignment::assign_match_columns_by_gap_rule(int gap_threshold)
     set_match_indexes();
 }
 
-std::pair<std::vector<float>, float> global_weights_and_diversity(const Alignment& alignment)
+float global_weights_and_diversity(const Alignment& alignment, std::vector<float>& wg)
 {
     const float kZero = 1E-10;  // for calculation of entropy
     const int nseqs = alignment.nseqs();
@@ -333,12 +334,15 @@ std::pair<std::vector<float>, float> global_weights_and_diversity(const Alignmen
     const int nalph = alignment.alphabet()->size();
     const int any   = alignment.alphabet()->any();
 
-    float neff = 0.0f;                        // diversity of alignment
-    std::vector<float> weights(nseqs, 0.0f);  // weights of sequences
-    std::vector<int> n(nseqs, 0);             // number of residues in sequence i (excl. ANY)
-    std::vector<float> fj(nalph, 0.0f);       // to calculate entropy
-    std::vector<int> adiff(ncols, 0);         // number of different alphabet letters in each column
-    matrix<int> counts(ncols, nalph, 0);      // counts of alphabet letters in each column (excl. ANY)
+    // Return values
+    wg.assign(nseqs, 0.0f);  // global sequence weights
+    float neff = 0.0f;       // diversity of alignment
+
+    // Helper variables
+    std::vector<int> n(nseqs, 0);         // number of residues in sequence i (excl. ANY)
+    std::vector<float> fj(nalph, 0.0f);   // to calculate entropy
+    std::vector<int> adiff(ncols, 0);     // number of different alphabet letters in each column
+    matrix<int> counts(ncols, nalph, 0);  // counts of alphabet letters in each column (excl. ANY)
 
     if (kDebug) fprintf(stderr,"\nCalculation of global weights and alignment diversity:\n");
 
@@ -359,14 +363,14 @@ std::pair<std::vector<float>, float> global_weights_and_diversity(const Alignmen
     for(int i = 0; i < ncols; ++i)
         for (int k = 0; k < nseqs; ++k)
             if( adiff[i] > 0 && alignment[i][k] < any )
-                weights[k] += 1.0f/( adiff[i] * counts[i][alignment[i][k]] * n[k] );
-    normalize_to_one(&weights[0], nseqs);
+                wg[k] += 1.0f/( adiff[i] * counts[i][alignment[i][k]] * n[k] );
+    normalize_to_one(&wg[0], nseqs);
 
     // Calculate number of effective sequences
     for (int i = 0; i < ncols; ++i) {
         reset(&fj[0], nalph);
         for (int k=0; k < nseqs; ++k)
-            if (alignment[i][k] < any) fj[alignment[i][k]] += weights[k];
+            if (alignment[i][k] < any) fj[alignment[i][k]] += wg[k];
         normalize_to_one(&fj[0], nalph);
         for (int a = 0; a < nalph; ++a)
             if (fj[a] > kZero) neff -= fj[a] * log2(fj[a]);
@@ -375,10 +379,10 @@ std::pair<std::vector<float>, float> global_weights_and_diversity(const Alignmen
 
     if (kDebug) fprintf(stderr,"neff=%-5.2f\n", neff);
 
-    return make_pair(weights, neff);
+    return neff;
 }
 
-std::pair< matrix<float>, std::vector<float> > position_specific_weights_and_diversity(const Alignment& alignment)
+std::vector<float> position_specific_weights_and_diversity(const Alignment& alignment, matrix<float>& w)
 {
     const float kMaxEndgapFraction = 0.1;  // maximal fraction of sequences with an endgap
     const int kMinNcols = 10;  // minimum number of columns in subalignments
@@ -389,19 +393,25 @@ std::pair< matrix<float>, std::vector<float> > position_specific_weights_and_div
     const int any    = alignment.alphabet()->any();
     const int endgap = alignment.alphabet()->endgap();
 
+    // Return values
+    std::vector<float> neff(ncols, 0.0f);  // diversity of subalignment i
+    w.resize(ncols, nseqs);                // w(i,k) weight of sequence k in column i, calculated from subalignment i
+    w = matrix<float>(ncols, nseqs, 0.0f); // init to zero
+
+    // Helper variables
     int ncoli = 0;        // number of columns j that contribute to neff[i]
     int nseqi = 0;        // number of sequences in subalignment i
     int ndiff = 0;        // number of different alphabet letters
     bool change = false;  // has the set of sequences in subalignment changed?
-    matrix<int> n(ncols, endgap + 1, 0);  // n(j,a) = number of seq's with some residue at column i AND a at position j
-    matrix<float> w(ncols, nseqs, 0.0f);  // w(i,k) weight of sequence k in column i, calculated from subalignment i
-    std::vector<float> fj(nalph, 0.0f);   // to calculate entropy
-    std::vector<float> neff(ncols, 0.0f); // diversity of subalignment i
-    std::vector<float> wi(nseqs, 0.0f);   // weight of sequence k in column i, calculated from subalignment i
-    std::pair<std::vector<float>, float> wg_neff = global_weights_and_diversity(alignment);  // global weights
 
-    std::vector<int> nseqi_debug(ncols, 0); // debugging
-    std::vector<int> ncoli_debug(ncols, 0); // debugging
+    matrix<int> n(ncols, endgap + 1, 0);     // n(j,a) = number of seq's with some residue at column i AND a at position j
+    std::vector<float> fj(nalph, 0.0f);      // to calculate entropy
+    std::vector<float> wi(nseqs, 0.0f);      // weight of sequence k in column i, calculated from subalignment i
+    std::vector<float> wg;                   // global weights
+    std::vector<int> nseqi_debug(ncols, 0);  // debugging
+    std::vector<int> ncoli_debug(ncols, 0);  // debugging
+
+    global_weights_and_diversity(alignment, wg);  // compute global sequence weights
 
     if (kDebug) {
         fprintf(stderr,"\nCalculation of position-specific weights and alignment diversity on subalignments:\n");
@@ -450,7 +460,7 @@ std::pair< matrix<float>, std::vector<float> > position_specific_weights_and_div
             if (ncoli < kMinNcols)  // number of columns in subalignment insufficient?
                 for (int k = 0; k < nseqs; ++k)
                     if (alignment[i][k] < any)
-                        wi[k] = wg_neff.first[k];
+                        wi[k] = wg[k];
                     else
                         wi[k] = 0.0f;
 
@@ -480,7 +490,7 @@ std::pair< matrix<float>, std::vector<float> > position_specific_weights_and_div
         }
     }  // for i over ncols
 
-    return make_pair(w, neff);
+    return neff;
 }
 
 }//cs
