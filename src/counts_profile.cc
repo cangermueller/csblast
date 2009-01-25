@@ -146,8 +146,7 @@ void CountsProfile::read_body(std::istream& in)
                 data_[i][a] = pow(2.0, static_cast<float>(-log_p) / kScaleFactor);
         }
         // Read neff
-        int log_neff = strtoi_asterix(ptr);
-        neff_[i] = pow(2.0, static_cast<float>(-log_neff) / kScaleFactor);
+        neff_[i] = static_cast<float>(strtoi_asterix(ptr)) / kScaleFactor;
     }
     if (i != ncols() - 1)
         throw Exception("Bad format: alignment profile has %i column records but should have %i!", i+1, ncols());
@@ -174,11 +173,7 @@ void CountsProfile::write_body(std::ostream& out) const
             else
                 out << "\t" << -iround(log_p * kScaleFactor);
         }
-        float log_neff = log2(neff_[i]);
-        if (-log_neff == std::numeric_limits<float>::infinity())
-            out << "\t*" << std::endl;
-        else
-            out << "\t" << -iround(log_neff * kScaleFactor) << std::endl;
+        out << "\t" << iround(neff_[i] * kScaleFactor) << std::endl;
     }
     out << "//" << std::endl;
 }
