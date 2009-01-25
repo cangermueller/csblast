@@ -37,50 +37,6 @@ inline int iround(double x)
     return static_cast<int>(floor(x + 0.5));
 }
 
-// // Returns pointer to first non-white-space character in str OR to NULL if none found
-// inline const char* strscn(const char* str)
-// {
-//     if (!str) return NULL;
-//     const char* ptr=str;
-//     while (*ptr!='\0' && isspace(*ptr)) ptr++;
-//     return (*ptr=='\0') ? NULL : ptr;
-// }
-
-// // Returns leftmost integer in ptr and sets the pointer to first char after
-// // the integer. If no integer is found, returns INT_MIN and sets ptr to NULL
-// inline int strtoi(const char*& ptr)
-// {
-//     const char* ptr0=ptr;
-//     if (!ptr) return std::numeric_limits<int>::min();
-//     while (*ptr!='\0' && !(*ptr>='0' && *ptr<='9')) ptr++;
-//     if (*ptr=='\0') {
-//         ptr=NULL;
-//         return std::numeric_limits<int>::min();
-//     }
-//     int i = (ptr>ptr0 && *(ptr-1)=='-') ? atoi(ptr-1) : atoi(ptr);
-//     while (*ptr>='0' && *ptr<='9') ptr++;
-//     return i;
-// }
-
-// // Same as strtoi, but interpretes '*' as default.
-// inline int strtoi_asterix(const char*& ptr, int deflt = std::numeric_limits<int>::max())
-// {
-//     const char* ptr0=ptr;
-//     if (!ptr) return std::numeric_limits<int>::min();
-//     while (*ptr!='\0' && !(*ptr>='0' && *ptr<='9') && *ptr!='*') ptr++;
-//     if (*ptr=='\0') {
-//         ptr=NULL;
-//         return std::numeric_limits<int>::min();
-//     }
-//     if (*ptr=='*') {
-//         ptr++;
-//         return deflt;
-//     }
-//     int i = (ptr>ptr0 && *(ptr-1)=='-') ? atoi(ptr-1) : atoi(ptr);
-//     while (*ptr>='0' && *ptr<='9') ptr++;
-//     return i;
-// }
-
 // Normalize a float array such that it sums to one
 // If it sums to 0 then assign def_array elements to array (optional)
 inline float normalize_to_one(float* array, int length, const float* default_array = NULL)
