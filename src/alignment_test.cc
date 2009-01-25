@@ -17,7 +17,7 @@ TEST(AlignmentTest, ConstructionFromInputStream)
     data.append(">seq1\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACA---ACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
     data.append(">seq2\nACGT--GTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTA---GTACGT--\n");
     std::istringstream ss(data);
-    cs::Alignment alignment(ss, cs::Alignment::FASTA_INPUT, na);
+    cs::Alignment alignment(ss, cs::Alignment::FASTA, na);
 
     EXPECT_EQ(2, alignment.nseqs());
     EXPECT_EQ(80, alignment.ncols());
@@ -36,7 +36,7 @@ TEST(AlignmentTest, CalculationOfGlobalWeights)
     data.append(">seq3\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
     data.append(">seq4\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
     std::istringstream ss(data);
-    cs::Alignment alignment(ss, cs::Alignment::FASTA_INPUT, na);
+    cs::Alignment alignment(ss, cs::Alignment::FASTA, na);
 
     EXPECT_EQ(4, alignment.nseqs());
     EXPECT_EQ(80, alignment.ncols());
@@ -57,7 +57,7 @@ TEST(AlignmentTest, CalculationOfPositionSpecificWeights)
     data.append(">seq3\n----GTACGTACACGTACGTACACGTACGT\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
     data.append(">seq4\n----CGTACGTACACGTACGTACACGTACG\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
     std::istringstream ss(data);
-    cs::Alignment alignment(ss, cs::Alignment::FASTA_INPUT, na);
+    cs::Alignment alignment(ss, cs::Alignment::FASTA, na);
 
     EXPECT_EQ(4, alignment.nseqs());
     EXPECT_EQ(80, alignment.ncols());
@@ -71,7 +71,7 @@ TEST(AlignmentTest, ConstructionFromCelegansRefGene)
 {
     cs::NucleotideAlphabet* na = cs::NucleotideAlphabet::instance();
     std::ifstream fin("../data/ce_refgene.fas");
-    cs::Alignment alignment(fin, cs::Alignment::FASTA_INPUT, na);
+    cs::Alignment alignment(fin, cs::Alignment::FASTA, na);
     fin.close();
 
     EXPECT_EQ(na->ctoi('C'), alignment[0][0]);
@@ -84,12 +84,12 @@ TEST(AlignmentTest, RemoveColumnsWithGapInFirst)
     data.append(">seq1\nA-GTACGTACACGTACGTACACGTACGTAC\nACGTACGTACA---ACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
     data.append(">seq2\nACGT--GTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTA---GTACGT--\n");
     std::istringstream ss(data);
-    cs::Alignment alignment(ss, cs::Alignment::FASTA_INPUT, na);
+    cs::Alignment alignment(ss, cs::Alignment::FASTA, na);
 
     ASSERT_EQ(2, alignment.nseqs());
     ASSERT_EQ(80, alignment.ncols());
 
-    alignment.assign_match_columns_by_first_sequence();
+    alignment.assign_match_columns_by_sequence(0);
 
     EXPECT_EQ(76, alignment.nmatch());
     EXPECT_EQ(na->gap(), alignment.seq(0,1));
@@ -104,7 +104,7 @@ TEST(AlignmentTest, RemoveColumnsByGapRule)
     data.append(">seq2\nACGT--GTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTA---GTACGT--\n");
     data.append(">seq3\nACGT--GTACGTACGTACACGTACGTACAC\nACGTACCACGTACGTACACGGTATACGTAC\nACGTACGTAGTACGT-----\n");
     std::istringstream ss(data);
-    cs::Alignment alignment(ss, cs::Alignment::FASTA_INPUT, na);
+    cs::Alignment alignment(ss, cs::Alignment::FASTA, na);
 
     ASSERT_EQ(3, alignment.nseqs());
     ASSERT_EQ(80, alignment.ncols());

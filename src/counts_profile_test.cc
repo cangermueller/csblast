@@ -47,7 +47,7 @@ TEST(CountsProfileTest, ConstructionFromAlignment)
     data.append(">seq3\nACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTAC\n");
     data.append(">seq4\nACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTAC\n");
     std::istringstream ss(data);
-    cs::Alignment alignment(ss, cs::Alignment::FASTA_INPUT, na);
+    cs::Alignment alignment(ss, cs::Alignment::FASTA, na);
 
     cs::CountsProfile profile(alignment, true); // use position-dependent weights
 
@@ -67,7 +67,7 @@ TEST(CountsProfileTest, ConversionToCounts)
     data.append(">seq3\nGTACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGT\n");
     data.append(">seq4\nCGTACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACG\n");
     std::istringstream ss(data);
-    cs::Alignment alignment(ss, cs::Alignment::FASTA_INPUT, na);
+    cs::Alignment alignment(ss, cs::Alignment::FASTA, na);
 
     cs::CountsProfile profile(alignment, true);
     ASSERT_EQ(0.25f, profile[3][na->ctoi('A')]);
@@ -83,7 +83,7 @@ TEST(CountsProfileTest, AlignmentBpdS)
 {
     cs::AminoAcidAlphabet* aa = cs::AminoAcidAlphabet::instance();
     std::ifstream fin("../data/BpdS.fas");
-    cs::Alignment alignment(fin, cs::Alignment::FASTA_INPUT, aa);
+    cs::Alignment alignment(fin, cs::Alignment::FASTA, aa);
     fin.close();
     alignment.assign_match_columns_by_gap_rule();
     cs::CountsProfile profile(alignment, true);
@@ -96,7 +96,7 @@ TEST(CountsProfileTest, Alignment1Q7L)
 {
     cs::AminoAcidAlphabet* aa = cs::AminoAcidAlphabet::instance();
     std::ifstream fin("../data/1Q7L.fas");
-    cs::Alignment alignment(fin, cs::Alignment::FASTA_INPUT, aa);
+    cs::Alignment alignment(fin, cs::Alignment::FASTA, aa);
     fin.close();
     alignment.assign_match_columns_by_gap_rule();
     cs::CountsProfile profile(alignment, true);
@@ -108,7 +108,7 @@ TEST(CountsProfileTest, AlignmentCelegansRefGene)
 {
     cs::NucleotideAlphabet* aa = cs::NucleotideAlphabet::instance();
     std::ifstream fin("../data/ce_refgene.fas");
-    cs::Alignment alignment(fin, cs::Alignment::FASTA_INPUT, aa);
+    cs::Alignment alignment(fin, cs::Alignment::FASTA, aa);
     fin.close();
     cs::CountsProfile profile(alignment, false);
 

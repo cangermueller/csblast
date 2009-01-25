@@ -26,28 +26,19 @@ namespace cs
 class Alignment
 {
   public:
-    enum InputFormat {
-        FASTA_INPUT    = 0,
-        CLUSTAL_INPUT  = 1,
-        A2M_INPUT      = 2,
-        A3M_INPUT      = 2,
-        PSI_INPUT      = 5,
-        MAF_INPUT      = 6,
-        BLAST_M6_INPUT = 7
-    };
-    enum OutputFormat {
-        FASTA_OUTPUT   = 8,
-        CLUSTAL_OUTPUT = 9,
-        A2M_OUTPUT     = 10,
-        A3M_OUTPUT     = 11,
-        PSI_OUTPUT     = 12
+    enum Format {
+        FASTA    = 0,
+        A2M      = 1,
+        A3M      = 2,
+        CLUSTAL  = 3,
+        PSI      = 4
     };
 
     typedef matrix<char>::row_type col_type;
     typedef matrix<char>::const_row_type const_col_type;
 
     // Constructs alignment multi FASTA formatted alignment read from input stream.
-    Alignment(std::istream& in, InputFormat format, const SequenceAlphabet* alphabet);
+    Alignment(std::istream& in, Format format, const SequenceAlphabet* alphabet);
 
     ~Alignment() {}
 
@@ -70,14 +61,16 @@ class Alignment
     std::string header(int k) const { return headers_[k]; }
     // Sets the header of sequence k.
     void set_header(int k, const std::string& header) { headers_[k] = header; }
-    // Makes all columns with a residue in first sequence match columns.
-    void assign_match_columns_by_first_sequence();
+    // Makes all columns with a residue in sequence k match columns.
+    void assign_match_columns_by_sequence(int k = 0);
     // Makes all columns with less than X% gaps match columns.
     void assign_match_columns_by_gap_rule(int gap_threshold = 50);
     // Initializes the alignment object with an alignment in FASTA format read from given stream.
-    void read(std::istream& in, InputFormat format);
+    void read(std::istream& in, Format format);
     // Writes the alignment in given format to ouput stream.
-    void write(std::ostream& out, OutputFormat format, int width = 100) const;
+    void write(std::ostream& out, Format format, int width = 100) const;
+    // Returns true if column i is a match column.
+    bool match_column(int i) const { return match_column_[i]; }
     // Returns the underlying sequence alphabet.
     const SequenceAlphabet* alphabet() const { return alphabet_; }
 
@@ -87,16 +80,21 @@ class Alignment
     void operator=(const Alignment&);
 
     // Initializes alignment with given headers and sequences.
-    void init(std::vector<std::string> headers, std::vector<std::string> seqs, bool case_insens = true);
+    void init(const std::vector<std::string>& headers, const std::vector<std::string>& seqs);
     // Resize the sequence matrix and header vector to given dimensions. Attention: old data is lost!
     void resize(int nseqs, int ncols);
     // Fills match_indexes_ with the indexes of all match columns.
     void set_match_indexes();
-
-    // Reads an alignment in FASTA format from given stream.
-    void read_fasta_or_a2m(std::istream& in, bool fasta);
-    // Writes the alignment in FASTA format to output stream.
-    void write_fasta_or_a2m(std::ostream& out, bool fasta, int width = 100) const;
+    // Reads an alignment in FASTA format.
+    void read_fasta(std::istream& in, std::vector<std::string>& headers, std::vector<std::string>& seqs);
+    // Reads an alignment in A2M format from given stream.
+    void read_a2m(std::istream& in, std::vector<std::string>& headers, std::vector<std::string>& seqs);
+    // Reads an alignment in A3M format from given stream.
+    void read_a3m(std::istream& in, std::vector<std::string>& headers, std::vector<std::string>& seqs);
+    // Helper method that reads a FASTA, A2M, or A3M formatted alignment.
+    void read_fasta_flavors(std::istream& in, std::vector<std::string>& headers, std::vector<std::string>& seqs);
+    // Writes the alignment in FASTA, A2M, or A3M format to output stream.
+    void write_fasta_flavors(std::ostream& out, Format format, int width = 100) const;
 
     // Row major matrix with sequences in integer representation.
     matrix<char> seqs_;
@@ -105,7 +103,7 @@ class Alignment
     // Array with indices of match columns.
     std::valarray<int> match_indexes;
     // Array mask indicating match and insert columns with true and false respectively.
-    std::valarray<bool> mask_;
+    std::valarray<bool> match_column_;
     // Headers of sequences in the alignment.
     std::vector<std::string> headers_;
     // Alphabet of sequences in the alignment.

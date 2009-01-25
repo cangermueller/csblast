@@ -28,34 +28,45 @@ namespace
 const bool kDebug = false;
 
 // Converts a character to uppercase and '.' to '-'.
-inline char match_chr(char c) { return (isalpha(c) ? toupper(c) : (c == '.' ? '-' : c)); }
+inline char to_match_chr(char c)
+{
+    return (isalpha(c) ? toupper(c) : (c == '.' ? '-' : c));
+}
 
 // Converts a character to lowercase and '-' to '.'.
-inline char insert_chr(char c) { return (isalpha(c) ? tolower(c) : (c == '-' ? '.' : c)); }
+inline char to_insert_chr(char c)
+{
+    return (isalpha(c) ? tolower(c) : (c == '-' ? '.' : c));
+}
 
 // Predicate indicating if character belongs to match column.
-inline bool is_match_chr(char c) { return isalpha(c) && isupper(c) || c == '-'; }
+inline bool match_chr(char c)
+{
+    return isalpha(c) && isupper(c) || c == '-';
+}
 
 // Predicate indicating if character belongs to insert column.
-inline char is_insert_chr(char c) { return isalpha(c) && islower(c) || c == '.'; }
+inline char insert_chr(char c)
+{
+    return isalpha(c) && islower(c) || c == '.';
+}
 
 } // namespace
 
 namespace cs
 {
 
-Alignment::Alignment(std::istream& in, InputFormat format, const SequenceAlphabet* alphabet)
+Alignment::Alignment(std::istream& in, Format format, const SequenceAlphabet* alphabet)
         : alphabet_(alphabet)
-{ read(in, format); }
+{
+    read(in, format);
+}
 
-void Alignment::init(std::vector<std::string> headers, std::vector<std::string> seqs, bool case_insens)
+void Alignment::init(const std::vector<std::string>& headers, const std::vector<std::string>& seqs)
 {
     if (seqs.empty()) throw Exception("Unable to initialize alignment: no aligned sequences found!");
     if (headers.size() != seqs.size())
         throw Exception("Unable to initialize alignment: unequal number of headers and sequences!");
-    // Remove whitespace from sequences
-    for (std::vector<std::string>::iterator iter = seqs.begin(); iter != seqs.end(); ++iter)
-        iter->erase(remove_if(iter->begin(), iter->end(), isspace), iter->end());
 
     const int nseqs = seqs.size();
     const int ncols = seqs[0].length();
@@ -71,7 +82,7 @@ void Alignment::init(std::vector<std::string> headers, std::vector<std::string> 
         for (int i = 0; i < ncols; ++i) {
             const char c = seqs[k][i];
             column_indexes_[i] = i;
-            mask_[i] = case_insens || is_match_chr(c);
+            match_column_[i] = match_chr(c);
             if (alphabet_->valid(c, true))
                 seqs_[i][k] = alphabet_->ctoi(c);
             else
@@ -93,75 +104,122 @@ void Alignment::init(std::vector<std::string> headers, std::vector<std::string> 
 
 void Alignment::set_match_indexes()
 {
-    const int match_cols = std::count(&mask_[0], &mask_[0] + ncols(), true);
+    const int match_cols = std::count(&match_column_[0], &match_column_[0] + ncols(), true);
     match_indexes.resize(match_cols);
-    match_indexes = column_indexes_[mask_];
+    match_indexes = column_indexes_[match_column_];
 }
 
-void Alignment::read(std::istream& in, InputFormat format)
+void Alignment::read(std::istream& in, Format format)
 {
+    std::vector<std::string> headers;
+    std::vector<std::string> seqs;
+
     switch (format) {
-        case FASTA_INPUT:
-            read_fasta_or_a2m(in, true);
+        case FASTA:
+            read_fasta(in, headers, seqs);
             break;
-        case A2M_INPUT:
-            read_fasta_or_a2m(in, false);
+        case A2M:
+            read_a2m(in, headers, seqs);
             break;
         default:
-            throw Exception("Unsupported alignment input format!");
+            throw Exception("Unsupported alignment input format %i!", format);
     }
+
+    init(headers, seqs);
 }
 
-void Alignment::read_fasta_or_a2m(std::istream& in, bool fasta)
+void Alignment::read_fasta_flavors(std::istream& in, std::vector<std::string>& headers, std::vector<std::string>& seqs)
 {
-    const std::string format = fasta ? "FASTA" : "A2M";
-    const int kBufferSize = 1048576; //1MB
+    headers.clear();
+    seqs.clear();
     std::string buffer;
-    buffer.reserve(kBufferSize);
 
-    std::vector<std::string> headers; // temporary for headers
-    std::vector<std::string> seqs;    // temporary for sequences
     while (in.good()) {
         //read header
         if (getline(in, buffer)) {
             if (buffer.empty() ||  buffer[0] != '>')
-                throw Exception("Bad format: first sequence of %s alignment does not start with '>' character!", format.c_str());
+                throw Exception("Bad format: header of sequence %i does not start with '>'!", headers.size() + 1);
             headers.push_back(std::string(buffer.begin()+1, buffer.end()));
         } else {
-            throw Exception("Failed to read from %s formatted input stream!", format.c_str());
+            throw Exception("Failed to read from alignment input stream!");
         }
+
         //read sequence
         seqs.push_back("");
-        while (in.peek() != '>' && getline(in, buffer))
+        while (in.peek() != '>' && getline(in, buffer)) {
+            if (buffer.empty()) break;
             seqs[seqs.size()-1].append(buffer.begin(), buffer.end());
+        }
+        // Remove whitespace from sequence
+        seqs[seqs.size()-1].erase(remove_if(seqs[seqs.size()-1].begin(), seqs[seqs.size()-1].end(), isspace),
+                                  seqs[seqs.size()-1].end());
+        // Terminate reading when empty line encountered
+        if (buffer.empty()) break;
     }
-
-    init(headers, seqs, fasta);
 }
 
-void Alignment::write(std::ostream& out, OutputFormat format, int width) const
+void Alignment::read_fasta(std::istream& in, std::vector<std::string>& headers, std::vector<std::string>& seqs)
+{
+    read_fasta_flavors(in, headers, seqs);
+    // convert all characters to match characters
+    for (std::vector<std::string>::iterator iter = seqs.begin(); iter != seqs.end(); ++iter)
+        transform(iter->begin(), iter->end(), iter->begin(), to_match_chr);
+}
+
+void Alignment::read_a2m(std::istream& in, std::vector<std::string>& headers, std::vector<std::string>& seqs)
+{
+    read_fasta_flavors(in, headers, seqs);
+}
+
+void Alignment::read_a3m(std::istream& in, std::vector<std::string>& headers, std::vector<std::string>& seqs)
+{
+    read_fasta_flavors(in, headers, seqs);
+    // TODO
+}
+
+void Alignment::write(std::ostream& out, Format format, int width) const
 {
     switch (format) {
-        case FASTA_OUTPUT:
-            write_fasta_or_a2m(out, true, width);
-            break;
-        case A2M_OUTPUT:
-            write_fasta_or_a2m(out, false, width);
+        case FASTA:
+        case A2M:
+        case A3M:
+            write_fasta_flavors(out, format, width);
             break;
         default:
-            throw Exception("Unsupported alignment output format!");
+            throw Exception("Unsupported alignment output format %i!", format);
     }
 }
 
-void Alignment::write_fasta_or_a2m(std::ostream& out, bool fasta, int width) const
+void Alignment::write_fasta_flavors(std::ostream& out, Format format, int width) const
 {
     for (int k = 0; k < nseqs(); ++k) {
         out << '>' << headers_[k] << std::endl;
+        int j = 0;  // counts printed characters
         for (int i = 0; i < ncols(); ++i) {
-            out << (fasta || mask_[i] ? match_chr(chr(k,i)) : insert_chr(chr(k,i)));
-            if ((i+1) % width == 0) out << std::endl;
+            switch (format) {
+                case FASTA:
+                    out << to_match_chr(chr(k,i));
+                    ++j;
+                    break;
+                case A2M:
+                    out << (match_column_[i] ? to_match_chr(chr(k,i)) : to_insert_chr(chr(k,i)));
+                    ++j;
+                    break;
+                case A3M:
+                    if (match_column_[i]) {
+                        out << to_match_chr(chr(k,i));
+                        ++j;
+                    } else if (seq(k,i) != alphabet_->gap() && seq(k,i) != alphabet_->endgap()) {
+                        out << to_insert_chr(chr(k,i));
+                        ++j;
+                    }
+                    break;
+                default:
+                    throw Exception("Unsupported alignment output format %i!", format);
+            }
+            if (j % width == 0) out << std::endl;
         }
-        if (ncols() % width != 0) out << std::endl;
+        if (j % width != 0) out << std::endl;
     }
 }
 
@@ -173,14 +231,14 @@ void Alignment::resize(int nseqs, int ncols)
     seqs_.resize(ncols, nseqs);
     column_indexes_.resize(ncols);
     match_indexes.resize(ncols);
-    mask_.resize(ncols);
+    match_column_.resize(ncols);
     headers_.resize(nseqs);
 }
 
-void Alignment::assign_match_columns_by_first_sequence()
+void Alignment::assign_match_columns_by_sequence(int k)
 {
     for (int i = 0; i < ncols(); ++i)
-        mask_[i] = seqs_[i][0] < alphabet_->gap();
+        match_column_[i] = seqs_[i][k] < alphabet_->gap();
     set_match_indexes();
 }
 
@@ -203,7 +261,7 @@ void Alignment::assign_match_columns_by_gap_rule(int gap_threshold)
         float percent_gaps = 100.0f * gap / (res + gap);
 
         if (kDebug) fprintf(stderr,"percent gaps[%i]=%-4.1f\n", i, percent_gaps);
-        mask_[i] = percent_gaps <= static_cast<float>(gap_threshold);
+        match_column_[i] = percent_gaps <= static_cast<float>(gap_threshold);
     }
     set_match_indexes();
 }

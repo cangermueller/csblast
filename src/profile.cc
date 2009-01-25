@@ -44,7 +44,7 @@ Profile::Profile(const Profile& other,
           alphabet_(other.alphabet_)
 {
     if (index + length > other.ncols())
-        throw Exception("Arguments index=%i and length=%i for construction of sub-profile are out of bounds!", index, length);
+        throw Exception("Arguments index=%i and length=%i of sub-profile are out of bounds!", index, length);
     for (int i = 0; i < ncols(); ++i)
         for (int a = 0; a < nalph(); ++a)
             data_[i][a] = other[i+index][a];
