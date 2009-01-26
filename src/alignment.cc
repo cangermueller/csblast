@@ -53,6 +53,7 @@ inline char insert_chr(char c)
 
 } // namespace
 
+
 namespace cs
 {
 
@@ -138,7 +139,7 @@ void Alignment::read_fasta_flavors(std::istream& in, std::vector<std::string>& h
     std::string buffer;
 
     while (in.good()) {
-        //read header
+        // Read header
         if (getline(in, buffer)) {
             if (buffer.empty() ||  buffer[0] != '>')
                 throw Exception("Bad format: header of sequence %i does not start with '>'!", headers.size() + 1);
@@ -147,15 +148,14 @@ void Alignment::read_fasta_flavors(std::istream& in, std::vector<std::string>& h
             throw Exception("Failed to read from alignment input stream!");
         }
 
-        //read sequence
+        // Read sequence
         seqs.push_back("");
         while (in.peek() != '>' && getline(in, buffer)) {
             if (buffer.empty()) break;
-            seqs[seqs.size()-1].append(buffer.begin(), buffer.end());
+            seqs.back().append(buffer.begin(), buffer.end());
         }
         // Remove whitespace from sequence
-        seqs[seqs.size()-1].erase(remove_if(seqs[seqs.size()-1].begin(), seqs[seqs.size()-1].end(), isspace),
-                                  seqs[seqs.size()-1].end());
+        seqs.back().erase(remove_if(seqs.back().begin(), seqs.back().end(), isspace), seqs.back().end());
         // Terminate reading when empty line encountered
         if (buffer.empty()) break;
     }
@@ -303,7 +303,8 @@ void Alignment::assign_match_columns_by_sequence(int k)
 
 void Alignment::assign_match_columns_by_gap_rule(int gap_threshold)
 {
-    if (kDebug) std::cerr << "Removing collumns with more than " << gap_threshold << "% of gaps:" << std::endl;
+    if (kDebug)
+        std::cerr << "Labelling columns with more than " << gap_threshold << "% of gaps insert columns:\n";
 
     // global weights are sufficient for calculation of gap percentage
     std::vector<float> wg;
