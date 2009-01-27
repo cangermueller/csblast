@@ -26,7 +26,7 @@ class Log
 
   protected:
     static const int kMargin = 22;
-    static const int kIndent = 4;
+    static const int kIndent = 6;
 
     std::ostringstream os;
     LogLevel level;

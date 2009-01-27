@@ -36,6 +36,10 @@ class Alignment
 
     typedef matrix<char>::row_type col_type;
     typedef matrix<char>::const_row_type const_col_type;
+    typedef matrix<char>::col_type row_type;
+    typedef matrix<char>::const_col_type const_row_type;
+    typedef matrix<char>::iterator iterator;
+    typedef matrix<char>::const_iterator const_iterator;
 
     // Constructs alignment multi FASTA formatted alignment read from input stream.
     Alignment(std::istream& in, Format format, const SequenceAlphabet* alphabet);
@@ -57,6 +61,26 @@ class Alignment
     int nmatch() const { return match_indexes.size(); }
     // Returns the number of insert columns.
     int ninsert() const { return ncols() - nmatch(); }
+    // Returns the total number of characters in the alignment (incl. inserts).
+    int size() const { return seqs_.size(); }
+
+    row_type seq_begin(int k) { return seqs_.col_begin(k); }
+    // Returns an iterator just past the end of alignment sequence k.
+    row_type seq_end(int k) { return seqs_.col_end(k); }
+    // // Returns a const iterator to the first element in alignment sequence k.
+    const_row_type seq_begin(int k) const { return seqs_.col_begin(k); }
+    // // Returns a const iterator just past the end of alignment sequence k.
+    const_row_type seq_end(int k) const { return seqs_.col_end(k); }
+
+    // Returns an iterator to the first element in the alignment matrix (incl. inserts).
+    iterator begin() { return seqs_.begin(); }
+    // Returns an iterator just past the end of the alignment matrix (incl. inserts).
+    iterator end() { return seqs_.end(); }
+    // Returns a const iterator to the first element in the alignment matrix (incl. inserts).
+    const_iterator begin() const { return seqs_.begin(); }
+    // Returns a const iterator just past the end of the alignment matrix (incl. inserts).
+    const_iterator end() const { return seqs_.end(); }
+
     // Returns the header of sequence k.
     std::string header(int k) const { return headers_[k]; }
     // Sets the header of sequence k.
@@ -97,6 +121,8 @@ class Alignment
     void read_fasta_flavors(std::istream& in, std::vector<std::string>& headers, std::vector<std::string>& seqs);
     // Writes the alignment in FASTA, A2M, or A3M format to output stream.
     void write_fasta_flavors(std::ostream& out, Format format, int width = 100) const;
+    // Writes the alignment in CLUSTAL or PSI format to output stream.
+    void write_clustal_flavors(std::ostream& out, Format format, int width = 100) const;
 
     // Row major matrix with sequences in integer representation.
     matrix<char> seqs_;
@@ -123,7 +149,7 @@ std::vector<float> position_specific_weights_and_diversity(const Alignment& alig
 // Prints the Alignment in A2M format for debugging.
 inline std::ostream& operator<< (std::ostream& out, const Alignment& alignment)
 {
-    alignment.write(out, Alignment::A2M);
+    alignment.write(out, Alignment::CLUSTAL);
     return out;
 }
 

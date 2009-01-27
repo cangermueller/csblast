@@ -60,9 +60,9 @@ class matrix
     col_type col_begin(int n) { return col_type(&m_[n], ncols()); }
     col_type col_end(int n) { return col_begin(n) + ncols(); }
     const_row_type row_begin(int n) const { return &m_[n * ncols()]; }
-    const_row_type row_end(int n) const { return row_begin(n) + ncols( ); }
-    const_col_type col_begin(int n) const { return col_type(&m_[n], ncols( )); }
-    const_col_type col_end(int n) const { return col_begin(n) + ncols( ); }
+    const_row_type row_end(int n) const { return row_begin(n) + ncols(); }
+    const_col_type col_begin(int n) const { return const_col_type(&m_[n], ncols()); }
+    const_col_type col_end(int n) const { return col_begin(n) + ncols(); }
     iterator begin() { return &m_[0]; }
     iterator end() { return begin() + size(); }
     const_iterator begin() const { return &m_[0]; }

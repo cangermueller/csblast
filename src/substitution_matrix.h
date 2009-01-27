@@ -10,6 +10,8 @@
 
 #include <cmath>
 
+#include <iostream>
+#include <iomanip>
 #include <vector>
 
 #include "matrix.h"
@@ -31,6 +33,8 @@ class SubstitutionMatrix
 
     // Returns the size of the substitution matrix.
     int size() const { return size_; }
+
+    friend std::ostream& operator<< (std::ostream& out, const SubstitutionMatrix& m);
 
 protected:
     // To be used by derived classes.
@@ -57,10 +61,35 @@ private:
     // Disallow copy and assign.
     SubstitutionMatrix(const SubstitutionMatrix& other);
     SubstitutionMatrix operator =(const SubstitutionMatrix& other);
-
-    std::string get_debug_string() const;
 };
 
-}//cs
+// Prints the substitution matrix in human readable format to stream.
+inline std::ostream& operator<< (std::ostream& out, const SubstitutionMatrix& m)
+{
+    out << "Background frequencies:\nf[] ";
+    for (int a = 0; a < m.size_; ++a)
+        out << std::setw(4) << std::right << std::fixed << std::setprecision(1) << 100 * m.f_[a] << " ";
+    out << "\nSubstitution matrix log2( P(a,b) / p(a)*p(b) ) (in bits):\n";
+    for (int b = 0; b < m.size_; ++b) {
+        for (int a = 0; a < m.size_; ++a)
+            out << std::setw(4) << std::right << std::fixed << std::setprecision(1) << m.s_[a][b] << " ";
+        out << std::endl;
+    }
+    out << "Probability matrix P(a,b) (in %):\n";
+    for (int b = 0; b < m.size_; ++b) {
+        for (int a = 0; a < m.size_; ++a)
+            out << std::setw(4) << std::right << std::fixed << std::setprecision(1) << 100 * m.p_[b][a] << " ";
+        out << std::endl;
+    }
+    out << "Matrix of conditional probabilities P(a|b) = P(a,b)/p(b) (in %):\n";
+    for (int b = 0; b < m.size_; ++b) {
+        for (int a = 0; a < m.size_; ++a)
+            out << std::setw(4) << std::right << std::fixed << std::setprecision(1) << 100 * m.r_[b][a] << " ";
+        out << std::endl;
+    }
+    return out;
+}
+
+}  // cs
 
 #endif

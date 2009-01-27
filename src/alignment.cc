@@ -250,6 +250,10 @@ void Alignment::write(std::ostream& out, Format format, int width) const
         case A3M:
             write_fasta_flavors(out, format, width);
             break;
+        case CLUSTAL:
+        case PSI:
+            write_clustal_flavors(out, format, width);
+            break;
         default:
             throw Exception("Unsupported alignment output format %i!", format);
     }
@@ -285,6 +289,37 @@ void Alignment::write_fasta_flavors(std::ostream& out, Format format, int width)
             if (j % width == 0) out << std::endl;
         }
         if (j % width != 0) out << std::endl;
+    }
+}
+
+void Alignment::write_clustal_flavors(std::ostream& out, Format format, int width) const
+{
+    const int kHeaderLength = 18;
+
+    // convert alignment to character representation
+    std::vector<std::string> seqs(nseqs(), "");
+    for (int k = 0; k < nseqs(); ++k) {
+        for (int i = 0; i < ncols(); ++i) {
+            char c = alphabet_->itoc(seqs_[i][k]);
+            if (c != '-' && !match_column_[i] && format == PSI) c = to_insert_chr(c);
+            seqs[k].push_back(c);
+        }
+    }
+
+    // print alignment in blocks
+    if (format == CLUSTAL) out << "CLUSTAL\n\n";
+    while (!seqs.front().empty()) {
+        for (int k = 0; k < nseqs(); ++k) {
+            std::string header(headers_[k].substr(0, headers_[k].find_first_of(' ')));
+            if (static_cast<int>(header.length()) <= kHeaderLength)
+                out << header + std::string(kHeaderLength - header.length(), ' ') << ' ';
+            else
+                out << header.substr(0, kHeaderLength) << ' ';
+
+            out << seqs[k].substr(0, std::min(width, static_cast<int>(seqs[k].length()))) << std::endl;
+            seqs[k].erase(0, std::min(width, static_cast<int>(seqs[k].length())));
+        }
+        out << std::endl; // blank line after each block
     }
 }
 
