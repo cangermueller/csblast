@@ -81,8 +81,6 @@ class Profile
     void read(std::istream& in);
     // Writes the profile in serialization format to output stream.
     void write(std::ostream& out) const;
-    // Returns serialized profile as string.
-    std::string to_string() const;
 
     friend std::ostream& operator<< (std::ostream& out, const Profile& p);
 

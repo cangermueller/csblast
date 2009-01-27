@@ -114,6 +114,8 @@ void Alignment::set_match_indexes()
 
 void Alignment::read(std::istream& in, Format format)
 {
+    LOG(DEBUG1) << "Reading alignment from stream ...";
+
     std::vector<std::string> headers;
     std::vector<std::string> seqs;
 
@@ -132,6 +134,8 @@ void Alignment::read(std::istream& in, Format format)
     }
 
     init(headers, seqs);
+
+    LOG(DEBUG1) << *this;
 }
 
 void Alignment::read_fasta_flavors(std::istream& in, std::vector<std::string>& headers, std::vector<std::string>& seqs)

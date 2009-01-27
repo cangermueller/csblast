@@ -74,6 +74,8 @@ class Alignment
     // Returns the underlying sequence alphabet.
     const SequenceAlphabet* alphabet() const { return alphabet_; }
 
+    friend std::ostream& operator<< (std::ostream& out, const Alignment& alignment);
+
   private:
     // Disallow copy and assign
     Alignment(const Alignment&);
@@ -117,6 +119,13 @@ float global_weights_and_diversity(const Alignment& alignment, std::vector<float
 
 // Calculates position-dependent sequence weights and number of effective sequences on subalignments.
 std::vector<float> position_specific_weights_and_diversity(const Alignment& alignment, matrix<float>& w);
+
+// Prints the Alignment in A2M format for debugging.
+inline std::ostream& operator<< (std::ostream& out, const Alignment& alignment)
+{
+    alignment.write(out, Alignment::A2M);
+    return out;
+}
 
 }  // cs
 

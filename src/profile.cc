@@ -201,13 +201,6 @@ void Profile::print(std::ostream& out) const
     out.flags(flags);
 }
 
-std::string Profile::to_string() const
-{
-    std::ostringstream os;
-    print(os);
-    return os.str();
-}
-
 void Profile::resize(int ncols, int nalph)
 {
     if (ncols == 0 || nalph == 0)
