@@ -21,14 +21,15 @@ class Log
     std::ostringstream& get(LogLevel level = INFO);
 
     static LogLevel& reporting_level();
-    static std::string to_string(LogLevel level);
-    static LogLevel from_string(const std::string& level);
+    static std::string to_string(LogLevel log_level);
+    static LogLevel from_string(const std::string& log_level);
 
   protected:
-    static const int kLeftMargin = 22;
+    static const int kMargin = 22;
+    static const int kIndent = 4;
 
     std::ostringstream os;
-    LogLevel log_level;
+    LogLevel level;
 
   private:
     Log(const Log&);

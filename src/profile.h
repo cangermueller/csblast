@@ -81,8 +81,10 @@ class Profile
     void read(std::istream& in);
     // Writes the profile in serialization format to output stream.
     void write(std::ostream& out) const;
-    // Prints the profile in human-readable format to output stream.
-    virtual void print(std::ostream& out) const;
+    // Returns serialized profile as string.
+    std::string to_string() const;
+
+    friend std::ostream& operator<< (std::ostream& out, const Profile& p);
 
   protected:
     // Scaling factor for serialization of profile log values
@@ -98,6 +100,8 @@ class Profile
     virtual void write_body(std::ostream& out) const;
     // Resize the profile matrix to given dimensions. Attention: old data is lost!
     void resize(int ncols, int nalph);
+    // Prints the profile in human-readable format to output stream.
+    virtual void print(std::ostream& out) const;
 
      // Profile matrix in row major format
     matrix<float> data_;
@@ -123,6 +127,13 @@ void reset(Profile& profile, float value = 0.0f);
 // Normalize profile columns to value or to one if none provided.
 void normalize(Profile& profile, float value = 1.0f);
 
-}//cs
+// Prints profile in human-readable format for debugging.
+inline std::ostream& operator<< (std::ostream& out, const Profile& p)
+{
+    p.print(out);
+    return out;
+}
+
+}  // cs
 
 #endif

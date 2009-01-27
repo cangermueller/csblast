@@ -52,7 +52,7 @@ void SubstitutionMatrix::init_from_target_frequencies()
         for (int b = 0; b < size_; ++b)
             s_[a][b] = log2(r_[a][b] / f_[a]); // S[a][b] = log2(P(a,b) / P(a)*P(b))
 
-    LOG(DEBUG) << get_debug_string();
+    LOG(DEBUG1) << get_debug_string();
 }
 
 void SubstitutionMatrix::init_from_substitution_matrix_and_background_frequencies()
@@ -74,7 +74,7 @@ void SubstitutionMatrix::init_from_substitution_matrix_and_background_frequencie
         for (int b = 0; b < size_; ++b)
             r_[a][b] = p_[a][b] / f_[b]; // R[a][b] = P(a|b)
 
-    LOG(DEBUG) << get_debug_string();
+    LOG(DEBUG1) << get_debug_string();
 }
 
 std::string SubstitutionMatrix::get_debug_string() const

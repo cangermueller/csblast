@@ -11,8 +11,10 @@
 #include <iostream>
 #include <iomanip>
 #include <limits>
+#include <sstream>
 
 #include "exception.h"
+#include "log.h"
 #include "profile.h"
 #include "sequence_alphabet.h"
 #include "shared_ptr.h"
@@ -84,6 +86,8 @@ void Profile::transform_to_linspace()
 
 void Profile::read(std::istream& in)
 {
+    LOG(DEBUG1) << "Reading profile from stream ...";
+
     // Check if stream actually contains a serialized profile
     std::string tmp;
     while (getline(in, tmp) && tmp.empty()) continue;
@@ -92,6 +96,8 @@ void Profile::read(std::istream& in)
 
     read_header(in);
     read_body(in);
+
+    LOG(DEBUG1) << *this;
 }
 
 void Profile::read_header(std::istream& in)
@@ -193,6 +199,13 @@ void Profile::print(std::ostream& out) const
     }
 
     out.flags(flags);
+}
+
+std::string Profile::to_string() const
+{
+    std::ostringstream os;
+    print(os);
+    return os.str();
 }
 
 void Profile::resize(int ncols, int nalph)

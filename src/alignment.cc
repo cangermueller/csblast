@@ -327,6 +327,8 @@ void Alignment::assign_match_columns_by_gap_rule(int gap_threshold)
         match_column_[i] = percent_gaps <= static_cast<float>(gap_threshold);
     }
     set_match_indexes();
+
+    LOG(DEBUG) << "ncols=" << ncols() << "  nmatch=" << nmatch() << "  ninsert=" << ninsert();
 }
 
 float global_weights_and_diversity(const Alignment& alignment, std::vector<float>& wg)

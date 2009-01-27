@@ -46,8 +46,6 @@ class CountsProfile : public Profile
     void convert_to_frequencies();
     // Returns true if the profile contains counts.
     bool has_counts() const { return has_counts_; }
-    // Prints the profile in human-readable format to output stream.
-    virtual void print(std::ostream& out) const;
 
   protected:
     // Reads and initializes serialized scalar data members from stream.
@@ -58,6 +56,8 @@ class CountsProfile : public Profile
     virtual void write_header(std::ostream& out) const;
     // Writes serialized array data members to stream.
     virtual void write_body(std::ostream& out) const;
+    // Prints the profile in human-readable format to output stream.
+    virtual void print(std::ostream& out) const;
 
   private:
     // Disallow copy and assign
