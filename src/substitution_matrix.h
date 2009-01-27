@@ -58,7 +58,7 @@ private:
     SubstitutionMatrix(const SubstitutionMatrix& other);
     SubstitutionMatrix operator =(const SubstitutionMatrix& other);
 
-    void print_debug() const;
+    std::string get_debug_string() const;
 };
 
 }//cs

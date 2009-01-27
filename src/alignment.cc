@@ -10,10 +10,12 @@
 
 #include <algorithm>
 #include <iostream>
+#include <iomanip>
 #include <valarray>
 #include <vector>
 #include <string>
 
+#include "log.h"
 #include "matrix.h"
 #include "exception.h"
 #include "sequence.h"
@@ -21,11 +23,11 @@
 #include "shared_ptr.h"
 #include "util.h"
 
+using std::setw;
+using std::left;
+
 namespace
 {
-
-// Debug flag
-const bool kDebug = false;
 
 // Converts a character to uppercase and '.' to '-'.
 inline char to_match_chr(char c)
@@ -303,8 +305,7 @@ void Alignment::assign_match_columns_by_sequence(int k)
 
 void Alignment::assign_match_columns_by_gap_rule(int gap_threshold)
 {
-    if (kDebug)
-        std::cerr << "Labelling columns with more than " << gap_threshold << "% of gaps insert columns:\n";
+    LOG(DEBUG) << "Marking columns with more than " << gap_threshold << "% of gaps as insert columns ...";
 
     // global weights are sufficient for calculation of gap percentage
     std::vector<float> wg;
@@ -321,7 +322,8 @@ void Alignment::assign_match_columns_by_gap_rule(int gap_threshold)
 
         float percent_gaps = 100.0f * gap / (res + gap);
 
-        if (kDebug) fprintf(stderr,"percent gaps[%i]=%-4.1f\n", i, percent_gaps);
+        LOG(DEBUG1) << "percent gaps[" << i << "]=" << percent_gaps;
+
         match_column_[i] = percent_gaps <= static_cast<float>(gap_threshold);
     }
     set_match_indexes();
@@ -345,7 +347,7 @@ float global_weights_and_diversity(const Alignment& alignment, std::vector<float
     std::vector<int> adiff(ncols, 0);     // number of different alphabet letters in each column
     matrix<int> counts(ncols, nalph, 0);  // counts of alphabet letters in each column (excl. ANY)
 
-    if (kDebug) fprintf(stderr,"\nCalculation of global weights and alignment diversity:\n");
+    LOG(INFO) << "Calculation of global weights and alignment diversity ...";
 
     // Count number of residues in each column
     for (int i = 0; i < ncols; ++i)
@@ -378,7 +380,7 @@ float global_weights_and_diversity(const Alignment& alignment, std::vector<float
     }
     neff = pow(2.0, neff / ncols);
 
-    if (kDebug) fprintf(stderr,"neff=%-5.2f\n", neff);
+    LOG(DEBUG) << "neff=" << neff;
 
     return neff;
 }
@@ -414,10 +416,8 @@ std::vector<float> position_specific_weights_and_diversity(const Alignment& alig
 
     global_weights_and_diversity(alignment, wg);  // compute global sequence weights
 
-    if (kDebug) {
-        fprintf(stderr,"\nCalculation of position-specific weights and alignment diversity on subalignments:\n");
-        fprintf(stderr,"%-5s  %-5s  %-5s  %-5s\n", "i", "ncoli", "nseqi", "neff");
-    }
+    LOG(INFO) << "Calculation of position-specific weights and alignment diversity on subalignments ...";
+    LOG(DEBUG1) << "i      ncol   nseq   neff";
 
     for (int i = 0; i < ncols; ++i) {
         change = false;
@@ -434,7 +434,7 @@ std::vector<float> position_specific_weights_and_diversity(const Alignment& alig
                     --n[j][alignment[j][k]];
             }
         }  // for k over nseqs
-        if (kDebug) nseqi_debug[i] = nseqi;
+        nseqi_debug[i] = nseqi;
 
         if (change) {  // set of sequences in subalignment has changed
             ncoli = 0;
@@ -448,9 +448,8 @@ std::vector<float> position_specific_weights_and_diversity(const Alignment& alig
                 ++ncoli;
                 for (int k = 0; k < nseqs; ++k) {
                     if (alignment[i][k] < any && alignment[j][k] < any) {
-                        if (kDebug && n[j][alignment[j][k]] == 0) {
-                            fprintf(stderr, "Error: Mi=%i: n[%i][seqs[%i][%i]]=0! (seqs[%i][%i]=%c)\n",
-                                    i, j, k, j, k, j, alignment[j][k] );
+                        if (n[j][alignment[j][k]] == 0) {
+                            LOG(WARNING) << "Mi=" << i << ": n[" << j << "][ali[" << j << "][" << k << "]=0!";
                         }
                         wi[k] += 1.0f / static_cast<float>((n[j][alignment[j][k]] * ndiff));
                     }
@@ -485,15 +484,12 @@ std::vector<float> position_specific_weights_and_diversity(const Alignment& alig
         }
 
         for (int k = 0; k < nseqs; ++k) w[i][k] = wi[k];
-        if (kDebug) {
-            ncoli_debug[i] = ncoli;
-            fprintf(stderr,"%-5i  %-5i  %-5i  %-5.2f\n", i, ncoli_debug[i], nseqi_debug[i], neff[i]);
-        }
+        ncoli_debug[i] = ncoli;
+
+        LOG(DEBUG1) << left << setw(7) << i << setw(7) << ncoli_debug[i] << setw(7) << nseqi_debug[i] << setw(7) << neff[i];
     }  // for i over ncols
 
     return neff;
 }
 
-}//cs
-
-
+}  // cs

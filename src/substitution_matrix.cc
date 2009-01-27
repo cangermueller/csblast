@@ -8,15 +8,12 @@
 #include <cstdio>
 
 #include <iostream>
+#include <iomanip>
+#include <sstream>
+#include <string>
 
+#include "log.h"
 #include "util.h"
-
-namespace
-{
-
-const bool kDebug = false;
-
-} // namespace
 
 namespace cs
 {
@@ -55,7 +52,7 @@ void SubstitutionMatrix::init_from_target_frequencies()
         for (int b = 0; b < size_; ++b)
             s_[a][b] = log2(r_[a][b] / f_[a]); // S[a][b] = log2(P(a,b) / P(a)*P(b))
 
-    if (kDebug) print_debug();
+    LOG(DEBUG) << get_debug_string();
 }
 
 void SubstitutionMatrix::init_from_substitution_matrix_and_background_frequencies()
@@ -77,28 +74,36 @@ void SubstitutionMatrix::init_from_substitution_matrix_and_background_frequencie
         for (int b = 0; b < size_; ++b)
             r_[a][b] = p_[a][b] / f_[b]; // R[a][b] = P(a|b)
 
-    if (kDebug) print_debug();
+    LOG(DEBUG) << get_debug_string();
 }
 
-void SubstitutionMatrix::print_debug() const
+std::string SubstitutionMatrix::get_debug_string() const
 {
-    std::cerr << std::endl << "Background frequencies:\nf[] ";
-    for (int a = 0; a < size_; ++a) fprintf(stderr, "%4.1f ", 100 * f_[a]);
-    std::cerr << std::endl << "\nSubstitution matrix log2( P(a,b) / p(a)*p(b) ) (in bits):\n";
+    std::ostringstream out;
+
+    out << "Background frequencies:\nf[] ";
+    for (int a = 0; a < size_; ++a)
+        out << std::setw(4) << std::right << std::fixed << std::setprecision(1) << 100 * f_[a] << " ";
+    out << "\nSubstitution matrix log2( P(a,b) / p(a)*p(b) ) (in bits):\n";
     for (int b = 0; b < size_; ++b) {
-        for (int a = 0; a < size_; ++a)  fprintf(stderr, "%4.1f ", s_[a][b]);
-        std::cerr << std::endl;
+        for (int a = 0; a < size_; ++a)
+            out << std::setw(4) << std::right << std::fixed << std::setprecision(1) << s_[a][b] << " ";
+        out << std::endl;
     }
-    std::cerr << std::endl << "Probability matrix P(a,b) (in %):\n";
+    out << "Probability matrix P(a,b) (in %):\n";
     for (int b = 0; b < size_; ++b) {
-        for (int a = 0; a < size_; ++a)  fprintf(stderr, "%4.1f ", 100 * p_[b][a]);
-        std::cerr << std::endl;
+        for (int a = 0; a < size_; ++a)
+            out << std::setw(4) << std::right << std::fixed << std::setprecision(1) << 100 * p_[b][a] << " ";
+        out << std::endl;
     }
-    std::cerr << std::endl << "Matrix of conditional probabilities P(a|b) = P(a,b)/p(b) (in %):\n";
+    out << "Matrix of conditional probabilities P(a|b) = P(a,b)/p(b) (in %):\n";
     for (int b = 0; b < size_; ++b) {
-        for (int a = 0; a < size_; ++a)  fprintf(stderr, "%4.1f ", 100 * r_[b][a]);
-        std::cerr << std::endl;
+        for (int a = 0; a < size_; ++a)
+            out << std::setw(4) << std::right << std::fixed << std::setprecision(1) << 100 * r_[b][a] << " ";
+        out << std::endl;
     }
+
+    return out.str();
 }
 
 }  // cs
