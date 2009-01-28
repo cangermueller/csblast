@@ -65,7 +65,7 @@ class CountsProfile : public Profile
     void operator=(const CountsProfile&);
 
     // Return serialization class identity.
-    virtual const std::string& class_identity() const { static std::string id("CountsProfile"); return id;}
+    virtual const std::string class_identity() const { static std::string id("CountsProfile"); return id;}
 
     // Flag indicating if the profile contains counts or (relative) frequencies.
     bool has_counts_;

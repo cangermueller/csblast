@@ -14,8 +14,8 @@
 template <class T>
 class shared_ptr
 {
-public:
-    shared_ptr(T *p) : p_(p), c_(new long(1)) {}
+  public:
+    shared_ptr(T* p) : p_(p), c_(new long(1)) {}
     ~shared_ptr() { if(!--*c_) { delete c_; delete p_; } }
     shared_ptr(const shared_ptr &init) : p_(init.p_), c_(init.c_) { ++*c_; }
 
@@ -28,10 +28,10 @@ public:
         }
         return *this;
     }
-    T &operator *() const { return *p_; }
-    T &operator ->() const { return p_; }
+    T& operator *() const { return *p_; }
+    T& operator ->() const { return p_; }
 
-private:
+  private:
     T *p_;
     long *c_;
 };

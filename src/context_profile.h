@@ -24,10 +24,10 @@ class SequenceAlphabet;
 class ContextProfile : public Profile
 {
   public:
-    // Creates a profile from subprofile in other, starting at column index and length columns long.
-    ContextProfile(const Profile& other, int index, int length);
     // Constructs profile from serialized profile read from input stream.
     ContextProfile(std::istream& in, const SequenceAlphabet* alphabet);
+    // Creates a profile from subprofile in other, starting at column index and length columns long.
+    ContextProfile(const Profile& other, int index, int length);
 
     virtual ~ContextProfile() {}
 
@@ -44,7 +44,7 @@ class ContextProfile : public Profile
     void operator=(const ContextProfile&);
 
     // Return serialization class identity.
-    virtual const std::string& class_identity() { static std::string id("ContextProfile"); return id;}
+    virtual const std::string class_identity() { static std::string id("ContextProfile"); return id;}
 };  // ContextProfile
 
 }  // cs

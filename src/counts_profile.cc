@@ -25,7 +25,9 @@ namespace cs
 CountsProfile::CountsProfile(std::istream& in, const SequenceAlphabet* alphabet)
         : Profile(alphabet),
           has_counts_(false)
-{ read(in); }
+{
+    read(in);
+}
 
 CountsProfile::CountsProfile(const Sequence& sequence)
         : Profile(sequence.length(), sequence.alphabet()),

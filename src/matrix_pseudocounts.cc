@@ -22,6 +22,8 @@ void MatrixPseudocounts::add_to_sequence(const Sequence& seq, const AdmixtureCal
 {
     LOG(DEBUG) << "Adding substitution matrix pseudocounts to sequence ...";
     LOG(DEBUG1) << p;
+    if (seq.alphabet() != m_.alphabet())
+        throw Exception("Cannot add substitution matrix pseudocounts: sequence and substitution matrix have different alphabets!");
     if (seq.alphabet() != p.alphabet())
         throw Exception("Cannot add substitution matrix pseudocounts: sequence and profile have different alphabets!");
     if (seq.length() != p.ncols())
@@ -47,6 +49,8 @@ void MatrixPseudocounts::add_to_profile(CountsProfile& p, const AdmixtureCalcula
 {
     LOG(DEBUG) << "Adding substitution matrix pseudocounts to profile ...";
     LOG(DEBUG1) << p;
+    if (p.alphabet() != m_.alphabet())
+        throw Exception("Cannot add substitution matrix pseudocounts: profile and substitution matrix have different alphabets!");
 
     const bool logspace = p.logspace();
     if (logspace) p.transform_to_linspace();

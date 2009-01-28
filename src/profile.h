@@ -116,7 +116,7 @@ class Profile
     void operator=(const Profile&);
 
     // Returns serialization class identity.
-    virtual const std::string& class_identity() const { static std::string id("Profile"); return id;}
+    virtual const std::string class_identity() const { static std::string id("Profile"); return id;}
 };  // Profile
 
 

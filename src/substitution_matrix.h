@@ -35,9 +35,10 @@ class SubstitutionMatrix
     float r(int a, int b) const { return r_[a][b]; }
     // Returns background frequency of a.
     float f(int a) const { return f_[a]; }
-
     // Returns the size of the substitution matrix.
     int size() const { return size_; }
+    // Returns the sequence alphabet.
+    const SequenceAlphabet* alphabet() const { return alphabet_; }
 
     friend std::ostream& operator<< (std::ostream& out, const SubstitutionMatrix& m);
 
