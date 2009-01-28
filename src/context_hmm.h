@@ -1,5 +1,5 @@
-#ifndef CS_COUNTS_PROFILE_H
-#define CS_COUNTS_PROFILE_H
+#ifndef CS_CONTEXT_HMM_H
+#define CS_CONTEXT_HMM_H
 /***************************************************************************
  *   Copyright (C) 2008 by Andreas Biegert                                 *
  *   andreas.biegert@googlemail.com                                        *
@@ -28,7 +28,7 @@ class ContextHMM
         float probability;
         // Index of state from/to which the transition connects.
         int state;
-    };
+    }; // Transition
 
     class State
     {
@@ -44,7 +44,7 @@ class ContextHMM
         std::list<Transition> in_transitions;
         // List of out-transitions.
         std::list<Transition> out_transitions;
-    };
+    };  // State
 
     // Constructs context HMM from serialized HMM read from input stream.
     ContextHMM(std::istream& in, const SequenceAlphabet* alphabet);
@@ -64,7 +64,7 @@ class ContextHMM
     const State& end_state() const { return *states_.back(); }
 
   private:
-    // The HMM states ordered by index (BEGIN=0, 1, 2, ..., K, END=K+1)
+    // HMM states ordered by index (BEGIN=0, 1, 2, ..., K, END=K+1)
     std::vector< shared_ptr<State> > states_;
 };  // ContextHMM
 
