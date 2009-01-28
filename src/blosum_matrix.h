@@ -27,9 +27,13 @@ class BlosumMatrix : public SubstitutionMatrix
     BlosumMatrix(Type matrix = BLOSUM62);
     ~BlosumMatrix() {}
 
-private:
-    // Initializes all matrix data members.
-    void init(const float* blosum_xx);
+  protected:
+     // Initializes all matrix data members.
+    virtual void init();
+
+  private:
+    // BLOSUM matrix identifier.
+    Type matrix_;
 };
 
 }//cs

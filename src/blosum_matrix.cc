@@ -87,25 +87,29 @@ namespace cs
 {
 
 BlosumMatrix::BlosumMatrix(Type matrix)
-        : SubstitutionMatrix(AminoAcidAlphabet::instance())
+        : SubstitutionMatrix(AminoAcidAlphabet::instance()),
+          matrix_(matrix)
 {
-    switch (matrix) {
+    init();
+}
+
+void BlosumMatrix::init()
+{
+    const float* blosum_xx = NULL;
+    switch (matrix_) {
         case BLOSUM45:
-            init(g_blosum45);
+            blosum_xx = g_blosum45;
             break;
         case BLOSUM62:
-            init(g_blosum62);
+            blosum_xx = g_blosum62;
             break;
         case BLOSUM80:
-            init(g_blosum80);
+            blosum_xx = g_blosum80;
             break;
         default:
             throw Exception("Unsupported BLOSUM matrix!");
     }
-}
 
-void BlosumMatrix::init(const float* blosum_xx)
-{
     // Read raw BLOSUM data vector
     int n = 0;
     for (int a = 0; a < size_; ++a)

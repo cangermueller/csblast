@@ -41,7 +41,9 @@ class SubstitutionMatrix
 
     friend std::ostream& operator<< (std::ostream& out, const SubstitutionMatrix& m);
 
-protected:
+  protected:
+    // Initializes all matrix data members.
+    virtual void init() = 0;
     // Initializes other matrix data members from matrix P.
     void init_from_target_frequencies();
     // Initializes other matrix data members from substitution matrix S and background frequencies.
@@ -59,7 +61,6 @@ protected:
     std::vector<float> f_;
     // Sequence alphabet over which the matrix records substitution scores.
     const SequenceAlphabet* alphabet_;
-
 };
 
 // Prints the substitution matrix in human readable format to stream.

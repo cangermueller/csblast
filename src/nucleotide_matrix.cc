@@ -16,10 +16,14 @@ namespace cs
 {
 
 NucleotideMatrix::NucleotideMatrix(float match, float mismatch)
-        : SubstitutionMatrix(NucleotideAlphabet::instance())
-{ init(match, mismatch); }
+        : SubstitutionMatrix(NucleotideAlphabet::instance()),
+          match_(match),
+          mismatch_(mismatch)
+{
+    init();
+}
 
-void NucleotideMatrix::init(float match, float mismatch)
+void NucleotideMatrix::init()
 {
     // Set background vector
     f_.assign(size_, 1.0f / size_);
@@ -27,7 +31,7 @@ void NucleotideMatrix::init(float match, float mismatch)
     // Fill substitution matrix
     for (int a = 0; a < size_; ++a)
         for (int b = 0; b < size_; ++b)
-            s_[a][b] = a==b ? match : mismatch;
+            s_[a][b] = a==b ? match_ : mismatch_;
 
     init_from_substitution_matrix_and_background_frequencies();
 }

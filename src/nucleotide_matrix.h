@@ -21,9 +21,14 @@ class NucleotideMatrix : public SubstitutionMatrix
     NucleotideMatrix(float match, float mismatch);
     ~NucleotideMatrix() {}
 
-private:
+  protected:
     // Initializes all matrix data members.
-    void init(float match, float mismatch);
+    virtual void init();
+
+  private:
+    // Match score
+    float match_;
+    float mismatch_;
 };
 
 }//cs
