@@ -23,7 +23,7 @@ USER_DIR = .
 CXX = g++
 
 # Flags passed to the preprocessor
-CPPFLAGS += -I$(GTEST_DIR) -I$(GTEST_DIR)/include -I$(USER_DIR) -DLOG_MAX_LEVEL=3
+CPPFLAGS += -I$(GTEST_DIR) -I$(GTEST_DIR)/include -I$(USER_DIR) -DLOG_MAX_LEVEL=4
 
 # Flags passed to the C++ compiler.
 CXXFLAGS += -g -O3 -W -Wall -Wno-char-subscripts -fno-strict-aliasing

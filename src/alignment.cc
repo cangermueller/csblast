@@ -361,7 +361,7 @@ void Alignment::assign_match_columns_by_gap_rule(int gap_threshold)
 
         float percent_gaps = 100.0f * gap / (res + gap);
 
-        LOG(DEBUG1) << "percent gaps[" << i << "]=" << percent_gaps;
+        LOG(DEBUG3) << "percent gaps[" << i << "]=" << percent_gaps;
 
         match_column_[i] = percent_gaps <= static_cast<float>(gap_threshold);
     }

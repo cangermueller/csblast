@@ -7,9 +7,15 @@
 #include <vector>
 
 #include "amino_acid_alphabet.h"
+#include "blosum_matrix.h"
+#include "log.h"
+#include "matrix_pseudocounts.h"
 #include "nucleotide_alphabet.h"
+#include "profile.h"
 #include "sequence.h"
 #include "shared_ptr.h"
+
+const float kDelta = 0.01f;
 
 TEST(SequenceTest, ConstructionFromAlphabetVector)
 {
@@ -51,4 +57,22 @@ TEST(SequenceTest, ConstructionOfMultipleSequencesFromInputStream)
     EXPECT_EQ(na->ctoi('C'), (*seqs[0])[79]);
     EXPECT_EQ(na->ctoi('C'), (*seqs[1])[1]);
     EXPECT_EQ(na->ctoi('C'), (*seqs[1])[79]);
+}
+
+TEST(SequenceTest, AddMatrixPseudocountsToSequence)
+{
+    cs::AminoAcidAlphabet* aa = cs::AminoAcidAlphabet::instance();
+
+    const cs::Sequence sequence("header", "ARNDCQEGHILKMFPSTWYV", aa);
+    cs::Profile profile(sequence.length(), aa);
+
+    ASSERT_EQ(aa->size(), sequence.length());
+    ASSERT_EQ(aa->ctoi('R'), sequence[1]);
+    ASSERT_EQ(sequence.length(), profile.ncols());
+
+    cs::BlosumMatrix m;
+    cs::MatrixPseudocounts mpc(m);
+    mpc.add_to_sequence(sequence, cs::ProfileSequenceAdmixture(1.0f, 10.0f), profile);
+
+    EXPECT_NEAR(0.06f, profile[0][aa->ctoi('V')], kDelta);
 }

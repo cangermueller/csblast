@@ -122,7 +122,7 @@ TEST(CountsProfileTest, AlignmentCelegansRefGene)
     EXPECT_FLOAT_EQ(0.0f, profile[1][aa->ctoi('T')]);
 }
 
-TEST(CountsProfileTest, MatrixPseudocounts)
+TEST(CountsProfileTest, AddMatrixPseudocountsToProfile)
 {
     cs::NucleotideAlphabet* aa = cs::NucleotideAlphabet::instance();
     std::ifstream fin("../data/ce_refgene.fas");
@@ -132,8 +132,28 @@ TEST(CountsProfileTest, MatrixPseudocounts)
 
     ASSERT_FLOAT_EQ(1.0f, profile[1][aa->ctoi('T')]);
 
-    cs::MatrixPseudocounts mpc(cs::NucleotideMatrix(1, -1));
+    cs::NucleotideMatrix m(1, -1);
+    cs::MatrixPseudocounts mpc(m);
     mpc.add_to_profile(profile, cs::ProfileSequenceAdmixture(1.0f, 10.0f));
 
+    EXPECT_NEAR(0.25f, profile[0][aa->ctoi('T')], kDelta);
+}
+
+TEST(CountsProfileTest, AddMatrixPseudocountsToLogProfile)
+{
+    cs::NucleotideAlphabet* aa = cs::NucleotideAlphabet::instance();
+    std::ifstream fin("../data/ce_refgene.fas");
+    cs::Alignment alignment(fin, cs::Alignment::FASTA, aa);
+    fin.close();
+    cs::CountsProfile profile(alignment, false);
+    profile.transform_to_logspace();
+
+    ASSERT_FLOAT_EQ(0.0f, profile[1][aa->ctoi('T')]);
+
+    cs::NucleotideMatrix m(1, -1);
+    cs::MatrixPseudocounts mpc(m);
+    mpc.add_to_profile(profile, cs::ProfileSequenceAdmixture(1.0f, 10.0f));
+
+    profile.transform_to_linspace();
     EXPECT_NEAR(0.25f, profile[0][aa->ctoi('T')], kDelta);
 }

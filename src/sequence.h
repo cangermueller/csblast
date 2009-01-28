@@ -66,6 +66,8 @@ class Sequence
     // Prints the sequence in FASTA format to output stream.
     void write(std::ostream& out, int width = 100) const;
 
+    friend std::ostream& operator<< (std::ostream& out, const Sequence& sequence);
+
   private:
     // Disallow copy and assign
     Sequence(const Sequence&);
@@ -81,6 +83,15 @@ class Sequence
     // The sequence itself in integer representation.
     std::valarray<char> seq_;
 };  // Sequence
+
+
+
+// Prints the Alignment in A2M format for debugging.
+inline std::ostream& operator<< (std::ostream& out, const Sequence& sequence)
+{
+    sequence.write(out);
+    return out;
+}
 
 }//cs
 

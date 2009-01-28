@@ -66,22 +66,18 @@ std::vector< shared_ptr<Profile> > Profile::readall(std::istream& in,
 
 void Profile::transform_to_logspace()
 {
-    if (!logspace_) {
-        for(int i = 0; i < ncols(); ++i)
-            for(int a = 0; a < nalph(); ++a)
-                data_[i][a] = data_[i][a] == 0.0f ? -std::numeric_limits<float>::infinity() : log2(data_[i][a]);
-        logspace_ = true;
-    }
+    for(int i = 0; i < ncols(); ++i)
+        for(int a = 0; a < nalph(); ++a)
+            data_[i][a] = data_[i][a] == 0.0f ? -std::numeric_limits<float>::infinity() : log2(data_[i][a]);
+    logspace_ = true;
 }
 
 void Profile::transform_to_linspace()
 {
-    if (logspace_) {
-        for(int i = 0; i < ncols(); ++i)
-            for(int a = 0; a < nalph(); ++a)
-                data_[i][a] = pow(2.0, data_[i][a]);
-        logspace_ = false;
-    }
+    for(int i = 0; i < ncols(); ++i)
+        for(int a = 0; a < nalph(); ++a)
+            data_[i][a] = pow(2.0, data_[i][a]);
+    logspace_ = false;
 }
 
 void Profile::read(std::istream& in)
@@ -188,7 +184,7 @@ void Profile::print(std::ostream& out) const
     for (int i = 0; i < ncols(); ++i) {
         out << i+1;
         for (int a = 0; a < nalph(); ++a)
-            out << '\t' << std::fixed << std::setprecision(2)
+            out << '\t' << std::fixed << std::setprecision(4)
                 << (logspace_ ? pow(2.0, data_[i][a]) : data_[i][a]);
         // print neff
         out << std::endl;

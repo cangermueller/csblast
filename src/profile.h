@@ -59,6 +59,8 @@ class Profile
     virtual void transform_to_linspace();
     // Returns true if the profile is in logspace
     bool logspace() const { return logspace_; }
+    // Sets logspace flag.
+    void set_logspace(bool flag) { logspace_ = flag; }
     // Returns the underlying sequence alphabet of the profile.
     const SequenceAlphabet* alphabet() const { return alphabet_; }
     // Returns an iterator to the first element in profile column i.

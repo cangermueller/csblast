@@ -171,10 +171,10 @@ void CountsProfile::print(std::ostream& out) const
     for (int i = 0; i < ncols(); ++i) {
         out << i+1;
         for (int a = 0; a < nalph(); ++a)
-            out << '\t' << std::fixed << std::setprecision(2)
+            out << '\t' << std::fixed << std::setprecision(4)
                 << (logspace_ ? pow(2.0, data_[i][a]) : data_[i][a]);
         // print neff
-        out << '\t' << std::setprecision(1) << neff_[i] << std::endl;
+        out << '\t' << std::setprecision(2) << neff_[i] << std::endl;
     }
 
     out.flags(flags);

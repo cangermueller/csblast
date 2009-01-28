@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "exception.h"
+#include "log.h"
 #include "sequence_alphabet.h"
 #include "shared_ptr.h"
 
@@ -69,25 +70,25 @@ void Sequence::init(std::string header, std::string sequence)
 
 void Sequence::read(std::istream& in)
 {
-    const int kBufferSize = 1000;
-    std::string buffer;
-    buffer.reserve(kBufferSize);
+    LOG(DEBUG1) << "Reading sequence from stream ...";
+    std::string tmp;
     std::string header;
     std::string sequence;
 
     //read header
-    if (getline(in, buffer)) {
-        if (buffer.empty() ||  buffer[0] != '>')
+    if (getline(in, tmp)) {
+        if (tmp.empty() ||  tmp[0] != '>')
             throw Exception("Bad format: first line of FASTA sequence does not start with '>' character!");
-        header.append(buffer.begin() + 1, buffer.end());
+        header.append(tmp.begin() + 1, tmp.end());
     } else {
         throw Exception("Failed to read from FASTA formatted input stream!");
     }
     //read sequence
-    while (in.peek() != '>' && getline(in, buffer))
-        sequence.append(buffer.begin(), buffer.end());
+    while (in.peek() != '>' && getline(in, tmp))
+        sequence.append(tmp.begin(), tmp.end());
 
     init(header, sequence);
+    LOG(DEBUG1) << *this;
 }
 
 void Sequence::write(std::ostream& out, int width) const

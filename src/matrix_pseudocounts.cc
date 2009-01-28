@@ -20,22 +20,39 @@ MatrixPseudocounts::MatrixPseudocounts(const SubstitutionMatrix& m) : m_(m)
 
 void MatrixPseudocounts::add_to_sequence(const Sequence& seq, const AdmixtureCalculator& pca, Profile& p)
 {
+    LOG(DEBUG) << "Adding substitution matrix pseudocounts to sequence ...";
+    LOG(DEBUG1) << p;
     if (seq.alphabet() != p.alphabet())
         throw Exception("Cannot add substitution matrix pseudocounts: sequence and profile have different alphabets!");
+    if (seq.length() != p.ncols())
+        throw Exception("Cannot add substitution matrix pseudocounts: sequence and profile have different length!");
+
+    const bool logspace = p.logspace();
+    p.set_logspace(false);
 
     // add substitution matrix pseudocounts
     float tau = pca(1.0f);
     for(int i = 0; i < p.ncols(); ++i) {
-        for(int a = 0; a < p.nalph(); ++a)
+        for(int a = 0; a < p.nalph(); ++a) {
             p[i][a] = (1.0f - tau) * (static_cast<int>(seq[i]) == a ? 1.0f : 0.0f) + tau * m_.r(a, seq[i]);
+        }
     }
+
     normalize(p);
+    if (logspace) p.transform_to_logspace();
+    LOG(DEBUG1) << p;
 }
 
 void MatrixPseudocounts::add_to_profile(CountsProfile& p, const AdmixtureCalculator& pca)
 {
-    matrix<float> f(p.ncols(), p.nalph(), 0.0f);
+    LOG(DEBUG) << "Adding substitution matrix pseudocounts to profile ...";
+    LOG(DEBUG1) << p;
+
+    const bool logspace = p.logspace();
+    if (logspace) p.transform_to_linspace();
+
     // copy original frequencies to matrix f
+    matrix<float> f(p.ncols(), p.nalph(), 0.0f);
     for (int i = 0; i < p.ncols(); ++i)
         for(int a = 0; a < p.nalph(); ++a)
             f[i][a] = p[i][a];
@@ -50,7 +67,10 @@ void MatrixPseudocounts::add_to_profile(CountsProfile& p, const AdmixtureCalcula
             p[i][a] = (1.0f - tau) * f[i][a] + tau * sum;
         }
     }
+
+    if (logspace) p.transform_to_logspace();
     normalize(p);
+    LOG(DEBUG1) << p;
 }
 
 
