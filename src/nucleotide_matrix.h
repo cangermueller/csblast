@@ -22,10 +22,6 @@ class NucleotideMatrix : public SubstitutionMatrix
     ~NucleotideMatrix() {}
 
 private:
-    // Disallow copy and assign.
-    NucleotideMatrix(const NucleotideMatrix& other);
-    NucleotideMatrix operator =(const NucleotideMatrix& other);
-
     // Initializes all matrix data members.
     void init(float match, float mismatch);
 };

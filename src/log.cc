@@ -30,9 +30,6 @@ inline std::string now_time()
 }  // namespace
 
 
-namespace cs
-{
-
 Log::Log()
 {}
 
@@ -40,8 +37,8 @@ std::ostringstream& Log::get(LogLevel log_level)
 {
     level = log_level;
     std::string level_str(to_string(level));
-    os << level_str << std::string(8 - level_str.length(), ' ') << now_time() << "  ";
-    os << std::string(level > DEBUG ? (level - DEBUG) * kIndent : 0, ' ');
+    os << level_str << std::string(9 - level_str.length(), ' ') << now_time() << "   ";
+    os << std::string(level > DEBUG ? (level - DEBUG) : 0, '\t');
     return os;
 }
 
@@ -51,8 +48,7 @@ Log::~Log()
         os << std::endl;
         fprintf(stderr, "%s", os.str().c_str());
     } else {
-        const std::string margin(std::string(kMargin, ' ') +
-                                 std::string(level > DEBUG ? (level - DEBUG) * kIndent : 0, ' '));
+        const std::string margin("\t\t\t" + std::string(level > DEBUG ? (level - DEBUG) : 0, '\t'));
         std::string s(os.str());
         if (*s.rbegin() == '\n') s.erase(s.begin() + s.length() - 1);
 
@@ -104,4 +100,3 @@ LogLevel Log::from_string(const std::string& log_level)
     return INFO;
 }
 
-}  // cs

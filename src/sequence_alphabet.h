@@ -11,6 +11,7 @@
 
 #include <cctype>
 
+#include <iostream>
 #include <vector>
 
 namespace cs
@@ -50,8 +51,8 @@ class SequenceAlphabet
     const_iterator begin() const { return itoc_.begin(); }
     // Returns a const iterator just past the end of last distinct character in the alphabet.
     const_iterator end() const { return itoc_.begin() + size(); }
-    // Prints the characters of the alphabet to outstream.
-    void print(std::ostream& out, const std::string& delim) const;
+
+    friend std::ostream& operator<< (std::ostream& out, const SequenceAlphabet& alph);
 
   protected:
     // Denotes invalid characters in ctoi array
@@ -83,6 +84,17 @@ class SequenceAlphabet
     // Conversion array from integer to character representation (incl. ANY, GAP, and ENDGAP).
     std::vector<char> itoc_;
 };
+
+
+
+// Print alphabet characters delimited by tabbs.
+inline std::ostream& operator<< (std::ostream& out, const SequenceAlphabet& alph)
+{
+    out << *alph.begin();
+    for (SequenceAlphabet::const_iterator a = alph.begin() + 1; a != alph.end(); ++a)
+        out << '\t' << *a;
+    return out;
+}
 
 }  // cs
 

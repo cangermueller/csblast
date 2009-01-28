@@ -46,13 +46,6 @@ void SequenceAlphabet::init()
     ctoi_['.']           = size_ + 1;  // INSERT GAP
 }
 
-void SequenceAlphabet::print(std::ostream& out, const std::string& delim) const
-{
-    out << *begin();
-    for (const_iterator iter = begin() + 1; iter != end(); ++iter)
-        out << delim << *iter;
-}
-
-}//cs
+}  // cs
 
 

@@ -16,7 +16,7 @@ namespace cs
 {
 
 NucleotideMatrix::NucleotideMatrix(float match, float mismatch)
-        : SubstitutionMatrix(NucleotideAlphabet::instance()->size())
+        : SubstitutionMatrix(NucleotideAlphabet::instance())
 { init(match, mismatch); }
 
 void NucleotideMatrix::init(float match, float mismatch)

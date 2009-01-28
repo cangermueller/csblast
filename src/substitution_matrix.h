@@ -15,6 +15,7 @@
 #include <vector>
 
 #include "matrix.h"
+#include "sequence_alphabet.h"
 
 namespace cs
 {
@@ -22,6 +23,10 @@ namespace cs
 class SubstitutionMatrix
 {
   public:
+        // To be used by derived classes.
+    SubstitutionMatrix(const SequenceAlphabet* alphabet);
+    ~SubstitutionMatrix() {}
+
     // Return substitution score S(a,b).
     float s(int a, int b) const { return s_[a][b]; }
     // Returns joint probability P(a,b).
@@ -37,10 +42,6 @@ class SubstitutionMatrix
     friend std::ostream& operator<< (std::ostream& out, const SubstitutionMatrix& m);
 
 protected:
-    // To be used by derived classes.
-    SubstitutionMatrix(int size);
-    ~SubstitutionMatrix() {}
-
     // Initializes other matrix data members from matrix P.
     void init_from_target_frequencies();
     // Initializes other matrix data members from substitution matrix S and background frequencies.
@@ -56,35 +57,37 @@ protected:
     matrix<float> r_;
     // Background frequencies of alphabet.
     std::vector<float> f_;
+    // Sequence alphabet over which the matrix records substitution scores.
+    const SequenceAlphabet* alphabet_;
 
-private:
-    // Disallow copy and assign.
-    SubstitutionMatrix(const SubstitutionMatrix& other);
-    SubstitutionMatrix operator =(const SubstitutionMatrix& other);
 };
 
 // Prints the substitution matrix in human readable format to stream.
 inline std::ostream& operator<< (std::ostream& out, const SubstitutionMatrix& m)
 {
-    out << "Background frequencies:\nf[] ";
+    out << "Background frequencies:\n";
+    out << *m.alphabet_ << std::endl;
     for (int a = 0; a < m.size_; ++a)
-        out << std::setw(4) << std::right << std::fixed << std::setprecision(1) << 100 * m.f_[a] << " ";
+        out << std::fixed << std::setprecision(1) << 100 * m.f_[a] << "\t";
     out << "\nSubstitution matrix log2( P(a,b) / p(a)*p(b) ) (in bits):\n";
+    out << *m.alphabet_ << std::endl;
     for (int b = 0; b < m.size_; ++b) {
         for (int a = 0; a < m.size_; ++a)
-            out << std::setw(4) << std::right << std::fixed << std::setprecision(1) << m.s_[a][b] << " ";
+            out << std::fixed << std::setprecision(1) << std::showpos << m.s_[a][b] << std::noshowpos << "\t";
         out << std::endl;
     }
     out << "Probability matrix P(a,b) (in %):\n";
+    out << *m.alphabet_ << std::endl;
     for (int b = 0; b < m.size_; ++b) {
         for (int a = 0; a < m.size_; ++a)
-            out << std::setw(4) << std::right << std::fixed << std::setprecision(1) << 100 * m.p_[b][a] << " ";
+            out << std::fixed << std::setprecision(1) << 100 * m.p_[b][a] << "\t";
         out << std::endl;
     }
     out << "Matrix of conditional probabilities P(a|b) = P(a,b)/p(b) (in %):\n";
+    out << *m.alphabet_ << std::endl;
     for (int b = 0; b < m.size_; ++b) {
         for (int a = 0; a < m.size_; ++a)
-            out << std::setw(4) << std::right << std::fixed << std::setprecision(1) << 100 * m.r_[b][a] << " ";
+            out << std::fixed << std::setprecision(1) << 100 * m.r_[b][a] << "\t";
         out << std::endl;
     }
     return out;

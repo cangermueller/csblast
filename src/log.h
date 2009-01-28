@@ -1,5 +1,5 @@
-#ifndef CS_LOG_H
-#define CS_LOG_H
+#ifndef LOG_H
+#define LOG_H
 
 #include <cstdio>
 #include <sys/time.h>
@@ -7,9 +7,6 @@
 #include <iostream>
 #include <sstream>
 #include <string>
-
-namespace cs
-{
 
 enum LogLevel {ERROR, WARNING, INFO, DEBUG, DEBUG1, DEBUG2, DEBUG3, DEBUG4};
 
@@ -25,9 +22,6 @@ class Log
     static LogLevel from_string(const std::string& log_level);
 
   protected:
-    static const int kMargin = 22;
-    static const int kIndent = 6;
-
     std::ostringstream os;
     LogLevel level;
 
@@ -46,7 +40,5 @@ class Log
     if (level > LOG_MAX_LEVEL) ;                \
     else if (level > Log::reporting_level()) ;   \
     else Log().get(level)
-
-}  // cs
 
 #endif

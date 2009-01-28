@@ -14,16 +14,18 @@
 
 #include "log.h"
 #include "util.h"
+#include "sequence_alphabet.h"
 
 namespace cs
 {
 
-SubstitutionMatrix::SubstitutionMatrix(int size)
-  : size_(size),
-    p_(size, size, 0.0f),
-    s_(size, size, 0.0f),
-    r_(size, size, 0.0f),
-    f_(size, 0.0f)
+SubstitutionMatrix::SubstitutionMatrix(const SequenceAlphabet* alphabet)
+        : size_(alphabet->size()),
+          p_(size_, size_, 0.0f),
+          s_(size_, size_, 0.0f),
+          r_(size_, size_, 0.0f),
+          f_(size_, 0.0f),
+          alphabet_(alphabet)
 {}
 
 void SubstitutionMatrix::init_from_target_frequencies()

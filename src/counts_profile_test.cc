@@ -7,9 +7,11 @@
 #include <sstream>
 
 #include "amino_acid_alphabet.h"
+#include "matrix_pseudocounts.h"
 #include "nucleotide_alphabet.h"
 #include "counts_profile.h"
 #include "shared_ptr.h"
+#include "nucleotide_matrix.h"
 
 const float kDelta = 0.01f;
 
@@ -118,4 +120,20 @@ TEST(CountsProfileTest, AlignmentCelegansRefGene)
     profile.transform_to_logspace();
 
     EXPECT_FLOAT_EQ(0.0f, profile[1][aa->ctoi('T')]);
+}
+
+TEST(CountsProfileTest, MatrixPseudocounts)
+{
+    cs::NucleotideAlphabet* aa = cs::NucleotideAlphabet::instance();
+    std::ifstream fin("../data/ce_refgene.fas");
+    cs::Alignment alignment(fin, cs::Alignment::FASTA, aa);
+    fin.close();
+    cs::CountsProfile profile(alignment, false);
+
+    ASSERT_FLOAT_EQ(1.0f, profile[1][aa->ctoi('T')]);
+
+    cs::MatrixPseudocounts mpc(cs::NucleotideMatrix(1, -1));
+    mpc.add_to_profile(profile, cs::ProfileSequenceAdmixture(1.0f, 10.0f));
+
+    EXPECT_NEAR(0.25f, profile[0][aa->ctoi('T')], kDelta);
 }

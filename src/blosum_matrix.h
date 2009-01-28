@@ -28,10 +28,6 @@ class BlosumMatrix : public SubstitutionMatrix
     ~BlosumMatrix() {}
 
 private:
-    // Disallow copy and assign.
-    BlosumMatrix(const BlosumMatrix& other);
-    BlosumMatrix operator =(const BlosumMatrix& other);
-
     // Initializes all matrix data members.
     void init(const float* blosum_xx);
 };

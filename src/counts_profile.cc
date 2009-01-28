@@ -148,10 +148,7 @@ void CountsProfile::write_header(std::ostream& out) const
 
 void CountsProfile::write_body(std::ostream& out) const
 {
-    // print profile values in log representation
-    out << "\t";
-    alphabet_->print(out, "\t");
-    out << "\tneff" << std::endl;
+    out << "\t" << *alphabet_ << "\tneff" << std::endl;
     for (int i = 0; i < ncols(); ++i) {
         out << i+1;
         for (int a = 0; a < nalph(); ++a) {
@@ -168,19 +165,16 @@ void CountsProfile::write_body(std::ostream& out) const
 
 void CountsProfile::print(std::ostream& out) const
 {
-    const int kWidth = 6;
-    std::ios_base::fmtflags flags = out.flags(); // save old flags
+    std::ios_base::fmtflags flags = out.flags();  // save old flags
 
-    out << std::string(2*kWidth-2, ' ');
-    alphabet_->print(out, std::string(kWidth-1, ' '));
-    out << std::string(kWidth-4, ' ') + "neff" << std::endl;
+    out << "\t" << *alphabet_ << "\tneff" << std::endl;
     for (int i = 0; i < ncols(); ++i) {
-        out << std::left << std::setw(kWidth-1) << i+1;
+        out << i+1;
         for (int a = 0; a < nalph(); ++a)
-            out << std::right << std::setw(kWidth) << std::fixed << std::setprecision(2)
+            out << '\t' << std::fixed << std::setprecision(2)
                 << (logspace_ ? pow(2.0, data_[i][a]) : data_[i][a]);
         // print neff
-        out << std::right << std::setw(kWidth-1) << std::setprecision(1) << neff_[i] << std::endl;
+        out << '\t' << std::setprecision(1) << neff_[i] << std::endl;
     }
 
     out.flags(flags);

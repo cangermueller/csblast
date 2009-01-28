@@ -166,9 +166,7 @@ void Profile::write_header(std::ostream& out) const
 
 void Profile::write_body(std::ostream& out) const
 {
-    out << "\t";
-    alphabet_->print(out, "\t");
-    out << std::endl;
+    out << "\t" << *alphabet_ << std::endl;
     for (int i = 0; i < ncols(); ++i) {
         out << i+1;
         for (int a = 0; a < nalph(); ++a) {
@@ -184,17 +182,15 @@ void Profile::write_body(std::ostream& out) const
 
 void Profile::print(std::ostream& out) const
 {
-    const int kWidth = 6;
-    std::ios_base::fmtflags flags = out.flags(); // save old flags
+    std::ios_base::fmtflags flags = out.flags();  // save old flags
 
-    out << std::string(2*kWidth-2, ' ');
-    alphabet_->print(out, std::string(kWidth-1, ' '));
-    out << std::endl;
+    out << "\t" << *alphabet_ << std::endl;
     for (int i = 0; i < ncols(); ++i) {
-        out << std::left << std::setw(kWidth-1) << i+1;
+        out << i+1;
         for (int a = 0; a < nalph(); ++a)
-            out << std::right << std::setw(kWidth) << std::fixed << std::setprecision(3)
+            out << '\t' << std::fixed << std::setprecision(2)
                 << (logspace_ ? pow(2.0, data_[i][a]) : data_[i][a]);
+        // print neff
         out << std::endl;
     }
 
@@ -238,6 +234,4 @@ void normalize(Profile& profile, float value)
     if (logspace) profile.transform_to_logspace();
 }
 
-}//cs
-
-
+}  // cs
