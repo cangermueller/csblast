@@ -112,7 +112,7 @@ class HMM
     State& operator[](int i) { return *states_[i-1]; }
     const State& operator[](int i) const { return *states_[i-1]; }
     // Returns the transition probability from state k to state l (runtime O(1) for BEGIN/END state; O(K) for others).
-    float transition_probability(int k, int l) const;
+    float transition_probability(int k, int l) const { return (*states_[k-1]).transition_probability_to(l); }
     // Returns pair of state iterators (the first iterator points to the "beginning" the second "past the end")
     std::pair<state_iterator, state_iterator> states() { return make_pair(states_.begin(), states_.end()); }
     // Returns pair of const state iterators (the first iterator points to the "beginning" the second "past the end")
@@ -142,12 +142,6 @@ class HMM
 };  // HMM
 
 
-
-// Returns the transition probability from state k to state l (runtime O(1) for BEGIN/END state; O(K) for others).
-inline float HMM::transition_probability(int k, int l) const
-{
-    return (*states_[k-1]).transition_probability_to(l);
-}
 
 // Returns the transition probability from this state to state k.
 inline float HMM::State::transition_probability_to(int k) const
