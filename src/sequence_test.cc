@@ -20,13 +20,7 @@ const float kDelta = 0.01f;
 TEST(SequenceTest, ConstructionFromAlphabetVector)
 {
     cs::AminoAcidAlphabet* aa = cs::AminoAcidAlphabet::instance();
-
-    std::string header("dummy sequence header");
-    std::string seq("ARNDCQEGHILKMFPSTWYV");
-    seq.insert(seq.begin()+1, ' ');
-    seq.push_back('\n');
-
-    const cs::Sequence sequence(header, seq, aa);
+    const cs::Sequence sequence("header", "A RNDCQEGHILKMFPSTWYV\n", aa);
 
     EXPECT_EQ(aa->size(), sequence.length());
     EXPECT_EQ(aa->ctoi('R'), sequence[1]);

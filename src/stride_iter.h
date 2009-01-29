@@ -49,14 +49,7 @@ class stride_iter
         assert(x.step_ == y.step_);
         return (x.m_ - y.m_) / x.step_;
     }
-    // friend self operator+(const self& x, difference_type y) {
-    //     // assert(x.step_ == y.step_);
-    //     return x += y * x.step_;
-    // }
-    // friend self operator+(difference_type x, const self& y) {
-    //     // assert(x.step_ == y.step_);
-    //     return y += x * y.step_;
-    // }
+
   private:
     Iter_T m_;
     difference_type step_;

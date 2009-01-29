@@ -26,6 +26,7 @@ namespace cs
 class Alignment
 {
   public:
+    // Supported alignment formats for in- and output.
     enum Format {
         FASTA    = 0,
         A2M      = 1,
@@ -34,6 +35,7 @@ class Alignment
         PSI      = 4
     };
 
+    // Pblic typedefs
     typedef matrix<char>::row_type col_type;
     typedef matrix<char>::const_row_type const_col_type;
     typedef matrix<char>::col_type row_type;
