@@ -63,6 +63,8 @@ all : $(TARGETS)
 clean :
 	rm -rf $(BUILDDIR) $(TARGETS) gtest.a gtest_main.a *.o
 
+.PHONY: all clean
+
 # Builds gtest.a and gtest_main.a.
 
 # Usually you shouldn't tweak such internal variables, indicated by a
