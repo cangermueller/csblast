@@ -39,6 +39,11 @@ class HMM
     typedef state_vector::iterator state_iterator;
     typedef state_vector::const_iterator const_state_iterator;
 
+    // BEGIN and END states have both index 0, this is because is all transitions to state 0
+    // go to the END state and all transitions from state 0 start from the BEGIN. There are no
+    // in-transitions for the BEGIN state and no out-transitions for the END state.
+    static const int BEGIN_END_STATE = 0;
+
     class Transition
     {
       public:
@@ -57,7 +62,7 @@ class HMM
     {
       public:
         // Constructs HMM state from serialized state read from input stream.
-        State(std::istream& in, const SequenceAlphabet* alphabet) : Profile(alphabet), index_(0) {}
+        State(std::istream& in, const SequenceAlphabet* alphabet) : Profile(alphabet), index_(0) {} //read(in) }
         // Constructs HMM state with given profile and all transitions initialized to zero.
         State(const Profile& profile);
 
@@ -89,16 +94,16 @@ class HMM
         friend class HMM;
 
       protected:
-        // // Reads and initializes serialized scalar data members from stream.
-        // virtual void read_header(std::istream& in);
-        // // Reads and initializes array data members from stream.
-        // virtual void read_body(std::istream& in);
-        // // Writes serialized scalar data members to stream.
-        // virtual void write_header(std::ostream& out) const;
-        // // Writes serialized array data members to stream.
-        // virtual void write_body(std::ostream& out) const;
-        // // Prints the profile in human-readable format to output stream.
-        // virtual void print(std::ostream& out) const;
+        // Reads and initializes serialized scalar data members from stream.
+        virtual void read_header(std::istream& in);
+        // Reads and initializes array data members from stream.
+        virtual void read_body(std::istream& in);
+        // Writes serialized scalar data members to stream.
+        virtual void write_header(std::ostream& out) const;
+        // Writes serialized array data members to stream.
+        virtual void write_body(std::ostream& out) const;
+        // Prints the profile in human-readable format to output stream.
+        virtual void print(std::ostream& out) const;
 
       private:
         // Returns serialization class identity.
@@ -129,9 +134,11 @@ class HMM
     // Access method for state i, where i is from interval [1,K] (that is no access to BEGIN/END state).
     const State& operator[](int i) const { return *states_[i-1]; }
     // Returns the transition probability from state k to state l in runtime O(#transitions).
-    float transition_probability(int k, int l) const { return (*states_[k-1]).transition_probability_to(l); }
+    float transition_probability(int k, int l) const;
     // Sets the transition probability from state k to state l in runtime O(#transitions).
     void set_transition_probability(int k, int l, float prob);
+    // Removes all transitions with probability below or equal to given threshold.
+    void sparsify(float threshold);
     // Clears all states and transitions.
     void clear() { states_.clear(); }
     // Clears all transitions but leaves profile of states untouched.
@@ -200,6 +207,72 @@ class TransitsState : public std::unary_function<HMM::Transition, bool>
     const int state_;
 };
 
+
+
+// Returns the transition probability from state k to state l in runtime O(#transitions).
+inline float HMM::transition_probability(int k, int l) const
+{
+    if (k > BEGIN_END_STATE)
+        return states_[k-1]->transition_probability_to(l);
+    else
+        return (*states_[l-1]).transition_probability_from(k);
+}
+
+// Sets the transition probability from state k to state l in runtime O(#transitions).
+inline void HMM::set_transition_probability(int k, int l, float prob)
+{
+    if (prob == 0.0f) {
+        // Remove transitions from transition lists if probability is zero
+        if (k > BEGIN_END_STATE) (*states_[k-1]).out_transitions_.remove_if( TransitsState(l) );
+        if (l > BEGIN_END_STATE) (*states_[l-1]).in_transitions_.remove_if( TransitsState(k) );
+
+    } else {
+        // Find correct in- and out-transitions and set their probability to new value.
+        if (k > BEGIN_END_STATE) {
+            // set out-transition of state k
+            std::pair<transition_iterator, transition_iterator> tp = (*states_[k-1]).out_transitions();
+            transition_iterator ti = find_if(tp.first, tp.second, TransitsState(l));
+            if (ti == tp.second)  // transition does not yet exist
+                (*states_[k-1]).out_transitions_.push_back(Transition(l, prob));
+            else  // modify existing transition
+                ti->probability = prob;
+        }
+
+        if (l > BEGIN_END_STATE) {
+            // set out-transition of state k
+            std::pair<transition_iterator, transition_iterator> tp = (*states_[l-1]).in_transitions();
+            transition_iterator ti = find_if(tp.first, tp.second, TransitsState(k));
+            if (ti == tp.second)  // transition does not yet exist
+                (*states_[l-1]).in_transitions_.push_back(Transition(k, prob));
+            else  // modify existing transition
+                ti->probability = prob;
+        }
+    }
+}
+
+// Prints HMM in human-readable format for debugging.
+inline std::ostream& operator<< (std::ostream& out, const HMM& hmm)
+{
+    hmm.print(out);
+    return out;
+}
+
+// Returns the transition probability from this state to state k.
+inline float HMM::State::transition_probability_to(int k) const
+{
+    const_transition_iterator ti = find_if(out_transitions_.begin(), out_transitions_.end(), TransitsState(k));
+    return ti == out_transitions_.end() ? 0.0f : ti->probability;
+}
+
+// Returns the transition probability from state k to this state.
+inline float HMM::State::transition_probability_from(int k) const
+{
+    const_transition_iterator ti = find_if(in_transitions_.begin(), in_transitions_.end(), TransitsState(k));
+    return ti == out_transitions_.end() ? 0.0f : ti->probability;
+}
+
+
+
 // Comparison functor that compares the index of two states.
 struct StateIndexCompare : public std::binary_function<HMM::State, HMM::State, bool>
 {
@@ -227,57 +300,6 @@ struct NumOutTransitionsCompare : public std::binary_function<HMM::State, HMM::S
     }
 };
 
-// Returns the transition probability from this state to state k.
-inline float HMM::State::transition_probability_to(int k) const
-{
-    const_transition_iterator ti = find_if(out_transitions_.begin(), out_transitions_.end(), TransitsState(k));
-    return ti == out_transitions_.end() ? 0.0f : ti->probability;
-}
-
-// Returns the transition probability from state k to this state.
-inline float HMM::State::transition_probability_from(int k) const
-{
-    const_transition_iterator ti = find_if(in_transitions_.begin(), in_transitions_.end(), TransitsState(k));
-    return ti == out_transitions_.end() ? 0.0f : ti->probability;
-}
-
-// Sets the transition probability from state k to state l in runtime O(#transitions).
-inline void HMM::set_transition_probability(int k, int l, float prob)
-{
-    if (prob == 0.0f) {  // Remove transitions from transition lists if probability is zero
-        (*states_[k-1]).out_transitions_.remove_if( FailsProbabilityThreshold(0.0f) );
-        (*states_[l-1]).in_transitions_.remove_if( FailsProbabilityThreshold(0.0f) );
-    } else {
-        // set out-transition of state k
-        std::pair<transition_iterator, transition_iterator> tp = (*states_[k-1]).out_transitions();
-        transition_iterator ti = find_if(tp.first, tp.second, TransitsState(l));
-        if (ti == tp.second)  // transition does not yet exist
-            (*states_[k-1]).out_transitions_.push_back(Transition(l, prob));
-        else  // modify existing transition
-            ti->probability = prob;
-
-        // set out-transition of state k
-        tp = (*states_[l-1]).in_transitions();
-        ti = find_if(tp.first, tp.second, TransitsState(k));
-        if (ti == tp.second)  // transition does not yet exist
-            (*states_[l-1]).in_transitions_.push_back(Transition(k, prob));
-        else  // modify existing transition
-            ti->probability = prob;
-    }
-}
-
-// Prints HMM in human-readable format for debugging.
-inline std::ostream& operator<< (std::ostream& out, const HMM& hmm)
-{
-    hmm.print(out);
-    return out;
-}
-
-// Comparison operator for HMM states.
-inline bool operator<(const HMM::State& lhs, const HMM::State& rhs)
-{
-    return lhs.index() < rhs.index();
-}
 
 }  // cs
 

@@ -57,5 +57,47 @@ void HMM::write(std::ostream& out) const
         (**sp.first).write(out);
 }
 
+void HMM::sparsify(float threshold)
+{
+    std::pair<state_iterator, state_iterator> sp = states();
+    for (std::pair<state_iterator, state_iterator> sp = states(); sp.first != sp.second; ++sp.first) {
+        (*sp.first)->in_transitions_.remove_if( FailsProbabilityThreshold(threshold) );
+        (*sp.first)->out_transitions_.remove_if( FailsProbabilityThreshold(threshold) );
+    }
+}
+
+
+
+void HMM::State::read_header(std::istream& in)
+{
+    // Read has_counts
+    std::string tmp;
+    if (getline(in, tmp) && tmp.find("index") != std::string::npos)
+        index_ = atoi(tmp.c_str() + 5);
+
+    Profile::read_header(in);
+}
+
+void HMM::State::read_body(std::istream& in)
+{
+    // TODO
+}
+
+void HMM::State::write_header(std::ostream& out) const
+{
+    out << "index\t" << index_ << std::endl;
+    Profile::write_header(out);
+}
+
+void HMM::State::write_body(std::ostream& out) const
+{
+    // TODO
+}
+
+void HMM::State::print(std::ostream& out) const
+{
+    out << "State " << index_ << ":" << std::endl;
+    Profile::print(out);
+}
 
 }  // cs

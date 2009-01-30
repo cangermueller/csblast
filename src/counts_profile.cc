@@ -114,8 +114,8 @@ void CountsProfile::read_header(std::istream& in)
     neff_.resize(ncols());
 
     // Read has_counts
-   std::string tmp;
-   if (getline(in, tmp) && tmp.find("has_counts") != std::string::npos)
+    std::string tmp;
+    if (getline(in, tmp) && tmp.find("has_counts") != std::string::npos)
         has_counts_ = atoi(tmp.c_str() + 10) == 1;
 }
 
@@ -150,7 +150,7 @@ void CountsProfile::write_header(std::ostream& out) const
 
 void CountsProfile::write_body(std::ostream& out) const
 {
-    out << "\t" << *alphabet_ << "\tneff" << std::endl;
+    out << "\t" << *alphabet_ << "\tNeff" << std::endl;
     for (int i = 0; i < ncols(); ++i) {
         out << i+1;
         for (int a = 0; a < nalph(); ++a) {
@@ -169,7 +169,7 @@ void CountsProfile::print(std::ostream& out) const
 {
     std::ios_base::fmtflags flags = out.flags();  // save old flags
 
-    out << "\t" << *alphabet_ << "\tneff" << std::endl;
+    out << "\t" << *alphabet_ << "\tNeff" << std::endl;
     for (int i = 0; i < ncols(); ++i) {
         out << i+1;
         for (int a = 0; a < nalph(); ++a)

@@ -29,7 +29,7 @@ class shared_ptr
         return *this;
     }
     T& operator *() const { return *p_; }
-    T& operator ->() const { return p_; }
+    T* operator ->() const { return p_; }
 
   private:
     T *p_;
