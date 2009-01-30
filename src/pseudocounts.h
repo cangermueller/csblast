@@ -25,7 +25,7 @@ class Pseudocounts
     Pseudocounts() {}
     ~Pseudocounts() {}
 
-   // Adds pseudocounts to sequence and stores resulting frequencies in given profile.
+    // Adds pseudocounts to sequence and stores resulting frequencies in given profile.
     virtual void add_to_sequence(const Sequence& seq, const AdmixtureCalculator& pca, Profile& p) = 0;
     // Adds pseudocounts to alignment derived profile.
     virtual void add_to_profile(CountsProfile& p, const AdmixtureCalculator& pca) = 0;
@@ -45,25 +45,32 @@ class AdmixtureCalculator
     virtual float operator() (float neff) const = 0;
 };
 
+// Calculates constant pseudocount admixture independent of number of effective sequences.
 class ConstantAdmixture : public AdmixtureCalculator
 {
   public:
     ConstantAdmixture(float x) : x_(x) {}
-    virtual float operator() (float neff) const
-    { return 0.0f * neff + std::min(1.0f, x_); }
+    ~ConstantAdmixture() {};
+
+    virtual float operator() (float neff) const { return 0.0f * neff + std::min(1.0f, x_); }
+
   private:
-    float x_;
+    const float x_;
 };
 
-class ProfileSequenceAdmixture : public AdmixtureCalculator
+// Calculates divergence-dependent pseudocount admixture as tau = A * (B + 1) / (B + Neff)
+class DivergenceDependentAdmixture : public AdmixtureCalculator
 {
   public:
-    ProfileSequenceAdmixture(float a, float b) : a_(a), b_(b) {}
+    DivergenceDependentAdmixture(float a, float b) : a_(a), b_(b) {}
+    ~DivergenceDependentAdmixture() {};
+
     virtual float operator() (float neff) const
-    { return std::min(1.0f, a_ * (1.0f + 1.0f / b_) / (1.0f + neff / b_)); }
+    { return std::min(1.0f, a_ * (b_ + 1.0f) / (b_ + neff)); }
+
   private:
-    float a_;
-    float b_;
+    const float a_;
+    const float b_;
 };
 
 }  // cs

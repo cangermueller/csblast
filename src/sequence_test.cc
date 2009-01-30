@@ -66,7 +66,7 @@ TEST(SequenceTest, AddMatrixPseudocountsToSequence)
 
     cs::BlosumMatrix m;
     cs::MatrixPseudocounts mpc(m);
-    mpc.add_to_sequence(sequence, cs::ProfileSequenceAdmixture(1.0f, 10.0f), profile);
+    mpc.add_to_sequence(sequence, cs::DivergenceDependentAdmixture(1.0f, 10.0f), profile);
 
     EXPECT_NEAR(0.06f, profile[0][aa->ctoi('V')], kDelta);
 }

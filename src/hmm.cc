@@ -57,4 +57,5 @@ void HMM::write(std::ostream& out) const
         (**sp.first).write(out);
 }
 
+
 }  // cs

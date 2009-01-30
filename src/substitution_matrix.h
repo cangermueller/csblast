@@ -23,10 +23,6 @@ namespace cs
 class SubstitutionMatrix
 {
   public:
-        // To be used by derived classes.
-    SubstitutionMatrix(const SequenceAlphabet* alphabet);
-    ~SubstitutionMatrix() {}
-
     // Return substitution score S(a,b).
     float s(int a, int b) const { return s_[a][b]; }
     // Returns joint probability P(a,b).
@@ -43,6 +39,10 @@ class SubstitutionMatrix
     friend std::ostream& operator<< (std::ostream& out, const SubstitutionMatrix& m);
 
   protected:
+    // To be used by derived classes.
+    SubstitutionMatrix(const SequenceAlphabet* alphabet);
+    ~SubstitutionMatrix() {}
+
     // Initializes all matrix data members.
     virtual void init() = 0;
     // Initializes other matrix data members from matrix P.

@@ -134,7 +134,7 @@ TEST(CountsProfileTest, AddMatrixPseudocountsToProfile)
 
     cs::NucleotideMatrix m(1, -1);
     cs::MatrixPseudocounts mpc(m);
-    mpc.add_to_profile(profile, cs::ProfileSequenceAdmixture(1.0f, 10.0f));
+    mpc.add_to_profile(profile, cs::DivergenceDependentAdmixture(1.0f, 10.0f));
 
     EXPECT_NEAR(0.25f, profile[0][aa->ctoi('T')], kDelta);
 }
@@ -152,7 +152,7 @@ TEST(CountsProfileTest, AddMatrixPseudocountsToLogProfile)
 
     cs::NucleotideMatrix m(1, -1);
     cs::MatrixPseudocounts mpc(m);
-    mpc.add_to_profile(profile, cs::ProfileSequenceAdmixture(1.0f, 10.0f));
+    mpc.add_to_profile(profile, cs::DivergenceDependentAdmixture(1.0f, 10.0f));
 
     profile.transform_to_linspace();
     EXPECT_NEAR(0.25f, profile[0][aa->ctoi('T')], kDelta);
