@@ -31,6 +31,10 @@ class shared_ptr
     T& operator *() const { return *p_; }
     T* operator ->() const { return p_; }
 
+    // Template function for implicit conversion (see More Effectove C++ page 176 for details).
+    template <class newType>
+    operator shared_ptr<newType>() { return shared_ptr<newType>(p_); }
+
   private:
     T *p_;
     long *c_;

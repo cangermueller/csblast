@@ -23,10 +23,10 @@ class stride_iter
 
     // operators
     self& operator++() { m_ += step_; return *this; }
-    self operator++(int) { self tmp = *this; m_ += step_; return tmp; }
+    self operator++(int) { self tmp(*this); m_ += step_; return tmp; }
     self& operator+=(difference_type x) { m_ += x * step_; return *this; }
     self& operator--() { m_ -= step_; return *this; }
-    self operator--(int) { self tmp = *this; m_ -= step_; return tmp; }
+    self operator--(int) { self tmp(*this); m_ -= step_; return tmp; }
     self& operator-=(difference_type x) { m_ -= x * step_; return *this; }
     reference operator[](difference_type n) { return m_[n * step_]; }
     reference operator*( ) { return *m_; }
