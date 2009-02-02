@@ -52,7 +52,7 @@ class ConstantAdmixture : public AdmixtureCalculator
     ConstantAdmixture(float x) : x_(x) {}
     ~ConstantAdmixture() {};
 
-    virtual float operator() (float neff) const { return 0.0f * neff + std::min(1.0f, x_); }
+    virtual float operator() (float neff) const { return 0 * neff + std::min(1.0f, x_); }
 
   private:
     const float x_;

@@ -31,6 +31,7 @@ class stride_iter
     reference operator[](difference_type n) { return m_[n * step_]; }
     reference operator*( ) { return *m_; }
     self operator+(difference_type y) const { return self(m_ + y*step_, step_); }
+    self operator-(difference_type y) const { return self(m_ - y*step_, step_); }
 
     // friend operators
     friend bool operator==(const self& x, const self& y) {
