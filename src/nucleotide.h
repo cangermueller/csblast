@@ -1,5 +1,5 @@
-#ifndef CS_NUCLEOTIDE_ALPHABET_H
-#define CS_NUCLEOTIDE_ALPHABET_H
+#ifndef CS_NUCLEOTIDE_H
+#define CS_NUCLEOTIDE_H
 /***************************************************************************
  *   Copyright (C) 2008 by Andreas Biegert                                 *
  *   andreas.biegert@googlemail.com                                        *
@@ -8,15 +8,15 @@
 // DESCRIPTION:
 // Singleton class that encapsulates meta information about nucleic acids
 
-#include "sequence_alphabet.h"
+#include "alphabet.h"
 
 namespace cs
 {
 
-class NucleotideAlphabet : public SequenceAlphabet
+class Nucleotide : public Alphabet
 {
   public:
-    static NucleotideAlphabet* instance();
+    static inline Nucleotide& instance() { static Nucleotide inst; return inst; }
 
   protected:
     // Gets ctoi conversion array from derived class.
@@ -26,12 +26,20 @@ class NucleotideAlphabet : public SequenceAlphabet
     // IUPAC nucleotide code
     static const char nucleotides_[];
 
-    NucleotideAlphabet();
-    ~NucleotideAlphabet() {}
+    Nucleotide();
+    ~Nucleotide() {}
     // Disallow copy and assign
-    NucleotideAlphabet(const NucleotideAlphabet& );
-    NucleotideAlphabet& operator =(const NucleotideAlphabet& other);
+    Nucleotide(const Nucleotide& );
+    Nucleotide& operator =(const Nucleotide& other);
 };
+
+
+
+const char Nucleotide::nucleotides_[] = "ACGT";
+
+Nucleotide::Nucleotide()
+        : Alphabet(4, 'N')
+{ init(); }
 
 }  // cs
 
