@@ -53,7 +53,7 @@ class Alphabet
     char any_chr() const { return any_; }
     // Returns true if the character belongs to the alphabet.
     bool valid(char letter, bool allow_gap = false) const
-    { return ctoi_[toupper(letter)] != kInvalidChar && (allow_gap || letter != '-' && letter != '.'); }
+    { return ctoi_[toupper(letter)] != INVALID_CHAR && (allow_gap || letter != '-' && letter != '.'); }
     // Returns a const iterator to the first character in the alphabet.
     const_iterator begin() const { return itoc_.begin(); }
     // Returns a const iterator just past the end of last distinct character in the alphabet.
@@ -63,7 +63,7 @@ class Alphabet
 
   protected:
     // Denotes invalid characters in ctoi array
-    static const int kInvalidChar = -1;
+    static const int INVALID_CHAR = -1;
 
     // Constructor to be used by derived classes to setup alphabet.
     Alphabet(int size, char any);
@@ -106,7 +106,7 @@ inline std::ostream& operator<< (std::ostream& out, const Alphabet& alph)
 inline Alphabet::Alphabet(int size, char any)
         : size_(size),
           any_(any),
-          ctoi_(static_cast<int>(pow(2, 8*sizeof(char))), kInvalidChar),
+          ctoi_(static_cast<int>(pow(2, 8*sizeof(char))), INVALID_CHAR),
           itoc_(size + 3, '\0')
 {}
 

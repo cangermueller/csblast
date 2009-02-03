@@ -307,7 +307,7 @@ void Profile<AlphabetType>::print(std::ostream& out) const
 {
     std::ios_base::fmtflags flags = out.flags();  // save old flags
 
-    out << "\t" << AlphabetType::instance().size() << std::endl;
+    out << "\t" << AlphabetType::instance() << std::endl;
     for (int i = 0; i < ncols(); ++i) {
         out << i+1;
         for (int a = 0; a < nalph(); ++a)
