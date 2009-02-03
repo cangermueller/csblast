@@ -3,10 +3,15 @@
 #include <string>
 #include <sstream>
 
-#include "amino_acid_alphabet.h"
-#include "nucleotide_alphabet.h"
+#include "amino_acid.h"
+#include "nucleotide.h"
 #include "profile.h"
 #include "shared_ptr.h"
+
+#include "log.cc" // hack!!!
+
+namespace cs
+{
 
 TEST(ProfileTest, ConstructionFromInputStream)
 {
@@ -24,7 +29,7 @@ TEST(ProfileTest, ConstructionFromInputStream)
     data.append("6\t*\t0\t*\t*\n");
     std::istringstream ss(data);
 
-    cs::Profile profile(ss, cs::NucleotideAlphabet::instance());
+    Profile<Nucleotide> profile(ss);
 
     EXPECT_EQ(6, profile.ncols());
     EXPECT_EQ(4, profile.nalph());
@@ -49,7 +54,7 @@ TEST(ProfileTest, ConstructionOfMultipleProfilesFromInputStream)
     data.append("//\n");
     std::istringstream ss(data+data);
 
-    std::vector< shared_ptr<cs::Profile> > profiles(cs::Profile::readall(ss, cs::NucleotideAlphabet::instance()));
+    std::vector< shared_ptr<Profile<Nucleotide> > > profiles(Profile<Nucleotide>::readall(ss));
 
     EXPECT_EQ(2, static_cast<int>(profiles.size()));
     EXPECT_EQ(6, (*profiles[0]).ncols());
@@ -75,8 +80,8 @@ TEST(ProfileTest, ConstructionOfSubprofile)
     data.append("3\t*\t*\t0\t*\n");
     std::istringstream ss(data);
 
-    cs::Profile profile(ss, cs::NucleotideAlphabet::instance());
-    cs::Profile subprofile(profile, 1, 2);
+    Profile<Nucleotide> profile(ss);
+    Profile<Nucleotide> subprofile(profile, 1, 2);
 
     EXPECT_EQ(2, subprofile.ncols());
     EXPECT_EQ(4, subprofile.nalph());
@@ -100,7 +105,7 @@ TEST(ProfileTest, Log2LinSpace)
     data.append("6\t*\t0\t*\t*\n");
     std::istringstream ss(data);
 
-    cs::Profile profile(ss, cs::NucleotideAlphabet::instance());
+    Profile<Nucleotide> profile(ss);
 
     ASSERT_EQ(6, profile.ncols());
     ASSERT_EQ(4, profile.nalph());
@@ -109,8 +114,6 @@ TEST(ProfileTest, Log2LinSpace)
     profile.transform_to_linspace();
 
     EXPECT_FLOAT_EQ(1.0f, profile[0][0]);
-
-    //    profile.write(std::cout);
 }
 
 TEST(ProfileTest, Lin2LogSpace)
@@ -129,7 +132,7 @@ TEST(ProfileTest, Lin2LogSpace)
     data.append("6\t*\t0\t*\t*\n");
     std::istringstream ss(data);
 
-    cs::Profile profile(ss, cs::NucleotideAlphabet::instance());
+    Profile<Nucleotide> profile(ss);
 
     ASSERT_EQ(6, profile.ncols());
     ASSERT_EQ(4, profile.nalph());
@@ -139,3 +142,5 @@ TEST(ProfileTest, Lin2LogSpace)
 
     EXPECT_FLOAT_EQ(0.0f, profile[0][0]);
 }
+
+}  // cs

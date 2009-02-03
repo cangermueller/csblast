@@ -31,7 +31,7 @@ class Sequence
     typedef char* iterator;
     typedef const char* const_iterator;
 
-    // Constructs sequence with specified length and alphabet.
+    // Constructs sequence with specified length.
     Sequence(int length);
     // Constructs sequence from serialized sequence in FASTA format read from input stream.
     Sequence(std::istream& in);

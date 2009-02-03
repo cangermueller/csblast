@@ -40,36 +40,35 @@ TEST(SequenceTest, ConstructionFromInputStream)
     EXPECT_EQ(Nucleotide::instance().ctoi('C'), sequence[79]);
 }
 
-// TEST(SequenceTest, ConstructionOfMultipleSequencesFromInputStream)
-// {
-//     cs::NucleotideAlphabet* na = cs::NucleotideAlphabet::instance();
-//     std::string data;
-//     data.append(">seq1\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
-//     data.append(">seq2\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
-//     std::istringstream ss(data);
-//     std::vector< shared_ptr<cs::Sequence> > seqs(cs::Sequence::readall(ss, na));
+TEST(SequenceTest, ConstructionOfMultipleSequencesFromInputStream)
+{
+    std::string data;
+    data.append(">seq1\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
+    data.append(">seq2\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
+    std::istringstream ss(data);
+    std::vector< shared_ptr<Sequence<Nucleotide> > > seqs(Sequence<Nucleotide>::readall(ss));
 
-//     EXPECT_EQ(2, static_cast<int>(seqs.size()));
-//     EXPECT_EQ(na->ctoi('C'), (*seqs[0])[1]);
-//     EXPECT_EQ(na->ctoi('C'), (*seqs[0])[79]);
-//     EXPECT_EQ(na->ctoi('C'), (*seqs[1])[1]);
-//     EXPECT_EQ(na->ctoi('C'), (*seqs[1])[79]);
-// }
+    EXPECT_EQ(2, static_cast<int>(seqs.size()));
+    EXPECT_EQ(Nucleotide::instance().ctoi('C'), (*seqs[0])[1]);
+    EXPECT_EQ(Nucleotide::instance().ctoi('C'), (*seqs[0])[79]);
+    EXPECT_EQ(Nucleotide::instance().ctoi('C'), (*seqs[1])[1]);
+    EXPECT_EQ(Nucleotide::instance().ctoi('C'), (*seqs[1])[79]);
+}
 
 // TEST(SequenceTest, AddMatrixPseudocountsToSequence)
 // {
-//     cs::AminoAcidAlphabet* aa = cs::AminoAcidAlphabet::instance();
+//     AminoAcidAlphabet* aa = AminoAcidAlphabet::instance();
 
-//     const cs::Sequence sequence("header", "ARNDCQEGHILKMFPSTWYV", aa);
-//     cs::Profile profile(sequence.length(), aa);
+//     const Sequence sequence("header", "ARNDCQEGHILKMFPSTWYV", aa);
+//     Profile profile(sequence.length(), aa);
 
 //     ASSERT_EQ(AminoAcidAlphabet::instance().size(), sequence.length());
 //     ASSERT_EQ(AminoAcidAlphabet::instance().ctoi('R'), sequence[1]);
 //     ASSERT_EQ(sequence.length(), profile.ncols());
 
-//     cs::BlosumMatrix m;
-//     cs::MatrixPseudocounts mpc(m);
-//     mpc.add_to_sequence(sequence, cs::DivergenceDependentAdmixture(1.0f, 10.0f), profile);
+//     BlosumMatrix m;
+//     MatrixPseudocounts mpc(m);
+//     mpc.add_to_sequence(sequence, DivergenceDependentAdmixture(1.0f, 10.0f), profile);
 
 //     EXPECT_NEAR(0.06f, profile[0][AminoAcidAlphabet::instance().ctoi('V')], DELTA);
 // }
