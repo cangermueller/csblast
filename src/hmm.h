@@ -17,7 +17,7 @@
 #include <utility>
 
 //#include "initializer.h"
-#include "profile.h"
+#include "context_profile.h"
 #include "sequence_alphabet.h"
 #include "shared_ptr.h"
 
@@ -58,7 +58,7 @@ class HMM
         float probability;
     };
 
-    class State : public Profile
+    class State : public ContextProfile
     {
       public:
         // Constructs HMM state from serialized state read from input stream.

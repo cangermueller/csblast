@@ -6,14 +6,19 @@
 #include <string>
 #include <sstream>
 
-#include "amino_acid_alphabet.h"
-#include "matrix_pseudocounts.h"
-#include "nucleotide_alphabet.h"
+#include "amino_acid.h"
+//#include "matrix_pseudocounts.h"
+#include "nucleotide.h"
 #include "counts_profile.h"
 #include "shared_ptr.h"
-#include "nucleotide_matrix.h"
+//#include "nucleotide_matrix.h"
 
-const float kDelta = 0.01f;
+#include "log.cc" // hack!!!
+
+namespace cs
+{
+
+const float DELTA = 0.01f;
 
 TEST(CountsProfileTest, ConstructionFromInputStream)
 {
@@ -31,7 +36,7 @@ TEST(CountsProfileTest, ConstructionFromInputStream)
     data.append("//\n");
     std::istringstream ss(data);
 
-    cs::CountsProfile profile(ss, cs::NucleotideAlphabet::instance());
+    CountsProfile<Nucleotide> profile(ss);
 
     EXPECT_EQ(4, profile.ncols());
     EXPECT_EQ(4, profile.nalph());
@@ -43,117 +48,112 @@ TEST(CountsProfileTest, ConstructionFromInputStream)
 
 TEST(CountsProfileTest, ConstructionFromAlignment)
 {
-    cs::NucleotideAlphabet* na = cs::NucleotideAlphabet::instance();
     std::string data;
     data.append(">seq1\nACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTAC\n");
     data.append(">seq2\nACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTAC\n");
     data.append(">seq3\nACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTAC\n");
     data.append(">seq4\nACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTAC\n");
     std::istringstream ss(data);
-    cs::Alignment alignment(ss, cs::Alignment::FASTA, na);
+    Alignment<Nucleotide> alignment(ss, Alignment<Nucleotide>::FASTA);
 
-    cs::CountsProfile profile(alignment, true); // use position-dependent weights
+    CountsProfile<Nucleotide> profile(alignment, true); // use position-dependent weights
 
     EXPECT_FLOAT_EQ(1.0f, profile.neff(3));
-    EXPECT_FLOAT_EQ(0.0f, profile[3][na->ctoi('A')]);
-    EXPECT_FLOAT_EQ(0.0f, profile[3][na->ctoi('C')]);
-    EXPECT_FLOAT_EQ(0.0f, profile[3][na->ctoi('G')]);
-    EXPECT_FLOAT_EQ(1.0f, profile[3][na->ctoi('T')]);
+    EXPECT_FLOAT_EQ(0.0f, profile[3][Nucleotide::instance().ctoi('A')]);
+    EXPECT_FLOAT_EQ(0.0f, profile[3][Nucleotide::instance().ctoi('C')]);
+    EXPECT_FLOAT_EQ(0.0f, profile[3][Nucleotide::instance().ctoi('G')]);
+    EXPECT_FLOAT_EQ(1.0f, profile[3][Nucleotide::instance().ctoi('T')]);
 }
 
 TEST(CountsProfileTest, ConversionToCounts)
 {
-    cs::NucleotideAlphabet* na = cs::NucleotideAlphabet::instance();
     std::string data;
     data.append(">seq1\nACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTAC\n");
     data.append(">seq2\nTACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTA\n");
     data.append(">seq3\nGTACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGT\n");
     data.append(">seq4\nCGTACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACG\n");
     std::istringstream ss(data);
-    cs::Alignment alignment(ss, cs::Alignment::FASTA, na);
+    Alignment<Nucleotide> alignment(ss, Alignment<Nucleotide>::FASTA);
 
-    cs::CountsProfile profile(alignment, true);
-    ASSERT_EQ(0.25f, profile[3][na->ctoi('A')]);
+    CountsProfile<Nucleotide> profile(alignment, true);
+    ASSERT_EQ(0.25f, profile[3][Nucleotide::instance().ctoi('A')]);
 
     profile.convert_to_counts();
 
     EXPECT_TRUE(profile.has_counts());
-    EXPECT_FLOAT_EQ(0.25*profile.neff(3), profile[3][na->ctoi('A')]);
+    EXPECT_FLOAT_EQ(0.25*profile.neff(3), profile[3][Nucleotide::instance().ctoi('A')]);
     EXPECT_FLOAT_EQ(profile.neff(3), std::accumulate(profile.col_begin(3), profile.col_end(3), 0.0f));
 }
 
 TEST(CountsProfileTest, AlignmentBpdS)
 {
-    cs::AminoAcidAlphabet* aa = cs::AminoAcidAlphabet::instance();
     std::ifstream fin("../data/BpdS.fas");
-    cs::Alignment alignment(fin, cs::Alignment::FASTA, aa);
+    Alignment<AminoAcid> alignment(fin, Alignment<AminoAcid>::FASTA);
     fin.close();
     alignment.assign_match_columns_by_gap_rule();
-    cs::CountsProfile profile(alignment, true);
+    CountsProfile<AminoAcid> profile(alignment, true);
 
-    EXPECT_NEAR(0.0f, profile[10][aa->ctoi('H')], kDelta);
+    EXPECT_NEAR(0.0f, profile[10][AminoAcid::instance().ctoi('H')], DELTA);
     EXPECT_FLOAT_EQ(1.0f, std::accumulate(profile.col_begin(122), profile.col_end(122), 0.0f));
 }
 
 TEST(CountsProfileTest, Alignment1Q7L)
 {
-    cs::AminoAcidAlphabet* aa = cs::AminoAcidAlphabet::instance();
     std::ifstream fin("../data/1Q7L.fas");
-    cs::Alignment alignment(fin, cs::Alignment::FASTA, aa);
+    Alignment<AminoAcid> alignment(fin, Alignment<AminoAcid>::FASTA);
     fin.close();
     alignment.assign_match_columns_by_gap_rule();
-    cs::CountsProfile profile(alignment, true);
+    CountsProfile<AminoAcid> profile(alignment, true);
 
-    EXPECT_NEAR(0.05f, profile[10][aa->ctoi('G')], kDelta);
+    EXPECT_NEAR(0.05f, profile[10][AminoAcid::instance().ctoi('G')], DELTA);
 }
 
 TEST(CountsProfileTest, AlignmentCelegansRefGene)
 {
-    cs::NucleotideAlphabet* aa = cs::NucleotideAlphabet::instance();
     std::ifstream fin("../data/ce_refgene.fas");
-    cs::Alignment alignment(fin, cs::Alignment::FASTA, aa);
+    Alignment<Nucleotide> alignment(fin, Alignment<Nucleotide>::FASTA);
     fin.close();
-    cs::CountsProfile profile(alignment, false);
+    CountsProfile<Nucleotide> profile(alignment, false);
 
-    EXPECT_FLOAT_EQ(1.0f, profile[1][aa->ctoi('T')]);
+    EXPECT_FLOAT_EQ(1.0f, profile[1][Nucleotide::instance().ctoi('T')]);
 
     profile.transform_to_logspace();
 
-    EXPECT_FLOAT_EQ(0.0f, profile[1][aa->ctoi('T')]);
+    EXPECT_FLOAT_EQ(0.0f, profile[1][Nucleotide::instance().ctoi('T')]);
 }
 
-TEST(CountsProfileTest, AddMatrixPseudocountsToProfile)
-{
-    cs::NucleotideAlphabet* aa = cs::NucleotideAlphabet::instance();
-    std::ifstream fin("../data/ce_refgene.fas");
-    cs::Alignment alignment(fin, cs::Alignment::FASTA, aa);
-    fin.close();
-    cs::CountsProfile profile(alignment, false);
+// TEST(CountsProfileTest, AddMatrixPseudocountsToProfile)
+// {
+//     std::ifstream fin("../data/ce_refgene.fas");
+//     Alignment<Nucleotide> alignment(fin, Alignment::FASTA);
+//     fin.close();
+//     CountsProfile<Nucleotide> profile(alignment, false);
 
-    ASSERT_FLOAT_EQ(1.0f, profile[1][aa->ctoi('T')]);
+//     ASSERT_FLOAT_EQ(1.0f, profile[1][AminoAcid::instance().ctoi('T')]);
 
-    cs::NucleotideMatrix m(1, -1);
-    cs::MatrixPseudocounts mpc(m);
-    mpc.add_to_profile(profile, cs::DivergenceDependentAdmixture(1.0f, 10.0f));
+//     NucleotideMatrix m(1, -1);
+//     MatrixPseudocounts mpc(m);
+//     mpc.add_to_profile(profile, DivergenceDependentAdmixture(1.0f, 10.0f));
 
-    EXPECT_NEAR(0.25f, profile[0][aa->ctoi('T')], kDelta);
-}
+//     EXPECT_NEAR(0.25f, profile[0][AminoAcid::instance().ctoi('T')], DELTA);
+// }
 
-TEST(CountsProfileTest, AddMatrixPseudocountsToLogProfile)
-{
-    cs::NucleotideAlphabet* aa = cs::NucleotideAlphabet::instance();
-    std::ifstream fin("../data/ce_refgene.fas");
-    cs::Alignment alignment(fin, cs::Alignment::FASTA, aa);
-    fin.close();
-    cs::CountsProfile profile(alignment, false);
-    profile.transform_to_logspace();
+// TEST(CountsProfileTest, AddMatrixPseudocountsToLogProfile)
+// {
+//     std::ifstream fin("../data/ce_refgene.fas");
+//     Alignment<Nucleotide> alignment(fin, Alignment::FASTA);
+//     fin.close();
+//     CountsProfile<Nucleotide> profile(alignment, false);
+//     profile.transform_to_logspace();
 
-    ASSERT_FLOAT_EQ(0.0f, profile[1][aa->ctoi('T')]);
+//     ASSERT_FLOAT_EQ(0.0f, profile[1][AminoAcid::instance().ctoi('T')]);
 
-    cs::NucleotideMatrix m(1, -1);
-    cs::MatrixPseudocounts mpc(m);
-    mpc.add_to_profile(profile, cs::DivergenceDependentAdmixture(1.0f, 10.0f));
+//     NucleotideMatrix m(1, -1);
+//     MatrixPseudocounts mpc(m);
+//     mpc.add_to_profile(profile, DivergenceDependentAdmixture(1.0f, 10.0f));
 
-    profile.transform_to_linspace();
-    EXPECT_NEAR(0.25f, profile[0][aa->ctoi('T')], kDelta);
-}
+//     profile.transform_to_linspace();
+//     EXPECT_NEAR(0.25f, profile[0][AminoAcid::instance().ctoi('T')], DELTA);
+// }
+
+};  // cs

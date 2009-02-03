@@ -101,7 +101,7 @@ class Profile
 
   protected:
     // Scaling factor for serialization of profile log values
-    static const int kScaleFactor = 1000;
+    static const int SCALE_FACTOR = 1000;
 
     // Reads and initializes serialized scalar data members from stream.
     virtual void read_header(std::istream& in);
@@ -134,11 +134,11 @@ class Profile
 
 // Resets all entries in given profile to the given value or zero if none is given.
 template<class AlphabetType>
-void reset(Profile<AlphabetType>& profile, float value);
+void reset(Profile<AlphabetType>& profile, float value = 0.0f);
 
 // Normalize profile columns to value or to one if none provided.
 template<class AlphabetType>
-void normalize(Profile<AlphabetType>& profile, float value);
+void normalize(Profile<AlphabetType>& profile, float value = 1.0f);
 
 
 
@@ -260,7 +260,7 @@ void Profile<AlphabetType>::read_body(std::istream& in)
         i = atoi(tokens[0].c_str()) - 1;
         for (int a = 0; a < nalph(); ++a) {
             float log_p = tokens[a+1][0] == '*' ? std::numeric_limits<int>::max() : atoi(tokens[a+1].c_str());
-            data_[i][a] = (logspace_ ? -log_p / kScaleFactor : pow(2.0, -log_p / kScaleFactor)) ;
+            data_[i][a] = (logspace_ ? -log_p / SCALE_FACTOR : pow(2.0, -log_p / SCALE_FACTOR)) ;
         }
         tokens.clear();
     }
@@ -296,7 +296,7 @@ void Profile<AlphabetType>::write_body(std::ostream& out) const
             if (-logval == std::numeric_limits<float>::infinity())
                 out << "\t*";
             else
-                out << "\t" << -iround(logval * kScaleFactor);
+                out << "\t" << -iround(logval * SCALE_FACTOR);
         }
         out << std::endl;
     }
