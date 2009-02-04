@@ -29,7 +29,7 @@ class CountsProfile : public Profile<Alphabet_T>
 {
   public:
     // Constructs profile from serialized profile read from input stream.
-    CountsProfile(std::istream& in);
+    explicit CountsProfile(std::istream& in);
     // Constructs a profile of the given sequence.
     explicit CountsProfile(const Sequence<Alphabet_T>& sequence);
     // Constructs a profile of the given alignment with specified sequence weighting method.

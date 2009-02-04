@@ -15,7 +15,6 @@
 #include "exception.h"
 #include "profile.h"
 #include "shared_ptr.h"
-#include <vector>
 
 namespace cs
 {
@@ -24,10 +23,14 @@ template<class Alphabet_T>
 class ContextProfile : public Profile<Alphabet_T>
 {
   public:
+     // Constructs a dummy context profile.
+    ContextProfile() {}
     // Constructs profile from serialized profile read from input stream.
     ContextProfile(std::istream& in);
     // Creates a profile from subprofile in other, starting at column index and length columns long.
-    ContextProfile(const Profile& other, int index, int length);
+    ContextProfile(const Profile<Alphabet_T>& other, int index, int length);
+    // Constructs a context profile from simple profile and checks if length is valid.
+    ContextProfile(const Profile<Alphabet_T>& profile) : Profile<Alphabet_T>;
 
     virtual ~ContextProfile() {}
 
@@ -42,6 +45,9 @@ class ContextProfile : public Profile<Alphabet_T>
     ContextProfile(const ContextProfile&);
     void operator=(const ContextProfile&);
 
+    // Checks if profile has odd number of columns.
+    void check();
+
     // Return serialization class identity.
     virtual const std::string class_identity() { static std::string id("ContextProfile"); return id;}
 };  // ContextProfile
@@ -49,22 +55,26 @@ class ContextProfile : public Profile<Alphabet_T>
 
 
 template<class Alphabet_T>
-ContextProfile<Alphabet_T>::ContextProfile(std::istream& in, const SequenceAlphabet* alphabet)
-        : Profile<Alphabet_T>(alphabet)
+ContextProfile<Alphabet_T>::ContextProfile(const Profile<Alphabet_T>& profile)
+        : Profile<Alphabet_T>(profile)
 {
-    read(in);
-    if (num_cols() % 2 != 1)
-        throw Exception("Context profiles must have odd number of columns, but num_cols=%i!", num_cols());
+    check();
+}
+
+template<class Alphabet_T>
+ContextProfile<Alphabet_T>::ContextProfile(std::istream& in)
+        : Profile<Alphabet_T>(in)
+{
+    check();
 }
 
 template<class Alphabet_T>
 ContextProfile<Alphabet_T>::ContextProfile(const Profile<Alphabet_T>& other,
-                                             int index,
-                                             int length)
+                                           int index,
+                                           int length)
         : Profile<Alphabet_T>(other, index, length)
 {
-    if (num_cols() % 2 != 1)
-        throw Exception("Context profiles must have odd number of columns, but num_cols=%i!", num_cols());
+    check();
 }
 
 template<class Alphabet_T>
@@ -77,6 +87,13 @@ std::vector< shared_ptr< ContextProfile<Alphabet_T> > > ContextProfile<Alphabet_
     }
 
     return profiles;
+}
+
+template<class Alphabet_T>
+ContextProfile<Alphabet_T>::check()
+{
+    if (num_cols() % 2 != 1)
+        throw Exception("Context profiles must have odd number of columns, but num_cols=%i!", num_cols());
 }
 
 }  // cs

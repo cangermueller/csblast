@@ -67,9 +67,9 @@ class matrix
     iterator end() { return begin() + size(); }
     const_iterator begin() const { return &m_[0]; }
     const_iterator end() const { return begin() + size(); }
-    void resize(int r, int c)
+    void resize(int r, int c, T v = T())
     {
-        m_.resize(r * c);
+        m_.resize(r * c, v);
         num_rows_ = r;
         num_cols_ = c;
     }

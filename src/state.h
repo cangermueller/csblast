@@ -8,18 +8,13 @@
 // DESCRIPTION:
 // The state object of a context HMM.
 
-#include <algorithm>
-#include <functional>
-#include <iostream>
-#include <list>
-#include <vector>
-#include <utility>
+#include <google/sparsetable>
 
 #include "context_profile.h"
-#include "exception.h"
-#include "context_profile.h"
-#include "shared_ptr.h"
-#include "transition.h"
+#include "hmm.h"
+#include "profile.h"
+
+using google::sparsetable;
 
 namespace cs
 {
@@ -32,40 +27,46 @@ template<class Alphabet_T>
 class State : public ContextProfile<Alphabet_T>
 {
   public:
-    typedef std::list<Transition> transition_list;
-    typedef transition_list::iterator transition_iterator;
-    typedef transition_list::const_iterator const_transition_iterator;
+    typedef sparsetable<Transition*>::nonempty_iterator transition_iterator;
+    typedef sparsetable<Transition*>::const_nonempty_iterator const_transition_iterator;
 
+    // Constructs dummy state for BEGIN/END state in HMM.
+    State();
     // Constructs HMM state from serialized state read from input stream.
-    State(std::istream& in) : index_(0) {} //read(in) }
+    explicit State(std::istream& in);
     // Constructs HMM state with given profile and all transitions initialized to zero.
-    State(const ContextProfile<Alphabet_T>& profile);
+    explicit State(int index, const Profile<Alphabet_T>& profile);
 
     virtual ~State() {}
 
     // Returns the index of this state.
     int index() const { return index_; }
     // Returns number of in-transitions.
-    int num_in_transitions() const { return in_transitions_.size(); }
+    int num_in_transitions() const { return in_transitions_.num_nonempty(); }
     // Returns number of out-transitions.
-    int num_out_transitions() const { return out_transitions_.size(); }
+    int num_out_transitions() const { return out_transitions_.num_nonempty(); }
     // Returns the transition probability from this state to state k in runtime O(#transitions).
-    float transition_probability_to(int k) const;
+    float transition_probability_to(int k) const { return out_transitions_.get(k)->probability; }
     // Returns the transition probability from state k to this state in runtime O(#transitions).
-    float transition_probability_from(int k) const;
-    // Returns pair of in-transition iterators (the first iterator points to the "beginning" the second "past the end")
-    std::pair<transition_iterator, transition_iterator> in_transitions()
-    { return make_pair(in_transitions_.begin(), in_transitions_.end()); }
-    // Returns pair of out-transition iterators (the first iterator points to the "beginning" the second "past the end")
-    std::pair<transition_iterator, transition_iterator> out_transitions()
-    { return make_pair(out_transitions_.begin(), out_transitions_.end()); }
-    // Returns pair of const in-transition iterators (the first iterator points to the "beginning" the second "past the end")
-    std::pair<const_transition_iterator, const_transition_iterator> in_transitions() const
-    { return make_pair(in_transitions_.begin(), in_transitions_.end()); }
-    // Returns pair of const out-transition iterators (the first iterator points to the "beginning" the second "past the end")
-    std::pair<const_transition_iterator, const_transition_iterator> out_transitions() const
-    { return make_pair(out_transitions_.begin(), out_transitions_.end()); }
+    float transition_probability_from(int k) const { return in_transitions_.get(k)->probability; }
+    // Returns an iterator to start of list with non-null in-transition pointers.
+    transition_iterator in_transitions_begin() { return in_transitions_.nonempty_begin(); }
+    // Returns an iterator past the end of list with non-null in-transition pointers.
+    transition_iterator in_transitions_end() { return in_transitions_.nonempty_end(); }
+    // Returns an iterator to start of list with non-null out-transition pointers.
+    transition_iterator out_transitions_begin() { return out_transitions_.nonempty_begin(); }
+    // Returns an iterator past the end of list with non-null out-transition pointers.
+    const_transition_iterator out_transitions_end() { return out_transitions_.nonempty_end(); }
+    // Returns a const iterator to start of list with non-null in-transition pointers.
+    const_transition_iterator in_transitions_begin() const { return in_transitions_.nonempty_begin(); }
+    // Returns a const iterator past the end of list with non-null in-transition pointers.
+    const_transition_iterator in_transitions_end() const { return in_transitions_.nonempty_end(); }
+    // Returns a const iterator to start of list with non-null out-transition pointers.
+    const_transition_iterator out_transitions_begin() const { return out_transitions_.nonempty_begin(); }
+    // Returns a const iterator past the end of list with non-null out-transition pointers.
+    const_transition_iterator out_transitions_end() const { return out_transitions_.nonempty_end(); }
 
+    // HMM needs access to transition tables.
     friend class HMM;
 
   protected:
@@ -87,28 +88,34 @@ class State : public ContextProfile<Alphabet_T>
     // Index of state in HMM states vector.
     int index_;
     // List of in-transitions.
-    transition_list in_transitions_;
+    sparsetable<Transition*> in_transitions_;
     // List of out-transitions.
-    transition_list out_transitions_;
+    sparsetable<Transition*> out_transitions_;
 };  // State
 
 
 
-// Returns the transition probability from this state to state k.
 template<class Alphabet_T>
-inline float State<Alphabet_T>::transition_probability_to(int k) const
+State<Alphabet_T>::State()
+        : index_(index),
+          in_transition_(0),
+          out_transition_(0)
+{}
+
+template<class Alphabet_T>
+State<Alphabet_T>::State(std::istream& in)
+        : index_(0),
+          in_transition_(0),
+          out_transition_(0)
 {
-    const_transition_iterator ti = find_if(out_transitions_.begin(), out_transitions_.end(), TransitsState(k));
-    return ti == out_transitions_.end() ? 0.0f : ti->probability;
+    // read(in);
 }
 
-// Returns the transition probability from state k to this state.
 template<class Alphabet_T>
-inline float State<Alphabet_T>::transition_probability_from(int k) const
-{
-    const_transition_iterator ti = find_if(in_transitions_.begin(), in_transitions_.end(), TransitsState(k));
-    return ti == out_transitions_.end() ? 0.0f : ti->probability;
-}
+State<Alphabet_T>::State(int index, const Profile<Alphabet_T>& profile)
+        : index_(index),
+          ContextProfile<Alphabet_T>(profile)
+{}
 
 template<class Alphabet_T>
 void State<Alphabet_T>::read_header(std::istream& in)
@@ -130,7 +137,7 @@ void State<Alphabet_T>::read_body(std::istream& in)
 template<class Alphabet_T>
 void State<Alphabet_T>::write_header(std::ostream& out) const
 {
-    out << "index\t" << index_ << std::endl;
+    out << "index\t\t" << index_ << std::endl;
     Profile::write_header(out);
 }
 

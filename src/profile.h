@@ -43,9 +43,9 @@ class Profile
     // Constructs a dummy profile.
     Profile();
     // Constructs a profile with num_cols columns initialized to zero.
-    Profile(int num_cols);
+    explicit Profile(int num_cols);
     // Constructs profile from serialized profile read from input stream.
-    Profile(std::istream& in);
+    explicit Profile(std::istream& in);
     // Creates a profile from subprofile in other, starting at column index and length columns long.
     Profile(const Profile& other, int index, int length);
 
@@ -120,10 +120,6 @@ class Profile
     bool logspace_;
 
   private:
-    // Disallow copy and assign
-    Profile(const Profile&);
-    void operator=(const Profile&);
-
     // Prints the profile in human-readable format to output stream.
     virtual void print(std::ostream& out) const;
     // Returns serialization class identity.
