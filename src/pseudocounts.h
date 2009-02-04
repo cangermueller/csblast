@@ -14,15 +14,15 @@ namespace cs
 {
 
 // Forward declarations
-template<class AlphabetType>
+template<class Alphabet_T>
 class Sequence;
-template<class AlphabetType>
+template<class Alphabet_T>
 class Profile;
-template<class AlphabetType>
+template<class Alphabet_T>
 class CountsProfile;
 class AdmixtureCalculator;
 
-template<class AlphabetType>
+template<class Alphabet_T>
 class Pseudocounts
 {
   public:
@@ -30,11 +30,11 @@ class Pseudocounts
     virtual ~Pseudocounts() {}
 
     // Adds pseudocounts to sequence and stores resulting frequencies in given profile.
-    virtual void add_to_sequence(const Sequence<AlphabetType>& seq,
+    virtual void add_to_sequence(const Sequence<Alphabet_T>& seq,
                                  const AdmixtureCalculator& pca,
-                                 Profile<AlphabetType>& p) = 0;
+                                 Profile<Alphabet_T>& p) = 0;
     // Adds pseudocounts to alignment derived profile.
-    virtual void add_to_profile(CountsProfile<AlphabetType>& p, const AdmixtureCalculator& pca) = 0;
+    virtual void add_to_profile(CountsProfile<Alphabet_T>& p, const AdmixtureCalculator& pca) = 0;
 
   private:
     // Disallow copy and assign

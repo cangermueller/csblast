@@ -20,8 +20,8 @@
 namespace cs
 {
 
-template<class AlphabetType>
-class ContextProfile : public Profile<AlphabetType>
+template<class Alphabet_T>
+class ContextProfile : public Profile<Alphabet_T>
 {
   public:
     // Constructs profile from serialized profile read from input stream.
@@ -48,27 +48,27 @@ class ContextProfile : public Profile<AlphabetType>
 
 
 
-template<class AlphabetType>
-ContextProfile<AlphabetType>::ContextProfile(std::istream& in, const SequenceAlphabet* alphabet)
-        : Profile<AlphabetType>(alphabet)
+template<class Alphabet_T>
+ContextProfile<Alphabet_T>::ContextProfile(std::istream& in, const SequenceAlphabet* alphabet)
+        : Profile<Alphabet_T>(alphabet)
 {
     read(in);
     if (num_cols() % 2 != 1)
         throw Exception("Context profiles must have odd number of columns, but num_cols=%i!", num_cols());
 }
 
-template<class AlphabetType>
-ContextProfile<AlphabetType>::ContextProfile(const Profile<AlphabetType>& other,
+template<class Alphabet_T>
+ContextProfile<Alphabet_T>::ContextProfile(const Profile<Alphabet_T>& other,
                                              int index,
                                              int length)
-        : Profile<AlphabetType>(other, index, length)
+        : Profile<Alphabet_T>(other, index, length)
 {
     if (num_cols() % 2 != 1)
         throw Exception("Context profiles must have odd number of columns, but num_cols=%i!", num_cols());
 }
 
-template<class AlphabetType>
-std::vector< shared_ptr< ContextProfile<AlphabetType> > > ContextProfile<AlphabetType>::readall(std::istream& in)
+template<class Alphabet_T>
+std::vector< shared_ptr< ContextProfile<Alphabet_T> > > ContextProfile<Alphabet_T>::readall(std::istream& in)
 {
     std::vector< shared_ptr<ContextProfile> > profiles;
     while (in.peek() && in.good()) {  // peek first to make sure that we don't read beyond '//'

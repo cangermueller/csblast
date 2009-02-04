@@ -63,7 +63,7 @@ inline char insert_chr(char c)
 namespace cs
 {
 
-template<class AlphabetType>
+template<class Alphabet_T>
 class Alignment
 {
   public:
@@ -95,7 +95,7 @@ class Alignment
     // Returns the integer in column i of sequence k.
     char seq(int k, int i) const { return seqs_[i][k]; }
     // Returns the character in column i of sequence k.
-    char chr(int k, int i) const { return AlphabetType::instance().itoc(seqs_[i][k]); }
+    char chr(int k, int i) const { return Alphabet_T::instance().itoc(seqs_[i][k]); }
     // Returns the number of sequences in the alignment.
     int num_seqs() const { return seqs_.num_cols(); }
     // Returns the total number of alignment columns.
@@ -185,23 +185,23 @@ class Alignment
 
 
 // Calculates global sequence weights by maximum entropy weighting (Henikoff&Henikoff '94).
-template<class AlphabetType>
-float global_weights_and_diversity(const Alignment<AlphabetType>& alignment, std::vector<float>& wg);
+template<class Alphabet_T>
+float global_weights_and_diversity(const Alignment<Alphabet_T>& alignment, std::vector<float>& wg);
 
 // Calculates position-dependent sequence weights and number of effective sequences on subalignments.
-template<class AlphabetType>
-std::vector<float> position_specific_weights_and_diversity(const Alignment<AlphabetType>& alignment, matrix<float>& w);
+template<class Alphabet_T>
+std::vector<float> position_specific_weights_and_diversity(const Alignment<Alphabet_T>& alignment, matrix<float>& w);
 
 
 
-template<class AlphabetType>
-Alignment<AlphabetType>::Alignment(std::istream& in, Format format)
+template<class Alphabet_T>
+Alignment<Alphabet_T>::Alignment(std::istream& in, Format format)
 {
     read(in, format);
 }
 
-template<class AlphabetType>
-void Alignment<AlphabetType>::init(const std::vector<std::string>& headers, const std::vector<std::string>& seqs)
+template<class Alphabet_T>
+void Alignment<Alphabet_T>::init(const std::vector<std::string>& headers, const std::vector<std::string>& seqs)
 {
     if (seqs.empty()) throw Exception("Unable to initialize alignment: no aligned sequences found!");
     if (headers.size() != seqs.size())
@@ -214,7 +214,7 @@ void Alignment<AlphabetType>::init(const std::vector<std::string>& headers, cons
             throw Exception("Bad alignment: sequence %i has length %i but should have %i!", k, seqs[k].length(), num_cols);
 
     // Validate characters and convert to integer representation
-    const AlphabetType& alphabet = AlphabetType::instance();
+    const Alphabet_T& alphabet = Alphabet_T::instance();
     headers_.resize(num_seqs);
     resize(seqs.size(), seqs[0].length());
     for (int k = 0; k < num_seqs; ++k) {
@@ -242,16 +242,16 @@ void Alignment<AlphabetType>::init(const std::vector<std::string>& headers, cons
     set_match_indexes();
 }
 
-template<class AlphabetType>
-void Alignment<AlphabetType>::set_match_indexes()
+template<class Alphabet_T>
+void Alignment<Alphabet_T>::set_match_indexes()
 {
     const int match_cols = std::count(&match_column_[0], &match_column_[0] + num_cols(), true);
     match_indexes.resize(match_cols);
     match_indexes = column_indexes_[match_column_];
 }
 
-template<class AlphabetType>
-void Alignment<AlphabetType>::read(std::istream& in, Format format)
+template<class Alphabet_T>
+void Alignment<Alphabet_T>::read(std::istream& in, Format format)
 {
     LOG(DEBUG4) << "Reading alignment from stream ...";
 
@@ -277,8 +277,8 @@ void Alignment<AlphabetType>::read(std::istream& in, Format format)
     LOG(DEBUG4) << *this;
 }
 
-template<class AlphabetType>
-void Alignment<AlphabetType>::read_fasta_flavors(std::istream& in, std::vector<std::string>& headers, std::vector<std::string>& seqs)
+template<class Alphabet_T>
+void Alignment<Alphabet_T>::read_fasta_flavors(std::istream& in, std::vector<std::string>& headers, std::vector<std::string>& seqs)
 {
     headers.clear();
     seqs.clear();
@@ -307,8 +307,8 @@ void Alignment<AlphabetType>::read_fasta_flavors(std::istream& in, std::vector<s
     }
 }
 
-template<class AlphabetType>
-void Alignment<AlphabetType>::read_fasta(std::istream& in, std::vector<std::string>& headers, std::vector<std::string>& seqs)
+template<class Alphabet_T>
+void Alignment<Alphabet_T>::read_fasta(std::istream& in, std::vector<std::string>& headers, std::vector<std::string>& seqs)
 {
     read_fasta_flavors(in, headers, seqs);
     // convert all characters to match characters
@@ -316,14 +316,14 @@ void Alignment<AlphabetType>::read_fasta(std::istream& in, std::vector<std::stri
         transform(it->begin(), it->end(), it->begin(), to_match_chr);
 }
 
-template<class AlphabetType>
-void Alignment<AlphabetType>::read_a2m(std::istream& in, std::vector<std::string>& headers, std::vector<std::string>& seqs)
+template<class Alphabet_T>
+void Alignment<Alphabet_T>::read_a2m(std::istream& in, std::vector<std::string>& headers, std::vector<std::string>& seqs)
 {
     read_fasta_flavors(in, headers, seqs);
 }
 
-template<class AlphabetType>
-void Alignment<AlphabetType>::read_a3m(std::istream& in, std::vector<std::string>& headers, std::vector<std::string>& seqs)
+template<class Alphabet_T>
+void Alignment<Alphabet_T>::read_a3m(std::istream& in, std::vector<std::string>& headers, std::vector<std::string>& seqs)
 {
     read_fasta_flavors(in, headers, seqs);
 
@@ -385,8 +385,8 @@ void Alignment<AlphabetType>::read_a3m(std::istream& in, std::vector<std::string
     seqs = seqs_a2m;
 }
 
-template<class AlphabetType>
-void Alignment<AlphabetType>::write(std::ostream& out, Format format, int width) const
+template<class Alphabet_T>
+void Alignment<Alphabet_T>::write(std::ostream& out, Format format, int width) const
 {
     switch (format) {
         case FASTA:
@@ -403,8 +403,8 @@ void Alignment<AlphabetType>::write(std::ostream& out, Format format, int width)
     }
 }
 
-template<class AlphabetType>
-void Alignment<AlphabetType>::write_fasta_flavors(std::ostream& out, Format format, int width) const
+template<class Alphabet_T>
+void Alignment<Alphabet_T>::write_fasta_flavors(std::ostream& out, Format format, int width) const
 {
     for (int k = 0; k < num_seqs(); ++k) {
         out << '>' << headers_[k] << std::endl;
@@ -423,7 +423,7 @@ void Alignment<AlphabetType>::write_fasta_flavors(std::ostream& out, Format form
                     if (match_column_[i]) {
                         out << to_match_chr(chr(k,i));
                         ++j;
-                    } else if (seq(k,i) != AlphabetType::instance().gap() && seq(k,i) != AlphabetType::instance().endgap()) {
+                    } else if (seq(k,i) != Alphabet_T::instance().gap() && seq(k,i) != Alphabet_T::instance().endgap()) {
                         out << to_insert_chr(chr(k,i));
                         ++j;
                     }
@@ -437,8 +437,8 @@ void Alignment<AlphabetType>::write_fasta_flavors(std::ostream& out, Format form
     }
 }
 
-template<class AlphabetType>
-void Alignment<AlphabetType>::write_clustal_flavors(std::ostream& out, Format format, int width) const
+template<class Alphabet_T>
+void Alignment<Alphabet_T>::write_clustal_flavors(std::ostream& out, Format format, int width) const
 {
     const int kHeaderLength = 18;
 
@@ -446,7 +446,7 @@ void Alignment<AlphabetType>::write_clustal_flavors(std::ostream& out, Format fo
     std::vector<std::string> seqs(num_seqs(), "");
     for (int k = 0; k < num_seqs(); ++k) {
         for (int i = 0; i < num_cols(); ++i) {
-            char c = AlphabetType::instance().itoc(seqs_[i][k]);
+            char c = Alphabet_T::instance().itoc(seqs_[i][k]);
             if (c != '-' && !match_column_[i] && format == PSI) c = to_insert_chr(c);
             seqs[k].push_back(c);
         }
@@ -469,8 +469,8 @@ void Alignment<AlphabetType>::write_clustal_flavors(std::ostream& out, Format fo
     }
 }
 
-template<class AlphabetType>
-void Alignment<AlphabetType>::resize(int num_seqs, int num_cols)
+template<class Alphabet_T>
+void Alignment<Alphabet_T>::resize(int num_seqs, int num_cols)
 {
     if (num_seqs == 0 || num_cols == 0)
         throw Exception("Bad dimensions for alignment resizing: num_seqs=%i num_cols=%i", num_seqs, num_cols);
@@ -482,16 +482,16 @@ void Alignment<AlphabetType>::resize(int num_seqs, int num_cols)
     headers_.resize(num_seqs);
 }
 
-template<class AlphabetType>
-void Alignment<AlphabetType>::assign_match_columns_by_sequence(int k)
+template<class Alphabet_T>
+void Alignment<Alphabet_T>::assign_match_columns_by_sequence(int k)
 {
     for (int i = 0; i < num_cols(); ++i)
-        match_column_[i] = seqs_[i][k] < AlphabetType::instance().gap();
+        match_column_[i] = seqs_[i][k] < Alphabet_T::instance().gap();
     set_match_indexes();
 }
 
-template<class AlphabetType>
-void Alignment<AlphabetType>::assign_match_columns_by_gap_rule(int gap_threshold)
+template<class Alphabet_T>
+void Alignment<Alphabet_T>::assign_match_columns_by_gap_rule(int gap_threshold)
 {
     LOG(DEBUG) << "Marking columns with more than " << gap_threshold << "% of gaps as insert columns ...";
 
@@ -503,7 +503,7 @@ void Alignment<AlphabetType>::assign_match_columns_by_gap_rule(int gap_threshold
         float res = 0.0f;
 
         for (int k = 0; k < num_seqs(); ++k)
-            if (seqs_[i][k] < AlphabetType::instance().any())
+            if (seqs_[i][k] < Alphabet_T::instance().any())
                 res += wg[k];
             else
                 gap += wg[k];
@@ -519,14 +519,14 @@ void Alignment<AlphabetType>::assign_match_columns_by_gap_rule(int gap_threshold
     LOG(DEBUG) << "num_cols=" << num_cols() << "  num_match_cols=" << num_match_cols() << "  num_insert_cols=" << num_insert_cols();
 }
 
-template<class AlphabetType>
-float global_weights_and_diversity(const Alignment<AlphabetType>& alignment, std::vector<float>& wg)
+template<class Alphabet_T>
+float global_weights_and_diversity(const Alignment<Alphabet_T>& alignment, std::vector<float>& wg)
 {
     const float ZERO = 1E-10;  // for calculation of entropy
     const int num_seqs = alignment.num_seqs();
     const int num_cols = alignment.num_match_cols();
-    const int alphabet_size = AlphabetType::instance().size();
-    const int any   = AlphabetType::instance().any();
+    const int alphabet_size = Alphabet_T::instance().size();
+    const int any   = Alphabet_T::instance().any();
 
     // Return values
     wg.assign(num_seqs, 0.0f);  // global sequence weights
@@ -576,17 +576,17 @@ float global_weights_and_diversity(const Alignment<AlphabetType>& alignment, std
     return neff;
 }
 
-template<class AlphabetType>
-std::vector<float> position_specific_weights_and_diversity(const Alignment<AlphabetType>& alignment, matrix<float>& w)
+template<class Alphabet_T>
+std::vector<float> position_specific_weights_and_diversity(const Alignment<Alphabet_T>& alignment, matrix<float>& w)
 {
     const float MAX_ENDGAP_FRACTION = 0.1;  // maximal fraction of sequences with an endgap
     const int MIN_COLS = 10;  // minimum number of columns in subalignments
     const float ZERO = 1E-10;  // for calculation of entropy
     const int num_seqs  = alignment.num_seqs();
     const int num_cols  = alignment.num_match_cols();
-    const int alphabet_size  = AlphabetType::instance().size();
-    const int any    = AlphabetType::instance().any();
-    const int endgap = AlphabetType::instance().endgap();
+    const int alphabet_size  = Alphabet_T::instance().size();
+    const int any    = Alphabet_T::instance().any();
+    const int endgap = Alphabet_T::instance().endgap();
 
     // Return values
     std::vector<float> neff(num_cols, 0.0f);  // diversity of subalignment i

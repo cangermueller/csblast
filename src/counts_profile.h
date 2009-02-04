@@ -24,16 +24,16 @@
 namespace cs
 {
 
-template<class AlphabetType>
-class CountsProfile : public Profile<AlphabetType>
+template<class Alphabet_T>
+class CountsProfile : public Profile<Alphabet_T>
 {
   public:
     // Constructs profile from serialized profile read from input stream.
     CountsProfile(std::istream& in);
     // Constructs a profile of the given sequence.
-    explicit CountsProfile(const Sequence<AlphabetType>& sequence);
+    explicit CountsProfile(const Sequence<Alphabet_T>& sequence);
     // Constructs a profile of the given alignment with specified sequence weighting method.
-    explicit CountsProfile(const Alignment<AlphabetType>& alignment, bool position_specific_weights = true);
+    explicit CountsProfile(const Alignment<Alphabet_T>& alignment, bool position_specific_weights = true);
     // Creates a profile from subprofile in other, starting at column index and length columns long.
     CountsProfile(const CountsProfile& other, int index, int length);
 
@@ -78,30 +78,30 @@ class CountsProfile : public Profile<AlphabetType>
 
 
 
-template<class AlphabetType>
-CountsProfile<AlphabetType>::CountsProfile(std::istream& in)
+template<class Alphabet_T>
+CountsProfile<Alphabet_T>::CountsProfile(std::istream& in)
         : has_counts_(false)
 {
     this->read(in);
 }
 
-template<class AlphabetType>
-CountsProfile<AlphabetType>::CountsProfile(const Sequence<AlphabetType>& sequence)
-        : Profile<AlphabetType>(sequence.length()),
+template<class Alphabet_T>
+CountsProfile<Alphabet_T>::CountsProfile(const Sequence<Alphabet_T>& sequence)
+        : Profile<Alphabet_T>(sequence.length()),
           has_counts_(false)
 {
     for(int i = 0; i < this->num_cols(); ++i)
         this->data_[i][sequence[i]] = 1.0f;
 }
 
-template<class AlphabetType>
-CountsProfile<AlphabetType>::CountsProfile(const Alignment<AlphabetType>& alignment, bool position_specific_weights)
-        : Profile<AlphabetType>(alignment.num_match_cols()),
+template<class Alphabet_T>
+CountsProfile<Alphabet_T>::CountsProfile(const Alignment<Alphabet_T>& alignment, bool position_specific_weights)
+        : Profile<Alphabet_T>(alignment.num_match_cols()),
           has_counts_(false)
 {
     const int num_cols = alignment.num_match_cols();
     const int num_seqs = alignment.num_seqs();
-    const int any   = AlphabetType::instance().any();
+    const int any   = Alphabet_T::instance().any();
 
     if (position_specific_weights) {
         matrix<float> w;  // position-specific sequence weights
@@ -122,18 +122,18 @@ CountsProfile<AlphabetType>::CountsProfile(const Alignment<AlphabetType>& alignm
     normalize(*this);
 }
 
-template<class AlphabetType>
-CountsProfile<AlphabetType>::CountsProfile(const CountsProfile& other,
+template<class Alphabet_T>
+CountsProfile<Alphabet_T>::CountsProfile(const CountsProfile& other,
                                            int index,
                                            int length)
-        : Profile<AlphabetType>(other, index, length)
+        : Profile<Alphabet_T>(other, index, length)
 {
     neff_.insert(neff_.begin(), other.neff_.begin() + index, other.neff_.begin() + index + length);
     has_counts_ = other.has_counts_;
 }
 
-template<class AlphabetType>
-std::vector< shared_ptr< CountsProfile<AlphabetType> > > CountsProfile<AlphabetType>::readall(std::istream& in)
+template<class Alphabet_T>
+std::vector< shared_ptr< CountsProfile<Alphabet_T> > > CountsProfile<Alphabet_T>::readall(std::istream& in)
 {
     std::vector< shared_ptr<CountsProfile> > profiles;
     while (in.peek() && in.good()) { //peek first to make sure that we don't read beyond '//'
@@ -144,8 +144,8 @@ std::vector< shared_ptr< CountsProfile<AlphabetType> > > CountsProfile<AlphabetT
     return profiles;
 }
 
-template<class AlphabetType>
-void CountsProfile<AlphabetType>::convert_to_counts()
+template<class Alphabet_T>
+void CountsProfile<Alphabet_T>::convert_to_counts()
 {
     if (!has_counts_) {
         const bool islog = this->logspace();
@@ -160,8 +160,8 @@ void CountsProfile<AlphabetType>::convert_to_counts()
     }
 }
 
-template<class AlphabetType>
-void CountsProfile<AlphabetType>::convert_to_frequencies()
+template<class Alphabet_T>
+void CountsProfile<Alphabet_T>::convert_to_frequencies()
 {
     if (has_counts_) {
         normalize(*this);
@@ -169,10 +169,10 @@ void CountsProfile<AlphabetType>::convert_to_frequencies()
     }
 }
 
-template<class AlphabetType>
-void CountsProfile<AlphabetType>::read_header(std::istream& in)
+template<class Alphabet_T>
+void CountsProfile<Alphabet_T>::read_header(std::istream& in)
 {
-    Profile<AlphabetType>::read_header(in);
+    Profile<Alphabet_T>::read_header(in);
     neff_.resize(this->num_cols());
 
     // Read has_counts
@@ -181,8 +181,8 @@ void CountsProfile<AlphabetType>::read_header(std::istream& in)
         has_counts_ = atoi(tmp.c_str() + 10) == 1;
 }
 
-template<class AlphabetType>
-void CountsProfile<AlphabetType>::read_body(std::istream& in)
+template<class Alphabet_T>
+void CountsProfile<Alphabet_T>::read_body(std::istream& in)
 {
     std::string tmp;
     std::vector<std::string> tokens;
@@ -205,17 +205,17 @@ void CountsProfile<AlphabetType>::read_body(std::istream& in)
         throw Exception("Bad format: profile has %i column records but should have %i!", i+1, this->num_cols());
 }
 
-template<class AlphabetType>
-void CountsProfile<AlphabetType>::write_header(std::ostream& out) const
+template<class Alphabet_T>
+void CountsProfile<Alphabet_T>::write_header(std::ostream& out) const
 {
-    Profile<AlphabetType>::write_header(out);
+    Profile<Alphabet_T>::write_header(out);
     out << "has_counts\t" << has_counts_ << std::endl;
 }
 
-template<class AlphabetType>
-void CountsProfile<AlphabetType>::write_body(std::ostream& out) const
+template<class Alphabet_T>
+void CountsProfile<Alphabet_T>::write_body(std::ostream& out) const
 {
-    out << "\t" << AlphabetType::instance() << "\tNeff" << std::endl;
+    out << "\t" << Alphabet_T::instance() << "\tNeff" << std::endl;
     for (int i = 0; i < this->num_cols(); ++i) {
         out << i+1;
         for (int a = 0; a < this->alphabet_size(); ++a) {
@@ -230,12 +230,12 @@ void CountsProfile<AlphabetType>::write_body(std::ostream& out) const
     out << "//" << std::endl;
 }
 
-template<class AlphabetType>
-void CountsProfile<AlphabetType>::print(std::ostream& out) const
+template<class Alphabet_T>
+void CountsProfile<Alphabet_T>::print(std::ostream& out) const
 {
     std::ios_base::fmtflags flags = out.flags();  // save old flags
 
-    out << "\t" << AlphabetType::instance() << "\tNeff" << std::endl;
+    out << "\t" << Alphabet_T::instance() << "\tNeff" << std::endl;
     for (int i = 0; i < this->num_cols(); ++i) {
         out << i+1;
         for (int a = 0; a < this->alphabet_size(); ++a)

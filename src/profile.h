@@ -31,7 +31,7 @@ namespace cs
 template<class T>
 class Sequence;
 
-template<class AlphabetType>
+template<class Alphabet_T>
 class Profile
 {
   public:
@@ -133,32 +133,32 @@ class Profile
 
 
 // Resets all entries in given profile to the given value or zero if none is given.
-template<class AlphabetType>
-void reset(Profile<AlphabetType>& profile, float value = 0.0f);
+template<class Alphabet_T>
+void reset(Profile<Alphabet_T>& profile, float value = 0.0f);
 
 // Normalize profile columns to value or to one if none provided.
-template<class AlphabetType>
-void normalize(Profile<AlphabetType>& profile, float value = 1.0f);
+template<class Alphabet_T>
+void normalize(Profile<Alphabet_T>& profile, float value = 1.0f);
 
 
 
-template<class AlphabetType>
-Profile<AlphabetType>::Profile()
+template<class Alphabet_T>
+Profile<Alphabet_T>::Profile()
         : logspace_(false)
 {}
 
-template<class AlphabetType>
-Profile<AlphabetType>::Profile(int num_cols)
-        : data_(num_cols, AlphabetType::instance().size(), 0.0f),
+template<class Alphabet_T>
+Profile<Alphabet_T>::Profile(int num_cols)
+        : data_(num_cols, Alphabet_T::instance().size(), 0.0f),
           logspace_(false)
 {}
 
-template<class AlphabetType>
-Profile<AlphabetType>::Profile(std::istream& in)
+template<class Alphabet_T>
+Profile<Alphabet_T>::Profile(std::istream& in)
 { read(in); }
 
-template<class AlphabetType>
-Profile<AlphabetType>::Profile(const Profile& other,
+template<class Alphabet_T>
+Profile<Alphabet_T>::Profile(const Profile& other,
                  int index,
                  int length)
         : data_(length, other.alphabet_size(), 0.0f)
@@ -170,8 +170,8 @@ Profile<AlphabetType>::Profile(const Profile& other,
             data_[i][a] = other[i+index][a];
 }
 
-template<class AlphabetType>
-std::vector< shared_ptr< Profile<AlphabetType> > > Profile<AlphabetType>::readall(std::istream& in)
+template<class Alphabet_T>
+std::vector< shared_ptr< Profile<Alphabet_T> > > Profile<Alphabet_T>::readall(std::istream& in)
 {
     std::vector< shared_ptr<Profile> > profiles;
     while (in.peek() && in.good()) { //peek first to make sure that we don't read beyond '//'
@@ -182,8 +182,8 @@ std::vector< shared_ptr< Profile<AlphabetType> > > Profile<AlphabetType>::readal
     return profiles;
 }
 
-template<class AlphabetType>
-void Profile<AlphabetType>::transform_to_logspace()
+template<class Alphabet_T>
+void Profile<Alphabet_T>::transform_to_logspace()
 {
     for(int i = 0; i < num_cols(); ++i)
         for(int a = 0; a < alphabet_size(); ++a)
@@ -191,8 +191,8 @@ void Profile<AlphabetType>::transform_to_logspace()
     logspace_ = true;
 }
 
-template<class AlphabetType>
-void Profile<AlphabetType>::transform_to_linspace()
+template<class Alphabet_T>
+void Profile<Alphabet_T>::transform_to_linspace()
 {
     for(int i = 0; i < num_cols(); ++i)
         for(int a = 0; a < alphabet_size(); ++a)
@@ -200,8 +200,8 @@ void Profile<AlphabetType>::transform_to_linspace()
     logspace_ = false;
 }
 
-template<class AlphabetType>
-void Profile<AlphabetType>::read(std::istream& in)
+template<class Alphabet_T>
+void Profile<Alphabet_T>::read(std::istream& in)
 {
     LOG(DEBUG1) << "Reading profile from stream ...";
 
@@ -217,8 +217,8 @@ void Profile<AlphabetType>::read(std::istream& in)
     LOG(DEBUG1) << *this;
 }
 
-template<class AlphabetType>
-void Profile<AlphabetType>::read_header(std::istream& in)
+template<class Alphabet_T>
+void Profile<Alphabet_T>::read_header(std::istream& in)
 {
     std::string tmp;
 
@@ -235,8 +235,8 @@ void Profile<AlphabetType>::read_header(std::istream& in)
         alphabet_size = atoi(tmp.c_str() + 13);
     else
         throw Exception("Bad format: serialized profile does not contain 'alphabet_size' record!");
-    if (alphabet_size != AlphabetType::instance().size())
-        throw Exception("Bad format: alphabet_size=%i does not fit with alphabet size %i!", alphabet_size, AlphabetType::instance().size());
+    if (alphabet_size != Alphabet_T::instance().size())
+        throw Exception("Bad format: alphabet_size=%i does not fit with alphabet size %i!", alphabet_size, Alphabet_T::instance().size());
 
     // Read logspace
     if (getline(in, tmp) && tmp.find("logspace") != std::string::npos)
@@ -245,8 +245,8 @@ void Profile<AlphabetType>::read_header(std::istream& in)
     resize(num_cols, alphabet_size);
 }
 
-template<class AlphabetType>
-void Profile<AlphabetType>::read_body(std::istream& in)
+template<class Alphabet_T>
+void Profile<Alphabet_T>::read_body(std::istream& in)
 {
     std::string tmp;
     std::vector<std::string> tokens;
@@ -268,16 +268,16 @@ void Profile<AlphabetType>::read_body(std::istream& in)
         throw Exception("Bad format: profile has %i column records but should have %i!", i+1, num_cols());
 }
 
-template<class AlphabetType>
-void Profile<AlphabetType>::write(std::ostream& out) const
+template<class Alphabet_T>
+void Profile<Alphabet_T>::write(std::ostream& out) const
 {
     out << class_identity() << std::endl;
     write_header(out);
     write_body(out);
 }
 
-template<class AlphabetType>
-void Profile<AlphabetType>::write_header(std::ostream& out) const
+template<class Alphabet_T>
+void Profile<Alphabet_T>::write_header(std::ostream& out) const
 {
     // print dimensions
     out << "num_cols\t" << num_cols() << std::endl;
@@ -285,10 +285,10 @@ void Profile<AlphabetType>::write_header(std::ostream& out) const
     out << "logspace\t" << (logspace() ? 1 : 0) << std::endl;
 }
 
-template<class AlphabetType>
-void Profile<AlphabetType>::write_body(std::ostream& out) const
+template<class Alphabet_T>
+void Profile<Alphabet_T>::write_body(std::ostream& out) const
 {
-    out << "\t" << AlphabetType::instance() << std::endl;
+    out << "\t" << Alphabet_T::instance() << std::endl;
     for (int i = 0; i < num_cols(); ++i) {
         out << i+1;
         for (int a = 0; a < alphabet_size(); ++a) {
@@ -302,12 +302,12 @@ void Profile<AlphabetType>::write_body(std::ostream& out) const
     }
 }
 
-template<class AlphabetType>
-void Profile<AlphabetType>::print(std::ostream& out) const
+template<class Alphabet_T>
+void Profile<Alphabet_T>::print(std::ostream& out) const
 {
     std::ios_base::fmtflags flags = out.flags();  // save old flags
 
-    out << "\t" << AlphabetType::instance() << std::endl;
+    out << "\t" << Alphabet_T::instance() << std::endl;
     for (int i = 0; i < num_cols(); ++i) {
         out << i+1;
         for (int a = 0; a < alphabet_size(); ++a)
@@ -320,16 +320,16 @@ void Profile<AlphabetType>::print(std::ostream& out) const
     out.flags(flags);
 }
 
-template<class AlphabetType>
-void Profile<AlphabetType>::resize(int num_cols, int alphabet_size)
+template<class Alphabet_T>
+void Profile<Alphabet_T>::resize(int num_cols, int alphabet_size)
 {
     if (num_cols == 0 || alphabet_size == 0)
         throw Exception("Bad dimensions for profile resizing: num_cols=%i alphabet_size=%i", num_cols, alphabet_size);
     data_.resize(num_cols, alphabet_size);
 }
 
-template<class AlphabetType>
-void reset(Profile<AlphabetType>& profile, float value)
+template<class Alphabet_T>
+void reset(Profile<Alphabet_T>& profile, float value)
 {
     const int num_cols = profile.num_cols();
     const int alphabet_size = profile.alphabet_size();
@@ -338,8 +338,8 @@ void reset(Profile<AlphabetType>& profile, float value)
             profile[i][a] = value;
 }
 
-template<class AlphabetType>
-void normalize(Profile<AlphabetType>& profile, float value)
+template<class Alphabet_T>
+void normalize(Profile<Alphabet_T>& profile, float value)
 {
     const bool logspace = profile.logspace();
     if (logspace) profile.transform_to_linspace();

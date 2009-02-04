@@ -24,7 +24,7 @@
 namespace cs
 {
 
-template<class AlphabetType>
+template<class Alphabet_T>
 class SubstitutionMatrix
 {
   public:
@@ -74,21 +74,21 @@ class SubstitutionMatrix
 
 
 
-template<class AlphabetType>
-SubstitutionMatrix<AlphabetType>::SubstitutionMatrix()
-        : size_(AlphabetType::instance().size()),
+template<class Alphabet_T>
+SubstitutionMatrix<Alphabet_T>::SubstitutionMatrix()
+        : size_(Alphabet_T::instance().size()),
           p_(size_, size_, 0.0f),
           s_(size_, size_, 0.0f),
           r_(size_, size_, 0.0f),
           f_(size_, 0.0f)
 {}
 
-template<class AlphabetType>
-SubstitutionMatrix<AlphabetType>::~SubstitutionMatrix()
+template<class Alphabet_T>
+SubstitutionMatrix<Alphabet_T>::~SubstitutionMatrix()
 {}
 
-template<class AlphabetType>
-void SubstitutionMatrix<AlphabetType>::init_from_target_frequencies()
+template<class Alphabet_T>
+void SubstitutionMatrix<Alphabet_T>::init_from_target_frequencies()
 {
     // Check transition probability matrix, renormalize P
     float sumab = 0.0f;
@@ -117,8 +117,8 @@ void SubstitutionMatrix<AlphabetType>::init_from_target_frequencies()
     LOG(DEBUG1) << *this;
 }
 
-template<class AlphabetType>
-void SubstitutionMatrix<AlphabetType>::init_from_substitution_matrix_and_background_frequencies()
+template<class Alphabet_T>
+void SubstitutionMatrix<Alphabet_T>::init_from_substitution_matrix_and_background_frequencies()
 {
     // Calculate target frequencies
     for (int a = 0; a < size_; ++a)
@@ -140,31 +140,31 @@ void SubstitutionMatrix<AlphabetType>::init_from_substitution_matrix_and_backgro
     LOG(DEBUG1) << *this;
 }
 
-template<class AlphabetType>
-void SubstitutionMatrix<AlphabetType>::print(std::ostream& out) const
+template<class Alphabet_T>
+void SubstitutionMatrix<Alphabet_T>::print(std::ostream& out) const
 {
     std::ios_base::fmtflags flags = out.flags();  // save flags
 
     out << "Background frequencies:\n";
-    out << AlphabetType::instance() << std::endl;
+    out << Alphabet_T::instance() << std::endl;
     for (int a = 0; a < size_; ++a)
         out << std::fixed << std::setprecision(1) << 100 * f_[a] << "\t";
     out << "\nSubstitution trix log2( P(a,b) / p(a)*p(b) ) (in bits):\n";
-    out << AlphabetType::instance() << std::endl;
+    out << Alphabet_T::instance() << std::endl;
     for (int b = 0; b < size_; ++b) {
         for (int a = 0; a < size_; ++a)
             out << std::fixed << std::setprecision(1) << std::showpos << s_[a][b] << std::noshowpos << "\t";
         out << std::endl;
     }
     out << "Probability matrix P(a,b) (in %):\n";
-    out << AlphabetType::instance() << std::endl;
+    out << Alphabet_T::instance() << std::endl;
     for (int b = 0; b < size_; ++b) {
         for (int a = 0; a < size_; ++a)
             out << std::fixed << std::setprecision(1) << 100 * p_[b][a] << "\t";
         out << std::endl;
     }
     out << "Matrix of conditional probabilities P(a|b) = P(a,b)/p(b) (in %):\n";
-    out << AlphabetType::instance() << std::endl;
+    out << Alphabet_T::instance() << std::endl;
     for (int b = 0; b < size_; ++b) {
         for (int a = 0; a < size_; ++a)
             out << std::fixed << std::setprecision(1) << 100 * r_[b][a] << "\t";

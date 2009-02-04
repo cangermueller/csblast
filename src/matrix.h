@@ -9,16 +9,16 @@
 
 using std::valarray;
 
-template<class Value_T>
+template<class T>
 class matrix
 {
   public:
     // public typedefs
-    typedef Value_T value_type;
+    typedef T value_type;
     typedef matrix self;
     typedef value_type* iterator;
     typedef const value_type* const_iterator;
-    typedef Value_T* row_type;
+    typedef value_type* row_type;
     typedef stride_iter<value_type*> col_type;
     typedef const value_type* const_row_type;
     typedef stride_iter<const value_type*> const_col_type;
@@ -28,23 +28,23 @@ class matrix
     matrix(int r, int c) : num_rows_(r), num_cols_(c), m_(r * c) { }
     matrix(const self& x) : num_rows_(x.num_rows_), num_cols_(x.num_cols_), m_(x.m_) { }
 
-    matrix(int r, int c, const Value_T& val)
+    matrix(int r, int c, const T& val)
             : num_rows_(r), num_cols_(c), m_(r * c)
     {
         for (int i = 0; i < r * c; ++i) m_[i] = val;
     }
 
-    template<typename T>
-    explicit matrix(const valarray<T>& x)
-            : num_rows_(x.size()), num_cols_(1), m_(x.size() + 1)
+    template<typename New_T>
+    explicit matrix(const valarray<New_T>& x)
+            : num_rows_(x.size()), num_cols_(1), m_(x.size())
     {
         for (int i =0 ; i < x.size(); ++i) m_[i] = x[i];
     }
 
     // allow construction from matricies of other types
-    template<typename T>
-    explicit matrix(const matrix<T>& x)
-            : num_rows_(x.num_rows_), num_cols_(x.num_cols_), m_(x.size() + 1)
+    template<typename New_T>
+    explicit matrix(const matrix<New_T>& x)
+            : num_rows_(x.num_rows_), num_cols_(x.num_cols_), m_(x.size())
     {
         copy(x.begin(), x.end(), m_.begin());
     }
@@ -66,7 +66,7 @@ class matrix
     iterator begin() { return &m_[0]; }
     iterator end() { return begin() + size(); }
     const_iterator begin() const { return &m_[0]; }
-    const_iterator end() const { return begin() + size( ); }
+    const_iterator end() const { return begin() + size(); }
     void resize(int r, int c)
     {
         m_.resize(r * c);
@@ -110,7 +110,7 @@ class matrix
   private:
     int num_rows_;
     int num_cols_;
-    mutable valarray<Value_T> m_;
+    mutable valarray<T> m_;
 };
 
 #endif

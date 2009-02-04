@@ -24,7 +24,7 @@
 namespace cs
 {
 
-template<class AlphabetType>
+template<class Alphabet_T>
 class Sequence
 {
   public:
@@ -48,7 +48,7 @@ class Sequence
     char& operator[](int i) { return seq_[i]; }
     const char& operator[](int i) const { return seq_[i]; }
     // Returns the character at position i of the sequence.
-    char chr(int i) const { return AlphabetType::instance().itoc(seq_[i]); }
+    char chr(int i) const { return Alphabet_T::instance().itoc(seq_[i]); }
     // Returns the sequence length.
     int length() const { return seq_.size(); }
     // Returns the header string of the sequence.
@@ -90,22 +90,22 @@ class Sequence
 };  // Sequence
 
 
-template<class AlphabetType>
-Sequence<AlphabetType>::Sequence(int length)
+template<class Alphabet_T>
+Sequence<Alphabet_T>::Sequence(int length)
         : seq_(length)
 {}
 
-template<class AlphabetType>
-Sequence<AlphabetType>::Sequence(std::istream& in)
+template<class Alphabet_T>
+Sequence<Alphabet_T>::Sequence(std::istream& in)
 { read(in); }
 
-template<class AlphabetType>
-Sequence<AlphabetType>::Sequence(const std::string& header,
+template<class Alphabet_T>
+Sequence<Alphabet_T>::Sequence(const std::string& header,
                    const std::string& sequence)
 { init(header, sequence); }
 
-template<class AlphabetType>
-std::vector< shared_ptr< Sequence<AlphabetType> > > Sequence<AlphabetType>::readall(std::istream& in)
+template<class Alphabet_T>
+std::vector< shared_ptr< Sequence<Alphabet_T> > > Sequence<Alphabet_T>::readall(std::istream& in)
 {
     std::vector< shared_ptr<Sequence> > sequences;
     while (in.good()) {
@@ -116,8 +116,8 @@ std::vector< shared_ptr< Sequence<AlphabetType> > > Sequence<AlphabetType>::read
     return sequences;
 }
 
-template<class AlphabetType>
-void Sequence<AlphabetType>::init(std::string header, std::string sequence)
+template<class Alphabet_T>
+void Sequence<Alphabet_T>::init(std::string header, std::string sequence)
 {
     // init header
     std::string().swap(header_);
@@ -126,7 +126,7 @@ void Sequence<AlphabetType>::init(std::string header, std::string sequence)
     //strip whitespace and newlines from sequence.
     sequence.erase(remove_if(sequence.begin(), sequence.end(), isspace), sequence.end());
     //validate each character and convert to integer representation
-    const AlphabetType& alphabet = AlphabetType::instance();
+    const Alphabet_T& alphabet = Alphabet_T::instance();
     const int seqlen = sequence.length();
     seq_.resize(seqlen);
     for (int i = 0; i < seqlen; ++i) {
@@ -139,8 +139,8 @@ void Sequence<AlphabetType>::init(std::string header, std::string sequence)
     }
 }
 
-template<class AlphabetType>
-void Sequence<AlphabetType>::read(std::istream& in)
+template<class Alphabet_T>
+void Sequence<Alphabet_T>::read(std::istream& in)
 {
     LOG(DEBUG1) << "Reading sequence from stream ...";
     std::string tmp;
@@ -163,8 +163,8 @@ void Sequence<AlphabetType>::read(std::istream& in)
     LOG(DEBUG1) << *this;
 }
 
-template<class AlphabetType>
-void Sequence<AlphabetType>::write(std::ostream& out, int width) const
+template<class Alphabet_T>
+void Sequence<Alphabet_T>::write(std::ostream& out, int width) const
 {
     out << '>' << header_ << std::endl;
     for (int i = 0; i < length(); ++i) {
