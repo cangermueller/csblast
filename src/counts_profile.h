@@ -59,14 +59,14 @@ class CountsProfile : public Profile<AlphabetType>
     virtual void write_header(std::ostream& out) const;
     // Writes serialized array data members to stream.
     virtual void write_body(std::ostream& out) const;
-    // Prints the profile in human-readable format to output stream.
-    virtual void print(std::ostream& out) const;
 
   private:
     // Disallow copy and assign
     CountsProfile(const CountsProfile&);
     void operator=(const CountsProfile&);
 
+    // Prints the profile in human-readable format to output stream.
+    virtual void print(std::ostream& out) const;
     // Return serialization class identity.
     virtual const std::string class_identity() const { static std::string id("CountsProfile"); return id;}
 

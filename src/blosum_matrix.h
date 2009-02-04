@@ -10,12 +10,14 @@
 
 #include <vector>
 
+#include "amino_acid.h"
+#include "exception.h"
 #include "substitution_matrix.h"
 
 namespace cs
 {
 
-class BlosumMatrix : public SubstitutionMatrix
+class BlosumMatrix : public SubstitutionMatrix<AminoAcid>
 {
   public:
     enum Type {
@@ -25,17 +27,13 @@ class BlosumMatrix : public SubstitutionMatrix
     };
 
     BlosumMatrix(Type matrix = BLOSUM62);
-    ~BlosumMatrix() {}
-
-  protected:
-     // Initializes all matrix data members.
-    virtual void init();
+    virtual ~BlosumMatrix() {}
 
   private:
-    // BLOSUM matrix identifier.
-    Type matrix_;
+    // Initializes the matrix from target frequencies in raw data array.
+    void init(const float* blosum_xx);
 };
 
-}//cs
+}  // cs
 
 #endif

@@ -16,7 +16,7 @@ namespace cs
 class Nucleotide : public Alphabet
 {
   public:
-    static inline Nucleotide& instance() { static Nucleotide inst; return inst; }
+    static Nucleotide& instance();
 
   protected:
     // Gets ctoi conversion array from derived class.
@@ -27,19 +27,12 @@ class Nucleotide : public Alphabet
     static const char nucleotides_[];
 
     Nucleotide();
-    ~Nucleotide() {}
+    virtual ~Nucleotide() {}
+
     // Disallow copy and assign
     Nucleotide(const Nucleotide& );
     Nucleotide& operator =(const Nucleotide& other);
 };
-
-
-
-const char Nucleotide::nucleotides_[] = "ACGT";
-
-Nucleotide::Nucleotide()
-        : Alphabet(4, 'N')
-{ init(); }
 
 }  // cs
 

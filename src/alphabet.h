@@ -14,12 +14,8 @@
 #include <cstddef>
 #include <cstring>
 
-#include <algorithm>
 #include <iostream>
-#include <string>
 #include <vector>
-
-#include "exception.h"
 
 namespace cs
 {
@@ -59,7 +55,14 @@ class Alphabet
     // Returns a const iterator just past the end of last distinct character in the alphabet.
     const_iterator end() const { return itoc_.begin() + size(); }
 
-    friend std::ostream& operator<< (std::ostream& out, const Alphabet& alph);
+    // Print alphabet characters delimited by tabbs.
+    friend std::ostream& operator<< (std::ostream& out, const Alphabet& alph)
+    {
+        out << *alph.begin();
+        for (Alphabet::const_iterator a = alph.begin() + 1; a != alph.end(); ++a)
+            out << '\t' << *a;
+        return out;
+    }
 
   protected:
     // Denotes invalid characters in ctoi array
@@ -67,7 +70,7 @@ class Alphabet
 
     // Constructor to be used by derived classes to setup alphabet.
     Alphabet(int size, char any);
-    ~Alphabet() {}
+    virtual ~Alphabet() {}
 
     // Initializes ctoi and itoc conversion arrays.
     void init();
@@ -91,43 +94,6 @@ class Alphabet
     // Conversion array from integer to character representation (incl. ANY, GAP, and ENDGAP).
     std::vector<char> itoc_;
 };
-
-
-
-// Print alphabet characters delimited by tabbs.
-inline std::ostream& operator<< (std::ostream& out, const Alphabet& alph)
-{
-    out << *alph.begin();
-    for (Alphabet::const_iterator a = alph.begin() + 1; a != alph.end(); ++a)
-        out << '\t' << *a;
-    return out;
-}
-
-inline Alphabet::Alphabet(int size, char any)
-        : size_(size),
-          any_(any),
-          ctoi_(static_cast<int>(pow(2, 8*sizeof(char))), INVALID_CHAR),
-          itoc_(size + 3, '\0')
-{}
-
-inline void Alphabet::init()
-{
-    const char* itoc = get_itoc();  // derived classes decide how to fill itoc array
-    if (static_cast<int>(strlen(itoc)) != size_)
-        throw Exception("Provided itoc array has length %i but should have length %i!", strlen(itoc), size_);
-
-    // Setup itoc vector
-    copy(itoc, itoc + strlen(itoc), itoc_.begin());
-    itoc_[size_]   = any_;   // ANY
-    itoc_[size_ + 1] = '-';  // GAP
-    itoc_[size_ + 2] = '-';  // ENDGAP
-
-    // Setup ctoi vector
-    for (int i = 0; i < size_; ++i) ctoi_[toupper(itoc_[i])] = i;
-    ctoi_[toupper(any_)] = size_;      // ANY
-    ctoi_['-']           = size_ + 1;  // MATCH GAP
-    ctoi_['.']           = size_ + 1;  // INSERT GAP
-}
 
 }  // cs
 

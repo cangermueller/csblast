@@ -7,13 +7,11 @@
 #include <sstream>
 
 #include "amino_acid.h"
-//#include "matrix_pseudocounts.h"
+#include "matrix_pseudocounts.h"
 #include "nucleotide.h"
 #include "counts_profile.h"
 #include "shared_ptr.h"
-//#include "nucleotide_matrix.h"
-
-#include "log.cc" // hack!!!
+#include "nucleotide_matrix.h"
 
 namespace cs
 {
@@ -122,38 +120,38 @@ TEST(CountsProfileTest, AlignmentCelegansRefGene)
     EXPECT_FLOAT_EQ(0.0f, profile[1][Nucleotide::instance().ctoi('T')]);
 }
 
-// TEST(CountsProfileTest, AddMatrixPseudocountsToProfile)
-// {
-//     std::ifstream fin("../data/ce_refgene.fas");
-//     Alignment<Nucleotide> alignment(fin, Alignment::FASTA);
-//     fin.close();
-//     CountsProfile<Nucleotide> profile(alignment, false);
+TEST(CountsProfileTest, AddMatrixPseudocountsToProfile)
+{
+    std::ifstream fin("../data/ce_refgene.fas");
+    Alignment<Nucleotide> alignment(fin, Alignment<Nucleotide>::FASTA);
+    fin.close();
+    CountsProfile<Nucleotide> profile(alignment, false);
 
-//     ASSERT_FLOAT_EQ(1.0f, profile[1][AminoAcid::instance().ctoi('T')]);
+    ASSERT_FLOAT_EQ(1.0f, profile[1][Nucleotide::instance().ctoi('T')]);
 
-//     NucleotideMatrix m(1, -1);
-//     MatrixPseudocounts mpc(m);
-//     mpc.add_to_profile(profile, DivergenceDependentAdmixture(1.0f, 10.0f));
+    NucleotideMatrix m(1, -1);
+    MatrixPseudocounts<Nucleotide> mpc(m);
+    mpc.add_to_profile(profile, DivergenceDependentAdmixture(1.0f, 10.0f));
 
-//     EXPECT_NEAR(0.25f, profile[0][AminoAcid::instance().ctoi('T')], DELTA);
-// }
+    EXPECT_NEAR(0.25f, profile[0][Nucleotide::instance().ctoi('T')], DELTA);
+}
 
-// TEST(CountsProfileTest, AddMatrixPseudocountsToLogProfile)
-// {
-//     std::ifstream fin("../data/ce_refgene.fas");
-//     Alignment<Nucleotide> alignment(fin, Alignment::FASTA);
-//     fin.close();
-//     CountsProfile<Nucleotide> profile(alignment, false);
-//     profile.transform_to_logspace();
+TEST(CountsProfileTest, AddMatrixPseudocountsToLogProfile)
+{
+    std::ifstream fin("../data/ce_refgene.fas");
+    Alignment<Nucleotide> alignment(fin, Alignment<Nucleotide>::FASTA);
+    fin.close();
+    CountsProfile<Nucleotide> profile(alignment, false);
+    profile.transform_to_logspace();
 
-//     ASSERT_FLOAT_EQ(0.0f, profile[1][AminoAcid::instance().ctoi('T')]);
+    ASSERT_FLOAT_EQ(0.0f, profile[1][Nucleotide::instance().ctoi('T')]);
 
-//     NucleotideMatrix m(1, -1);
-//     MatrixPseudocounts mpc(m);
-//     mpc.add_to_profile(profile, DivergenceDependentAdmixture(1.0f, 10.0f));
+    NucleotideMatrix m(1, -1);
+    MatrixPseudocounts<Nucleotide> mpc(m);
+    mpc.add_to_profile(profile, DivergenceDependentAdmixture(1.0f, 10.0f));
 
-//     profile.transform_to_linspace();
-//     EXPECT_NEAR(0.25f, profile[0][AminoAcid::instance().ctoi('T')], DELTA);
-// }
+    profile.transform_to_linspace();
+    EXPECT_NEAR(0.25f, profile[0][Nucleotide::instance().ctoi('T')], DELTA);
+}
 
 };  // cs

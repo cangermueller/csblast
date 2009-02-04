@@ -16,7 +16,7 @@ namespace cs
 class AminoAcid : public Alphabet
 {
   public:
-    static inline AminoAcid& instance() { static AminoAcid inst; return inst; }
+    static AminoAcid& instance();
 
   protected:
     // Gets ctoi conversion array from derived class.
@@ -27,26 +27,12 @@ class AminoAcid : public Alphabet
     static const char amino_acids_[];
 
     AminoAcid();
-    ~AminoAcid() {}
+    virtual ~AminoAcid() {}
+
     // Disallow copy and assign
     AminoAcid(const AminoAcid& );
     AminoAcid& operator =(const AminoAcid& other);
 };
-
-
-const char AminoAcid::amino_acids_[] = "ARNDCQEGHILKMFPSTWYV";
-
-AminoAcid::AminoAcid()
-        : Alphabet(20, 'X')
-{
-    init();
-    // Conversion of non-standard amino acids to integers
-    set_ctoi('O', any());
-    set_ctoi('J', any());
-    set_ctoi('U', ctoi('C'));
-    set_ctoi('B', ctoi('D'));
-    set_ctoi('Z', ctoi('E'));
-}
 
 }  // cs
 

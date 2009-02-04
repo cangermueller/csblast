@@ -8,8 +8,6 @@
 #include "profile.h"
 #include "shared_ptr.h"
 
-#include "log.cc" // hack!!!
-
 namespace cs
 {
 

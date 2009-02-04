@@ -9,17 +9,22 @@
 // Abstract base class for substitution matrix classes.
 
 #include <cmath>
+#include <cstdio>
 
 #include <iostream>
 #include <iomanip>
+#include <sstream>
+#include <string>
 #include <vector>
 
+#include "log.h"
 #include "matrix.h"
-#include "sequence_alphabet.h"
+#include "util.h"
 
 namespace cs
 {
 
+template<class AlphabetType>
 class SubstitutionMatrix
 {
   public:
@@ -33,21 +38,22 @@ class SubstitutionMatrix
     float f(int a) const { return f_[a]; }
     // Returns the size of the substitution matrix.
     int size() const { return size_; }
-    // Returns the sequence alphabet.
-    const SequenceAlphabet* alphabet() const { return alphabet_; }
 
-    friend std::ostream& operator<< (std::ostream& out, const SubstitutionMatrix& m);
+    // Prints the substitution matrix in human readable format to stream.
+    friend std::ostream& operator<< (std::ostream& out, const SubstitutionMatrix& m)
+    {
+        m.print(out);
+        return out;
+    }
 
   protected:
     // To be used by derived classes.
-    SubstitutionMatrix(const SequenceAlphabet* alphabet);
-    ~SubstitutionMatrix() {}
+    SubstitutionMatrix();
+    virtual ~SubstitutionMatrix() = 0;
 
-    // Initializes all matrix data members.
-    virtual void init() = 0;
-    // Initializes other matrix data members from matrix P.
+    // Initializes the other matrix data members from target frequencies.
     void init_from_target_frequencies();
-    // Initializes other matrix data members from substitution matrix S and background frequencies.
+    // Initializes the other matrix data members from score matrix and background frequencies.
     void init_from_substitution_matrix_and_background_frequencies();
 
     // Size of the matrix.
@@ -60,39 +66,112 @@ class SubstitutionMatrix
     matrix<float> r_;
     // Background frequencies of alphabet.
     std::vector<float> f_;
-    // Sequence alphabet over which the matrix records substitution scores.
-    const SequenceAlphabet* alphabet_;
+
+  private:
+    // Prints the substitution matrix in human-readable format to output stream.
+    virtual void print(std::ostream& out) const;
 };
 
-// Prints the substitution matrix in human readable format to stream.
-inline std::ostream& operator<< (std::ostream& out, const SubstitutionMatrix& m)
+
+
+template<class AlphabetType>
+SubstitutionMatrix<AlphabetType>::SubstitutionMatrix()
+        : size_(AlphabetType::instance().size()),
+          p_(size_, size_, 0.0f),
+          s_(size_, size_, 0.0f),
+          r_(size_, size_, 0.0f),
+          f_(size_, 0.0f)
+{}
+
+template<class AlphabetType>
+SubstitutionMatrix<AlphabetType>::~SubstitutionMatrix()
+{}
+
+template<class AlphabetType>
+void SubstitutionMatrix<AlphabetType>::init_from_target_frequencies()
 {
+    // Check transition probability matrix, renormalize P
+    float sumab = 0.0f;
+    for (int a = 0; a < size_; a++)
+        for (int b = 0; b < size_; ++b) sumab += p_[a][b];
+    for (int a = 0; a < size_; ++a)
+         for (int b = 0; b < size_; ++b) p_[a][b] /= sumab;
+
+    // Calculate background frequencies
+    for (int a = 0; a < size_; ++a) {
+        f_[a] = 0.0f;
+        for (int b = 0; b < size_; ++b) f_[a] += p_[a][b];
+    }
+    normalize_to_one(&f_[0], size_);
+
+    // Precompute matrix R for amino acid pseudocounts:
+    for (int a = 0; a < size_; ++a)
+        for (int b = 0; b < size_; ++b)
+            r_[a][b] = p_[a][b] / f_[b]; // R[a][b] = P(a|b)
+
+    // Calculate scoring matrix
+    for (int a = 0; a < size_; ++a)
+        for (int b = 0; b < size_; ++b)
+            s_[a][b] = log2(r_[a][b] / f_[a]); // S[a][b] = log2(P(a,b) / P(a)*P(b))
+
+    LOG(DEBUG1) << *this;
+}
+
+template<class AlphabetType>
+void SubstitutionMatrix<AlphabetType>::init_from_substitution_matrix_and_background_frequencies()
+{
+    // Calculate target frequencies
+    for (int a = 0; a < size_; ++a)
+        for (int b = 0; b < size_; ++b)
+            p_[a][b] = pow(2.0, s_[a][b]) * f_[a] * f_[b];
+
+    // Check transition probability matrix, renormalize P
+    float sumab = 0.0f;
+    for (int a = 0; a < size_; a++)
+        for (int b = 0; b < size_; ++b) sumab += p_[a][b];
+    for (int a = 0; a < size_; ++a)
+         for (int b = 0; b < size_; ++b) p_[a][b] /= sumab;
+
+    // Precompute matrix R for amino acid pseudocounts:
+    for (int a = 0; a < size_; ++a)
+        for (int b = 0; b < size_; ++b)
+            r_[a][b] = p_[a][b] / f_[b]; // R[a][b] = P(a|b)
+
+    LOG(DEBUG1) << *this;
+}
+
+template<class AlphabetType>
+void SubstitutionMatrix<AlphabetType>::print(std::ostream& out) const
+{
+    std::ios_base::fmtflags flags = out.flags();  // save flags
+
     out << "Background frequencies:\n";
-    out << *m.alphabet_ << std::endl;
-    for (int a = 0; a < m.size_; ++a)
-        out << std::fixed << std::setprecision(1) << 100 * m.f_[a] << "\t";
-    out << "\nSubstitution matrix log2( P(a,b) / p(a)*p(b) ) (in bits):\n";
-    out << *m.alphabet_ << std::endl;
-    for (int b = 0; b < m.size_; ++b) {
-        for (int a = 0; a < m.size_; ++a)
-            out << std::fixed << std::setprecision(1) << std::showpos << m.s_[a][b] << std::noshowpos << "\t";
+    out << AlphabetType::instance() << std::endl;
+    for (int a = 0; a < size_; ++a)
+        out << std::fixed << std::setprecision(1) << 100 * f_[a] << "\t";
+    out << "\nSubstitution trix log2( P(a,b) / p(a)*p(b) ) (in bits):\n";
+    out << AlphabetType::instance() << std::endl;
+    for (int b = 0; b < size_; ++b) {
+        for (int a = 0; a < size_; ++a)
+            out << std::fixed << std::setprecision(1) << std::showpos << s_[a][b] << std::noshowpos << "\t";
         out << std::endl;
     }
     out << "Probability matrix P(a,b) (in %):\n";
-    out << *m.alphabet_ << std::endl;
-    for (int b = 0; b < m.size_; ++b) {
-        for (int a = 0; a < m.size_; ++a)
-            out << std::fixed << std::setprecision(1) << 100 * m.p_[b][a] << "\t";
+    out << AlphabetType::instance() << std::endl;
+    for (int b = 0; b < size_; ++b) {
+        for (int a = 0; a < size_; ++a)
+            out << std::fixed << std::setprecision(1) << 100 * p_[b][a] << "\t";
         out << std::endl;
     }
     out << "Matrix of conditional probabilities P(a|b) = P(a,b)/p(b) (in %):\n";
-    out << *m.alphabet_ << std::endl;
-    for (int b = 0; b < m.size_; ++b) {
-        for (int a = 0; a < m.size_; ++a)
-            out << std::fixed << std::setprecision(1) << 100 * m.r_[b][a] << "\t";
+    out << AlphabetType::instance() << std::endl;
+    for (int b = 0; b < size_; ++b) {
+        for (int a = 0; a < size_; ++a)
+            out << std::fixed << std::setprecision(1) << 100 * r_[b][a] << "\t";
         out << std::endl;
     }
-    return out;
+
+    out.flags(flags);
 }
 
 }  // cs

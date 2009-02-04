@@ -8,29 +8,23 @@
 // DESCRIPTION:
 // BLOSUM family of substitution matrices for  class for substitution matrix classes.
 
-#include <vector>
-
+#include "nucleotide.h"
 #include "substitution_matrix.h"
 
 namespace cs
 {
 
-class NucleotideMatrix : public SubstitutionMatrix
+class NucleotideMatrix : public SubstitutionMatrix<Nucleotide>
 {
   public:
     NucleotideMatrix(float match, float mismatch);
-    ~NucleotideMatrix() {}
-
-  protected:
-    // Initializes all matrix data members.
-    virtual void init();
+    virtual ~NucleotideMatrix() {}
 
   private:
-    // Match score
-    float match_;
-    float mismatch_;
+    // Initializes all matrix data members.
+    virtual void init(float match, float mismatch);
 };
 
-}//cs
+}  // cs
 
 #endif

@@ -7,15 +7,13 @@
 #include <vector>
 
 #include "amino_acid.h"
-// #include "blosum_matrix.h"
-// #include "log.h"
-// #include "matrix_pseudocounts.h"
+#include "blosum_matrix.h"
+#include "log.h"
+#include "matrix_pseudocounts.h"
 #include "nucleotide.h"
-// #include "profile.h"
+#include "profile.h"
 #include "sequence.h"
 #include "shared_ptr.h"
-
-#include "log.cc" // hack!!!
 
 namespace cs
 {
@@ -55,23 +53,21 @@ TEST(SequenceTest, ConstructionOfMultipleSequencesFromInputStream)
     EXPECT_EQ(Nucleotide::instance().ctoi('C'), (*seqs[1])[79]);
 }
 
-// TEST(SequenceTest, AddMatrixPseudocountsToSequence)
-// {
-//     AminoAcidAlphabet* aa = AminoAcidAlphabet::instance();
+TEST(SequenceTest, AddMatrixPseudocountsToSequence)
+{
+    const Sequence<AminoAcid> sequence("header", "ARNDCQEGHILKMFPSTWYV");
+    Profile<AminoAcid> profile(sequence.length());
 
-//     const Sequence sequence("header", "ARNDCQEGHILKMFPSTWYV", aa);
-//     Profile profile(sequence.length(), aa);
+    ASSERT_EQ(AminoAcid::instance().size(), sequence.length());
+    ASSERT_EQ(AminoAcid::instance().ctoi('R'), sequence[1]);
+    ASSERT_EQ(sequence.length(), profile.ncols());
 
-//     ASSERT_EQ(AminoAcidAlphabet::instance().size(), sequence.length());
-//     ASSERT_EQ(AminoAcidAlphabet::instance().ctoi('R'), sequence[1]);
-//     ASSERT_EQ(sequence.length(), profile.ncols());
+    BlosumMatrix m;
+    MatrixPseudocounts<AminoAcid> mpc(m);
+    mpc.add_to_sequence(sequence, DivergenceDependentAdmixture(1.0f, 10.0f), profile);
 
-//     BlosumMatrix m;
-//     MatrixPseudocounts mpc(m);
-//     mpc.add_to_sequence(sequence, DivergenceDependentAdmixture(1.0f, 10.0f), profile);
-
-//     EXPECT_NEAR(0.06f, profile[0][AminoAcidAlphabet::instance().ctoi('V')], DELTA);
-// }
+    EXPECT_NEAR(0.06f, profile[0][AminoAcid::instance().ctoi('V')], DELTA);
+}
 
 }  // cs
 

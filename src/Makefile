@@ -28,8 +28,9 @@ LOG_MAX_LEVEL = 0
 # Flags passed to the preprocessor
 CPPFLAGS += -I$(GTEST_DIR) -I$(GTEST_DIR)/include -I$(USER_DIR) -DLOG_MAX_LEVEL=$(LOG_MAX_LEVEL)
 
-# Flags passed to the C++ compiler.
-CXXFLAGS += -g -O3 -W -Wall -Wno-char-subscripts -fno-strict-aliasing -static-libgcc -static
+# Flags passed to the C++ compiler. 
+CXXFLAGS += -g -O3 -W -Wall -Wno-char-subscripts -fno-strict-aliasing 
+#CXXFLAGS += -static-libgcc -static
 
 # Flags passed to the C++ compiler for Google Test compilation
 GTEST_CXXFLAGS += -g

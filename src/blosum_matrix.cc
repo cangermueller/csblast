@@ -5,7 +5,9 @@
 
 #include "blosum_matrix.h"
 
-#include "amino_acid_alphabet.h"
+#include <vector>
+
+#include "amino_acid.h"
 #include "exception.h"
 #include "substitution_matrix.h"
 
@@ -83,33 +85,31 @@ const float g_blosum80[] = {
 
 }  // namnespace
 
+
+
 namespace cs
 {
 
-BlosumMatrix::BlosumMatrix(Type matrix)
-        : SubstitutionMatrix(AminoAcidAlphabet::instance()),
-          matrix_(matrix)
-{
-    init();
-}
 
-void BlosumMatrix::init()
+BlosumMatrix::BlosumMatrix(Type matrix)
 {
-    const float* blosum_xx = NULL;
-    switch (matrix_) {
+    switch (matrix) {
         case BLOSUM45:
-            blosum_xx = g_blosum45;
+            init(g_blosum45);
             break;
         case BLOSUM62:
-            blosum_xx = g_blosum62;
+            init(g_blosum62);
             break;
         case BLOSUM80:
-            blosum_xx = g_blosum80;
+            init(g_blosum80);
             break;
         default:
             throw Exception("Unsupported BLOSUM matrix!");
     }
+}
 
+void BlosumMatrix::init(const float* blosum_xx)
+{
     // Read raw BLOSUM data vector
     int n = 0;
     for (int a = 0; a < size_; ++a)
@@ -121,6 +121,7 @@ void BlosumMatrix::init()
         for (int b = a+1; b < size_; ++b)
             p_[a][b] = p_[b][a];
 
+    // Let base class init method do the rest.
     init_from_target_frequencies();
 }
 

@@ -113,8 +113,6 @@ class Profile
     virtual void write_body(std::ostream& out) const;
     // Resize the profile matrix to given dimensions. Attention: old data is lost!
     void resize(int ncols, int nalph);
-    // Prints the profile in human-readable format to output stream.
-    virtual void print(std::ostream& out) const;
 
      // Profile matrix in row major format
     matrix<float> data_;
@@ -126,6 +124,8 @@ class Profile
     Profile(const Profile&);
     void operator=(const Profile&);
 
+    // Prints the profile in human-readable format to output stream.
+    virtual void print(std::ostream& out) const;
     // Returns serialization class identity.
     virtual const std::string class_identity() const { static std::string id("Profile"); return id;}
 };  // Profile
