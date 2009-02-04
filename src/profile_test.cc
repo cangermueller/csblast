@@ -15,8 +15,8 @@ TEST(ProfileTest, ConstructionFromInputStream)
 {
     std::string data;
     data.append("Profile\n");
-    data.append("ncols\t6\n");
-    data.append("nalph\t4\n");
+    data.append("num_cols\t\t6\n");
+    data.append("alphabet_size\t4\n");
     data.append("logspace\t0\n");
     data.append(" \tA\tC\tG\tT\n");
     data.append("1\t0\t*\t*\t*\n");
@@ -29,8 +29,8 @@ TEST(ProfileTest, ConstructionFromInputStream)
 
     Profile<Nucleotide> profile(ss);
 
-    EXPECT_EQ(6, profile.ncols());
-    EXPECT_EQ(4, profile.nalph());
+    EXPECT_EQ(6, profile.num_cols());
+    EXPECT_EQ(4, profile.alphabet_size());
     EXPECT_FLOAT_EQ(1.0f, profile[0][0]);
     EXPECT_FLOAT_EQ(0.0f, profile[1][0]);
 }
@@ -39,8 +39,8 @@ TEST(ProfileTest, ConstructionOfMultipleProfilesFromInputStream)
 {
     std::string data;
     data.append("Profile\n");
-    data.append("ncols\t6\n");
-    data.append("nalph\t4\n");
+    data.append("num_cols\t\t6\n");
+    data.append("alphabet_size\t4\n");
     data.append("logspace\t0\n");
     data.append(" \tA\tC\tG\tT\n");
     data.append("1\t0\t*\t*\t*\n");
@@ -55,10 +55,10 @@ TEST(ProfileTest, ConstructionOfMultipleProfilesFromInputStream)
     std::vector< shared_ptr<Profile<Nucleotide> > > profiles(Profile<Nucleotide>::readall(ss));
 
     EXPECT_EQ(2, static_cast<int>(profiles.size()));
-    EXPECT_EQ(6, (*profiles[0]).ncols());
-    EXPECT_EQ(4, (*profiles[0]).nalph());
-    EXPECT_EQ(6, (*profiles[1]).ncols());
-    EXPECT_EQ(4, (*profiles[1]).nalph());
+    EXPECT_EQ(6, (*profiles[0]).num_cols());
+    EXPECT_EQ(4, (*profiles[0]).alphabet_size());
+    EXPECT_EQ(6, (*profiles[1]).num_cols());
+    EXPECT_EQ(4, (*profiles[1]).alphabet_size());
     EXPECT_FLOAT_EQ(1.0f, (*profiles[0])[0][0]);
     EXPECT_FLOAT_EQ(0.0f, (*profiles[0])[1][0]);
     EXPECT_FLOAT_EQ(1.0f, (*profiles[1])[0][0]);
@@ -69,8 +69,8 @@ TEST(ProfileTest, ConstructionOfSubprofile)
 {
     std::string data;
     data.append("Profile\n");
-    data.append("ncols\t\t3\n");
-    data.append("nalph\t\t4\n");
+    data.append("num_cols\t\t3\n");
+    data.append("alphabet_size\t4\n");
     data.append("logspace\t0\n");
     data.append(" \tA\tC\tG\tT\n");
     data.append("1\t0\t*\t*\t*\n");
@@ -81,8 +81,8 @@ TEST(ProfileTest, ConstructionOfSubprofile)
     Profile<Nucleotide> profile(ss);
     Profile<Nucleotide> subprofile(profile, 1, 2);
 
-    EXPECT_EQ(2, subprofile.ncols());
-    EXPECT_EQ(4, subprofile.nalph());
+    EXPECT_EQ(2, subprofile.num_cols());
+    EXPECT_EQ(4, subprofile.alphabet_size());
     EXPECT_FLOAT_EQ(0.0f, subprofile[0][0]);
     EXPECT_FLOAT_EQ(1.0f, subprofile[0][1]);
 }
@@ -91,8 +91,8 @@ TEST(ProfileTest, Log2LinSpace)
 {
     std::string data;
     data.append("Profile\n");
-    data.append("ncols\t\t6\n");
-    data.append("nalph\t\t4\n");
+    data.append("num_cols\t\t6\n");
+    data.append("alphabet_size\t4\n");
     data.append("logspace\t1\n");
     data.append(" \tA\tC\tG\tT\n");
     data.append("1\t0\t*\t*\t*\n");
@@ -105,8 +105,8 @@ TEST(ProfileTest, Log2LinSpace)
 
     Profile<Nucleotide> profile(ss);
 
-    ASSERT_EQ(6, profile.ncols());
-    ASSERT_EQ(4, profile.nalph());
+    ASSERT_EQ(6, profile.num_cols());
+    ASSERT_EQ(4, profile.alphabet_size());
     EXPECT_FLOAT_EQ(0.0f, profile[0][0]);
 
     profile.transform_to_linspace();
@@ -118,8 +118,8 @@ TEST(ProfileTest, Lin2LogSpace)
 {
     std::string data;
     data.append("Profile\n");
-    data.append("ncols\t\t6\n");
-    data.append("nalph\t\t4\n");
+    data.append("num_cols\t\t6\n");
+    data.append("alphabet_size\t4\n");
     data.append("logspace\t0\n");
     data.append(" \tA\tC\tG\tT\n");
     data.append("1\t0\t*\t*\t*\n");
@@ -132,8 +132,8 @@ TEST(ProfileTest, Lin2LogSpace)
 
     Profile<Nucleotide> profile(ss);
 
-    ASSERT_EQ(6, profile.ncols());
-    ASSERT_EQ(4, profile.nalph());
+    ASSERT_EQ(6, profile.num_cols());
+    ASSERT_EQ(4, profile.alphabet_size());
     EXPECT_FLOAT_EQ(1.0f, profile[0][0]);
 
     profile.transform_to_logspace();

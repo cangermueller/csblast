@@ -24,19 +24,19 @@ class matrix
     typedef stride_iter<const value_type*> const_col_type;
 
     // constructors
-    matrix() : nrows_(0), ncols_(0), m_() { }
-    matrix(int r, int c) : nrows_(r), ncols_(c), m_(r * c) { }
-    matrix(const self& x) : nrows_(x.nrows_), ncols_(x.ncols_), m_(x.m_) { }
+    matrix() : num_rows_(0), num_cols_(0), m_() { }
+    matrix(int r, int c) : num_rows_(r), num_cols_(c), m_(r * c) { }
+    matrix(const self& x) : num_rows_(x.num_rows_), num_cols_(x.num_cols_), m_(x.m_) { }
 
     matrix(int r, int c, const Value_T& val)
-            : nrows_(r), ncols_(c), m_(r * c)
+            : num_rows_(r), num_cols_(c), m_(r * c)
     {
         for (int i = 0; i < r * c; ++i) m_[i] = val;
     }
 
     template<typename T>
     explicit matrix(const valarray<T>& x)
-            : nrows_(x.size()), ncols_(1), m_(x.size() + 1)
+            : num_rows_(x.size()), num_cols_(1), m_(x.size() + 1)
     {
         for (int i =0 ; i < x.size(); ++i) m_[i] = x[i];
     }
@@ -44,25 +44,25 @@ class matrix
     // allow construction from matricies of other types
     template<typename T>
     explicit matrix(const matrix<T>& x)
-            : nrows_(x.nrows_), ncols_(x.ncols_), m_(x.size() + 1)
+            : num_rows_(x.num_rows_), num_cols_(x.num_cols_), m_(x.size() + 1)
     {
         copy(x.begin(), x.end(), m_.begin());
     }
 
     // public functions
-    int nrows() const { return nrows_; }
-    int ncols() const { return ncols_; }
-    int size() const { return nrows_ * ncols_; }
+    int num_rows() const { return num_rows_; }
+    int num_cols() const { return num_cols_; }
+    int size() const { return num_rows_ * num_cols_; }
 
     // element access
-    row_type row_begin(int n) { return &m_[n * ncols()]; }
-    row_type row_end(int n) { return row_begin(n) + ncols(); }
-    col_type col_begin(int n) { return col_type(&m_[n], ncols()); }
-    col_type col_end(int n) { return col_begin(n) + ncols(); }
-    const_row_type row_begin(int n) const { return &m_[n * ncols()]; }
-    const_row_type row_end(int n) const { return row_begin(n) + ncols(); }
-    const_col_type col_begin(int n) const { return const_col_type(&m_[n], ncols()); }
-    const_col_type col_end(int n) const { return col_begin(n) + ncols(); }
+    row_type row_begin(int n) { return &m_[n * num_cols()]; }
+    row_type row_end(int n) { return row_begin(n) + num_cols(); }
+    col_type col_begin(int n) { return col_type(&m_[n], num_cols()); }
+    col_type col_end(int n) { return col_begin(n) + num_cols(); }
+    const_row_type row_begin(int n) const { return &m_[n * num_cols()]; }
+    const_row_type row_end(int n) const { return row_begin(n) + num_cols(); }
+    const_col_type col_begin(int n) const { return const_col_type(&m_[n], num_cols()); }
+    const_col_type col_end(int n) const { return col_begin(n) + num_cols(); }
     iterator begin() { return &m_[0]; }
     iterator end() { return begin() + size(); }
     const_iterator begin() const { return &m_[0]; }
@@ -70,8 +70,8 @@ class matrix
     void resize(int r, int c)
     {
         m_.resize(r * c);
-        nrows_ = r;
-        ncols_ = c;
+        num_rows_ = r;
+        num_cols_ = c;
     }
 
     // operators
@@ -79,8 +79,8 @@ class matrix
     {
         m_.resize(x.size());
         m_ = x.m_;
-        nrows_ = x.nrows_;
-        ncols_ = x.ncols_;
+        num_rows_ = x.num_rows_;
+        num_cols_ = x.num_cols_;
         return *this;
     }
     self& operator=(value_type x) { m_ = x; return *this; }
@@ -108,8 +108,8 @@ class matrix
     friend self operator%(const self& x, value_type y) { return self(x) %= y; }
 
   private:
-    int nrows_;
-    int ncols_;
+    int num_rows_;
+    int num_cols_;
     mutable valarray<Value_T> m_;
 };
 

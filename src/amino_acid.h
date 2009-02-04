@@ -16,7 +16,7 @@ namespace cs
 class AminoAcid : public Alphabet
 {
   public:
-    static AminoAcid& instance();
+    static const AminoAcid& instance();
 
   protected:
     // Gets ctoi conversion array from derived class.

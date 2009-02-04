@@ -21,8 +21,8 @@ TEST(AlignmentTest, ConstructionFromInputStream)
     std::istringstream ss(data);
     Alignment<Nucleotide> alignment(ss, Alignment<Nucleotide>::FASTA);
 
-    EXPECT_EQ(2, alignment.nseqs());
-    EXPECT_EQ(80, alignment.ncols());
+    EXPECT_EQ(2, alignment.num_seqs());
+    EXPECT_EQ(80, alignment.num_cols());
     EXPECT_EQ(Nucleotide::instance().ctoi('A'), alignment[0][0]);
     EXPECT_EQ(Nucleotide::instance().ctoi('C'), alignment[1][1]);
     EXPECT_EQ(Nucleotide::instance().gap(), alignment[4][1]);
@@ -39,8 +39,8 @@ TEST(AlignmentTest, CalculationOfGlobalWeights)
     std::istringstream ss(data);
     Alignment<Nucleotide> alignment(ss, Alignment<Nucleotide>::FASTA);
 
-    EXPECT_EQ(4, alignment.nseqs());
-    EXPECT_EQ(80, alignment.ncols());
+    EXPECT_EQ(4, alignment.num_seqs());
+    EXPECT_EQ(80, alignment.num_cols());
 
     std::vector<float> wg;
     float neff = global_weights_and_diversity(alignment, wg);
@@ -60,8 +60,8 @@ TEST(AlignmentTest, CalculationOfPositionSpecificWeights)
     std::istringstream ss(data);
     Alignment<Nucleotide> alignment(ss, Alignment<Nucleotide>::FASTA);
 
-    EXPECT_EQ(4, alignment.nseqs());
-    EXPECT_EQ(80, alignment.ncols());
+    EXPECT_EQ(4, alignment.num_seqs());
+    EXPECT_EQ(80, alignment.num_cols());
 
     matrix<float> w;
     position_specific_weights_and_diversity(alignment, w);
@@ -86,12 +86,12 @@ TEST(AlignmentTest, RemoveColumnsWithGapInFirst)
     std::istringstream ss(data);
     Alignment<Nucleotide> alignment(ss, Alignment<Nucleotide>::FASTA);
 
-    ASSERT_EQ(2, alignment.nseqs());
-    ASSERT_EQ(80, alignment.ncols());
+    ASSERT_EQ(2, alignment.num_seqs());
+    ASSERT_EQ(80, alignment.num_cols());
 
     alignment.assign_match_columns_by_sequence(0);
 
-    EXPECT_EQ(76, alignment.nmatch());
+    EXPECT_EQ(76, alignment.num_match_cols());
     EXPECT_EQ(Nucleotide::instance().gap(), alignment.seq(0,1));
     EXPECT_EQ(Nucleotide::instance().ctoi('G'), alignment[1][1]);
 }
@@ -105,12 +105,12 @@ TEST(AlignmentTest, RemoveColumnsByGapRule)
     std::istringstream ss(data);
     Alignment<Nucleotide> alignment(ss, Alignment<Nucleotide>::FASTA);
 
-    ASSERT_EQ(3, alignment.nseqs());
-    ASSERT_EQ(80, alignment.ncols());
+    ASSERT_EQ(3, alignment.num_seqs());
+    ASSERT_EQ(80, alignment.num_cols());
 
     alignment.assign_match_columns_by_gap_rule();
 
-    EXPECT_EQ(76, alignment.nmatch());
+    EXPECT_EQ(76, alignment.num_match_cols());
     EXPECT_EQ(Nucleotide::instance().ctoi('G'), alignment[4][0]);
 }
 

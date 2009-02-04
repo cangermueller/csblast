@@ -23,7 +23,7 @@ AminoAcid::AminoAcid() : Alphabet(20, 'X')
     set_ctoi('Z', ctoi('E'));
 }
 
-AminoAcid& AminoAcid::instance()
+const AminoAcid& AminoAcid::instance()
 {
     static AminoAcid inst;
     return inst;

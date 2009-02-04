@@ -22,8 +22,8 @@ TEST(CountsProfileTest, ConstructionFromInputStream)
 {
     std::string data;
     data.append("CountsProfile\n");
-    data.append("ncols\t\t4\n");
-    data.append("nalph\t\t4\n");
+    data.append("num_cols\t\t4\n");
+    data.append("alphabet_size\t4\n");
     data.append("logspace\t0\n");
     data.append("has_counts\t0\n");
     data.append(" \tA\tC\tG\tT\tneff\n");
@@ -36,8 +36,8 @@ TEST(CountsProfileTest, ConstructionFromInputStream)
 
     CountsProfile<Nucleotide> profile(ss);
 
-    EXPECT_EQ(4, profile.ncols());
-    EXPECT_EQ(4, profile.nalph());
+    EXPECT_EQ(4, profile.num_cols());
+    EXPECT_EQ(4, profile.alphabet_size());
     EXPECT_FLOAT_EQ(1.0f, profile[0][0]);
     EXPECT_FLOAT_EQ(0.0f, profile[1][0]);
     EXPECT_FLOAT_EQ(1.0f, profile.neff(1));

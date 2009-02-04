@@ -65,7 +65,7 @@ void MatrixPseudocounts<AlphabetType>::add_to_sequence(const Sequence<AlphabetTy
 {
     LOG(DEBUG) << "Adding substitution matrix pseudocounts to sequence ...";
     LOG(DEBUG1) << p;
-    if (seq.length() != p.ncols())
+    if (seq.length() != p.num_cols())
         throw Exception("Cannot add substitution matrix pseudocounts: sequence and profile have different length!");
 
     const bool logspace = p.logspace();
@@ -73,8 +73,8 @@ void MatrixPseudocounts<AlphabetType>::add_to_sequence(const Sequence<AlphabetTy
 
     // add substitution matrix pseudocounts
     float tau = pca(1.0f);
-    for(int i = 0; i < p.ncols(); ++i) {
-        for(int a = 0; a < p.nalph(); ++a) {
+    for(int i = 0; i < p.num_cols(); ++i) {
+        for(int a = 0; a < p.alphabet_size(); ++a) {
             p[i][a] = (1.0f - tau) * (static_cast<int>(seq[i]) == a ? 1.0f : 0.0f) + tau * m_.r(a, seq[i]);
         }
     }
@@ -93,17 +93,17 @@ void MatrixPseudocounts<AlphabetType>::add_to_profile(CountsProfile<AlphabetType
     if (logspace) p.transform_to_linspace();
 
     // copy original frequencies to matrix f
-    matrix<float> f(p.ncols(), p.nalph(), 0.0f);
-    for (int i = 0; i < p.ncols(); ++i)
-        for(int a = 0; a < p.nalph(); ++a)
+    matrix<float> f(p.num_cols(), p.alphabet_size(), 0.0f);
+    for (int i = 0; i < p.num_cols(); ++i)
+        for(int a = 0; a < p.alphabet_size(); ++a)
             f[i][a] = p[i][a];
 
     // add substitution matrix pseudocounts
-    for(int i = 0; i < p.ncols(); ++i) {
+    for(int i = 0; i < p.num_cols(); ++i) {
         float tau = pca(p.neff(i));
-        for(int a = 0; a < p.nalph(); ++a) {
+        for(int a = 0; a < p.alphabet_size(); ++a) {
             float sum = 0.0f;
-            for(int b = 0; b < p.nalph(); ++b)
+            for(int b = 0; b < p.alphabet_size(); ++b)
                 sum += m_.r(a,b) * f[i][b];
             p[i][a] = (1.0f - tau) * f[i][a] + tau * sum;
         }

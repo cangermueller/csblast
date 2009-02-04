@@ -16,7 +16,7 @@ namespace cs
 class Nucleotide : public Alphabet
 {
   public:
-    static Nucleotide& instance();
+    static const Nucleotide& instance();
 
   protected:
     // Gets ctoi conversion array from derived class.

@@ -97,13 +97,13 @@ class Alignment
     // Returns the character in column i of sequence k.
     char chr(int k, int i) const { return AlphabetType::instance().itoc(seqs_[i][k]); }
     // Returns the number of sequences in the alignment.
-    int nseqs() const { return seqs_.ncols(); }
+    int num_seqs() const { return seqs_.num_cols(); }
     // Returns the total number of alignment columns.
-    int ncols() const { return seqs_.nrows(); }
+    int num_cols() const { return seqs_.num_rows(); }
     // Returns the number of match columns.
-    int nmatch() const { return match_indexes.size(); }
+    int num_match_cols() const { return match_indexes.size(); }
     // Returns the number of insert columns.
-    int ninsert() const { return ncols() - nmatch(); }
+    int num_insert_cols() const { return num_cols() - num_match_cols(); }
     // Returns the total number of characters in the alignment (incl. inserts).
     int size() const { return seqs_.size(); }
 
@@ -154,7 +154,7 @@ class Alignment
     // Initializes alignment with given headers and sequences.
     void init(const std::vector<std::string>& headers, const std::vector<std::string>& seqs);
     // Resize the sequence matrix and header vector to given dimensions. Attention: old data is lost!
-    void resize(int nseqs, int ncols);
+    void resize(int num_seqs, int num_cols);
     // Fills match_indexes_ with the indexes of all match columns.
     void set_match_indexes();
     // Reads an alignment in FASTA format.
@@ -172,7 +172,7 @@ class Alignment
 
     // Row major matrix with sequences in integer representation.
     matrix<char> seqs_;
-    // Array with indices of all columns [0,1,2,...,ncols-1].
+    // Array with indices of all columns [0,1,2,...,num_cols-1].
     std::valarray<int> column_indexes_;
     // Array with indices of match columns.
     std::valarray<int> match_indexes;
@@ -207,34 +207,35 @@ void Alignment<AlphabetType>::init(const std::vector<std::string>& headers, cons
     if (headers.size() != seqs.size())
         throw Exception("Unable to initialize alignment: unequal number of headers and sequences!");
 
-    const int nseqs = seqs.size();
-    const int ncols = seqs[0].length();
-    for (int k = 1; k < nseqs; ++k)
-        if (static_cast<int>(seqs[k].length()) != ncols)
-            throw Exception("Bad alignment: sequence %i has length %i but should have %i!", k, seqs[k].length(), ncols);
+    const int num_seqs = seqs.size();
+    const int num_cols = seqs[0].length();
+    for (int k = 1; k < num_seqs; ++k)
+        if (static_cast<int>(seqs[k].length()) != num_cols)
+            throw Exception("Bad alignment: sequence %i has length %i but should have %i!", k, seqs[k].length(), num_cols);
 
     // Validate characters and convert to integer representation
-    headers_.resize(nseqs);
+    const AlphabetType& alphabet = AlphabetType::instance();
+    headers_.resize(num_seqs);
     resize(seqs.size(), seqs[0].length());
-    for (int k = 0; k < nseqs; ++k) {
+    for (int k = 0; k < num_seqs; ++k) {
         headers_[k] = headers[k];
-        for (int i = 0; i < ncols; ++i) {
+        for (int i = 0; i < num_cols; ++i) {
             const char c = seqs[k][i];
             column_indexes_[i] = i;
             match_column_[i] = match_chr(c);
-            if (AlphabetType::instance().valid(c, true))
-                seqs_[i][k] = AlphabetType::instance().ctoi(c);
+            if (alphabet.valid(c, true))
+                seqs_[i][k] = alphabet.ctoi(c);
             else
                 throw Exception("Invalid character %c at position %i of sequence '%s'", c, i, headers_[k].c_str());
         }
     }
 
     // Replace gap with endgap for all gaps at either end of a sequence
-    for (int k = 0; k < nseqs; ++k) {
-        for (int i = 0; i < ncols && seqs_[i][k] == AlphabetType::instance().gap(); ++i)
-            seqs_[i][k] = AlphabetType::instance().endgap();
-        for (int i = ncols - 1; i >= 0 && seqs_[i][k] == AlphabetType::instance().gap(); --i)
-            seqs_[i][k] = AlphabetType::instance().endgap();
+    for (int k = 0; k < num_seqs; ++k) {
+        for (int i = 0; i < num_cols && seqs_[i][k] == alphabet.gap(); ++i)
+            seqs_[i][k] = alphabet.endgap();
+        for (int i = num_cols - 1; i >= 0 && seqs_[i][k] == alphabet.gap(); --i)
+            seqs_[i][k] = alphabet.endgap();
     }
 
     // Initialize index array for match columns
@@ -244,7 +245,7 @@ void Alignment<AlphabetType>::init(const std::vector<std::string>& headers, cons
 template<class AlphabetType>
 void Alignment<AlphabetType>::set_match_indexes()
 {
-    const int match_cols = std::count(&match_column_[0], &match_column_[0] + ncols(), true);
+    const int match_cols = std::count(&match_column_[0], &match_column_[0] + num_cols(), true);
     match_indexes.resize(match_cols);
     match_indexes = column_indexes_[match_column_];
 }
@@ -327,23 +328,23 @@ void Alignment<AlphabetType>::read_a3m(std::istream& in, std::vector<std::string
     read_fasta_flavors(in, headers, seqs);
 
     // Check number of match states
-    const int nseqs = seqs.size();
-    const int nmatch = count_if(seqs[0].begin(), seqs[0].end(), match_chr);
-    for (int k = 1; k < nseqs; ++k) {
-        const int nmatch_k = count_if(seqs[k].begin(), seqs[k].end(), match_chr);
-        if (nmatch_k != nmatch)
-            throw Exception("Bad alignment: sequence %i has %i match columns but should have %i!", k, nmatch_k, nmatch);
+    const int num_seqs = seqs.size();
+    const int num_match_cols = count_if(seqs[0].begin(), seqs[0].end(), match_chr);
+    for (int k = 1; k < num_seqs; ++k) {
+        const int num_match_cols_k = count_if(seqs[k].begin(), seqs[k].end(), match_chr);
+        if (num_match_cols_k != num_match_cols)
+            throw Exception("Bad alignment: sequence %i has %i match columns but should have %i!", k, num_match_cols_k, num_match_cols);
         if (count(seqs[k].begin(), seqs[k].end(), '.') > 0)
             throw Exception("Bad alignment: sequence %i in A3M formatted alignment contains gap characters '.'!", k);
     }
 
     // Insert gaps into A3M alignment
     std::vector<std::string> seqs_a2m(seqs.size(), "");     // sequences in A2M format
-    matrix<std::string> inserts(seqs.size(), nmatch, "");   // inserts of sequence k after match state i
-    std::vector<int> max_insert_len(nmatch, 0);             // maximal length of inserts after match state i
+    matrix<std::string> inserts(seqs.size(), num_match_cols, "");   // inserts of sequence k after match state i
+    std::vector<int> max_insert_len(num_match_cols, 0);             // maximal length of inserts after match state i
 
     // Move inserts BEFORE first match state into seqs_a2m
-    for (int k = 0; k < nseqs; ++k) {
+    for (int k = 0; k < num_seqs; ++k) {
         std::string::iterator i = find_if(seqs[k].begin(), seqs[k].end(), match_chr);
         if (i != seqs[k].end()) {
             seqs_a2m[k].append(seqs[k].begin(), i);
@@ -352,7 +353,7 @@ void Alignment<AlphabetType>::read_a3m(std::istream& in, std::vector<std::string
     }
 
     // Extract all inserts and keep track of longest insert after each match column
-    for (int k = 0; k < nseqs; ++k) {
+    for (int k = 0; k < num_seqs; ++k) {
         int i = -1;
         std::string::iterator insert_end = seqs[k].begin();
         std::string::iterator insert_start = find_if(insert_end, seqs[k].end(), insert_chr);
@@ -366,7 +367,7 @@ void Alignment<AlphabetType>::read_a3m(std::istream& in, std::vector<std::string
     }
 
     // Build new A2M alignment
-    for (int k = 0; k < nseqs; ++k) {
+    for (int k = 0; k < num_seqs; ++k) {
         int i = 0;
         std::string::iterator match = seqs[k].begin();
         while (match != seqs[k].end()) {
@@ -405,10 +406,10 @@ void Alignment<AlphabetType>::write(std::ostream& out, Format format, int width)
 template<class AlphabetType>
 void Alignment<AlphabetType>::write_fasta_flavors(std::ostream& out, Format format, int width) const
 {
-    for (int k = 0; k < nseqs(); ++k) {
+    for (int k = 0; k < num_seqs(); ++k) {
         out << '>' << headers_[k] << std::endl;
         int j = 0;  // counts printed characters
-        for (int i = 0; i < ncols(); ++i) {
+        for (int i = 0; i < num_cols(); ++i) {
             switch (format) {
                 case FASTA:
                     out << to_match_chr(chr(k,i));
@@ -442,9 +443,9 @@ void Alignment<AlphabetType>::write_clustal_flavors(std::ostream& out, Format fo
     const int kHeaderLength = 18;
 
     // convert alignment to character representation
-    std::vector<std::string> seqs(nseqs(), "");
-    for (int k = 0; k < nseqs(); ++k) {
-        for (int i = 0; i < ncols(); ++i) {
+    std::vector<std::string> seqs(num_seqs(), "");
+    for (int k = 0; k < num_seqs(); ++k) {
+        for (int i = 0; i < num_cols(); ++i) {
             char c = AlphabetType::instance().itoc(seqs_[i][k]);
             if (c != '-' && !match_column_[i] && format == PSI) c = to_insert_chr(c);
             seqs[k].push_back(c);
@@ -454,7 +455,7 @@ void Alignment<AlphabetType>::write_clustal_flavors(std::ostream& out, Format fo
     // print alignment in blocks
     if (format == CLUSTAL) out << "CLUSTAL\n\n";
     while (!seqs.front().empty()) {
-        for (int k = 0; k < nseqs(); ++k) {
+        for (int k = 0; k < num_seqs(); ++k) {
             std::string header(headers_[k].substr(0, headers_[k].find_first_of(' ')));
             if (static_cast<int>(header.length()) <= kHeaderLength)
                 out << header + std::string(kHeaderLength - header.length(), ' ') << ' ';
@@ -469,22 +470,22 @@ void Alignment<AlphabetType>::write_clustal_flavors(std::ostream& out, Format fo
 }
 
 template<class AlphabetType>
-void Alignment<AlphabetType>::resize(int nseqs, int ncols)
+void Alignment<AlphabetType>::resize(int num_seqs, int num_cols)
 {
-    if (nseqs == 0 || ncols == 0)
-        throw Exception("Bad dimensions for alignment resizing: nseqs=%i ncols=%i", nseqs, ncols);
+    if (num_seqs == 0 || num_cols == 0)
+        throw Exception("Bad dimensions for alignment resizing: num_seqs=%i num_cols=%i", num_seqs, num_cols);
 
-    seqs_.resize(ncols, nseqs);
-    column_indexes_.resize(ncols);
-    match_indexes.resize(ncols);
-    match_column_.resize(ncols);
-    headers_.resize(nseqs);
+    seqs_.resize(num_cols, num_seqs);
+    column_indexes_.resize(num_cols);
+    match_indexes.resize(num_cols);
+    match_column_.resize(num_cols);
+    headers_.resize(num_seqs);
 }
 
 template<class AlphabetType>
 void Alignment<AlphabetType>::assign_match_columns_by_sequence(int k)
 {
-    for (int i = 0; i < ncols(); ++i)
+    for (int i = 0; i < num_cols(); ++i)
         match_column_[i] = seqs_[i][k] < AlphabetType::instance().gap();
     set_match_indexes();
 }
@@ -497,11 +498,11 @@ void Alignment<AlphabetType>::assign_match_columns_by_gap_rule(int gap_threshold
     // global weights are sufficient for calculation of gap percentage
     std::vector<float> wg;
     global_weights_and_diversity(*this, wg);
-    for (int i = 0; i < ncols(); ++i) {
+    for (int i = 0; i < num_cols(); ++i) {
         float gap = 0.0f;
         float res = 0.0f;
 
-        for (int k = 0; k < nseqs(); ++k)
+        for (int k = 0; k < num_seqs(); ++k)
             if (seqs_[i][k] < AlphabetType::instance().any())
                 res += wg[k];
             else
@@ -515,60 +516,60 @@ void Alignment<AlphabetType>::assign_match_columns_by_gap_rule(int gap_threshold
     }
     set_match_indexes();
 
-    LOG(DEBUG) << "ncols=" << ncols() << "  nmatch=" << nmatch() << "  ninsert=" << ninsert();
+    LOG(DEBUG) << "num_cols=" << num_cols() << "  num_match_cols=" << num_match_cols() << "  num_insert_cols=" << num_insert_cols();
 }
 
 template<class AlphabetType>
 float global_weights_and_diversity(const Alignment<AlphabetType>& alignment, std::vector<float>& wg)
 {
     const float ZERO = 1E-10;  // for calculation of entropy
-    const int nseqs = alignment.nseqs();
-    const int ncols = alignment.nmatch();
-    const int nalph = AlphabetType::instance().size();
+    const int num_seqs = alignment.num_seqs();
+    const int num_cols = alignment.num_match_cols();
+    const int alphabet_size = AlphabetType::instance().size();
     const int any   = AlphabetType::instance().any();
 
     // Return values
-    wg.assign(nseqs, 0.0f);  // global sequence weights
+    wg.assign(num_seqs, 0.0f);  // global sequence weights
     float neff = 0.0f;       // diversity of alignment
 
     // Helper variables
-    std::vector<int> n(nseqs, 0);         // number of residues in sequence i (excl. ANY)
-    std::vector<float> fj(nalph, 0.0f);   // to calculate entropy
-    std::vector<int> adiff(ncols, 0);     // number of different alphabet letters in each column
-    matrix<int> counts(ncols, nalph, 0);  // counts of alphabet letters in each column (excl. ANY)
+    std::vector<int> n(num_seqs, 0);         // number of residues in sequence i (excl. ANY)
+    std::vector<float> fj(alphabet_size, 0.0f);   // to calculate entropy
+    std::vector<int> adiff(num_cols, 0);     // number of different alphabet letters in each column
+    matrix<int> counts(num_cols, alphabet_size, 0);  // counts of alphabet letters in each column (excl. ANY)
 
     LOG(INFO) << "Calculation of global weights and alignment diversity ...";
 
     // Count number of residues in each column
-    for (int i = 0; i < ncols; ++i)
-        for (int k = 0; k < nseqs; ++k)
+    for (int i = 0; i < num_cols; ++i)
+        for (int k = 0; k < num_seqs; ++k)
             if (alignment[i][k] < any) {
                 ++counts[i][alignment[i][k]];
                 ++n[k];
             }
 
     // Count number of different residues in each column
-    for (int i = 0; i < ncols; ++i)
-        for (int a = 0; a < nalph; ++a)
+    for (int i = 0; i < num_cols; ++i)
+        for (int a = 0; a < alphabet_size; ++a)
             if (counts[i][a]) ++adiff[i];
 
     // Calculate weights
-    for(int i = 0; i < ncols; ++i)
-        for (int k = 0; k < nseqs; ++k)
+    for(int i = 0; i < num_cols; ++i)
+        for (int k = 0; k < num_seqs; ++k)
             if( adiff[i] > 0 && alignment[i][k] < any )
                 wg[k] += 1.0f/( adiff[i] * counts[i][alignment[i][k]] * n[k] );
-    normalize_to_one(&wg[0], nseqs);
+    normalize_to_one(&wg[0], num_seqs);
 
     // Calculate number of effective sequences
-    for (int i = 0; i < ncols; ++i) {
-        reset(&fj[0], nalph);
-        for (int k=0; k < nseqs; ++k)
+    for (int i = 0; i < num_cols; ++i) {
+        reset(&fj[0], alphabet_size);
+        for (int k=0; k < num_seqs; ++k)
             if (alignment[i][k] < any) fj[alignment[i][k]] += wg[k];
-        normalize_to_one(&fj[0], nalph);
-        for (int a = 0; a < nalph; ++a)
+        normalize_to_one(&fj[0], alphabet_size);
+        for (int a = 0; a < alphabet_size; ++a)
             if (fj[a] > ZERO) neff -= fj[a] * log2(fj[a]);
     }
-    neff = pow(2.0, neff / ncols);
+    neff = pow(2.0, neff / num_cols);
 
     LOG(DEBUG) << "neff=" << neff;
 
@@ -581,16 +582,16 @@ std::vector<float> position_specific_weights_and_diversity(const Alignment<Alpha
     const float MAX_ENDGAP_FRACTION = 0.1;  // maximal fraction of sequences with an endgap
     const int MIN_COLS = 10;  // minimum number of columns in subalignments
     const float ZERO = 1E-10;  // for calculation of entropy
-    const int nseqs  = alignment.nseqs();
-    const int ncols  = alignment.nmatch();
-    const int nalph  = AlphabetType::instance().size();
+    const int num_seqs  = alignment.num_seqs();
+    const int num_cols  = alignment.num_match_cols();
+    const int alphabet_size  = AlphabetType::instance().size();
     const int any    = AlphabetType::instance().any();
     const int endgap = AlphabetType::instance().endgap();
 
     // Return values
-    std::vector<float> neff(ncols, 0.0f);  // diversity of subalignment i
-    w.resize(ncols, nseqs);                // w(i,k) weight of sequence k in column i, calculated from subalignment i
-    w = matrix<float>(ncols, nseqs, 0.0f); // init to zero
+    std::vector<float> neff(num_cols, 0.0f);  // diversity of subalignment i
+    w.resize(num_cols, num_seqs);                // w(i,k) weight of sequence k in column i, calculated from subalignment i
+    w = matrix<float>(num_cols, num_seqs, 0.0f); // init to zero
 
     // Helper variables
     int ncoli = 0;        // number of columns j that contribute to neff[i]
@@ -598,46 +599,46 @@ std::vector<float> position_specific_weights_and_diversity(const Alignment<Alpha
     int ndiff = 0;        // number of different alphabet letters
     bool change = false;  // has the set of sequences in subalignment changed?
 
-    matrix<int> n(ncols, endgap + 1, 0);     // n(j,a) = number of seq's with some residue at column i AND a at position j
-    std::vector<float> fj(nalph, 0.0f);      // to calculate entropy
-    std::vector<float> wi(nseqs, 0.0f);      // weight of sequence k in column i, calculated from subalignment i
+    matrix<int> n(num_cols, endgap + 1, 0);     // n(j,a) = number of seq's with some residue at column i AND a at position j
+    std::vector<float> fj(alphabet_size, 0.0f);      // to calculate entropy
+    std::vector<float> wi(num_seqs, 0.0f);      // weight of sequence k in column i, calculated from subalignment i
     std::vector<float> wg;                   // global weights
-    std::vector<int> nseqi_debug(ncols, 0);  // debugging
-    std::vector<int> ncoli_debug(ncols, 0);  // debugging
+    std::vector<int> nseqi_debug(num_cols, 0);  // debugging
+    std::vector<int> ncoli_debug(num_cols, 0);  // debugging
 
     global_weights_and_diversity(alignment, wg);  // compute global sequence weights
 
     LOG(INFO) << "Calculation of position-specific weights and alignment diversity on subalignments ...";
     LOG(DEBUG1) << "i      ncol   nseq   neff";
 
-    for (int i = 0; i < ncols; ++i) {
+    for (int i = 0; i < num_cols; ++i) {
         change = false;
-        for (int k = 0; k < nseqs; ++k) {
+        for (int k = 0; k < num_seqs; ++k) {
             if ((i==0 || alignment[i-1][k] >= any) && alignment[i][k] < any) {
                 change = true;
                 ++nseqi;
-                for (int j = 0; j < ncols; ++j)
+                for (int j = 0; j < num_cols; ++j)
                     ++n[j][alignment[j][k]];
             } else if (i>0 && alignment[i-1][k] < any && alignment[i][k] >= any) {
                 change = true;
                 --nseqi;
-                for (int j = 0; j < ncols; ++j)
+                for (int j = 0; j < num_cols; ++j)
                     --n[j][alignment[j][k]];
             }
-        }  // for k over nseqs
+        }  // for k over num_seqs
         nseqi_debug[i] = nseqi;
 
         if (change) {  // set of sequences in subalignment has changed
             ncoli = 0;
-            reset(&wi[0], nseqs);
+            reset(&wi[0], num_seqs);
 
-            for (int j = 0; j < ncols; ++j) {
+            for (int j = 0; j < num_cols; ++j) {
                 if (n[j][endgap] > MAX_ENDGAP_FRACTION * nseqi) continue;
                 ndiff = 0;
-                for (int a = 0; a < nalph; ++a) if (n[j][a]) ++ndiff;
+                for (int a = 0; a < alphabet_size; ++a) if (n[j][a]) ++ndiff;
                 if (ndiff == 0) continue;
                 ++ncoli;
-                for (int k = 0; k < nseqs; ++k) {
+                for (int k = 0; k < num_seqs; ++k) {
                     if (alignment[i][k] < any && alignment[j][k] < any) {
                         if (n[j][alignment[j][k]] == 0) {
                             LOG(WARNING) << "Mi=" << i << ": n[" << j << "][ali[" << j << "][" << k << "]=0!";
@@ -645,28 +646,28 @@ std::vector<float> position_specific_weights_and_diversity(const Alignment<Alpha
                         wi[k] += 1.0f / static_cast<float>((n[j][alignment[j][k]] * ndiff));
                     }
                 }
-            }  // for j over ncols
-            normalize_to_one(&wi[0], nseqs);
+            }  // for j over num_cols
+            normalize_to_one(&wi[0], num_seqs);
 
             if (ncoli < MIN_COLS)  // number of columns in subalignment insufficient?
-                for (int k = 0; k < nseqs; ++k)
+                for (int k = 0; k < num_seqs; ++k)
                     if (alignment[i][k] < any)
                         wi[k] = wg[k];
                     else
                         wi[k] = 0.0f;
 
             neff[i] = 0.0f;
-            for (int j = 0; j < ncols; ++j) {
+            for (int j = 0; j < num_cols; ++j) {
                 if (n[j][endgap] > MAX_ENDGAP_FRACTION * nseqi) continue;
-                reset(&fj[0], nalph);
+                reset(&fj[0], alphabet_size);
 
-                for (int k = 0; k < nseqs; ++k)
+                for (int k = 0; k < num_seqs; ++k)
                     if (alignment[i][k] < any && alignment[j][k] < any)
                         fj[alignment[j][k]] += wi[k];
-                normalize_to_one(&fj[0], nalph);
-                for (int a = 0; a < nalph; ++a)
+                normalize_to_one(&fj[0], alphabet_size);
+                for (int a = 0; a < alphabet_size; ++a)
                     if (fj[a] > ZERO) neff[i] -= fj[a] * log2(fj[a]);
-            }  // for j over ncols
+            }  // for j over num_cols
 
             neff[i] = (ncoli > 0 ? pow(2.0, neff[i] / ncoli) : 1.0f);
 
@@ -674,11 +675,11 @@ std::vector<float> position_specific_weights_and_diversity(const Alignment<Alpha
             neff[i] = (i==0 ? 0.0 : neff[i-1]);
         }
 
-        for (int k = 0; k < nseqs; ++k) w[i][k] = wi[k];
+        for (int k = 0; k < num_seqs; ++k) w[i][k] = wi[k];
         ncoli_debug[i] = ncoli;
 
         LOG(DEBUG1) << left << setw(7) << i << setw(7) << ncoli_debug[i] << setw(7) << nseqi_debug[i] << setw(7) << neff[i];
-    }  // for i over ncols
+    }  // for i over num_cols
 
     return neff;
 }

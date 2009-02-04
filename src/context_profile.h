@@ -53,8 +53,8 @@ ContextProfile<AlphabetType>::ContextProfile(std::istream& in, const SequenceAlp
         : Profile<AlphabetType>(alphabet)
 {
     read(in);
-    if (ncols() % 2 != 1)
-        throw Exception("Context profiles must have odd number of columns, but ncols=%i!", ncols());
+    if (num_cols() % 2 != 1)
+        throw Exception("Context profiles must have odd number of columns, but num_cols=%i!", num_cols());
 }
 
 template<class AlphabetType>
@@ -63,8 +63,8 @@ ContextProfile<AlphabetType>::ContextProfile(const Profile<AlphabetType>& other,
                                              int length)
         : Profile<AlphabetType>(other, index, length)
 {
-    if (ncols() % 2 != 1)
-        throw Exception("Context profiles must have odd number of columns, but ncols=%i!", ncols());
+    if (num_cols() % 2 != 1)
+        throw Exception("Context profiles must have odd number of columns, but num_cols=%i!", num_cols());
 }
 
 template<class AlphabetType>

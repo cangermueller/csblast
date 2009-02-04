@@ -42,8 +42,8 @@ class Profile
 
     // Constructs a dummy profile.
     Profile();
-    // Constructs a profile with ncols columns initialized to zero.
-    Profile(int ncols);
+    // Constructs a profile with num_cols columns initialized to zero.
+    Profile(int num_cols);
     // Constructs profile from serialized profile read from input stream.
     Profile(std::istream& in);
     // Creates a profile from subprofile in other, starting at column index and length columns long.
@@ -58,9 +58,9 @@ class Profile
     col_type operator[](int i) { return data_[i]; }
     const_col_type operator[](int i) const { return data_[i]; }
     // Returns #columns in the profile
-    int ncols() const { return data_.nrows(); }
+    int num_cols() const { return data_.num_rows(); }
     // Returns #entries per column
-    int nalph() const { return data_.ncols(); }
+    int alphabet_size() const { return data_.num_cols(); }
     // Returns the total number of elements in the profile.
     int size() const { return data_.size(); }
     // Transforms profile to logspace
@@ -112,7 +112,7 @@ class Profile
     // Writes serialized array data members to stream.
     virtual void write_body(std::ostream& out) const;
     // Resize the profile matrix to given dimensions. Attention: old data is lost!
-    void resize(int ncols, int nalph);
+    void resize(int num_cols, int alphabet_size);
 
      // Profile matrix in row major format
     matrix<float> data_;
@@ -148,8 +148,8 @@ Profile<AlphabetType>::Profile()
 {}
 
 template<class AlphabetType>
-Profile<AlphabetType>::Profile(int ncols)
-        : data_(ncols, AlphabetType::instance().size(), 0.0f),
+Profile<AlphabetType>::Profile(int num_cols)
+        : data_(num_cols, AlphabetType::instance().size(), 0.0f),
           logspace_(false)
 {}
 
@@ -161,12 +161,12 @@ template<class AlphabetType>
 Profile<AlphabetType>::Profile(const Profile& other,
                  int index,
                  int length)
-        : data_(length, other.nalph(), 0.0f)
+        : data_(length, other.alphabet_size(), 0.0f)
 {
-    if (index + length > other.ncols())
+    if (index + length > other.num_cols())
         throw Exception("Arguments index=%i and length=%i of sub-profile are out of bounds!", index, length);
-    for (int i = 0; i < ncols(); ++i)
-        for (int a = 0; a < nalph(); ++a)
+    for (int i = 0; i < num_cols(); ++i)
+        for (int a = 0; a < alphabet_size(); ++a)
             data_[i][a] = other[i+index][a];
 }
 
@@ -185,8 +185,8 @@ std::vector< shared_ptr< Profile<AlphabetType> > > Profile<AlphabetType>::readal
 template<class AlphabetType>
 void Profile<AlphabetType>::transform_to_logspace()
 {
-    for(int i = 0; i < ncols(); ++i)
-        for(int a = 0; a < nalph(); ++a)
+    for(int i = 0; i < num_cols(); ++i)
+        for(int a = 0; a < alphabet_size(); ++a)
             data_[i][a] = data_[i][a] == 0.0f ? -std::numeric_limits<float>::infinity() : log2(data_[i][a]);
     logspace_ = true;
 }
@@ -194,8 +194,8 @@ void Profile<AlphabetType>::transform_to_logspace()
 template<class AlphabetType>
 void Profile<AlphabetType>::transform_to_linspace()
 {
-    for(int i = 0; i < ncols(); ++i)
-        for(int a = 0; a < nalph(); ++a)
+    for(int i = 0; i < num_cols(); ++i)
+        for(int a = 0; a < alphabet_size(); ++a)
             data_[i][a] = pow(2.0, data_[i][a]);
     logspace_ = false;
 }
@@ -222,27 +222,27 @@ void Profile<AlphabetType>::read_header(std::istream& in)
 {
     std::string tmp;
 
-    // Read ncols
-    int ncols = 0;
-    if (getline(in, tmp) && tmp.find("ncols") != std::string::npos)
-        ncols = atoi(tmp.c_str() + 5);
+    // Read num_cols
+    int num_cols = 0;
+    if (getline(in, tmp) && tmp.find("num_cols") != std::string::npos)
+        num_cols = atoi(tmp.c_str() + 8);
     else
-        throw Exception("Bad format: serialized profile does not contain 'ncols' record!");
+        throw Exception("Bad format: serialized profile does not contain 'num_cols' record!");
 
-    // Read nalph
-    int nalph = 0;
-    if (getline(in, tmp) && tmp.find("nalph") != std::string::npos)
-        nalph = atoi(tmp.c_str() + 5);
+    // Read alphabet_size
+    int alphabet_size = 0;
+    if (getline(in, tmp) && tmp.find("alphabet_size") != std::string::npos)
+        alphabet_size = atoi(tmp.c_str() + 13);
     else
-        throw Exception("Bad format: serialized profile does not contain 'nalph' record!");
-    if (nalph != AlphabetType::instance().size())
-        throw Exception("Bad format: nalph=%i does not fit with alphabet size %i!", nalph, AlphabetType::instance().size());
+        throw Exception("Bad format: serialized profile does not contain 'alphabet_size' record!");
+    if (alphabet_size != AlphabetType::instance().size())
+        throw Exception("Bad format: alphabet_size=%i does not fit with alphabet size %i!", alphabet_size, AlphabetType::instance().size());
 
     // Read logspace
     if (getline(in, tmp) && tmp.find("logspace") != std::string::npos)
         logspace_ = atoi(tmp.c_str() + 8) == 1;
 
-    resize(ncols, nalph);
+    resize(num_cols, alphabet_size);
 }
 
 template<class AlphabetType>
@@ -258,14 +258,14 @@ void Profile<AlphabetType>::read_body(std::istream& in)
 
         split(tmp, '\t', tokens);
         i = atoi(tokens[0].c_str()) - 1;
-        for (int a = 0; a < nalph(); ++a) {
+        for (int a = 0; a < alphabet_size(); ++a) {
             float log_p = tokens[a+1][0] == '*' ? std::numeric_limits<int>::max() : atoi(tokens[a+1].c_str());
             data_[i][a] = (logspace_ ? -log_p / SCALE_FACTOR : pow(2.0, -log_p / SCALE_FACTOR)) ;
         }
         tokens.clear();
     }
-    if (i != ncols() - 1)
-        throw Exception("Bad format: profile has %i column records but should have %i!", i+1, ncols());
+    if (i != num_cols() - 1)
+        throw Exception("Bad format: profile has %i column records but should have %i!", i+1, num_cols());
 }
 
 template<class AlphabetType>
@@ -280,8 +280,8 @@ template<class AlphabetType>
 void Profile<AlphabetType>::write_header(std::ostream& out) const
 {
     // print dimensions
-    out << "ncols\t\t" << ncols() << std::endl;
-    out << "nalph\t\t" << nalph() << std::endl;
+    out << "num_cols\t" << num_cols() << std::endl;
+    out << "alphabet_size\t" << alphabet_size() << std::endl;
     out << "logspace\t" << (logspace() ? 1 : 0) << std::endl;
 }
 
@@ -289,9 +289,9 @@ template<class AlphabetType>
 void Profile<AlphabetType>::write_body(std::ostream& out) const
 {
     out << "\t" << AlphabetType::instance() << std::endl;
-    for (int i = 0; i < ncols(); ++i) {
+    for (int i = 0; i < num_cols(); ++i) {
         out << i+1;
-        for (int a = 0; a < nalph(); ++a) {
+        for (int a = 0; a < alphabet_size(); ++a) {
             float logval = logspace_ ? data_[i][a] : log2(data_[i][a]);
             if (-logval == std::numeric_limits<float>::infinity())
                 out << "\t*";
@@ -308,9 +308,9 @@ void Profile<AlphabetType>::print(std::ostream& out) const
     std::ios_base::fmtflags flags = out.flags();  // save old flags
 
     out << "\t" << AlphabetType::instance() << std::endl;
-    for (int i = 0; i < ncols(); ++i) {
+    for (int i = 0; i < num_cols(); ++i) {
         out << i+1;
-        for (int a = 0; a < nalph(); ++a)
+        for (int a = 0; a < alphabet_size(); ++a)
             out << '\t' << std::fixed << std::setprecision(4)
                 << (logspace_ ? pow(2.0, data_[i][a]) : data_[i][a]);
         // print neff
@@ -321,20 +321,20 @@ void Profile<AlphabetType>::print(std::ostream& out) const
 }
 
 template<class AlphabetType>
-void Profile<AlphabetType>::resize(int ncols, int nalph)
+void Profile<AlphabetType>::resize(int num_cols, int alphabet_size)
 {
-    if (ncols == 0 || nalph == 0)
-        throw Exception("Bad dimensions for profile resizing: ncols=%i nalph=%i", ncols, nalph);
-    data_.resize(ncols, nalph);
+    if (num_cols == 0 || alphabet_size == 0)
+        throw Exception("Bad dimensions for profile resizing: num_cols=%i alphabet_size=%i", num_cols, alphabet_size);
+    data_.resize(num_cols, alphabet_size);
 }
 
 template<class AlphabetType>
 void reset(Profile<AlphabetType>& profile, float value)
 {
-    const int ncols = profile.ncols();
-    const int nalph = profile.nalph();
-    for(int i = 0; i < ncols; ++i)
-        for(int a = 0; a < nalph; ++a)
+    const int num_cols = profile.num_cols();
+    const int alphabet_size = profile.alphabet_size();
+    for(int i = 0; i < num_cols; ++i)
+        for(int a = 0; a < alphabet_size; ++a)
             profile[i][a] = value;
 }
 
@@ -344,14 +344,14 @@ void normalize(Profile<AlphabetType>& profile, float value)
     const bool logspace = profile.logspace();
     if (logspace) profile.transform_to_linspace();
 
-    const int ncols = profile.ncols();
-    const int nalph  = profile.nalph();
-    for (int i = 0; i < ncols; ++i) {
+    const int num_cols = profile.num_cols();
+    const int alphabet_size  = profile.alphabet_size();
+    for (int i = 0; i < num_cols; ++i) {
         float sum = 0.0f;
-        for (int a = 0; a < nalph; ++a) sum += profile[i][a];
+        for (int a = 0; a < alphabet_size; ++a) sum += profile[i][a];
         if (sum != 0.0f) {
             float fac = value / sum;
-            for (int a = 0; a < nalph; ++a) profile[i][a] *= fac;
+            for (int a = 0; a < alphabet_size; ++a) profile[i][a] *= fac;
         } else {
             throw Exception("Unable to normalize profile to one. Sum of column %i is zero!", i);
         }

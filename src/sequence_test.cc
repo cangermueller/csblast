@@ -60,7 +60,7 @@ TEST(SequenceTest, AddMatrixPseudocountsToSequence)
 
     ASSERT_EQ(AminoAcid::instance().size(), sequence.length());
     ASSERT_EQ(AminoAcid::instance().ctoi('R'), sequence[1]);
-    ASSERT_EQ(sequence.length(), profile.ncols());
+    ASSERT_EQ(sequence.length(), profile.num_cols());
 
     BlosumMatrix m;
     MatrixPseudocounts<AminoAcid> mpc(m);

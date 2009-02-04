@@ -126,12 +126,13 @@ void Sequence<AlphabetType>::init(std::string header, std::string sequence)
     //strip whitespace and newlines from sequence.
     sequence.erase(remove_if(sequence.begin(), sequence.end(), isspace), sequence.end());
     //validate each character and convert to integer representation
+    const AlphabetType& alphabet = AlphabetType::instance();
     const int seqlen = sequence.length();
     seq_.resize(seqlen);
     for (int i = 0; i < seqlen; ++i) {
         char c = sequence[i];
-        if (AlphabetType::instance().valid(c)) {
-            seq_[i] = AlphabetType::instance().ctoi(c);
+        if (alphabet.valid(c)) {
+            seq_[i] = alphabet.ctoi(c);
         } else {
             throw Exception("Invalid character %c at position %i of sequence '%s'", c, i, header_.c_str());
         }

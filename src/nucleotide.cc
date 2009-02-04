@@ -17,7 +17,7 @@ Nucleotide::Nucleotide() : Alphabet(4, 'N')
     init();
 }
 
-Nucleotide& Nucleotide::instance()
+const Nucleotide& Nucleotide::instance()
 {
     static Nucleotide inst;
     return inst;
