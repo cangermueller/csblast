@@ -160,16 +160,16 @@ template<class Alphabet_T>
 inline void HMM<Alphabet_T>::set_transition(int k, int l, float prob)
 {
     const Transition* tr_ptr = &transitions_.set(k, l, Transition(k, l, prob));
-    states_[k].out_transitions_.set(l, tr_ptr);
-    states_[l].in_transitions_.set(k, tr_ptr);
+    states_[k]->out_transitions_.set(l, tr_ptr);
+    states_[l]->in_transitions_.set(k, tr_ptr);
 }
 
 template<class Alphabet_T>
 inline void HMM<Alphabet_T>::erase_transition(int k, int l)
 {
     transitions_.erase(k,l);
-    states_[k].out_transitions_.erase(l);
-    states_[l].in_transitions_.erase(k);
+    states_[k]->out_transitions_.erase(l);
+    states_[l]->in_transitions_.erase(k);
 }
 
 template<class Alphabet_T>
@@ -204,7 +204,7 @@ int HMM<Alphabet_T>::add_state(const Profile<Alphabet_T>& profile)
     if (num_states() >= size())
         throw Exception("Unable to add state: the HMM contains already %i states!", size());
 
-    shared_ptr< Profile<Alphabet_T> > state_ptr(new State<Alphabet_T>(num_states(), profile, size() + 1));
+    shared_ptr< State<Alphabet_T> > state_ptr(new State<Alphabet_T>(num_states(), profile, size() + 1));
     states_.push_back(state_ptr);
     return num_states();
 }

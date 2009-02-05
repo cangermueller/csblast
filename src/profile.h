@@ -140,7 +140,8 @@ void normalize(Profile<Alphabet_T>& profile, float value = 1.0f);
 
 template<class Alphabet_T>
 Profile<Alphabet_T>::Profile()
-        : logspace_(false)
+        : data_(),
+          logspace_(false)
 {}
 
 template<class Alphabet_T>
@@ -151,13 +152,18 @@ Profile<Alphabet_T>::Profile(int num_cols)
 
 template<class Alphabet_T>
 Profile<Alphabet_T>::Profile(std::istream& in)
-{ read(in); }
+        : data_(),
+          logspace_(false)
+{
+    read(in);
+}
 
 template<class Alphabet_T>
 Profile<Alphabet_T>::Profile(const Profile& other,
                  int index,
                  int length)
-        : data_(length, other.alphabet_size(), 0.0f)
+        : data_(length, other.alphabet_size(), 0.0f),
+          logspace_(other.logspace_)
 {
     if (index + length > other.num_cols())
         throw Exception("Arguments index=%i and length=%i of sub-profile are out of bounds!", index, length);

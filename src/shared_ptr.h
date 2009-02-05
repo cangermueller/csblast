@@ -26,7 +26,7 @@ class shared_ptr
 
     // Generalized copu constructor
     template <class U>
-    shared_ptr(const shared_ptr<U>& other) : p_(other.p_), c_(other.c_) { ++*c_; }
+    shared_ptr(const shared_ptr<U>& other) : p_(other.get()), c_(other.use_count()) { ++*c_; }
 
     // Copy assignment
     shared_ptr &operator =(const shared_ptr &rhs)
@@ -45,8 +45,8 @@ class shared_ptr
     {
         if (this != &rhs) {
             if (!--*c_) { delete c_; delete p_; }
-            p_ = rhs.p_;
-            ++*(c_ = rhs.c_);
+            p_ = rhs.get();
+            ++*(c_ = rhs.use_count());
         }
         return *this;
     }
@@ -54,6 +54,7 @@ class shared_ptr
     T& operator *() const { return *p_; }
     T* operator ->() const { return p_; }
     T* get() const { return p_; }
+    long use_count() const { return c_; }
 
     // // Template function for implicit conversion (see More Effectove C++ page 176 for details).
     // template <class U>
