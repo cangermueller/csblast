@@ -23,14 +23,17 @@ template<class Alphabet_T>
 class ContextProfile : public Profile<Alphabet_T>
 {
   public:
+    // Needed to access names in templatized Profile base class
+    using Profile<Alphabet_T>::num_cols;
+
      // Constructs a dummy context profile.
     ContextProfile() {}
     // Constructs profile from serialized profile read from input stream.
     ContextProfile(std::istream& in);
+    // Constructs a context profile from simple profile and checks if length is valid.
+    ContextProfile(const Profile<Alphabet_T>& profile);
     // Creates a profile from subprofile in other, starting at column index and length columns long.
     ContextProfile(const Profile<Alphabet_T>& other, int index, int length);
-    // Constructs a context profile from simple profile and checks if length is valid.
-    ContextProfile(const Profile<Alphabet_T>& profile) : Profile<Alphabet_T>;
 
     virtual ~ContextProfile() {}
 
@@ -38,7 +41,7 @@ class ContextProfile : public Profile<Alphabet_T>
     static std::vector< shared_ptr<ContextProfile> > readall(std::istream& in);
 
     // Returns index of central profile column.
-    int center() const { return (data_.size() - 1) / 2; }
+    int center() const { return (num_cols() - 1) / 2; }
 
   private:
     // Disallow copy and assign
@@ -82,7 +85,7 @@ std::vector< shared_ptr< ContextProfile<Alphabet_T> > > ContextProfile<Alphabet_
 {
     std::vector< shared_ptr<ContextProfile> > profiles;
     while (in.peek() && in.good()) {  // peek first to make sure that we don't read beyond '//'
-        shared_ptr<ContextProfile> p(new ContextProfile(in, alphabet));
+        shared_ptr<ContextProfile> p(new ContextProfile(in));
         profiles.push_back(p);
     }
 
@@ -90,7 +93,7 @@ std::vector< shared_ptr< ContextProfile<Alphabet_T> > > ContextProfile<Alphabet_
 }
 
 template<class Alphabet_T>
-ContextProfile<Alphabet_T>::check()
+void ContextProfile<Alphabet_T>::check()
 {
     if (num_cols() % 2 != 1)
         throw Exception("Context profiles must have odd number of columns, but num_cols=%i!", num_cols());

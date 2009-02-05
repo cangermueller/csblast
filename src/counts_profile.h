@@ -28,6 +28,14 @@ template<class Alphabet_T>
 class CountsProfile : public Profile<Alphabet_T>
 {
   public:
+    // Needed to access names in templatized Profile base class
+    using Profile<Alphabet_T>::num_cols;
+    using Profile<Alphabet_T>::alphabet_size;
+    using Profile<Alphabet_T>::read;
+    using Profile<Alphabet_T>::logspace;
+    using Profile<Alphabet_T>::transform_to_logspace;
+    using Profile<Alphabet_T>::transform_to_linspace;
+
     // Constructs profile from serialized profile read from input stream.
     explicit CountsProfile(std::istream& in);
     // Constructs a profile of the given sequence.
@@ -51,6 +59,10 @@ class CountsProfile : public Profile<Alphabet_T>
     bool has_counts() const { return has_counts_; }
 
   protected:
+    // Needed to access names in templatized Profile base class
+    using Profile<Alphabet_T>::data_;
+    using Profile<Alphabet_T>::SCALE_FACTOR;
+
     // Reads and initializes serialized scalar data members from stream.
     virtual void read_header(std::istream& in);
     // Reads and initializes array data members from stream.
@@ -59,14 +71,14 @@ class CountsProfile : public Profile<Alphabet_T>
     virtual void write_header(std::ostream& out) const;
     // Writes serialized array data members to stream.
     virtual void write_body(std::ostream& out) const;
+    // Prints the profile in human-readable format to output stream.
+    virtual void print(std::ostream& out) const;
 
   private:
     // Disallow copy and assign
     CountsProfile(const CountsProfile&);
     void operator=(const CountsProfile&);
 
-    // Prints the profile in human-readable format to output stream.
-    virtual void print(std::ostream& out) const;
     // Return serialization class identity.
     virtual const std::string class_identity() const { static std::string id("CountsProfile"); return id;}
 
@@ -82,7 +94,7 @@ template<class Alphabet_T>
 CountsProfile<Alphabet_T>::CountsProfile(std::istream& in)
         : has_counts_(false)
 {
-    this->read(in);
+    read(in);
 }
 
 template<class Alphabet_T>
@@ -90,8 +102,8 @@ CountsProfile<Alphabet_T>::CountsProfile(const Sequence<Alphabet_T>& sequence)
         : Profile<Alphabet_T>(sequence.length()),
           has_counts_(false)
 {
-    for(int i = 0; i < this->num_cols(); ++i)
-        this->data_[i][sequence[i]] = 1.0f;
+    for(int i = 0; i < num_cols(); ++i)
+        data_[i][sequence[i]] = 1.0f;
 }
 
 template<class Alphabet_T>
@@ -109,14 +121,14 @@ CountsProfile<Alphabet_T>::CountsProfile(const Alignment<Alphabet_T>& alignment,
         for (int i = 0; i < num_cols; ++i)
             for (int k = 0; k < num_seqs; ++k)
                 if (alignment[i][k] < any)
-                    this->data_[i][alignment[i][k]] += w[i][k];
+                    data_[i][alignment[i][k]] += w[i][k];
     } else {
         std::vector<float> wg;  // global sequence weights
         neff_.assign(num_cols, global_weights_and_diversity(alignment, wg));
         for (int i = 0; i < num_cols; ++i)
             for (int k = 0; k < num_seqs; ++k)
                 if (alignment[i][k] < any)
-                    this->data_[i][alignment[i][k]] += wg[k];
+                    data_[i][alignment[i][k]] += wg[k];
     }
 
     normalize(*this);
@@ -148,15 +160,15 @@ template<class Alphabet_T>
 void CountsProfile<Alphabet_T>::convert_to_counts()
 {
     if (!has_counts_) {
-        const bool islog = this->logspace();
-        if (islog) this->transform_to_linspace();
+        const bool islog = logspace();
+        if (islog) transform_to_linspace();
 
-        for (int i = 0; i < this->num_cols(); ++i)
-            for (int a = 0; a < this->alphabet_size(); ++a)
-                this->data_[i][a] *= neff_[i];
+        for (int i = 0; i < num_cols(); ++i)
+            for (int a = 0; a < alphabet_size(); ++a)
+                data_[i][a] *= neff_[i];
         has_counts_ = true;
 
-        if (islog) this->transform_to_logspace();
+        if (islog) transform_to_logspace();
     }
 }
 
@@ -173,7 +185,7 @@ template<class Alphabet_T>
 void CountsProfile<Alphabet_T>::read_header(std::istream& in)
 {
     Profile<Alphabet_T>::read_header(in);
-    neff_.resize(this->num_cols());
+    neff_.resize(num_cols());
 
     // Read has_counts
     std::string tmp;
@@ -194,15 +206,15 @@ void CountsProfile<Alphabet_T>::read_body(std::istream& in)
 
         split(tmp, '\t', tokens);
         i = atoi(tokens[0].c_str()) - 1;
-        for (int a = 0; a < this->alphabet_size(); ++a) {
+        for (int a = 0; a < alphabet_size(); ++a) {
             float log_p = tokens[a+1][0] == '*' ? std::numeric_limits<int>::max() : atoi(tokens[a+1].c_str());
-            this->data_[i][a] = (this->logspace_ ? -log_p / this->SCALE_FACTOR : pow(2.0, -log_p / this->SCALE_FACTOR)) ;
+            data_[i][a] = (logspace() ? -log_p / SCALE_FACTOR : pow(2.0, -log_p / SCALE_FACTOR)) ;
         }
-        neff_[i] = atof(tokens[this->alphabet_size()+1].c_str()) / this->SCALE_FACTOR;
+        neff_[i] = atof(tokens[alphabet_size()+1].c_str()) / SCALE_FACTOR;
         tokens.clear();
     }
-    if (i != this->num_cols() - 1)
-        throw Exception("Bad format: profile has %i column records but should have %i!", i+1, this->num_cols());
+    if (i != num_cols() - 1)
+        throw Exception("Bad format: profile has %i column records but should have %i!", i+1, num_cols());
 }
 
 template<class Alphabet_T>
@@ -216,16 +228,16 @@ template<class Alphabet_T>
 void CountsProfile<Alphabet_T>::write_body(std::ostream& out) const
 {
     out << "\t" << Alphabet_T::instance() << "\tNeff" << std::endl;
-    for (int i = 0; i < this->num_cols(); ++i) {
+    for (int i = 0; i < num_cols(); ++i) {
         out << i+1;
-        for (int a = 0; a < this->alphabet_size(); ++a) {
-            float log_p = this->logspace_ ? this->data_[i][a] : log2(this->data_[i][a]);
+        for (int a = 0; a < alphabet_size(); ++a) {
+            float log_p = logspace() ? data_[i][a] : log2(data_[i][a]);
             if (-log_p == std::numeric_limits<float>::infinity())
                 out << "\t*";
             else
-                out << "\t" << -iround(log_p * this->SCALE_FACTOR);
+                out << "\t" << -iround(log_p * SCALE_FACTOR);
         }
-        out << "\t" << iround(neff_[i] * this->SCALE_FACTOR) << std::endl;
+        out << "\t" << iround(neff_[i] * SCALE_FACTOR) << std::endl;
     }
     out << "//" << std::endl;
 }
@@ -236,11 +248,11 @@ void CountsProfile<Alphabet_T>::print(std::ostream& out) const
     std::ios_base::fmtflags flags = out.flags();  // save old flags
 
     out << "\t" << Alphabet_T::instance() << "\tNeff" << std::endl;
-    for (int i = 0; i < this->num_cols(); ++i) {
+    for (int i = 0; i < num_cols(); ++i) {
         out << i+1;
-        for (int a = 0; a < this->alphabet_size(); ++a)
+        for (int a = 0; a < alphabet_size(); ++a)
             out << '\t' << std::fixed << std::setprecision(4)
-                << (this->logspace_ ? pow(2.0, this->data_[i][a]) : this->data_[i][a]);
+                << (logspace() ? pow(2.0, data_[i][a]) : data_[i][a]);
         // print neff
         out << '\t' << std::setprecision(2) << neff_[i] << std::endl;
     }

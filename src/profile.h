@@ -111,6 +111,8 @@ class Profile
     virtual void write_header(std::ostream& out) const;
     // Writes serialized array data members to stream.
     virtual void write_body(std::ostream& out) const;
+    // Prints the profile in human-readable format to output stream.
+    virtual void print(std::ostream& out) const;
     // Resize the profile matrix to given dimensions. Attention: old data is lost!
     void resize(int num_cols, int alphabet_size);
 
@@ -120,8 +122,6 @@ class Profile
     bool logspace_;
 
   private:
-    // Prints the profile in human-readable format to output stream.
-    virtual void print(std::ostream& out) const;
     // Returns serialization class identity.
     virtual const std::string class_identity() const { static std::string id("Profile"); return id;}
 };  // Profile

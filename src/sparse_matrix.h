@@ -40,6 +40,7 @@ class sparse_matrix
     int num_rows() const { return num_rows_; }
     int num_cols() const { return num_cols_; }
     int size() const { return num_rows_ * num_cols_; }
+    int num_nonempty() const { return m_.num_nonempty(); }
 
     // element access
     row_type row_begin(int n) { return m_.begin() + n * num_cols(); }
@@ -58,7 +59,10 @@ class sparse_matrix
     nonempty_iterator nonempty_end() { return m_.nonempty_end(); }
     const_nonempty_iterator nonempty_begin() const { return m_.nonempty_begin(); }
     const_nonempty_iterator nonempty_end() const { return m_.nonempty_end(); }
+    void erase(int r, int c) { m_.erase(r*num_cols_ + c); }
     void clear() { m_.clear(); }
+    const T& get(int r, int c) const { return m_.get(r*num_cols_ + c); }
+    T& set(int r, int c, const T& val) { return m_.set(r*num_cols_ + c, val); }
     void resize(int r, int c)
     {
         m_.resize(r * c);
@@ -77,8 +81,6 @@ class sparse_matrix
     }
     row_type operator[](int n) { return row_begin(n); }
     const_row_type operator[](int n) const { return row_begin(n); }
-    const T& get(int i, int j) { return m_.get(i*num_cols_ + j); }
-    T& set(int i, int j, const T& val) { return m_.set(i*num_cols_ + j, val); }
 
   private:
     int num_rows_;
