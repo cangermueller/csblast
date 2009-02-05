@@ -37,11 +37,6 @@ class HMM
     typedef typename sparse_matrix<Transition>::iterator transition_iterator;
     typedef typename sparse_matrix<Transition>::const_iterator const_transition_iterator;
 
-    // BEGIN and END states have both index 0, this is because is all transitions to state 0
-    // go to the END state and all transitions from state 0 start from the BEGIN. There are no
-    // in-transitions for the BEGIN state and no out-transitions for the END state.
-    static const int BEGIN_END_STATE = 0;
-
     // Constructs an empty HMM of given size without any states or transitions.
     HMM(int size);
     // Constructs context HMM from serialized HMM read from input stream.
@@ -101,8 +96,6 @@ class HMM
   private:
     // Scaling factor for serialization of profile log values
     static const int SCALE_FACTOR = 1000;
-    // Class identity keyword for serialization.
-    static const char CLASS_IDENTITY[];
 
     // Prints the HMM in human-readable format to output stream. TODO!!!
     // virtual void print(std::ostream& out) const;
@@ -125,8 +118,6 @@ class HMM
 };  // HMM
 
 
-template<class Alphabet_T>
-const char HMM<Alphabet_T>::CLASS_IDENTITY[] = "HMM";
 
 template<class Alphabet_T>
 HMM<Alphabet_T>::HMM(int size)
@@ -217,8 +208,8 @@ void HMM<Alphabet_T>::read(std::istream& in)
     // Check if stream actually contains a serialized HMM
     std::string tmp;
     while (getline(in, tmp) && tmp.empty()) continue;
-    if (tmp.find(CLASS_IDENTITY) == std::string::npos)
-        throw Exception("Bad format: serialized HMM does not start with '%s' keyword!", CLASS_IDENTITY);
+    if (tmp.find("HMM") == std::string::npos)
+        throw Exception("Bad format: serialized HMM does not start with 'HMM' keyword!");
 
     // Read number of states
     if (getline(in, tmp) && tmp.find("size") != std::string::npos)
@@ -261,7 +252,7 @@ template<class Alphabet_T>
 void HMM<Alphabet_T>::write(std::ostream& out) const
 {
     // Write header
-    out << CLASS_IDENTITY << std::endl;
+    out << "HMM" << std::endl;
     out << "size\t\t" << size() << std::endl;
     out << "logspace\t" << (logspace() ? 1 : 0) << std::endl;
 

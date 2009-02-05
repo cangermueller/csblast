@@ -139,7 +139,7 @@ float State<Alphabet_T>::transition_probability_to(int k) const
 template<class Alphabet_T>
 float State<Alphabet_T>::transition_probability_from(int k) const
 {
-    return in_transitions_.test(k) ? out_transitions_.get(k)->probability : 0.0f;
+    return in_transitions_.test(k) ? in_transitions_.get(k)->probability : 0.0f;
 }
 
 template<class Alphabet_T>

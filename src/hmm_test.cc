@@ -70,11 +70,15 @@ TEST_F(HMMTest, SimpleConstruction)
 
     EXPECT_FLOAT_EQ(0.0f, hmm.transition_probability(0, 1));
     hmm.set_transition(0, 1, 0.5f);
-    EXPECT_FLOAT_EQ(0.5f, hmm.transition_probability(0, 1));
     EXPECT_EQ(1, hmm[0].num_out_transitions());
     EXPECT_EQ(0, hmm[0].num_in_transitions());
     EXPECT_EQ(1, hmm[1].num_in_transitions());
     EXPECT_EQ(0, hmm[1].num_out_transitions());
+    EXPECT_FLOAT_EQ(0.5f, hmm.transition_probability(0, 1));
+    EXPECT_FLOAT_EQ(0.5f, hmm[0].transition_probability_to(1));
+    EXPECT_FLOAT_EQ(0.5f, hmm[1].transition_probability_from(0));
+    EXPECT_FLOAT_EQ(0.5f, (**hmm[0].out_transitions_begin()).probability);
+    EXPECT_FLOAT_EQ(0.5f, (**hmm[1].in_transitions_begin()).probability);
 
     EXPECT_FLOAT_EQ(0.0f, hmm.transition_probability(0, 2));
     hmm.set_transition(0, 2, 0.5f);
