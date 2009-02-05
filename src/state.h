@@ -106,8 +106,8 @@ State<Alphabet_T>::State(int hmm_size)
         : ContextProfile<Alphabet_T>(),
           index_(0),
           hmm_size_(hmm_size),
-          in_transitions_(hmm_size),
-          out_transitions_(hmm_size)
+          in_transitions_(hmm_size + 1),
+          out_transitions_(hmm_size + 1)
 {}
 
 template<class Alphabet_T>
@@ -125,9 +125,9 @@ template<class Alphabet_T>
 State<Alphabet_T>::State(int index, const Profile<Alphabet_T>& profile, int hmm_size)
         : ContextProfile<Alphabet_T>(profile),
           index_(index),
-          hmm_size_(0),
-          in_transitions_(hmm_size),
-          out_transitions_(hmm_size)
+          hmm_size_(hmm_size),
+          in_transitions_(hmm_size + 1),
+          out_transitions_(hmm_size + 1)
 {}
 
 template<class Alphabet_T>
@@ -153,8 +153,8 @@ template<class Alphabet_T>
 void State<Alphabet_T>::resize(int hmm_size)
 {
     clear_transitions();
-    in_transitions_.resize(hmm_size);
-    out_transitions_.resize(hmm_size);
+    in_transitions_.resize(hmm_size + 1);
+    out_transitions_.resize(hmm_size + 1);
 }
 
 template<class Alphabet_T>
@@ -167,8 +167,8 @@ void State<Alphabet_T>::read_header(std::istream& in)
     // Read HMM size
     if (getline(in, tmp) && tmp.find("hmm_size") != std::string::npos)
         hmm_size_ = atoi(tmp.c_str() + 8);
-    in_transitions_.resize(hmm_size_);
-    out_transitions_.resize(hmm_size_);
+    in_transitions_.resize(hmm_size_ + 1);
+    out_transitions_.resize(hmm_size_ + 1);
 
     Profile<Alphabet_T>::read_header(in);
 }

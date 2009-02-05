@@ -29,7 +29,7 @@ class shared_ptr
     shared_ptr(const shared_ptr<U>& other) : p_(other.get()), c_(other.use_count()) { ++*c_; }
 
     // Copy assignment
-    shared_ptr &operator =(const shared_ptr &rhs)
+    shared_ptr& operator= (const shared_ptr &rhs)
     {
         if (this != &rhs) {
             if (!--*c_) { delete c_; delete p_; }
@@ -41,7 +41,7 @@ class shared_ptr
 
     // Generalized copy assignment
     template <class U>
-    shared_ptr &operator =(const shared_ptr<U> &rhs)
+    shared_ptr& operator= (const shared_ptr<U> &rhs)
     {
         if (this != &rhs) {
             if (!--*c_) { delete c_; delete p_; }
@@ -51,8 +51,8 @@ class shared_ptr
         return *this;
     }
 
-    T& operator *() const { return *p_; }
-    T* operator ->() const { return p_; }
+    T& operator*() const { return *p_; }
+    T* operator->() const { return p_; }
     T* get() const { return p_; }
     long use_count() const { return c_; }
 

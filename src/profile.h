@@ -302,6 +302,7 @@ void Profile<Alphabet_T>::write_body(std::ostream& out) const
         }
         out << std::endl;
     }
+    out << "//" << std::endl;
 }
 
 template<class Alphabet_T>

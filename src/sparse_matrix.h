@@ -63,6 +63,7 @@ class sparse_matrix
     void clear() { m_.clear(); }
     const T& get(int r, int c) const { return m_.get(r*num_cols_ + c); }
     T& set(int r, int c, const T& val) { return m_.set(r*num_cols_ + c, val); }
+    bool test(int r, int c) const { return m_.test(r*num_cols_ + c); }
     void resize(int r, int c)
     {
         m_.resize(r * c);
