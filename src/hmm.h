@@ -84,16 +84,14 @@ class HMM
     void set_transition_probability(int k, int l, float prob);
     // Removes the transition between state k and state l from the HMM.
     void erase_transition(int k, int l);
-    // Removes all transitions with probability below or equal to given threshold.
-    void sparsify(float threshold);
+     // Returns true if there is a transition between state k and state l.
+    bool test_transition(int k, int l) { return transitions_.test(k,l); }
     // Clears all states and transitions.
     void clear();
     // Clears all transitions but leaves profile of states untouched.
     void clear_transitions();
     // Adds the given profile as state to the HMM and returns its state index. Note that number of profile columns must be odd!
     int add_profile(const Profile<Alphabet_T>& profile);
-    // Normalizes transition probabilities to one.
-    void normalize_transitions();
     // Returns a const iterator to a list of pointers of states.
     const_state_iterator states_begin() const { return states_.begin(); }
     // Returns a const iterator pointing past the end of a list of pointers of states.
@@ -205,15 +203,6 @@ inline void HMM<Alphabet_T>::erase_transition(int k, int l)
 }
 
 template<class Alphabet_T>
-void HMM<Alphabet_T>::sparsify(float threshold)
-{
-    for (int k = 0; k <= size_; ++k)
-        for (int l = 0; l <= size_; ++l)
-            if (transitions_.test(k,l) && transition_probability(k,l) <= threshold)
-                erase_transition(k,l);
-}
-
-template<class Alphabet_T>
 void HMM<Alphabet_T>::clear()
 {
     states_.clear();
@@ -230,7 +219,7 @@ void HMM<Alphabet_T>::clear_transitions()
 }
 
 template<class Alphabet_T>
-int HMM<Alphabet_T>::add_profile(const Profile<Alphabet_T>& profile)
+inline int HMM<Alphabet_T>::add_profile(const Profile<Alphabet_T>& profile)
 {
     if (num_states() >= size())
         throw Exception("Unable to add state: the HMM contains already %i states!", size());
@@ -267,23 +256,6 @@ void HMM<Alphabet_T>::transform_to_linspace()
     }
 
     logspace_ = false;
-}
-
-template<class Alphabet_T>
-void HMM<Alphabet_T>::normalize_transitions()
-{
-    for (int k = 0; k <= size_; ++k) {
-        float sum = 0.0f;
-        for (int l = 0; l <= size_; ++l) sum += transition_probability(k,l);
-        if (sum != 0.0f) {
-            float fac = 1.0f / sum;
-            for (int l = 0; l <= size_; ++l)
-                set_transition_probability(k, l, fac * transition_probability(k,l));
-        } else {
-            // no out-transitions for this state -> connect to END-state
-            set_transition_probability(k, 0, 1.0f);
-        }
-    }
 }
 
 template<class Alphabet_T>
@@ -357,6 +329,39 @@ void HMM<Alphabet_T>::write(std::ostream& out) const
             out << -iround(logval * SCALE_FACTOR) << std::endl;
     }
     out << "//" << std::endl;
+}
+
+
+
+// Normalizes transition probabilities to one.
+template<class Alphabet_T>
+void normalize_transitions(HMM<Alphabet_T>& hmm)
+{
+    for (int k = 0; k <= hmm.size(); ++k) {
+        float sum = 0.0f;
+        for (int l = 0; l <= hmm.size(); ++l)
+            if (hmm.test_transition(k,l)) sum += hmm.transition_probability(k,l);
+        if (sum != 0.0f) {
+            float fac = 1.0f / sum;
+            for (int l = 0; l <= hmm.size(); ++l)
+                if (hmm.test_transition(k,l))
+                    hmm.set_transition_probability(k, l, fac * hmm.transition_probability(k,l));
+        } else {
+            // no out-transitions for this state -> connect to END-state
+            hmm.set_transition_probability(k, 0, 1.0f);
+        }
+    }
+}
+
+// Removes all transitions with probability below or equal to given threshold.
+template<class Alphabet_T>
+void sparsify(HMM<Alphabet_T>& hmm, float threshold)
+{
+    for (int k = 0; k <= hmm.size(); ++k)
+        for (int l = 0; l <= hmm.size(); ++l)
+            if (hmm.test_transition(k,l) && hmm.transition_probability(k,l) <= threshold)
+                hmm.erase_transition(k,l);
+    normalize_transitions(hmm);
 }
 
 
@@ -449,7 +454,7 @@ class ConstantTransitionInitializer : public TransitionInitializer<Alphabet_T>
         for (int k = 0; k <= hmm.size(); ++k)
             for (int l = 0; l <= hmm.size(); ++l)
                 hmm.set_transition_probability(k, l, prob);
-        hmm.normalize_transitions();
+        normalize_transitions(hmm);
     }
 };
 
@@ -468,7 +473,7 @@ class RandomTransitionInitializer : public TransitionInitializer<Alphabet_T>
                 float r = static_cast<float>(rand()) / (static_cast<float>(RAND_MAX) + 1.0f);
                 hmm.set_transition_probability(k, l, r);
             }
-        hmm.normalize_transitions();
+        normalize_transitions(hmm);
     }
 };
 

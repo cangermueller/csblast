@@ -78,7 +78,7 @@ inline void split(const std::string& s, char c, std::vector<std::string>& v)
 
 // Stringifies the range elemeents delimited by given character.
 template<typename Fwd>
-std::string stringify_range(Fwd first, Fwd last, char delim = ',')
+inline std::string stringify_range(Fwd first, Fwd last, char delim = ',')
 {
     std::ostringstream out;
     out << "{";
@@ -93,7 +93,7 @@ std::string stringify_range(Fwd first, Fwd last, char delim = ',')
 
 // Stringifies the provided container delimited by given character.
 template<typename C>
-std::string stringify_container(const C& c, char delim = ',')
+inline std::string stringify_container(const C& c, char delim = ',')
 {
     return stringify_range(c.begin(), c.end(), delim);
 }

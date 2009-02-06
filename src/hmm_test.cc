@@ -10,6 +10,7 @@
 #include "amino_acid.h"
 #include "blosum_matrix.h"
 #include "hmm.h"
+#include "log.h"
 #include "matrix_pseudocounts.h"
 #include "nucleotide.h"
 #include "profile.h"
@@ -155,7 +156,7 @@ TEST_F(HMMTest, NormalizeTransitions)
     hmm.set_transition_probability(1, 3, 0.9f);
     hmm.set_transition_probability(2, 3, 0.7f);
 
-    hmm.normalize_transitions();
+    normalize_transitions(hmm);
 
     EXPECT_FLOAT_EQ(0.5f, hmm.transition_probability(0, 1));
     EXPECT_FLOAT_EQ(0.5f, hmm.transition_probability(0, 2));
@@ -209,24 +210,24 @@ TEST(HMMTestInitialization, RandomSampleInitializer)
     fin.close();
     ali.assign_match_columns_by_gap_rule();
 
-    const int HMM_SIZE = 10;
-    const int NUM_COLS = 5;
+    const int HMM_SIZE = 100;
+    const int NUM_COLS = 13;
     const float PC_ADMIXTURE = 0.6f;
-    const float SAMPLE_RATE = 0.5f;
+    const float SAMPLE_RATE = 0.2f;
 
     // setup training profiles
     typedef shared_ptr< CountsProfile<AminoAcid> > profile_ptr;
     profile_ptr p(new CountsProfile<AminoAcid>(ali, true));
-    std::vector<profile_ptr> profiles;
-    profiles.push_back(p);
+    std::vector<profile_ptr> profiles(100, p);
 
     // setup substitution matrix pseudocounts
     BlosumMatrix m;
     MatrixPseudocounts<AminoAcid> mpc(m, shared_ptr<Admixture>(new ConstantAdmixture(PC_ADMIXTURE)));
 
     RandomSampleStateInitializer<AminoAcid> st_init(profiles, NUM_COLS, SAMPLE_RATE, mpc);
-    ConstantTransitionInitializer<AminoAcid> tr_init;
+    RandomTransitionInitializer<AminoAcid> tr_init;
     HMM<AminoAcid> hmm(HMM_SIZE, st_init, tr_init);
+    sparsify(hmm, 1.9f / HMM_SIZE);
 
     EXPECT_EQ(HMM_SIZE, hmm.num_states());
 }
