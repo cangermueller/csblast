@@ -37,9 +37,9 @@ class MatrixPseudocounts : public Pseudocounts<Alphabet_T>
 
     // Adds substitution matrix pseudocounts to sequence and stores resulting frequencies in given profile.
     virtual void add_to_sequence(const Sequence<Alphabet_T>& seq,
-                                 Profile<Alphabet_T>& p);
+                                 Profile<Alphabet_T>& p) const;
     // Adds substitution matrix pseudocounts to alignment derived profile.
-    virtual void add_to_profile(CountsProfile<Alphabet_T>& p);
+    virtual void add_to_profile(CountsProfile<Alphabet_T>& p) const;
 
   protected:
     // Needed to access names in templatized Profile base class
@@ -65,7 +65,7 @@ MatrixPseudocounts<Alphabet_T>::MatrixPseudocounts(const SubstitutionMatrix<Alph
 
 template<class Alphabet_T>
 void MatrixPseudocounts<Alphabet_T>::add_to_sequence(const Sequence<Alphabet_T>& seq,
-                                                     Profile<Alphabet_T>& p)
+                                                     Profile<Alphabet_T>& p) const
 {
     LOG(DEBUG) << "Adding substitution matrix pseudocounts to sequence ...";
     LOG(DEBUG1) << p;
@@ -89,7 +89,7 @@ void MatrixPseudocounts<Alphabet_T>::add_to_sequence(const Sequence<Alphabet_T>&
 }
 
 template<class Alphabet_T>
-void MatrixPseudocounts<Alphabet_T>::add_to_profile(CountsProfile<Alphabet_T>& p)
+void MatrixPseudocounts<Alphabet_T>::add_to_profile(CountsProfile<Alphabet_T>& p) const
 {
     LOG(DEBUG) << "Adding substitution matrix pseudocounts to profile ...";
     LOG(DEBUG1) << p;

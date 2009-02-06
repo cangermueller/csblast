@@ -14,6 +14,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <iterator>
 #include <limits>
 #include <vector>
 
@@ -21,6 +22,7 @@
 #include "profile.h"
 #include "context_profile.h"
 #include "counts_profile.h"
+#include "log.h"
 #include "pseudocounts.h"
 #include "shared_ptr.h"
 #include "sparse_matrix.h"
@@ -89,7 +91,7 @@ class HMM
     // Clears all transitions but leaves profile of states untouched.
     void clear_transitions();
     // Adds the given profile as state to the HMM and returns its state index. Note that number of profile columns must be odd!
-    int add_state(const Profile<Alphabet_T>& profile);
+    int add_profile(const Profile<Alphabet_T>& profile);
     // Normalizes transition probabilities to one.
     void normalize_transitions();
     // Returns a const iterator to a list of pointers of states.
@@ -228,7 +230,7 @@ void HMM<Alphabet_T>::clear_transitions()
 }
 
 template<class Alphabet_T>
-int HMM<Alphabet_T>::add_state(const Profile<Alphabet_T>& profile)
+int HMM<Alphabet_T>::add_profile(const Profile<Alphabet_T>& profile)
 {
     if (num_states() >= size())
         throw Exception("Unable to add state: the HMM contains already %i states!", size());
@@ -371,6 +373,7 @@ class RandomSampleStateInitializer : public StateInitializer<Alphabet_T>
                                  const Pseudocounts<Alphabet_T>& pc)
             : profiles_(profiles),
               num_cols_(num_cols),
+              sample_rate_(sample_rate),
               pc_(pc)
     {
         random_shuffle(profiles_.begin(), profiles_.end());
@@ -380,27 +383,46 @@ class RandomSampleStateInitializer : public StateInitializer<Alphabet_T>
 
     virtual void init(HMM<Alphabet_T>& hmm) const
     {
+        LOG(INFO) << "Initializing HMM with " << hmm.size() << "profile windows randomly sampled from "
+                  << profiles_.size() << " training profiles ...";
+
         // Iterate over randomly shuffled profiles; from each profile sample a fraction of profile windows until HMM is full.
         typedef typename profile_vector::const_iterator const_profile_iterator;
         for (const_profile_iterator pi = profiles_.begin(); pi != profiles_.end() && hmm.num_states() < hmm.size(); ++pi) {
-            if (pi->num_cols() < num_cols_) continue;
+            if ((*pi)->num_cols() < num_cols_) continue;
+
+            LOG(DEBUG) << "Processing next training profile ...";
+            LOG(DEBUG) << **pi;
 
             // Prepare sample of indices
             std::vector<int> idx;
-            for (int i = 0; i <= pi->num_cols() - num_cols_; ++i) idx.push_back(i);
+            for (int i = 0; i <= (*pi)->num_cols() - num_cols_; ++i) idx.push_back(i);
+            LOG(DEBUG) << "Available column indices:";
+            LOG(DEBUG) << stringify_container(idx);
+
             random_shuffle(idx.begin(), idx.end());
+            LOG(DEBUG) << "Shuffled column indices:";
+            LOG(DEBUG) << stringify_container(idx);
+
             const int sample_size = iround(sample_rate_ * idx.size());
             idx.erase(idx.begin() + sample_size, idx.end());  // sample only a fraction of the profile indices.
+            LOG(DEBUG) << "Sampled column indicices to be actually used::";
+            LOG(DEBUG) << stringify_container(idx);
 
             // Add sub-profiles at sampled indices to HMM
             for (std::vector<int>::const_iterator i = idx.begin(); i != idx.end() && hmm.num_states() < hmm.size(); ++i) {
-                CountsProfile<Alphabet_T> p(*pi, *i, num_cols_);
+                CountsProfile<Alphabet_T> p(**pi, *i, num_cols_);
+                LOG(DEBUG) << "Extracted profile window at position " << *i << ":";
                 p.convert_to_frequencies(); // make sure that profile contains frequencies not counts
                 pc_.add_to_profile(p);
+                hmm.add_profile(p);
             }
         }
         if (hmm.num_states() < hmm.size())
-            throw("Initialized only %i out of %i states in HMM. Maybe too few training profiles provided?", hmm.num_states(), hmm.size());
+            throw Exception("Initialized only %i out of %i states in HMM. Maybe too few training profiles provided?",
+                            hmm.num_states(), hmm.size());
+        LOG(DEBUG) << "HMM after full state assembly:";
+        LOG(DEBUG) << hmm;
     }
 
   private:

@@ -42,16 +42,16 @@ class Pseudocounts
 
     // Adds pseudocounts to sequence and stores resulting frequencies in given profile.
     virtual void add_to_sequence(const Sequence<Alphabet_T>& seq,
-                                 Profile<Alphabet_T>& p) = 0;
+                                 Profile<Alphabet_T>& p) const = 0;
     // Adds pseudocounts to alignment derived profile.
-    virtual void add_to_profile(CountsProfile<Alphabet_T>& p) = 0;
+    virtual void add_to_profile(CountsProfile<Alphabet_T>& p) const = 0;
 
     // Sets pseudocount admixture formula to be used.
     void set_admixture(shared_ptr<Admixture> pca) { pca_ = pca; }
 
   protected:
     // Calculates pseudocount admixute depending on alignment diversity.
-    float admixture(float neff) const;
+    float admixture(float neff) const { return pca_->calculate(neff); }
 
   private:
     // Disallow copy and assign
@@ -62,13 +62,6 @@ class Pseudocounts
     shared_ptr<Admixture> pca_;
 };  // Pseudocounts
 
-
-
-template<class Alphabet_T>
-float Pseudocounts<Alphabet_T>::admixture(float neff) const
-{
-    return pca_->calculate(neff);
-}
 
 
 // Calculates constant pseudocount admixture independent of number of effective sequences.

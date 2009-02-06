@@ -12,7 +12,9 @@
 #include <cctype>
 #include <cmath>
 
+#include <iostream>
 #include <limits>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -72,6 +74,28 @@ inline void split(const std::string& s, char c, std::vector<std::string>& v)
         if (j == std::string::npos)
             v.push_back(s.substr(i, s.length()));
     }
+}
+
+// Stringifies the range elemeents delimited by given character.
+template<typename Fwd>
+std::string stringify_range(Fwd first, Fwd last, char delim = ',')
+{
+    std::ostringstream out;
+    out << "{";
+    while (first != last) {
+        out << *first;
+        if (++first != last)
+            out << delim << ' ';
+    }
+    out << "}";
+    return out.str();
+}
+
+// Stringifies the provided container delimited by given character.
+template<typename C>
+std::string stringify_container(const C& c, char delim = ',')
+{
+    return stringify_range(c.begin(), c.end(), delim);
 }
 
 }  // cs
