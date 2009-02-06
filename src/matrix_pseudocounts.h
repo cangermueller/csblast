@@ -26,22 +26,24 @@ template<class Alphabet_T>
 class Profile;
 template<class Alphabet_T>
 class CountsProfile;
-template<class Alphabet_T>
-class AdmixturCalculator;
 
 template<class Alphabet_T>
 class MatrixPseudocounts : public Pseudocounts<Alphabet_T>
 {
   public:
-    MatrixPseudocounts(const SubstitutionMatrix<Alphabet_T>& m);
+    MatrixPseudocounts(const SubstitutionMatrix<Alphabet_T>& m,
+                       shared_ptr<Admixture> pca);
     ~MatrixPseudocounts() {}
 
     // Adds substitution matrix pseudocounts to sequence and stores resulting frequencies in given profile.
     virtual void add_to_sequence(const Sequence<Alphabet_T>& seq,
-                                 const AdmixtureCalculator& pca,
                                  Profile<Alphabet_T>& p);
     // Adds substitution matrix pseudocounts to alignment derived profile.
-    virtual void add_to_profile(CountsProfile<Alphabet_T>& p, const AdmixtureCalculator& pca);
+    virtual void add_to_profile(CountsProfile<Alphabet_T>& p);
+
+  protected:
+    // Needed to access names in templatized Profile base class
+    using Pseudocounts<Alphabet_T>::admixture;
 
   private:
     // Disallow copy and assign
@@ -55,13 +57,15 @@ class MatrixPseudocounts : public Pseudocounts<Alphabet_T>
 
 
 template<class Alphabet_T>
-MatrixPseudocounts<Alphabet_T>::MatrixPseudocounts(const SubstitutionMatrix<Alphabet_T>& m) : m_(m)
+MatrixPseudocounts<Alphabet_T>::MatrixPseudocounts(const SubstitutionMatrix<Alphabet_T>& m,
+                                                   shared_ptr<Admixture> pca)
+        : Pseudocounts<Alphabet_T>(pca),
+          m_(m)
 {}
 
 template<class Alphabet_T>
 void MatrixPseudocounts<Alphabet_T>::add_to_sequence(const Sequence<Alphabet_T>& seq,
-                                                       const AdmixtureCalculator& pca,
-                                                       Profile<Alphabet_T>& p)
+                                                     Profile<Alphabet_T>& p)
 {
     LOG(DEBUG) << "Adding substitution matrix pseudocounts to sequence ...";
     LOG(DEBUG1) << p;
@@ -72,7 +76,7 @@ void MatrixPseudocounts<Alphabet_T>::add_to_sequence(const Sequence<Alphabet_T>&
     p.set_logspace(false);
 
     // add substitution matrix pseudocounts
-    float tau = pca(1.0f);
+    float tau = admixture(1.0f);
     for(int i = 0; i < p.num_cols(); ++i) {
         for(int a = 0; a < p.alphabet_size(); ++a) {
             p[i][a] = (1.0f - tau) * (static_cast<int>(seq[i]) == a ? 1.0f : 0.0f) + tau * m_.r(a, seq[i]);
@@ -85,7 +89,7 @@ void MatrixPseudocounts<Alphabet_T>::add_to_sequence(const Sequence<Alphabet_T>&
 }
 
 template<class Alphabet_T>
-void MatrixPseudocounts<Alphabet_T>::add_to_profile(CountsProfile<Alphabet_T>& p, const AdmixtureCalculator& pca)
+void MatrixPseudocounts<Alphabet_T>::add_to_profile(CountsProfile<Alphabet_T>& p)
 {
     LOG(DEBUG) << "Adding substitution matrix pseudocounts to profile ...";
     LOG(DEBUG1) << p;
@@ -100,7 +104,7 @@ void MatrixPseudocounts<Alphabet_T>::add_to_profile(CountsProfile<Alphabet_T>& p
 
     // add substitution matrix pseudocounts
     for(int i = 0; i < p.num_cols(); ++i) {
-        float tau = pca(p.neff(i));
+        float tau = admixture(p.neff(i));
         for(int a = 0; a < p.alphabet_size(); ++a) {
             float sum = 0.0f;
             for(int b = 0; b < p.alphabet_size(); ++b)

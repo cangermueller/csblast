@@ -130,8 +130,8 @@ TEST(CountsProfileTest, AddMatrixPseudocountsToProfile)
     ASSERT_FLOAT_EQ(1.0f, profile[1][Nucleotide::instance().ctoi('T')]);
 
     NucleotideMatrix m(1, -1);
-    MatrixPseudocounts<Nucleotide> mpc(m);
-    mpc.add_to_profile(profile, DivergenceDependentAdmixture(1.0f, 10.0f));
+    MatrixPseudocounts<Nucleotide> mpc(m, shared_ptr<Admixture>(new DivergenceDependentAdmixture(1.0f, 10.0f)));
+    mpc.add_to_profile(profile);
 
     EXPECT_NEAR(0.25f, profile[0][Nucleotide::instance().ctoi('T')], DELTA);
 }
@@ -147,8 +147,8 @@ TEST(CountsProfileTest, AddMatrixPseudocountsToLogProfile)
     ASSERT_FLOAT_EQ(0.0f, profile[1][Nucleotide::instance().ctoi('T')]);
 
     NucleotideMatrix m(1, -1);
-    MatrixPseudocounts<Nucleotide> mpc(m);
-    mpc.add_to_profile(profile, DivergenceDependentAdmixture(1.0f, 10.0f));
+    MatrixPseudocounts<Nucleotide> mpc(m, shared_ptr<Admixture>(new DivergenceDependentAdmixture(1.0f, 10.0f)));
+    mpc.add_to_profile(profile);
 
     profile.transform_to_linspace();
     EXPECT_NEAR(0.25f, profile[0][Nucleotide::instance().ctoi('T')], DELTA);

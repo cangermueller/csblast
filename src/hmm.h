@@ -9,16 +9,19 @@
 // A hidden Markov model that stores context information in the form of
 // state-specific context profiles and state transition probabilities.
 
+#include <cstdlib>
+#include <ctime>
+
 #include <algorithm>
-#include <functional>
 #include <iostream>
-#include <list>
+#include <limits>
 #include <vector>
 
-//#include "initializer.h"
-#include "context_profile.h"
 #include "exception.h"
+#include "profile.h"
 #include "context_profile.h"
+#include "counts_profile.h"
+#include "pseudocounts.h"
 #include "shared_ptr.h"
 #include "sparse_matrix.h"
 #include "state.h"
@@ -27,6 +30,24 @@
 
 namespace cs
 {
+
+template<class Alphabet_T>
+class StateInitializer
+{
+  public:
+    StateInitializer() {}
+    virtual ~StateInitializer() {};
+    virtual void init(HMM<Alphabet_T>& hmm) const = 0;
+};
+
+template<class Alphabet_T>
+class TransitionInitializer
+{
+  public:
+    TransitionInitializer() {}
+    virtual ~TransitionInitializer() {};
+    virtual void init(HMM<Alphabet_T>& hmm) const = 0;
+};
 
 template<class Alphabet_T>
 class HMM
@@ -41,8 +62,8 @@ class HMM
     HMM(int size);
     // Constructs context HMM from serialized HMM read from input stream.
     HMM(std::istream& in);
-    // Constructs context HMM with the help of an initializer.
-    //HMM(shared_ptr<Initializer> initializer) : alphabet_(initializer.alphabet()) { initializer.init(*this); }
+    // Constructs context HMM with the help of a state- and a transition-initializer.
+    HMM(int size, const StateInitializer<Alphabet_T>& st_init, const TransitionInitializer<Alphabet_T>& tr_init);
 
     virtual ~HMM() {}
 
@@ -87,6 +108,10 @@ class HMM
     void write(std::ostream& out) const;
     // Returns true if the HMM transitions and state profiles are in logspace
     bool logspace() const { return logspace_; }
+    // Transforms state profiles and transitions to logspace
+    void transform_to_logspace();
+    // Transforms state profiles and transitions to linspace
+    void transform_to_linspace();
 
     // Prints HMM in human-readable format for debugging.
     friend std::ostream& operator<< (std::ostream& out, const HMM& hmm)
@@ -115,30 +140,42 @@ class HMM
     sparse_matrix<Transition> transitions_;
     // Flag indicating if HMM is in log- or linspace
     bool logspace_;
-    // // Pointer to .
-    // shared_ptr<Initializer> initializer_;
 };  // HMM
 
 
 
 template<class Alphabet_T>
 HMM<Alphabet_T>::HMM(int size)
-  : size_(size),
-    states_(),  // we add states with push_back
-    transitions_(size + 1, size + 1),
-    logspace_(false)
+        : size_(size),
+          states_(),  // we add states with push_back
+          transitions_(size + 1, size + 1),
+          logspace_(false)
 {
     init();
 }
 
 template<class Alphabet_T>
 HMM<Alphabet_T>::HMM(std::istream& in)
-  : size_(0),
-    states_(),
-    transitions_(),
-    logspace_(false)
+        : size_(0),
+          states_(),
+          transitions_(),
+          logspace_(false)
 {
     read(in);
+}
+
+template<class Alphabet_T>
+HMM<Alphabet_T>::HMM(int size,
+                     const StateInitializer<Alphabet_T>& st_init,
+                     const TransitionInitializer<Alphabet_T>& tr_init)
+        : size_(size),
+          states_(),
+          transitions_(size + 1, size + 1),
+          logspace_(false)
+{
+    init();
+    st_init.init(*this);
+    tr_init.init(*this);
 }
 
 template<class Alphabet_T>
@@ -201,6 +238,33 @@ int HMM<Alphabet_T>::add_state(const Profile<Alphabet_T>& profile)
                                                                     size()));
     states_.push_back(state_ptr);
     return num_states();
+}
+
+template<class Alphabet_T>
+void HMM<Alphabet_T>::transform_to_logspace()
+{
+    for (const_state_iterator si = states_begin(); si != states_end(); ++si)
+        (*si)->transform_to_logspace();
+
+    for (transition_iterator ti = transitions_begin(); ti != transitions_end(); ++ti) {
+        float prob = ti->probability;
+        ti->probability = prob == 0.0f ? -std::numeric_limits<float>::infinity() : log2(prob);
+    }
+
+    logspace_ = true;
+}
+
+template<class Alphabet_T>
+void HMM<Alphabet_T>::transform_to_linspace()
+{
+    for (const_state_iterator si = states_begin(); si != states_end(); ++si)
+        (*si)->transform_to_linspace();
+
+    for (transition_iterator ti = transitions_begin(); ti != transitions_end(); ++ti) {
+        ti->probability = pow(2.0, ti->probability);
+    }
+
+    logspace_ = false;
 }
 
 template<class Alphabet_T>
@@ -292,6 +356,99 @@ void HMM<Alphabet_T>::write(std::ostream& out) const
     }
     out << "//" << std::endl;
 }
+
+
+
+template<class Alphabet_T>
+class RandomSampleStateInitializer : public StateInitializer<Alphabet_T>
+{
+  public:
+    typedef typename std::vector< shared_ptr< CountsProfile<Alphabet_T> > > profile_vector;
+
+    RandomSampleStateInitializer(profile_vector profiles,
+                                 int num_cols,
+                                 float sample_rate,
+                                 const Pseudocounts<Alphabet_T>& pc)
+            : profiles_(profiles),
+              num_cols_(num_cols),
+              pc_(pc)
+    {
+        random_shuffle(profiles_.begin(), profiles_.end());
+    }
+
+    virtual ~RandomSampleStateInitializer() {};
+
+    virtual void init(HMM<Alphabet_T>& hmm) const
+    {
+        // Iterate over randomly shuffled profiles; from each profile sample a fraction of profile windows until HMM is full.
+        typedef typename profile_vector::const_iterator const_profile_iterator;
+        for (const_profile_iterator pi = profiles_.begin(); pi != profiles_.end() && hmm.num_states() < hmm.size(); ++pi) {
+            if (pi->num_cols() < num_cols_) continue;
+
+            // Prepare sample of indices
+            std::vector<int> idx;
+            for (int i = 0; i <= pi->num_cols() - num_cols_; ++i) idx.push_back(i);
+            random_shuffle(idx.begin(), idx.end());
+            const int sample_size = iround(sample_rate_ * idx.size());
+            idx.erase(idx.begin() + sample_size, idx.end());  // sample only a fraction of the profile indices.
+
+            // Add sub-profiles at sampled indices to HMM
+            for (std::vector<int>::const_iterator i = idx.begin(); i != idx.end() && hmm.num_states() < hmm.size(); ++i) {
+                CountsProfile<Alphabet_T> p(*pi, *i, num_cols_);
+                p.convert_to_frequencies(); // make sure that profile contains frequencies not counts
+                pc_.add_to_profile(p);
+            }
+        }
+        if (hmm.num_states() < hmm.size())
+            throw("Initialized only %i out of %i states in HMM. Maybe too few training profiles provided?", hmm.num_states(), hmm.size());
+    }
+
+  private:
+    // Pool of full length sequence profiles (possibly with pseudocounts) to be sampled from.
+    profile_vector profiles_;
+    // Number of columns per state profile.
+    const int num_cols_;
+    // Fraction of profile windows to be sampled from each training profile.
+    const float sample_rate_;
+    // Pseudocounts to be added to sampled profiles.
+    const Pseudocounts<Alphabet_T>& pc_;
+};  // RandomSampleStateInitializer
+
+template<class Alphabet_T>
+class ConstantTransitionInitializer : public TransitionInitializer<Alphabet_T>
+{
+  public:
+    ConstantTransitionInitializer() {}
+    virtual ~ConstantTransitionInitializer() {};
+
+    virtual void init(HMM<Alphabet_T>& hmm) const
+    {
+        float prob = 1.0f / (hmm.size() + 1);
+        for (int k = 0; k <= hmm.size(); ++k)
+            for (int l = 0; l <= hmm.size(); ++l)
+                hmm.set_transition_probability(k, l, prob);
+        hmm.normalize_transitions();
+    }
+};
+
+template<class Alphabet_T>
+class RandomTransitionInitializer : public TransitionInitializer<Alphabet_T>
+{
+  public:
+    RandomTransitionInitializer() {}
+    virtual ~RandomTransitionInitializer() {};
+
+    virtual void init(HMM<Alphabet_T>& hmm) const
+    {
+        srand(static_cast<unsigned int>(clock()));
+        for (int k = 0; k <= hmm.size(); ++k)
+            for (int l = 0; l <= hmm.size(); ++l) {
+                float r = static_cast<float>(rand()) / (static_cast<float>(RAND_MAX) + 1.0f);
+                hmm.set_transition_probability(k, l, r);
+            }
+        hmm.normalize_transitions();
+    }
+};
 
 }  // cs
 
