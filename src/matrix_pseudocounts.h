@@ -9,6 +9,7 @@
 // An abstract base class for pseudocount methods.
 
 #include "log.h"
+#include "util.h"
 #include "matrix.h"
 #include "profile.h"
 #include "counts_profile.h"
@@ -72,19 +73,15 @@ void MatrixPseudocounts<Alphabet_T>::add_to_sequence(const Sequence<Alphabet_T>&
     if (seq.length() != p.num_cols())
         throw Exception("Cannot add substitution matrix pseudocounts: sequence and profile have different length!");
 
-    const bool logspace = p.logspace();
-    p.set_logspace(false);
-
     // add substitution matrix pseudocounts
     float tau = admixture(1.0f);
     for(int i = 0; i < p.num_cols(); ++i) {
         for(int a = 0; a < p.alphabet_size(); ++a) {
-            p[i][a] = (1.0f - tau) * (static_cast<int>(seq[i]) == a ? 1.0f : 0.0f) + tau * m_.r(a, seq[i]);
+            float pa = (1.0f - tau) * (static_cast<int>(seq[i]) == a ? 1.0f : 0.0f) + tau * m_.r(a, seq[i]);
+            p[i][a] = p.logspace() ? log2(pa) : pa;
         }
     }
-
     normalize(p);
-    if (logspace) p.transform_to_logspace();
     LOG(DEBUG1) << p;
 }
 

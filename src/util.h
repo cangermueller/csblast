@@ -21,7 +21,7 @@
 namespace cs
 {
 
-// Returns the base 2 logarithm of num.
+// Returns the base 2 logarithm of x.
 inline float log2(float x)
 {
     return 1.442695041 * log(x);

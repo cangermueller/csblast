@@ -69,8 +69,6 @@ class Profile
     virtual void transform_to_linspace();
     // Returns true if the profile is in logspace
     bool logspace() const { return logspace_; }
-    // Sets logspace flag.
-    void set_logspace(bool flag) { logspace_ = flag; }
     // Returns an iterator to the first element in profile column i.
     col_type col_begin(int i) { return data_.row_begin(i); }
     // Returns an iterator just past the end of profile column i.
@@ -187,19 +185,23 @@ std::vector< shared_ptr< Profile<Alphabet_T> > > Profile<Alphabet_T>::readall(st
 template<class Alphabet_T>
 void Profile<Alphabet_T>::transform_to_logspace()
 {
-    for(int i = 0; i < num_cols(); ++i)
-        for(int a = 0; a < alphabet_size(); ++a)
-            data_[i][a] = data_[i][a] == 0.0f ? -std::numeric_limits<float>::infinity() : log2(data_[i][a]);
-    logspace_ = true;
+    if (!logspace_) {
+        for(int i = 0; i < num_cols(); ++i)
+            for(int a = 0; a < alphabet_size(); ++a)
+                data_[i][a] = log2(data_[i][a]);
+        logspace_ = true;
+    }
 }
 
 template<class Alphabet_T>
 void Profile<Alphabet_T>::transform_to_linspace()
 {
-    for(int i = 0; i < num_cols(); ++i)
-        for(int a = 0; a < alphabet_size(); ++a)
-            data_[i][a] = pow(2.0, data_[i][a]);
-    logspace_ = false;
+    if (logspace_) {
+        for(int i = 0; i < num_cols(); ++i)
+            for(int a = 0; a < alphabet_size(); ++a)
+                data_[i][a] = pow(2.0, data_[i][a]);
+        logspace_ = false;
+    }
 }
 
 template<class Alphabet_T>

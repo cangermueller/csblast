@@ -177,7 +177,8 @@ TEST_F(HMMTest, LinLogTransformation)
     hmm.set_transition_probability(2, 3, 1.0f);
     hmm.set_transition_probability(3, 0, 1.0f);
 
-    hmm.transform_to_logspace();
+    hmm.transform_transitions_to_logspace();
+    hmm.transform_states_to_logspace();
 
     EXPECT_FLOAT_EQ(0.0f, hmm[1][0][0]);
     EXPECT_FLOAT_EQ(0.0f, hmm[2][0][0]);
@@ -187,7 +188,8 @@ TEST_F(HMMTest, LinLogTransformation)
     EXPECT_FLOAT_EQ(0.0f, hmm.transition_probability(2, 3));
     EXPECT_FLOAT_EQ(0.0f, hmm.transition_probability(3, 0));
 
-    hmm.transform_to_linspace();
+    hmm.transform_transitions_to_linspace();
+    hmm.transform_states_to_linspace();
 
     EXPECT_FLOAT_EQ(1.0f, hmm[1][0][0]);
     EXPECT_FLOAT_EQ(0.0f, hmm[1][1][0]);

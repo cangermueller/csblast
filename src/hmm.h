@@ -106,12 +106,18 @@ class HMM
     const_transition_iterator transitions_end() const { return transitions_.nonempty_end(); }
     // Writes the HMM in serialization format to output stream.
     void write(std::ostream& out) const;
-    // Returns true if the HMM transitions and state profiles are in logspace
-    bool logspace() const { return logspace_; }
-    // Transforms state profiles and transitions to logspace
-    void transform_to_logspace();
-    // Transforms state profiles and transitions to linspace
-    void transform_to_linspace();
+    // Returns true if transitions are in logspace.
+    bool transitions_logspace() const { return transitions_logspace_; }
+    // Returns true if state profiles are in logspace.
+    bool states_logspace() const { return states_logspace_; }
+    // Transforms transitions to logspace.
+    void transform_transitions_to_logspace();
+    // Transforms transitions to linspace.
+    void transform_transitions_to_linspace();
+    // Transforms state profiles to logspace.
+    void transform_states_to_logspace();
+    // Transforms state profiles to linspace.
+    void transform_states_to_linspace();
 
     // Prints HMM in human-readable format for debugging.
     friend std::ostream& operator<< (std::ostream& out, const HMM& hmm)
@@ -134,12 +140,14 @@ class HMM
 
     // Number states in the fully assembled HMM (excl. BEGIN/END state)
     int size_;
-    // HMM states ordered by index (1, 2, ..., size)
+    // HMM states ordered by index.
     std::vector< shared_ptr< State<Alphabet_T> > > states_;
-    // Sparse matrix with state transitions
+    // Sparse matrix with state transitions.
     sparse_matrix<Transition> transitions_;
-    // Flag indicating if HMM is in log- or linspace
-    bool logspace_;
+    // Flag indicating if HMM transitions are log- or linspace
+    bool transitions_logspace_;
+    // Flag indicating if HMM profile probabilities are in log- or linspace
+    bool states_logspace_;
 };  // HMM
 
 
@@ -149,7 +157,8 @@ HMM<Alphabet_T>::HMM(int size)
         : size_(size),
           states_(),  // we add states with push_back
           transitions_(size + 1, size + 1),
-          logspace_(false)
+          transitions_logspace_(false),
+          states_logspace_(false)
 {
     init();
 }
@@ -159,7 +168,8 @@ HMM<Alphabet_T>::HMM(std::istream& in)
         : size_(0),
           states_(),
           transitions_(),
-          logspace_(false)
+          transitions_logspace_(false),
+          states_logspace_(false)
 {
     read(in);
 }
@@ -171,7 +181,8 @@ HMM<Alphabet_T>::HMM(int size,
         : size_(size),
           states_(),
           transitions_(size + 1, size + 1),
-          logspace_(false)
+          transitions_logspace_(false),
+          states_logspace_(false)
 {
     init();
     st_init.init(*this);
@@ -232,30 +243,43 @@ inline int HMM<Alphabet_T>::add_profile(const Profile<Alphabet_T>& profile)
 }
 
 template<class Alphabet_T>
-void HMM<Alphabet_T>::transform_to_logspace()
+void HMM<Alphabet_T>::transform_transitions_to_logspace()
 {
-    for (const_state_iterator si = states_begin(); si != states_end(); ++si)
-        (*si)->transform_to_logspace();
-
-    for (transition_iterator ti = transitions_begin(); ti != transitions_end(); ++ti) {
-        float prob = ti->probability;
-        ti->probability = prob == 0.0f ? -std::numeric_limits<float>::infinity() : log2(prob);
+    if (!transitions_logspace()) {
+        for (transition_iterator ti = transitions_begin(); ti != transitions_end(); ++ti)
+            ti->probability = log2(ti->probability);
+        transitions_logspace_ = true;
     }
-
-    logspace_ = true;
 }
 
 template<class Alphabet_T>
-void HMM<Alphabet_T>::transform_to_linspace()
+void HMM<Alphabet_T>::transform_transitions_to_linspace()
 {
-    for (const_state_iterator si = states_begin(); si != states_end(); ++si)
-        (*si)->transform_to_linspace();
-
-    for (transition_iterator ti = transitions_begin(); ti != transitions_end(); ++ti) {
-        ti->probability = pow(2.0, ti->probability);
+    if (transitions_logspace()) {
+        for (transition_iterator ti = transitions_begin(); ti != transitions_end(); ++ti)
+            ti->probability = pow(2.0, ti->probability);
+        transitions_logspace_ = false;
     }
+}
 
-    logspace_ = false;
+template<class Alphabet_T>
+void HMM<Alphabet_T>::transform_states_to_logspace()
+{
+    if (!states_logspace()) {
+        for (const_state_iterator si = states_begin(); si != states_end(); ++si)
+            (*si)->transform_to_logspace();
+        states_logspace_ = true;
+    }
+}
+
+template<class Alphabet_T>
+void HMM<Alphabet_T>::transform_states_to_linspace()
+{
+    if (states_logspace()) {
+        for (const_state_iterator si = states_begin(); si != states_end(); ++si)
+            (*si)->transform_to_linspace();
+        states_logspace_ = false;
+    }
 }
 
 template<class Alphabet_T>
@@ -268,17 +292,17 @@ void HMM<Alphabet_T>::read(std::istream& in)
     while (getline(in, tmp) && tmp.empty()) continue;
     if (tmp.find("HMM") == std::string::npos)
         throw Exception("Bad format: serialized HMM does not start with 'HMM' keyword!");
-
     // Read number of states
     if (getline(in, tmp) && tmp.find("size") != std::string::npos)
         size_ = atoi(tmp.c_str() + 4);
     else
         throw Exception("Bad format: serialized profile does not contain 'size' record!");
-
-    // Read logspace
-    if (getline(in, tmp) && tmp.find("logspace") != std::string::npos)
-        logspace_ = atoi(tmp.c_str() + 8) == 1;
-
+    // Read transitions_logspace
+    if (getline(in, tmp) && tmp.find("transitions_logspace") != std::string::npos)
+        transitions_logspace_ = atoi(tmp.c_str() + 20) == 1;
+    // Read states_logspace
+    if (getline(in, tmp) && tmp.find("states_logspace") != std::string::npos)
+        states_logspace_ = atoi(tmp.c_str() + 15) == 1;
     // Read state records
     init();
     while (num_states() < size() && in.peek() && in.good()) {  // peek first to make sure that we don't read beyond '//'
@@ -299,7 +323,7 @@ void HMM<Alphabet_T>::read(std::istream& in)
         float log_p = *tokens.back().begin() == '*' ? std::numeric_limits<int>::max() : atoi(tokens.back().c_str());
         set_transition_probability( atoi(tokens[0].c_str()),
                                     atoi(tokens[1].c_str()),
-                                    logspace_ ? -log_p / SCALE_FACTOR : pow(2.0, -log_p / SCALE_FACTOR) );
+                                    transitions_logspace() ? -log_p / SCALE_FACTOR : pow(2.0, -log_p / SCALE_FACTOR) );
         tokens.clear();
     }
 
@@ -311,8 +335,9 @@ void HMM<Alphabet_T>::write(std::ostream& out) const
 {
     // Write header
     out << "HMM" << std::endl;
-    out << "size\t\t" << size() << std::endl;
-    out << "logspace\t" << (logspace() ? 1 : 0) << std::endl;
+    out << "size\t\t\t" << size() << std::endl;
+    out << "transitions_logspace\t" << (transitions_logspace() ? 1 : 0) << std::endl;
+    out << "states_logspace\t\t" << (states_logspace() ? 1 : 0) << std::endl;
 
     // Write states (excl. BEGIN/END state)
     for (const_state_iterator si = ++states_begin(); si != states_end(); ++si)
@@ -322,7 +347,7 @@ void HMM<Alphabet_T>::write(std::ostream& out) const
     out << "transitions" << std::endl;
     for (const_transition_iterator ti = transitions_begin(); ti != transitions_end(); ++ti) {
         out << ti->from << "\t" << ti->to << "\t";
-        float logval = logspace_ ? ti->probability : log2(ti->probability);
+        float logval = transitions_logspace() ? ti->probability : log2(ti->probability);
         if (-logval == std::numeric_limits<float>::infinity())
             out << "*" << std::endl;
         else
@@ -337,6 +362,9 @@ void HMM<Alphabet_T>::write(std::ostream& out) const
 template<class Alphabet_T>
 void normalize_transitions(HMM<Alphabet_T>& hmm)
 {
+    const bool logspace = hmm.transitions_logspace();
+    if (logspace) hmm.transform_transitions_to_linspace();
+
     for (int k = 0; k <= hmm.size(); ++k) {
         float sum = 0.0f;
         for (int l = 0; l <= hmm.size(); ++l)
@@ -351,6 +379,8 @@ void normalize_transitions(HMM<Alphabet_T>& hmm)
             hmm.set_transition_probability(k, 0, 1.0f);
         }
     }
+
+    if (logspace) hmm.transform_transitions_to_logspace();
 }
 
 // Removes all transitions with probability below or equal to given threshold.
