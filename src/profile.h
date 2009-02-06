@@ -310,7 +310,7 @@ void Profile<Alphabet_T>::write_body(std::ostream& out) const
 template<class Alphabet_T>
 void Profile<Alphabet_T>::print(std::ostream& out) const
 {
-    std::ios_base::fmtflags flags = out.flags();  // save old flags
+    std::ios_base::fmtflags flags = out.flags();  // save flags
 
     out << "\t" << Alphabet_T::instance() << std::endl;
     for (int i = 0; i < num_cols(); ++i) {

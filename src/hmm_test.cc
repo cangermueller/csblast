@@ -212,15 +212,15 @@ TEST(HMMTestInitialization, RandomSampleInitializer)
     fin.close();
     ali.assign_match_columns_by_gap_rule();
 
-    const int HMM_SIZE = 100;
-    const int NUM_COLS = 13;
+    const int HMM_SIZE = 10;
+    const int NUM_COLS = 5;
     const float PC_ADMIXTURE = 0.6f;
     const float SAMPLE_RATE = 0.2f;
 
     // setup training profiles
     typedef shared_ptr< CountsProfile<AminoAcid> > profile_ptr;
     profile_ptr p(new CountsProfile<AminoAcid>(ali, true));
-    std::vector<profile_ptr> profiles(100, p);
+    std::vector<profile_ptr> profiles(10, p);
 
     // setup substitution matrix pseudocounts
     BlosumMatrix m;
@@ -229,7 +229,7 @@ TEST(HMMTestInitialization, RandomSampleInitializer)
     RandomSampleStateInitializer<AminoAcid> st_init(profiles, NUM_COLS, SAMPLE_RATE, mpc);
     RandomTransitionInitializer<AminoAcid> tr_init;
     HMM<AminoAcid> hmm(HMM_SIZE, st_init, tr_init);
-    sparsify(hmm, 1.9f / HMM_SIZE);
+    sparsify(hmm, 1.0f / HMM_SIZE);
 
     EXPECT_EQ(HMM_SIZE, hmm.num_states());
 }

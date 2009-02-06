@@ -14,6 +14,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <iomanip>
 #include <iterator>
 #include <limits>
 #include <vector>
@@ -85,7 +86,7 @@ class HMM
     // Removes the transition between state k and state l from the HMM.
     void erase_transition(int k, int l);
      // Returns true if there is a transition between state k and state l.
-    bool test_transition(int k, int l) { return transitions_.test(k,l); }
+    bool test_transition(int k, int l) const { return transitions_.test(k,l); }
     // Clears all states and transitions.
     void clear();
     // Clears all transitions but leaves profile of states untouched.
@@ -122,7 +123,7 @@ class HMM
     // Prints HMM in human-readable format for debugging.
     friend std::ostream& operator<< (std::ostream& out, const HMM& hmm)
     {
-        hmm.write(out);
+        hmm.print(out);
         return out;
     }
 
@@ -131,7 +132,7 @@ class HMM
     static const int SCALE_FACTOR = 1000;
 
     // Prints the HMM in human-readable format to output stream. TODO!!!
-    // virtual void print(std::ostream& out) const;
+    void print(std::ostream& out) const;
 
     // Initializes the HMM from a serialized HMM read from stream.
     void read(std::istream& in);
@@ -326,7 +327,6 @@ void HMM<Alphabet_T>::read(std::istream& in)
                                     transitions_logspace() ? -log_p / SCALE_FACTOR : pow(2.0, -log_p / SCALE_FACTOR) );
         tokens.clear();
     }
-
     LOG(DEBUG1) << *this;
 }
 
@@ -355,6 +355,43 @@ void HMM<Alphabet_T>::write(std::ostream& out) const
     }
     out << "//" << std::endl;
 }
+
+template<class Alphabet_T>
+void HMM<Alphabet_T>::print(std::ostream& out) const
+{
+    std::ios_base::fmtflags flags = out.flags();  // save flags
+
+    out << "HMM" << std::endl;
+    out << "Total number of states:        " << num_states() << std::endl;
+    out << "Total number of transitions:   " << num_transitions() << std::endl;
+    out << "Average number of transitions: " << iround(static_cast<float>(num_transitions()) / num_states()) << std::endl;
+
+    for (const_state_iterator si = ++states_begin(); si != states_end(); ++si)
+        (*si)->print(out);
+
+    out << "Transition matrix:" << std::endl << std::setw(4) << std::left << "";
+    out << std::setw(6) << std::right << "END" << "  ";
+    for (int l = 1; l <= size(); ++l) out << std::setw(6) << std::right << l << "  ";
+    out << std::endl;
+
+    for (int k = 0; k <= size(); ++k) {
+        out << std::setw(4) << std::left;
+        if (k == 0) out << "BEG";
+        else out << k;
+        for (int l = 0; l <= size(); ++l) {
+            out << std::setw(6) << std::right << std::fixed << std::setprecision(2);
+            if (test_transition(k,l))
+                out << 100.0f * (transitions_logspace() ? pow(2.0, transition_probability(k,l)) : transition_probability(k,l));
+            else
+                out << "*";
+            out << "  ";
+        }
+        out << std::endl;
+    }
+
+    out.flags(flags);
+}
+
 
 
 
@@ -387,11 +424,17 @@ void normalize_transitions(HMM<Alphabet_T>& hmm)
 template<class Alphabet_T>
 void sparsify(HMM<Alphabet_T>& hmm, float threshold)
 {
+    const bool logspace = hmm.transitions_logspace();
+    if (logspace) hmm.transform_transitions_to_linspace();
+
     for (int k = 0; k <= hmm.size(); ++k)
         for (int l = 0; l <= hmm.size(); ++l)
             if (hmm.test_transition(k,l) && hmm.transition_probability(k,l) <= threshold)
                 hmm.erase_transition(k,l);
+
     normalize_transitions(hmm);
+
+    if (logspace) hmm.transform_transitions_to_logspace();
 }
 
 
@@ -484,6 +527,7 @@ class ConstantTransitionInitializer : public TransitionInitializer<Alphabet_T>
         for (int k = 0; k <= hmm.size(); ++k)
             for (int l = 0; l <= hmm.size(); ++l)
                 hmm.set_transition_probability(k, l, prob);
+        hmm.erase_transition(0,0);
         normalize_transitions(hmm);
     }
 };
@@ -503,6 +547,7 @@ class RandomTransitionInitializer : public TransitionInitializer<Alphabet_T>
                 float r = static_cast<float>(rand()) / (static_cast<float>(RAND_MAX) + 1.0f);
                 hmm.set_transition_probability(k, l, r);
             }
+        hmm.erase_transition(0,0);
         normalize_transitions(hmm);
     }
 };
