@@ -26,8 +26,7 @@ template<class Alphabet_T>
 class State : public ContextProfile<Alphabet_T>
 {
   public:
-    typedef const Transition* transition_ptr;
-    typedef typename sparsetable<transition_ptr>::const_nonempty_iterator const_transition_iterator;
+    typedef typename sparsetable<AnchoredTransition>::const_nonempty_iterator const_transition_iterator;
 
     // Needed to access names in templatized Profile base class
     using Profile<Alphabet_T>::read;
@@ -48,12 +47,15 @@ class State : public ContextProfile<Alphabet_T>
     int num_in_transitions() const { return in_transitions_.num_nonempty(); }
     // Returns number of out-transitions.
     int num_out_transitions() const { return out_transitions_.num_nonempty(); }
-    // Returns the transition probability from this state to state k in runtime O(#transitions).
-    float transition_probability_to(int k) const;
-    // Returns the transition probability from state k to this state in runtime O(#transitions).
-    float transition_probability_from(int k) const;
-    // Returns an iterator past the end of list with non-null out-transition pointers.
-    const_transition_iterator out_transitions_end() { return out_transitions_.nonempty_end(); }
+    // Returns the transition probability from this state to state k.
+    float to(int k) const;
+    // Returns the transition probability from state k to this state.
+    float from(int k) const;
+    // Clears all in- and out-transitions.
+    void clear_transitions();
+    // Resizes the transition tables to new HMM size.
+    void resize(int hmm_size);
+
     // Returns a const iterator to start of list with non-null in-transition pointers.
     const_transition_iterator in_transitions_begin() const { return in_transitions_.nonempty_begin(); }
     // Returns a const iterator past the end of list with non-null in-transition pointers.
@@ -62,10 +64,6 @@ class State : public ContextProfile<Alphabet_T>
     const_transition_iterator out_transitions_begin() const { return out_transitions_.nonempty_begin(); }
     // Returns a const iterator past the end of list with non-null out-transition pointers.
     const_transition_iterator out_transitions_end() const { return out_transitions_.nonempty_end(); }
-    // Clears all in- and out-transitions.
-    void clear_transitions();
-    // Resizes the transition tables to new HMM size.
-    void resize(int hmm_size);
 
     // HMM needs access to transition tables.
     friend class HMM<Alphabet_T>;
@@ -94,9 +92,9 @@ class State : public ContextProfile<Alphabet_T>
     // Size of HMM to which the state belongs.
     int hmm_size_;
     // List of in-transitions.
-    sparsetable<const Transition*> in_transitions_;
+    sparsetable<AnchoredTransition> in_transitions_;
     // List of out-transitions.
-    sparsetable<const Transition*> out_transitions_;
+    sparsetable<AnchoredTransition> out_transitions_;
 };  // State
 
 
@@ -131,15 +129,15 @@ State<Alphabet_T>::State(int index, const Profile<Alphabet_T>& profile, int hmm_
 {}
 
 template<class Alphabet_T>
-float State<Alphabet_T>::transition_probability_to(int k) const
+float State<Alphabet_T>::to(int k) const
 {
-    return out_transitions_.test(k) ? out_transitions_.get(k)->probability : 0.0f;
+    return out_transitions_.test(k) ? out_transitions_.get(k).probability : 0.0f;
 }
 
 template<class Alphabet_T>
-float State<Alphabet_T>::transition_probability_from(int k) const
+float State<Alphabet_T>::from(int k) const
 {
-    return in_transitions_.test(k) ? in_transitions_.get(k)->probability : 0.0f;
+    return in_transitions_.test(k) ? in_transitions_.get(k).probability : 0.0f;
 }
 
 template<class Alphabet_T>

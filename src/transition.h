@@ -18,6 +18,8 @@ struct Transition
     Transition(int f, int t, float p) : from(f), to(t), probability(p) {}
     ~Transition() {}
 
+    operator float() const { return probability; }
+
     // Index of state from which the transition connects.
     const int from;
     // Index of state to which the transition connects.
@@ -25,6 +27,21 @@ struct Transition
     // Transition probability.
     float probability;
 };  // Transition
+
+struct AnchoredTransition
+{
+    // Simple Constructors
+    AnchoredTransition() : other(0), probability(0.0f) {}
+    AnchoredTransition(int i, float p) : other(i), probability(p) {}
+    ~AnchoredTransition() {}
+
+    operator float() const { return probability; }
+
+    // Index of other state to/from which the transition connects.
+    const int other;
+    // Transition probability.
+    float probability;
+};  // AnchoredTransition
 
 }  // cs
 

@@ -77,36 +77,34 @@ TEST_F(HMMTest, SimpleConstruction)
     EXPECT_FLOAT_EQ(0.0f, hmm[3][0][0]);
     EXPECT_FLOAT_EQ(1.0f, hmm[3][0][1]);
 
-    EXPECT_FLOAT_EQ(0.0f, hmm.transition_probability(0, 1));
-    hmm.set_transition_probability(0, 1, 0.5f);
+    EXPECT_FLOAT_EQ(0.0f, hmm(0,1));
+    hmm(0,1) = 0.5f;
     EXPECT_EQ(1, hmm[0].num_out_transitions());
     EXPECT_EQ(0, hmm[0].num_in_transitions());
     EXPECT_EQ(1, hmm[1].num_in_transitions());
     EXPECT_EQ(0, hmm[1].num_out_transitions());
-    EXPECT_FLOAT_EQ(0.5f, hmm.transition_probability(0, 1));
-    EXPECT_FLOAT_EQ(0.5f, hmm[0].transition_probability_to(1));
-    EXPECT_FLOAT_EQ(0.5f, hmm[1].transition_probability_from(0));
-    EXPECT_FLOAT_EQ(0.5f, (**hmm[0].out_transitions_begin()).probability);
-    EXPECT_FLOAT_EQ(0.5f, (**hmm[1].in_transitions_begin()).probability);
+    EXPECT_FLOAT_EQ(0.5f, hmm(0,1));
+    EXPECT_FLOAT_EQ(0.5f, hmm[0].out_transitions_begin()->probability);
+    EXPECT_FLOAT_EQ(0.5f, hmm[1].in_transitions_begin()->probability);
 
-    EXPECT_FLOAT_EQ(0.0f, hmm.transition_probability(0, 2));
-    hmm.set_transition_probability(0, 2, 0.5f);
-    EXPECT_FLOAT_EQ(0.5f, hmm.transition_probability(0, 2));
+    EXPECT_FLOAT_EQ(0.0f, hmm(0,2));
+    hmm(0,2) = 0.5f;
+    EXPECT_FLOAT_EQ(0.5f, hmm(0,2));
     EXPECT_EQ(2, hmm[0].num_out_transitions());
     EXPECT_EQ(1, hmm[2].num_in_transitions());
 
-    hmm.set_transition_probability(1, 3, 1.0f);
-    EXPECT_FLOAT_EQ(1.0f, hmm.transition_probability(1, 3));
+    hmm(1,3) = 1.0f;
+    EXPECT_FLOAT_EQ(1.0f, hmm(1,3));
     EXPECT_EQ(1, hmm[1].num_out_transitions());
     EXPECT_EQ(1, hmm[3].num_in_transitions());
 
-    hmm.set_transition_probability(2, 3, 1.0f);
-    EXPECT_FLOAT_EQ(1.0f, hmm.transition_probability(2, 3));
+    hmm(2,3) = 1.0f;
+    EXPECT_FLOAT_EQ(1.0f, hmm(2,3));
     EXPECT_EQ(1, hmm[2].num_out_transitions());
     EXPECT_EQ(2, hmm[3].num_in_transitions());
 
-    hmm.set_transition_probability(3, 0, 1.0f);
-    EXPECT_FLOAT_EQ(1.0f, hmm.transition_probability(3, 0));
+    hmm(3,0) = 1.0f;
+    EXPECT_FLOAT_EQ(1.0f, hmm(3,0));
     EXPECT_EQ(1, hmm[3].num_out_transitions());
     EXPECT_EQ(1, hmm[0].num_in_transitions());
 
@@ -120,11 +118,11 @@ TEST_F(HMMTest, ConstructionFromSerializedHMM)
     hmm1.add_profile(p1_);
     hmm1.add_profile(p2_);
     hmm1.add_profile(p3_);
-    hmm1.set_transition_probability(0, 1, 0.5f);
-    hmm1.set_transition_probability(0, 2, 0.5f);
-    hmm1.set_transition_probability(1, 3, 1.0f);
-    hmm1.set_transition_probability(2, 3, 1.0f);
-    hmm1.set_transition_probability(3, 0, 1.0f);
+    hmm1(0,1) = 0.5f;
+    hmm1(0,2) = 0.5f;
+    hmm1(1,3) = 1.0f;
+    hmm1(2,3) = 1.0f;
+    hmm1(3,0) = 1.0f;
 
     std::ostringstream out;
     hmm1.write(out);
@@ -142,7 +140,7 @@ TEST_F(HMMTest, ConstructionFromSerializedHMM)
     EXPECT_FLOAT_EQ(hmm1[3][1][0], hmm2[3][1][0]);
     EXPECT_EQ(hmm1[2].num_out_transitions(), hmm2[2].num_out_transitions());
     EXPECT_EQ(hmm1[3].num_in_transitions(), hmm2[3].num_in_transitions());
-    EXPECT_FLOAT_EQ(hmm1.transition_probability(3, 0), hmm2.transition_probability(3, 0));
+    EXPECT_FLOAT_EQ(hmm1(3,0), hmm2(3,0));
 }
 
 TEST_F(HMMTest, NormalizeTransitions)
@@ -151,18 +149,18 @@ TEST_F(HMMTest, NormalizeTransitions)
     hmm.add_profile(p1_);
     hmm.add_profile(p2_);
     hmm.add_profile(p3_);
-    hmm.set_transition_probability(0, 1, 0.3f);
-    hmm.set_transition_probability(0, 2, 0.3f);
-    hmm.set_transition_probability(1, 3, 0.9f);
-    hmm.set_transition_probability(2, 3, 0.7f);
+    hmm(0,1) = 0.3f;
+    hmm(0,2) = 0.3f;
+    hmm(1,3) = 0.9f;
+    hmm(2,3) = 0.7f;
 
     normalize_transitions(hmm);
 
-    EXPECT_FLOAT_EQ(0.5f, hmm.transition_probability(0, 1));
-    EXPECT_FLOAT_EQ(0.5f, hmm.transition_probability(0, 2));
-    EXPECT_FLOAT_EQ(1.0f, hmm.transition_probability(1, 3));
-    EXPECT_FLOAT_EQ(1.0f, hmm.transition_probability(2, 3));
-    EXPECT_FLOAT_EQ(1.0f, hmm.transition_probability(3, 0));
+    EXPECT_FLOAT_EQ(0.5f, hmm(0,1));
+    EXPECT_FLOAT_EQ(0.5f, hmm(0,2));
+    EXPECT_FLOAT_EQ(1.0f, hmm(1,3));
+    EXPECT_FLOAT_EQ(1.0f, hmm(2,3));
+    EXPECT_FLOAT_EQ(1.0f, hmm(3,0));
 }
 
 TEST_F(HMMTest, LinLogTransformation)
@@ -171,11 +169,11 @@ TEST_F(HMMTest, LinLogTransformation)
     hmm.add_profile(p1_);
     hmm.add_profile(p2_);
     hmm.add_profile(p3_);
-    hmm.set_transition_probability(0, 1, 0.5f);
-    hmm.set_transition_probability(0, 2, 0.5f);
-    hmm.set_transition_probability(1, 3, 1.0f);
-    hmm.set_transition_probability(2, 3, 1.0f);
-    hmm.set_transition_probability(3, 0, 1.0f);
+    hmm(0,1) = 0.5f;
+    hmm(0,2) = 0.5f;
+    hmm(1,3) = 1.0f;
+    hmm(2,3) = 1.0f;
+    hmm(3,0) = 1.0f;
 
     hmm.transform_transitions_to_logspace();
     hmm.transform_states_to_logspace();
@@ -184,9 +182,9 @@ TEST_F(HMMTest, LinLogTransformation)
     EXPECT_FLOAT_EQ(0.0f, hmm[2][0][0]);
     EXPECT_FLOAT_EQ(0.0f, hmm[3][0][0]);
 
-    EXPECT_FLOAT_EQ(0.0f, hmm.transition_probability(1, 3));
-    EXPECT_FLOAT_EQ(0.0f, hmm.transition_probability(2, 3));
-    EXPECT_FLOAT_EQ(0.0f, hmm.transition_probability(3, 0));
+    EXPECT_FLOAT_EQ(0.0f, hmm(1,3));
+    EXPECT_FLOAT_EQ(0.0f, hmm(2,3));
+    EXPECT_FLOAT_EQ(0.0f, hmm(3,0));
 
     hmm.transform_transitions_to_linspace();
     hmm.transform_states_to_linspace();
@@ -198,11 +196,11 @@ TEST_F(HMMTest, LinLogTransformation)
     EXPECT_FLOAT_EQ(1.0f, hmm[3][0][0]);
     EXPECT_FLOAT_EQ(0.0f, hmm[3][1][0]);
 
-    EXPECT_FLOAT_EQ(0.5f, hmm.transition_probability(0, 1));
-    EXPECT_FLOAT_EQ(0.5f, hmm.transition_probability(0, 2));
-    EXPECT_FLOAT_EQ(1.0f, hmm.transition_probability(1, 3));
-    EXPECT_FLOAT_EQ(1.0f, hmm.transition_probability(2, 3));
-    EXPECT_FLOAT_EQ(1.0f, hmm.transition_probability(3, 0));
+    EXPECT_FLOAT_EQ(0.5f, hmm(0,1));
+    EXPECT_FLOAT_EQ(0.5f, hmm(0,2));
+    EXPECT_FLOAT_EQ(1.0f, hmm(1,3));
+    EXPECT_FLOAT_EQ(1.0f, hmm(2,3));
+    EXPECT_FLOAT_EQ(1.0f, hmm(3,0));
 }
 
 TEST(HMMTestInitialization, RandomSampleInitializer)
