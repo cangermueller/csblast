@@ -226,18 +226,19 @@ TEST(HMMTestInitialization, RandomSampleInitializer)
     // setup substitution matrix pseudocounts
     BlosumMatrix m;
     MatrixPseudocounts<AminoAcid> mpc(m, shared_ptr<Admixture>(new ConstantAdmixture(PC_ADMIXTURE)));
-
-    RandomSampleStateInitializer<AminoAcid> st_init(profiles, NUM_COLS, SAMPLE_RATE, mpc);
-    RandomTransitionInitializer<AminoAcid> tr_init;
-    HMM<AminoAcid> hmm(HMM_SIZE, st_init, tr_init);
+    HMM<AminoAcid> hmm(HMM_SIZE,
+                       RandomSampleStateInitializer<AminoAcid>(profiles, NUM_COLS, SAMPLE_RATE, mpc),
+                       RandomTransitionInitializer<AminoAcid>());
     sparsify(hmm, 1.0f / HMM_SIZE);
 
     EXPECT_EQ(HMM_SIZE, hmm.num_states());
 
-    ForwardBackwardAlgorithm<AminoAcid, CountsProfile> fbp =
-        ForwardBackwardParameters<AminoAcid, CountsProfile>()
+    ForwardBackwardAlgorithm<AminoAcid, CountsProfile> fb =
+        ForwardBackwardParams()
         .weight_center(1.9f)
         .weight_decay(0.9f);
+
+    fb.weight_center(1.7f);
 }
 
 }  // cs

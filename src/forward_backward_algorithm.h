@@ -14,17 +14,10 @@
 namespace cs
 {
 
-// Forward declaration
-template< class Alphabet_T,
-          template<class Alphabet_U> class Subject_T >
-class ForwardBackwardAlgorithm;
-
-template< class Alphabet_T,
-          template<class Alphabet_U> class Subject_T >
-class ForwardBackwardParameters
+class ForwardBackwardParams
 {
   public:
-    ForwardBackwardParameters()
+    ForwardBackwardParams()
             : ignore_begin_transitions_(false),
               ignore_end_transitions_(false),
               ignore_profile_context_(false),
@@ -32,16 +25,27 @@ class ForwardBackwardParameters
               weight_decay_(0.85f)
     { }
 
-    // sets all the default values for each data member
-    ForwardBackwardParameters& ignore_begin_transitions() { ignore_begin_transitions_ = true; return *this; }
-    ForwardBackwardParameters& ignore_end_transitions() { ignore_end_transitions_ = true; return *this; }
-    ForwardBackwardParameters& ignore_profile_context() { ignore_profile_context_ = true; return *this; }
-    ForwardBackwardParameters& weight_center(float w) { weight_center_ = w; return *this; }
-    ForwardBackwardParameters& weight_decay(float b) { weight_decay_ = b; return *this; }
+    ForwardBackwardParams(const ForwardBackwardParams& p)
+            : ignore_begin_transitions_(p.ignore_begin_transitions_),
+              ignore_end_transitions_(p.ignore_end_transitions_),
+              ignore_profile_context_(p.ignore_profile_context_),
+              weight_center_(p.weight_center_),
+              weight_decay_(p.weight_decay_)
+    { }
 
-    //  private:
-    friend class ForwardBackwardAlgorithm<Alphabet_T, Subject_T>;
+    ForwardBackwardParams& ignore_begin_transitions(bool f) { ignore_begin_transitions_ = f; return *this; }
+    ForwardBackwardParams& ignore_end_transitions(bool f) { ignore_end_transitions_ = f; return *this; }
+    ForwardBackwardParams& ignore_profile_context(bool f) { ignore_profile_context_ = f; return *this; }
+    ForwardBackwardParams& weight_center(float w) { weight_center_ = w; return *this; }
+    ForwardBackwardParams& weight_decay(float b) { weight_decay_ = b; return *this; }
 
+    bool ignore_begin_transitions() { return ignore_begin_transitions_; }
+    bool ignore_end_transitions() { return ignore_end_transitions_; }
+    bool ignore_profile_context() { return ignore_profile_context_; }
+    float weight_center() { return weight_center_; }
+    float weight_decay() { return weight_decay_; }
+
+  private:
     bool ignore_begin_transitions_;
     bool ignore_end_transitions_;
     bool ignore_profile_context_;
@@ -51,17 +55,12 @@ class ForwardBackwardParameters
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-class ForwardBackwardAlgorithm
+class ForwardBackwardAlgorithm : public ForwardBackwardParams
 {
   public:
-    ForwardBackwardAlgorithm(const ForwardBackwardParameters<Alphabet_T, Subject_T>& params)
-            : ignore_begin_transitions_(params.ignore_begin_transitions_),
-              ignore_end_transitions_(params.ignore_end_transitions_)
-              // TODO: create profile matcher with weight_center, weight_decay, etc.
+    ForwardBackwardAlgorithm(const ForwardBackwardParams& params)
+            : ForwardBackwardParams(params)
     { }
-
-    bool ignore_begin_transitions_;
-    bool ignore_end_transitions_;
 };
 
 }  // cs
