@@ -65,10 +65,10 @@ class State : public ContextProfile<Alphabet_T>
     // Returns a const iterator past the end of list with non-null out-transition pointers.
     const_transition_iterator out_transitions_end() const { return out_transitions_.nonempty_end(); }
 
+  protected:
     // HMM needs access to transition tables.
     friend class HMM<Alphabet_T>;
 
-  protected:
     // Needed to access names in templatized Profile base class
     using Profile<Alphabet_T>::read_header;
     using Profile<Alphabet_T>::read_body;

@@ -16,6 +16,9 @@
 #include "profile.h"
 #include "shared_ptr.h"
 
+#include "forward_backward_algorithm.h"
+#include "sequence.h"
+
 namespace cs
 {
 
@@ -230,6 +233,11 @@ TEST(HMMTestInitialization, RandomSampleInitializer)
     sparsify(hmm, 1.0f / HMM_SIZE);
 
     EXPECT_EQ(HMM_SIZE, hmm.num_states());
+
+    ForwardBackwardAlgorithm<AminoAcid, CountsProfile> fbp =
+        ForwardBackwardParameters<AminoAcid, CountsProfile>()
+        .weight_center(1.9f)
+        .weight_decay(0.9f);
 }
 
 }  // cs

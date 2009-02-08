@@ -138,9 +138,6 @@ class HMM
         hmm.print(out);
         return out;
     }
-    friend class TransitionAdaptor<Alphabet_T>;
-
-
 
   private:
     // Scaling factor for serialization of profile log values
@@ -215,9 +212,21 @@ void HMM<Alphabet_T>::init()
 template<class Alphabet_T>
 inline void HMM<Alphabet_T>::set_transition(int k, int l, float prob)
 {
-    transitions_.set(k, l, Transition(k, l, prob));
-    states_[k]->out_transitions_.set(l, AnchoredTransition(l, prob));
-    states_[l]->in_transitions_.set(k, AnchoredTransition(k, prob));
+    if (transitions_.test(k,l)) {
+        // transitions already set -> modify in place
+        Transition* tr = &transitions_[k][l];
+        tr->probability = prob;
+        AnchoredTransition* out_tr = &states_[k]->out_transitions_[l];
+        out_tr->probability = prob;
+        AnchoredTransition* in_tr = &states_[l]->in_transitions_[k];
+        in_tr->probability = prob;
+    } else {
+        // transitions unset -> insert into matrix and tables
+        transitions_.set(k, l, Transition(k, l, prob));
+        states_[k]->out_transitions_.set(l, AnchoredTransition(l, prob));
+        states_[l]->in_transitions_.set(k, AnchoredTransition(k, prob));
+    }
+
 }
 
 template<class Alphabet_T>
