@@ -55,6 +55,7 @@ class shared_ptr
     T* operator->() const { return p_; }
     T* get() const { return p_; }
     long use_count() const { return c_; }
+    operator bool () const { return px != NULL; }
 
     // // Template function for implicit conversion (see More Effectove C++ page 176 for details).
     // template <class U>

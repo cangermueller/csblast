@@ -59,6 +59,8 @@ class Profile
     const_col_type operator[](int i) const { return data_[i]; }
     // Returns #columns in the profile
     int num_cols() const { return data_.num_rows(); }
+    // Returns #columns in the profile
+    int length() const { return data_.num_rows(); }
     // Returns #entries per column
     int alphabet_size() const { return data_.num_cols(); }
     // Returns the total number of elements in the profile.
