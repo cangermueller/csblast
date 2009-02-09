@@ -33,11 +33,11 @@ class State : public ContextProfile<Alphabet_T>
     using Profile<Alphabet_T>::write;
 
     // Constructs dummy state for BEGIN/END state in HMM.
-    explicit State(int hmm_size);
+    explicit State(int num_states);
     // Constructs HMM state from serialized state read from input stream.
     explicit State(std::istream& in);
     // Constructs HMM state with given profile and all transitions initialized to zero.
-    State(int index, const Profile<Alphabet_T>& profile, int hmm_size);
+    State(int index, const Profile<Alphabet_T>& profile, int num_states);
 
     virtual ~State() {}
 
@@ -54,7 +54,7 @@ class State : public ContextProfile<Alphabet_T>
     // Clears all in- and out-transitions.
     void clear_transitions();
     // Resizes the transition tables to new HMM size.
-    void resize(int hmm_size);
+    void resize(int num_states);
 
     // Returns a const iterator to start of list with non-null in-transition pointers.
     const_transition_iterator in_transitions_begin() const { return in_transitions_.nonempty_begin(); }
@@ -90,7 +90,7 @@ class State : public ContextProfile<Alphabet_T>
     // Index of state in HMM states vector.
     int index_;
     // Size of HMM to which the state belongs.
-    int hmm_size_;
+    int num_states_;
     // List of in-transitions.
     sparsetable<AnchoredTransition> in_transitions_;
     // List of out-transitions.
@@ -100,19 +100,19 @@ class State : public ContextProfile<Alphabet_T>
 
 
 template<class Alphabet_T>
-State<Alphabet_T>::State(int hmm_size)
+State<Alphabet_T>::State(int num_states)
         : ContextProfile<Alphabet_T>(),
           index_(0),
-          hmm_size_(hmm_size),
-          in_transitions_(hmm_size + 1),
-          out_transitions_(hmm_size + 1)
+          num_states_(num_states),
+          in_transitions_(num_states + 1),
+          out_transitions_(num_states + 1)
 {}
 
 template<class Alphabet_T>
 State<Alphabet_T>::State(std::istream& in)
         : ContextProfile<Alphabet_T>(),
           index_(0),
-          hmm_size_(0),
+          num_states_(0),
           in_transitions_(0),
           out_transitions_(0)
 {
@@ -120,12 +120,12 @@ State<Alphabet_T>::State(std::istream& in)
 }
 
 template<class Alphabet_T>
-State<Alphabet_T>::State(int index, const Profile<Alphabet_T>& profile, int hmm_size)
+State<Alphabet_T>::State(int index, const Profile<Alphabet_T>& profile, int num_states)
         : ContextProfile<Alphabet_T>(profile),
           index_(index),
-          hmm_size_(hmm_size),
-          in_transitions_(hmm_size + 1),
-          out_transitions_(hmm_size + 1)
+          num_states_(num_states),
+          in_transitions_(num_states + 1),
+          out_transitions_(num_states + 1)
 {}
 
 template<class Alphabet_T>
@@ -148,11 +148,11 @@ void State<Alphabet_T>::clear_transitions()
 }
 
 template<class Alphabet_T>
-void State<Alphabet_T>::resize(int hmm_size)
+void State<Alphabet_T>::resize(int num_states)
 {
     clear_transitions();
-    in_transitions_.resize(hmm_size + 1);
-    out_transitions_.resize(hmm_size + 1);
+    in_transitions_.resize(num_states + 1);
+    out_transitions_.resize(num_states + 1);
 }
 
 template<class Alphabet_T>
@@ -163,10 +163,10 @@ void State<Alphabet_T>::read_header(std::istream& in)
     if (getline(in, tmp) && tmp.find("index") != std::string::npos)
         index_ = atoi(tmp.c_str() + 5);
     // Read HMM size
-    if (getline(in, tmp) && tmp.find("hmm_size") != std::string::npos)
-        hmm_size_ = atoi(tmp.c_str() + 8);
-    in_transitions_.resize(hmm_size_ + 1);
-    out_transitions_.resize(hmm_size_ + 1);
+    if (getline(in, tmp) && tmp.find("num_states") != std::string::npos)
+        num_states_ = atoi(tmp.c_str() + 10);
+    in_transitions_.resize(num_states_ + 1);
+    out_transitions_.resize(num_states_ + 1);
 
     Profile<Alphabet_T>::read_header(in);
 }
@@ -175,7 +175,7 @@ template<class Alphabet_T>
 void State<Alphabet_T>::write_header(std::ostream& out) const
 {
     out << "index\t\t" << index_ << std::endl;
-    out << "hmm_size\t" << hmm_size_ << std::endl;
+    out << "num_states\t" << num_states_ << std::endl;
     Profile<Alphabet_T>::write_header(out);
 }
 

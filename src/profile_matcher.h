@@ -15,6 +15,7 @@
 #include "exception.h"
 #include "context_profile.h"
 #include "counts_profile.h"
+#include "log.h"
 #include "sequence.h"
 
 namespace cs
@@ -24,17 +25,23 @@ template< class Alphabet_T>
 class ProfileMatcher
 {
   public:
-    ProfileMatcher(int len, float weight_center, float weight_decay)
+    ProfileMatcher() : w(NULL)
+    { }
+
+    ~ProfileMatcher()
     {
-        init();
+        if (!w) delete w;
     }
 
-    void init(int len, float weight_center, float weight_decay)
+    void init_weights(int len, float weight_center, float weight_decay)
     {
         if (len % 2 != 1)
             throw Exception("Profiles length for matching should be odd but is %i!", len);
 
-        center = (len - 1) / 2;
+        if (!w) delete w;
+        w = new float[len];
+
+        const int center = (len - 1) / 2;
         w[center] = weight_center;
         for (int i = 1; i <= center; ++i) {
             float weight = weight_center * pow(weight_decay, i);
@@ -43,36 +50,43 @@ class ProfileMatcher
         }
     }
 
-    float match(const ContextProfile<Alphabet_T>& profile, const CountsProfile<Alphabet_T>& counts, int index)
+    float match(const ContextProfile<Alphabet_T>& profile, const CountsProfile<Alphabet_T>& counts, int index) const
     {
         double rv = 0.0f;
-        int beg = std::max(0, index - center);
-        int end = std::min(counts.num_cols() - 1, index + center);
-
-        // TODO: can we actually ignore the multinomial normalization factor because it cancels out?
-        for(int i = beg; i <= end; ++l) {
-            int j = i - index + center;
-            double sum = 0.0f;
+        const int center = profile.center();
+        if (w) {
+            // TODO: can we actually ignore the multinomial normalization factor because it cancels out?
+            int beg = std::max(0, index - center);
+            int end = std::min(counts.num_cols() - 1, index + center);
+            for(int i = beg; i <= end; ++i) {
+                int j = i - index + center;
+                double sum = 0.0f;
+                for (int a = 0; a < profile.alphabet_size(); ++a)
+                    sum += counts[i][a] * profile[j][a];
+                rv += w[j] * sum;
+            }
+        } else {
             for (int a = 0; a < profile.alphabet_size(); ++a)
-                sum += counts[i][a] * profile[j][a];
-            rv += w[j] * sum;
+                rv += counts[index][a] * profile[center][a];
         }
-
         return pow(2.0, rv);
     }
 
-    float match(const ContextProfile<Alphabet_T>& profile, const Sequence<Alphabet_T>& seq, int index)
+    float match(const ContextProfile<Alphabet_T>& profile, const Sequence<Alphabet_T>& seq, int index) const
     {
         double rv = 0.0f;
-        int beg = std::max(0, index - center);
-        int end = std::min(counts.num_cols() - 1, index + center);
-
-        for(int i = beg; i <= end; ++l) {
-            int j = i - index + center;
-            double sum = 0.0f;
-            rv += w[j] * profile[j][seq[i]];
+        const int center = profile.center();
+        if (w) {
+            int beg = std::max(0, index - center);
+            int end = std::min(seq.length() - 1, index + center);
+            for(int i = beg; i <= end; ++i) {
+                int j = i - index + center;
+                rv += w[j] * profile[j][seq[i]];
+            }
+        } else {
+            LOG(DEBUG1) << "profile[j=" << center << "][seq[i=" << index << "]=" << seq.chr(index) << "]";
+            rv = profile[center][seq[index]];
         }
-
         return pow(2.0, rv);
     }
 
@@ -82,7 +96,7 @@ class ProfileMatcher
     void operator=(const ProfileMatcher&);
 
     // positional window weights
-    std::valarray<float> w;
+    float* w;
 };
 
 }  // cs

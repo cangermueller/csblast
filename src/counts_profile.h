@@ -82,17 +82,18 @@ class CountsProfile : public Profile<Alphabet_T>
     // Return serialization class identity.
     virtual const std::string class_identity() const { static std::string id("CountsProfile"); return id;}
 
-    // Flag indicating if the profile contains counts or (relative) frequencies.
-    bool has_counts_;
     // Number of effective sequences in each alignment column.
     std::vector<float> neff_;
+    // Flag indicating if the profile contains counts or (relative) frequencies.
+    bool has_counts_;
 };  // CountsProfile
 
 
 
 template<class Alphabet_T>
 CountsProfile<Alphabet_T>::CountsProfile(std::istream& in)
-        : has_counts_(false)
+        : neff_(),
+          has_counts_(false)
 {
     read(in);
 }
@@ -100,6 +101,7 @@ CountsProfile<Alphabet_T>::CountsProfile(std::istream& in)
 template<class Alphabet_T>
 CountsProfile<Alphabet_T>::CountsProfile(const Sequence<Alphabet_T>& sequence)
         : Profile<Alphabet_T>(sequence.length()),
+          neff_(sequence.length(), 1.0f),
           has_counts_(false)
 {
     for(int i = 0; i < num_cols(); ++i)
@@ -109,6 +111,7 @@ CountsProfile<Alphabet_T>::CountsProfile(const Sequence<Alphabet_T>& sequence)
 template<class Alphabet_T>
 CountsProfile<Alphabet_T>::CountsProfile(const Alignment<Alphabet_T>& alignment, bool position_specific_weights)
         : Profile<Alphabet_T>(alignment.num_match_cols()),
+          neff_(alignment.num_match_cols()),
           has_counts_(false)
 {
     const int num_cols = alignment.num_match_cols();

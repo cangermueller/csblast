@@ -14,7 +14,6 @@
 #include "profile.h"
 #include "counts_profile.h"
 #include "pseudocounts.h"
-#include "shared_ptr.h"
 #include "substitution_matrix.h"
 
 namespace cs
@@ -32,8 +31,8 @@ template<class Alphabet_T>
 class MatrixPseudocounts : public Pseudocounts<Alphabet_T>
 {
   public:
-    MatrixPseudocounts(const SubstitutionMatrix<Alphabet_T>& m,
-                       shared_ptr<Admixture> pca);
+    MatrixPseudocounts(const SubstitutionMatrix<Alphabet_T>* m,
+                       const Admixture* pca);
     ~MatrixPseudocounts() {}
 
     // Adds substitution matrix pseudocounts to sequence and stores resulting frequencies in given profile.
@@ -41,6 +40,8 @@ class MatrixPseudocounts : public Pseudocounts<Alphabet_T>
                                  Profile<Alphabet_T>& p) const;
     // Adds substitution matrix pseudocounts to alignment derived profile.
     virtual void add_to_profile(CountsProfile<Alphabet_T>& p) const;
+    // Sets substiution matrix to be used for conditional probabilities.
+    void set_matrix(const SubstitutionMatrix<Alphabet_T>* m) { m_ = m; }
 
   protected:
     // Needed to access names in templatized Profile base class
@@ -52,14 +53,14 @@ class MatrixPseudocounts : public Pseudocounts<Alphabet_T>
     void operator=(const MatrixPseudocounts&);
 
     // Substitution matrix with conditional probabilities for pseudocounts.
-    const SubstitutionMatrix<Alphabet_T>& m_;
+    const SubstitutionMatrix<Alphabet_T>* m_;
 };  // MatrixPseudocounts
 
 
 
 template<class Alphabet_T>
-MatrixPseudocounts<Alphabet_T>::MatrixPseudocounts(const SubstitutionMatrix<Alphabet_T>& m,
-                                                   shared_ptr<Admixture> pca)
+MatrixPseudocounts<Alphabet_T>::MatrixPseudocounts(const SubstitutionMatrix<Alphabet_T>* m,
+                                                   const Admixture* pca)
         : Pseudocounts<Alphabet_T>(pca),
           m_(m)
 {}
@@ -77,7 +78,7 @@ void MatrixPseudocounts<Alphabet_T>::add_to_sequence(const Sequence<Alphabet_T>&
     float tau = admixture(1.0f);
     for(int i = 0; i < p.num_cols(); ++i) {
         for(int a = 0; a < p.alphabet_size(); ++a) {
-            float pa = (1.0f - tau) * (static_cast<int>(seq[i]) == a ? 1.0f : 0.0f) + tau * m_.r(a, seq[i]);
+            float pa = (1.0f - tau) * (static_cast<int>(seq[i]) == a ? 1.0f : 0.0f) + tau * m_->r(a, seq[i]);
             p[i][a] = p.logspace() ? log2(pa) : pa;
         }
     }
@@ -105,7 +106,7 @@ void MatrixPseudocounts<Alphabet_T>::add_to_profile(CountsProfile<Alphabet_T>& p
         for(int a = 0; a < p.alphabet_size(); ++a) {
             float sum = 0.0f;
             for(int b = 0; b < p.alphabet_size(); ++b)
-                sum += m_.r(a,b) * f[i][b];
+                sum += m_->r(a,b) * f[i][b];
             p[i][a] = (1.0f - tau) * f[i][a] + tau * sum;
         }
     }

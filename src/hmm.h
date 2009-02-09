@@ -67,18 +67,22 @@ class HMM
     typedef typename sparse_matrix<Transition>::const_nonempty_iterator const_transition_iterator;
 
     // Constructs an empty HMM of given size without any states or transitions.
-    HMM(int size);
+    HMM(int num_states);
     // Constructs context HMM from serialized HMM read from input stream.
     HMM(std::istream& in);
     // Constructs context HMM with the help of a state- and a transition-initializer.
-    HMM(int size, const StateInitializer<Alphabet_T>& st_init, const TransitionInitializer<Alphabet_T>& tr_init);
+    HMM(int num_states, const StateInitializer<Alphabet_T>& st_init, const TransitionInitializer<Alphabet_T>& tr_init);
 
     virtual ~HMM() {}
 
-    // Returns the number of states in the fully assembled HMM (not counting the BEGIN/END state)
-    int size() const { return size_; }
-    // Returns the current number of states in the HMM (not counting the BEGIN/END state)
-    int num_states() const { return states_.size() - 1; }
+    // Initializes HMM states with the provided initializer (previous states are lost).
+    void init_states(const StateInitializer<Alphabet_T>& st_init);
+    // Initializes HMM transitions with the provided initializer (previous transitions are lost).
+    void init_transitions(const TransitionInitializer<Alphabet_T>& tr_init);
+    // Returns true if all states have been fully assembled.
+    bool full() const { return static_cast<int>(states_.size()) - 1 == num_states_; }
+    // Returns the number of states in the HMM (not counting the BEGIN/END state)
+    int num_states() const { return num_states_; }
     // Returns the number of non-null transitions in the HMM.
     int num_transitions() const { return transitions_.num_nonempty(); }
     // Accessor methods for state i, where i is from interval [0,num_states].
@@ -151,7 +155,7 @@ class HMM
     void init();
 
     // Number states in the fully assembled HMM (excl. BEGIN/END state)
-    int size_;
+    int num_states_;
     // HMM states ordered by index.
     std::vector< shared_ptr< State<Alphabet_T> > > states_;
     // Sparse matrix with state transitions.
@@ -165,10 +169,10 @@ class HMM
 
 
 template<class Alphabet_T>
-HMM<Alphabet_T>::HMM(int size)
-        : size_(size),
+HMM<Alphabet_T>::HMM(int num_states)
+        : num_states_(num_states),
           states_(),  // we add states with push_back
-          transitions_(size + 1, size + 1),
+          transitions_(num_states + 1, num_states + 1),
           transitions_logspace_(false),
           states_logspace_(false)
 {
@@ -177,7 +181,7 @@ HMM<Alphabet_T>::HMM(int size)
 
 template<class Alphabet_T>
 HMM<Alphabet_T>::HMM(std::istream& in)
-        : size_(0),
+        : num_states_(0),
           states_(),
           transitions_(),
           transitions_logspace_(false),
@@ -187,12 +191,12 @@ HMM<Alphabet_T>::HMM(std::istream& in)
 }
 
 template<class Alphabet_T>
-HMM<Alphabet_T>::HMM(int size,
+HMM<Alphabet_T>::HMM(int num_states,
                      const StateInitializer<Alphabet_T>& st_init,
                      const TransitionInitializer<Alphabet_T>& tr_init)
-        : size_(size),
+        : num_states_(num_states),
           states_(),
-          transitions_(size + 1, size + 1),
+          transitions_(num_states + 1, num_states + 1),
           transitions_logspace_(false),
           states_logspace_(false)
 {
@@ -202,11 +206,25 @@ HMM<Alphabet_T>::HMM(int size,
 }
 
 template<class Alphabet_T>
-void HMM<Alphabet_T>::init()
+inline void HMM<Alphabet_T>::init()
 {
-    states_.reserve(size() + 1);
-    states_.push_back( shared_ptr< State<Alphabet_T> >(new State<Alphabet_T>(size())) );
-    transitions_.resize(size() + 1, size() + 1);
+    states_.reserve(num_states() + 1);
+    states_.push_back( shared_ptr< State<Alphabet_T> >(new State<Alphabet_T>(num_states())) );
+    transitions_.resize(num_states() + 1, num_states() + 1);
+}
+
+template<class Alphabet_T>
+inline void HMM<Alphabet_T>::init_states(const StateInitializer<Alphabet_T>& st_init)
+{
+    clear();
+    st_init.init(*this);
+}
+
+template<class Alphabet_T>
+inline void HMM<Alphabet_T>::init_transitions(const TransitionInitializer<Alphabet_T>& tr_init)
+{
+    clear_transitions();
+    tr_init.init(*this);
 }
 
 template<class Alphabet_T>
@@ -226,7 +244,6 @@ inline void HMM<Alphabet_T>::set_transition(int k, int l, float prob)
         states_[k]->out_transitions_.set(l, AnchoredTransition(l, prob));
         states_[l]->in_transitions_.set(k, AnchoredTransition(k, prob));
     }
-
 }
 
 template<class Alphabet_T>
@@ -238,7 +255,7 @@ inline void HMM<Alphabet_T>::erase_transition(int k, int l)
 }
 
 template<class Alphabet_T>
-void HMM<Alphabet_T>::clear()
+inline void HMM<Alphabet_T>::clear()
 {
     states_.clear();
     transitions_.clear();
@@ -250,24 +267,24 @@ void HMM<Alphabet_T>::clear_transitions()
 {
     transitions_.clear();
     for (state_iterator si = states_begin(); si != states_end(); ++si)
-        si->clear_transitions();
+        (*si)->clear_transitions();
 }
 
 template<class Alphabet_T>
 inline int HMM<Alphabet_T>::add_profile(const Profile<Alphabet_T>& profile)
 {
-    if (num_states() >= size())
-        throw Exception("Unable to add state: the HMM contains already %i states!", size());
+    if (full())
+        throw Exception("Unable to add state: the HMM contains already %i states!", num_states());
 
-    shared_ptr< State<Alphabet_T> > state_ptr(new State<Alphabet_T>(num_states() + 1,
+    shared_ptr< State<Alphabet_T> > state_ptr(new State<Alphabet_T>(states_.size(),
                                                                     profile,
-                                                                    size()));
+                                                                    num_states()));
     states_.push_back(state_ptr);
-    return num_states();
+    return states_.size() - 1;
 }
 
 template<class Alphabet_T>
-void HMM<Alphabet_T>::transform_transitions_to_logspace()
+inline void HMM<Alphabet_T>::transform_transitions_to_logspace()
 {
     if (!transitions_logspace()) {
         for (transition_iterator ti = transitions_begin(); ti != transitions_end(); ++ti)
@@ -277,7 +294,7 @@ void HMM<Alphabet_T>::transform_transitions_to_logspace()
 }
 
 template<class Alphabet_T>
-void HMM<Alphabet_T>::transform_transitions_to_linspace()
+inline void HMM<Alphabet_T>::transform_transitions_to_linspace()
 {
     if (transitions_logspace()) {
         for (transition_iterator ti = transitions_begin(); ti != transitions_end(); ++ti)
@@ -287,7 +304,7 @@ void HMM<Alphabet_T>::transform_transitions_to_linspace()
 }
 
 template<class Alphabet_T>
-void HMM<Alphabet_T>::transform_states_to_logspace()
+inline void HMM<Alphabet_T>::transform_states_to_logspace()
 {
     if (!states_logspace()) {
         for (state_iterator si = states_begin(); si != states_end(); ++si)
@@ -297,7 +314,7 @@ void HMM<Alphabet_T>::transform_states_to_logspace()
 }
 
 template<class Alphabet_T>
-void HMM<Alphabet_T>::transform_states_to_linspace()
+inline void HMM<Alphabet_T>::transform_states_to_linspace()
 {
     if (states_logspace()) {
         for (state_iterator si = states_begin(); si != states_end(); ++si)
@@ -317,10 +334,16 @@ void HMM<Alphabet_T>::read(std::istream& in)
     if (tmp.find("HMM") == std::string::npos)
         throw Exception("Bad format: serialized HMM does not start with 'HMM' keyword!");
     // Read number of states
-    if (getline(in, tmp) && tmp.find("size") != std::string::npos)
-        size_ = atoi(tmp.c_str() + 4);
+    if (getline(in, tmp) && tmp.find("num_states") != std::string::npos)
+        num_states_ = atoi(tmp.c_str() + 10);
     else
         throw Exception("Bad format: serialized profile does not contain 'size' record!");
+    // Read number of transitions
+    int ntr = 0;
+    if (getline(in, tmp) && tmp.find("num_transitions") != std::string::npos)
+        ntr = atoi(tmp.c_str() + 15);
+    else
+        throw Exception("Bad format: serialized profile does not contain 'num_transitions' record!");
     // Read transitions_logspace
     if (getline(in, tmp) && tmp.find("transitions_logspace") != std::string::npos)
         transitions_logspace_ = atoi(tmp.c_str() + 20) == 1;
@@ -329,12 +352,13 @@ void HMM<Alphabet_T>::read(std::istream& in)
         states_logspace_ = atoi(tmp.c_str() + 15) == 1;
     // Read state records
     init();
-    while (num_states() < size() && in.peek() && in.good()) {  // peek first to make sure that we don't read beyond '//'
+    while (!full() && in.good()) {  // peek first to make sure that we don't read beyond '//'
         shared_ptr< State<Alphabet_T> > state_ptr(new State<Alphabet_T>(in));
         states_.push_back(state_ptr);
     }
-    if (num_states() != size())
-        throw Exception("Error while reading HMM: number of states is %i but should be %i!", num_states(), size());
+    if (!full())
+        throw Exception("Error while reading HMM: number of state records is %i but should be %i!",
+                        states_.size() - 1, num_states());
 
     // Read all transitions
     std::vector<std::string> tokens;
@@ -350,6 +374,8 @@ void HMM<Alphabet_T>::read(std::istream& in)
                         transitions_logspace() ? -log_p / SCALE_FACTOR : pow(2.0, -log_p / SCALE_FACTOR) );
         tokens.clear();
     }
+    if (num_transitions() != ntr)
+        throw Exception("Serialized HMM has %i transition records but should have %i!", num_transitions(), ntr);
     LOG(DEBUG1) << *this;
 }
 
@@ -358,7 +384,8 @@ void HMM<Alphabet_T>::write(std::ostream& out) const
 {
     // Write header
     out << "HMM" << std::endl;
-    out << "size\t\t\t" << size() << std::endl;
+    out << "num_states\t\t" << num_states() << std::endl;
+    out << "num_transitions\t\t" << num_transitions() << std::endl;
     out << "transitions_logspace\t" << (transitions_logspace() ? 1 : 0) << std::endl;
     out << "states_logspace\t\t" << (states_logspace() ? 1 : 0) << std::endl;
 
@@ -387,21 +414,21 @@ void HMM<Alphabet_T>::print(std::ostream& out) const
     out << "HMM" << std::endl;
     out << "Total number of states:        " << num_states() << std::endl;
     out << "Total number of transitions:   " << num_transitions() << std::endl;
-    out << "Average number of transitions: " << iround(static_cast<float>(num_transitions()) / num_states()) << std::endl;
+    out << "Average number of transitions: " << iround(static_cast<float>(num_transitions()) / (num_states() + 1)) << std::endl;
 
     for (const_state_iterator si = states_begin(); si != states_end(); ++si)
         (*si)->print(out);
 
     out << "Transition matrix:" << std::endl << std::setw(4) << std::left << "";
     out << std::setw(6) << std::right << "END" << "  ";
-    for (int l = 1; l <= size(); ++l) out << std::setw(6) << std::right << l << "  ";
+    for (int l = 1; l <= num_states(); ++l) out << std::setw(6) << std::right << l << "  ";
     out << std::endl;
 
-    for (int k = 0; k <= size(); ++k) {
+    for (int k = 0; k <= num_states(); ++k) {
         out << std::setw(4) << std::left;
         if (k == 0) out << "BEG";
         else out << k;
-        for (int l = 0; l <= size(); ++l) {
+        for (int l = 0; l <= num_states(); ++l) {
             out << std::setw(6) << std::right << std::fixed << std::setprecision(2);
             if (test_transition(k,l))
                 out << 100.0f * (transitions_logspace() ? pow(2.0, transition_probability(k,l)) : transition_probability(k,l));
@@ -425,14 +452,14 @@ void normalize_transitions(HMM<Alphabet_T>& hmm)
     if (logspace) hmm.transform_transitions_to_linspace();
 
     hmm.erase_transition(0,0);
-    for (int k = 0; k <= hmm.size(); ++k) {
+    for (int k = 0; k <= hmm.num_states(); ++k) {
         float sum = 0.0f;
-        for (int l = 0; l <= hmm.size(); ++l)
+        for (int l = 0; l <= hmm.num_states(); ++l)
             if (hmm.test_transition(k,l)) sum += hmm(k,l);
 
         if (sum != 0.0f) {
             float fac = 1.0f / sum;
-            for (int l = 0; l <= hmm.size(); ++l)
+            for (int l = 0; l <= hmm.num_states(); ++l)
                 if (hmm.test_transition(k,l)) hmm(k,l) = hmm(k,l) * fac;
         } else if (k > 0) {
             // no out-transitions for this state -> connect to END-state
@@ -452,8 +479,8 @@ void sparsify(HMM<Alphabet_T>& hmm, float threshold)
     const bool logspace = hmm.transitions_logspace();
     if (logspace) hmm.transform_transitions_to_linspace();
 
-    for (int k = 0; k <= hmm.size(); ++k)
-        for (int l = 0; l <= hmm.size(); ++l)
+    for (int k = 0; k <= hmm.num_states(); ++k)
+        for (int l = 0; l <= hmm.num_states(); ++l)
             if (hmm.test_transition(k,l) && hmm(k,l) <= threshold)
                 hmm.erase_transition(k,l);
 
@@ -509,12 +536,12 @@ class RandomSampleStateInitializer : public StateInitializer<Alphabet_T>
 
     virtual void init(HMM<Alphabet_T>& hmm) const
     {
-        LOG(INFO) << "Initializing HMM with " << hmm.size() << "profile windows randomly sampled from "
+        LOG(INFO) << "Initializing HMM with " << hmm.num_states() << "profile windows randomly sampled from "
                   << profiles_.size() << " training profiles ...";
 
         // Iterate over randomly shuffled profiles; from each profile sample a fraction of profile windows until HMM is full.
         typedef typename profile_vector::const_iterator const_profile_iterator;
-        for (const_profile_iterator pi = profiles_.begin(); pi != profiles_.end() && hmm.num_states() < hmm.size(); ++pi) {
+        for (const_profile_iterator pi = profiles_.begin(); pi != profiles_.end() && !hmm.full(); ++pi) {
             if ((*pi)->num_cols() < num_cols_) continue;
 
             LOG(DEBUG) << "Processing next training profile ...";
@@ -536,7 +563,7 @@ class RandomSampleStateInitializer : public StateInitializer<Alphabet_T>
             LOG(DEBUG) << stringify_container(idx);
 
             // Add sub-profiles at sampled indices to HMM
-            for (std::vector<int>::const_iterator i = idx.begin(); i != idx.end() && hmm.num_states() < hmm.size(); ++i) {
+            for (std::vector<int>::const_iterator i = idx.begin(); i != idx.end() && !hmm.full(); ++i) {
                 CountsProfile<Alphabet_T> p(**pi, *i, num_cols_);
                 LOG(DEBUG) << "Extracted profile window at position " << *i << ":";
                 p.convert_to_frequencies(); // make sure that profile contains frequencies not counts
@@ -544,9 +571,9 @@ class RandomSampleStateInitializer : public StateInitializer<Alphabet_T>
                 hmm.add_profile(p);
             }
         }
-        if (hmm.num_states() < hmm.size())
-            throw Exception("Initialized only %i out of %i states in HMM. Maybe too few training profiles provided?",
-                            hmm.num_states(), hmm.size());
+        if (!hmm.full())
+            throw Exception("Could not fully initialize %i HMM states. Maybe too few training profiles provided?",
+                            hmm.num_states());
         LOG(DEBUG) << "HMM after full state assembly:";
         LOG(DEBUG) << hmm;
     }
@@ -571,9 +598,9 @@ class ConstantTransitionInitializer : public TransitionInitializer<Alphabet_T>
 
     virtual void init(HMM<Alphabet_T>& hmm) const
     {
-        float prob = 1.0f / (hmm.size() + 1);
-        for (int k = 0; k <= hmm.size(); ++k)
-            for (int l = 0; l <= hmm.size(); ++l)
+        float prob = 1.0f / (hmm.num_states() + 1);
+        for (int k = 0; k <= hmm.num_states(); ++k)
+            for (int l = 0; l <= hmm.num_states(); ++l)
                 hmm(k,l) = prob;
         hmm.erase_transition(0,0);
         normalize_transitions(hmm);
@@ -590,8 +617,8 @@ class RandomTransitionInitializer : public TransitionInitializer<Alphabet_T>
     virtual void init(HMM<Alphabet_T>& hmm) const
     {
         srand(static_cast<unsigned int>(clock()));
-        for (int k = 0; k <= hmm.size(); ++k)
-            for (int l = 0; l <= hmm.size(); ++l)
+        for (int k = 0; k <= hmm.num_states(); ++k)
+            for (int l = 0; l <= hmm.num_states(); ++l)
                 hmm(k,l) = static_cast<float>(rand()) / (static_cast<float>(RAND_MAX) + 1.0f);
         hmm.erase_transition(0,0);
         normalize_transitions(hmm);

@@ -10,8 +10,6 @@
 
 #include <algorithm>
 
-#include "shared_ptr.h"
-
 namespace cs
 {
 
@@ -37,7 +35,7 @@ template<class Alphabet_T>
 class Pseudocounts
 {
   public:
-    Pseudocounts(shared_ptr<Admixture> pca) : pca_(pca) {}
+    Pseudocounts(const Admixture* pca) : pca_(pca) { }
     virtual ~Pseudocounts() {}
 
     // Adds pseudocounts to sequence and stores resulting frequencies in given profile.
@@ -47,7 +45,7 @@ class Pseudocounts
     virtual void add_to_profile(CountsProfile<Alphabet_T>& p) const = 0;
 
     // Sets pseudocount admixture formula to be used.
-    void set_admixture(shared_ptr<Admixture> pca) { pca_ = pca; }
+    void set_admixture(const Admixture* pca) { pca_ = pca; }
 
   protected:
     // Calculates pseudocount admixute depending on alignment diversity.
@@ -59,7 +57,7 @@ class Pseudocounts
     void operator=(const Pseudocounts&);
 
     // The admixture formula to be used.
-    shared_ptr<Admixture> pca_;
+    const Admixture* pca_;
 };  // Pseudocounts
 
 

@@ -16,9 +16,6 @@
 #include "profile.h"
 #include "shared_ptr.h"
 
-#include "forward_backward_algorithm.h"
-#include "sequence.h"
-
 namespace cs
 {
 
@@ -57,9 +54,9 @@ TEST_F(HMMTest, SimpleConstruction)
 {
     HMM<Nucleotide> hmm(3);
 
-    EXPECT_EQ(0, hmm.num_states());
+    EXPECT_FALSE(hmm.full());
     EXPECT_EQ(0, hmm.num_transitions());
-    EXPECT_EQ(3, hmm.size());
+    EXPECT_EQ(3, hmm.num_states());
 
     int index_p1 = hmm.add_profile(p1_);
     EXPECT_EQ(1, index_p1);
@@ -225,20 +222,14 @@ TEST(HMMTestInitialization, RandomSampleInitializer)
 
     // setup substitution matrix pseudocounts
     BlosumMatrix m;
-    MatrixPseudocounts<AminoAcid> mpc(m, shared_ptr<Admixture>(new ConstantAdmixture(PC_ADMIXTURE)));
+    ConstantAdmixture pca(PC_ADMIXTURE);
+    MatrixPseudocounts<AminoAcid> mpc(&m, &pca);
     HMM<AminoAcid> hmm(HMM_SIZE,
                        RandomSampleStateInitializer<AminoAcid>(profiles, NUM_COLS, SAMPLE_RATE, mpc),
                        RandomTransitionInitializer<AminoAcid>());
     sparsify(hmm, 1.0f / HMM_SIZE);
 
     EXPECT_EQ(HMM_SIZE, hmm.num_states());
-
-    ForwardBackwardAlgorithm<AminoAcid, CountsProfile> fb =
-        ForwardBackwardParams()
-        .weight_center(1.9f)
-        .weight_decay(0.9f);
-
-    fb.weight_center(1.7f);
 }
 
 }  // cs

@@ -60,22 +60,24 @@ class ForwardBackwardParams
 
 struct ForwardBackwardMatrices
 {
+    typedef double value_type;
+
     ForwardBackwardMatrices()
-            : p_forward(0.0f)
+            : p_forward(0.0)
     { }
 
     ForwardBackwardMatrices(int nrows, int ncols)
-            : f(nrows, ncols, 0.0f),
-              b(nrows, ncols, 0.0f),
-              p_forward(0.0f)
+            : f(nrows, ncols, 0.0),
+              b(nrows, ncols, 0.0),
+              p_forward(0.0)
     { }
 
     // forward matrix
-    matrix<float> f;
+    matrix<value_type> f;
     // backward matrix
-    matrix<float> b;
+    matrix<value_type> b;
     // likelihood P(x)
-    float p;
+    value_type p_forward;
 };
 
 template< class Alphabet_T,
@@ -83,21 +85,34 @@ template< class Alphabet_T,
 class ForwardBackwardAlgorithm : public ForwardBackwardParams
 {
   public:
+    typedef typename ForwardBackwardMatrices::value_type value_type;
+
+    ForwardBackwardAlgorithm()
+    { }
+
     ForwardBackwardAlgorithm(const ForwardBackwardParams& params)
             : ForwardBackwardParams(params)
     { }
 
-    shared_ptr<ForwardBackwardMatrices> run(const HMM& hmm, const Subject_T& subject)
+    shared_ptr<ForwardBackwardMatrices> run(const HMM<Alphabet_T>& hmm, const Subject_T<Alphabet_T>& subject)
     {
-        const ProfileMatcher matcher(ignore_profile_context() ? 1 : hmm[0].num_cols(),
-                                     weight_center(),
-                                     weight_decay());
-        shared_ptr<ForwardBackwardMatrices> matrices(subject.length() + 1, hmm.num_states() + 1);
+        LOG(DEBUG) << "Running forward-backward algorithm ...";
+        LOG(DEBUG) << hmm;
+        LOG(DEBUG) << subject;
 
-        float p_forward  = forward(hmm, subject, matcher, matrices->f);
-        float p_backward = backward(hmm, subject, matcher, matrices->b);
-        matrices->p = p_forward;
+        ProfileMatcher<Alphabet_T> matcher;
+        if (!ignore_profile_context())
+            matcher.init_weights(hmm[1].num_cols(), weight_center(), weight_decay());
 
+        shared_ptr<ForwardBackwardMatrices> matrices( new ForwardBackwardMatrices(subject.length() + 1,
+                                                                                  hmm.num_states() + 1) );
+
+        value_type p_forward  = forward(hmm, subject, matcher, matrices->f);
+        value_type p_backward = backward(hmm, subject, matcher, matrices->b);
+        matrices->p_forward = p_forward;
+
+        LOG(INFO) << p_forward;
+        LOG(INFO) << p_backward;
         return matrices;
     }
 
@@ -105,38 +120,60 @@ class ForwardBackwardAlgorithm : public ForwardBackwardParams
     typedef typename HMM<Alphabet_T>::const_state_iterator const_state_iterator;
     typedef typename State<Alphabet_T>::const_transition_iterator const_transition_iterator;
 
-    float forward(const HMM<Alphabet_T>& hmm,
+    value_type forward(const HMM<Alphabet_T>& hmm,
                   const Subject_T<Alphabet_T>& subject,
                   const ProfileMatcher<Alphabet_T>& matcher,
-                  matrix<float>& f)
+                  matrix<value_type>& f)
     {
-        const int length = subject.length();
-
         // TODO: pay attention to ignore BEGIN/END state flags.
 
+        const int length = subject.length();
         f[0][0] = 1.0;  // we start from the BEGIN state
         for (int i = 1; i <= length; ++i) {
             for (const_state_iterator s_l = hmm.states_begin(); s_l != hmm.states_end(); ++s_l) {
-                float f_il = matcher.match(*s_l, subject, i);
-                for (const_transition_iterator t_kl = s_l.in_transitions_begin(); t_kl != s_l.in_transitions_end(); ++t_kl) {
+                LOG(DEBUG) << "Computing f[i=" << i << "][k=" << (**s_l).index() << "] ...";
+                value_type f_il = matcher.match(**s_l, subject, i-1);
+                for (const_transition_iterator t_kl = (**s_l).in_transitions_begin(); t_kl != (**s_l).in_transitions_end(); ++t_kl) {
                     f_il += f[i-1][t_kl->state] * t_kl->probability;
                 }
+                f[i][(**s_l).index()] = f_il;
             }
         }
 
-        float p_forward = 0.0f;
+        value_type p_forward = 0.0;
         for (const_transition_iterator t_k0 = hmm[0].in_transitions_begin(); t_k0 != hmm[0].in_transitions_end(); ++t_k0)
             p_forward += f[length][t_k0->state] * t_k0->probability;
 
         return p_forward;
     }
 
-    float backward(const HMM<Alphabet_T>& hmm,
+    value_type backward(const HMM<Alphabet_T>& hmm,
                    const Subject_T<Alphabet_T>& subject,
                    const ProfileMatcher<Alphabet_T>& matcher,
-                   matrix<float>& b)
+                   matrix<value_type>& b)
     {
-        // TODO
+        // TODO: pay attention to ignore BEGIN/END state flags.
+        const int length = subject.length();
+
+        // Initialization
+        for (const_transition_iterator t_k0 = hmm[0].in_transitions_begin(); t_k0 != hmm[0].in_transitions_end(); ++t_k0)
+            b[length][t_k0->state] = t_k0->probability;
+
+        for (int i = length-1; i >= 1; --i) {
+            for (const_state_iterator s_k = hmm.states_begin(); s_k != hmm.states_end(); ++s_k) {
+                value_type b_ik = 0.0f;
+                for (const_transition_iterator t_kl = (**s_k).out_transitions_begin(); t_kl != (**s_k).out_transitions_end(); ++t_kl) {
+                    b_ik += t_kl->probability * matcher.match(hmm[t_kl->state], subject, i) * b[i+1][t_kl->state];
+                }
+                b[i][(**s_k).index()] = b_ik;
+            }
+        }
+
+        value_type p_backward = 0.0;
+        for (const_transition_iterator t_0l = hmm[0].out_transitions_begin(); t_0l != hmm[0].out_transitions_end(); ++t_0l)
+            p_backward += t_0l->probability * matcher.match(hmm[t_0l->state], subject, 0) * b[1][t_0l->state];
+
+        return p_backward;
     }
 
 };

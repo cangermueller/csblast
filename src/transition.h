@@ -31,14 +31,14 @@ struct Transition
 struct AnchoredTransition
 {
     // Simple Constructors
-    AnchoredTransition() : other(0), probability(0.0f) {}
-    AnchoredTransition(int i, float p) : other(i), probability(p) {}
+    AnchoredTransition() : state(0), probability(0.0f) {}
+    AnchoredTransition(int i, float p) : state(i), probability(p) {}
     ~AnchoredTransition() {}
 
     operator float() const { return probability; }
 
-    // Index of other state to/from which the transition connects.
-    const int other;
+    // Index of state to/from which the transition connects.
+    const int state;
     // Transition probability.
     float probability;
 };  // AnchoredTransition
