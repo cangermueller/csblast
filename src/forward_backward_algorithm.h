@@ -101,18 +101,17 @@ class ForwardBackwardAlgorithm : public ForwardBackwardParams
         LOG(DEBUG) << subject;
 
         ProfileMatcher<Alphabet_T> matcher;
-        if (!ignore_profile_context())
+        if (!ignore_profile_context() && hmm[1].num_cols() > 1)
             matcher.init_weights(hmm[1].num_cols(), weight_center(), weight_decay());
 
         shared_ptr<ForwardBackwardMatrices> matrices( new ForwardBackwardMatrices(subject.length() + 1,
                                                                                   hmm.num_states() + 1) );
 
         value_type p_forward  = forward(hmm, subject, matcher, matrices->f);
-        value_type p_backward = backward(hmm, subject, matcher, matrices->b);
-        matrices->p_forward = p_forward;
+        LOG(DEBUG) << "P_forward=" << p_forward;
+        backward(hmm, subject, matcher, matrices->b);
 
-        LOG(INFO) << p_forward;
-        LOG(INFO) << p_backward;
+        matrices->p_forward = p_forward;
         return matrices;
     }
 
@@ -126,17 +125,25 @@ class ForwardBackwardAlgorithm : public ForwardBackwardParams
                   matrix<value_type>& f)
     {
         // TODO: pay attention to ignore BEGIN/END state flags.
+        LOG(DEBUG) << "Forward pass ...";
 
         const int length = subject.length();
         f[0][0] = 1.0;  // we start from the BEGIN state
         for (int i = 1; i <= length; ++i) {
+            LOG(DEBUG) << "i=" << i;
             for (const_state_iterator s_l = hmm.states_begin(); s_l != hmm.states_end(); ++s_l) {
-                LOG(DEBUG) << "Computing f[i=" << i << "][k=" << (**s_l).index() << "] ...";
+                LOG(DEBUG1) << "Calculating f[i=" << i << "][l=" << (**s_l).index() << "] ...";
                 value_type f_il = matcher.match(**s_l, subject, i-1);
+                LOG(DEBUG2) << "f[i=" << i << "][l=" << (**s_l).index() << "] = " << f_il;
                 for (const_transition_iterator t_kl = (**s_l).in_transitions_begin(); t_kl != (**s_l).in_transitions_end(); ++t_kl) {
+                    LOG(DEBUG3) << "Processing tr[k=" << t_kl->state << "][l=" << (**s_l).index() << "] ...";
                     f_il += f[i-1][t_kl->state] * t_kl->probability;
+                    LOG(DEBUG4) << "f[i=" << i << "][l=" << (**s_l).index() << "] += f[" << i-1 << "][" << t_kl->state << "]="
+                                << f[i-1][t_kl->state] << " * " << "tr[" << t_kl->state << "][" << (**s_l).index() << "]="
+                                << t_kl->probability;
                 }
                 f[i][(**s_l).index()] = f_il;
+                LOG(DEBUG2) << "f[i=" << i << "][k=" << (**s_l).index() << "] = " << f_il;;
             }
         }
 
@@ -153,19 +160,33 @@ class ForwardBackwardAlgorithm : public ForwardBackwardParams
                    matrix<value_type>& b)
     {
         // TODO: pay attention to ignore BEGIN/END state flags.
-        const int length = subject.length();
+        LOG(DEBUG) << "Backward pass ...";
 
+        const int length = subject.length();
         // Initialization
         for (const_transition_iterator t_k0 = hmm[0].in_transitions_begin(); t_k0 != hmm[0].in_transitions_end(); ++t_k0)
             b[length][t_k0->state] = t_k0->probability;
 
         for (int i = length-1; i >= 1; --i) {
+            LOG(DEBUG) << "i=" << i;
             for (const_state_iterator s_k = hmm.states_begin(); s_k != hmm.states_end(); ++s_k) {
+                LOG(DEBUG1) << "Calculating b[i=" << i << "][k=" << (**s_k).index() << "] ...";
+
                 value_type b_ik = 0.0f;
+                LOG(DEBUG2) << "b[i=" << i << "][k=" << (**s_k).index() << "] = " << b_ik;
                 for (const_transition_iterator t_kl = (**s_k).out_transitions_begin(); t_kl != (**s_k).out_transitions_end(); ++t_kl) {
+                    if (t_kl->state == 0) continue;  // ignore transitions to END-state
+                    LOG(DEBUG3) << "Processing tr[k=" << (**s_k).index() << "][l=" << t_kl->state << "] ...";
+
                     b_ik += t_kl->probability * matcher.match(hmm[t_kl->state], subject, i) * b[i+1][t_kl->state];
+
+                    LOG(DEBUG4) << "b[i=" << i << "][k=" << (**s_k).index() << "] += tr[" << (**s_k).index()
+                                << "][" << t_kl->state << "]=" << t_kl->probability << " * e[" << t_kl->state
+                                << "][" << i << "]=" << matcher.match(hmm[t_kl->state], subject, i) << "* b[i="
+                                << i+1 << "][" << t_kl->state << "]=" << b[i+1][t_kl->state];
                 }
                 b[i][(**s_k).index()] = b_ik;
+                LOG(DEBUG2) << "b[i=" << i << "][k=" << (**s_k).index() << "] = " << b_ik;
             }
         }
 

@@ -50,7 +50,7 @@ class ProfileMatcher
         }
     }
 
-    float match(const ContextProfile<Alphabet_T>& profile, const CountsProfile<Alphabet_T>& counts, int index) const
+    double match(const ContextProfile<Alphabet_T>& profile, const CountsProfile<Alphabet_T>& counts, int index) const
     {
         double rv = 0.0f;
         const int center = profile.center();
@@ -72,7 +72,7 @@ class ProfileMatcher
         return pow(2.0, rv);
     }
 
-    float match(const ContextProfile<Alphabet_T>& profile, const Sequence<Alphabet_T>& seq, int index) const
+    double match(const ContextProfile<Alphabet_T>& profile, const Sequence<Alphabet_T>& seq, int index) const
     {
         double rv = 0.0f;
         const int center = profile.center();
@@ -84,8 +84,9 @@ class ProfileMatcher
                 rv += w[j] * profile[j][seq[i]];
             }
         } else {
-            LOG(DEBUG1) << "profile[j=" << center << "][seq[i=" << index << "]=" << seq.chr(index) << "]";
+            LOG(DEBUG3) << "profile[j=" << center << "][seq[i=" << index << "]=" << seq.chr(index) << "]";
             rv = profile[center][seq[index]];
+            LOG(DEBUG3) << " =" << rv;
         }
         return pow(2.0, rv);
     }

@@ -1,10 +1,9 @@
 #include <gtest/gtest.h>
 
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <sstream>
-#include <string>
-#include <vector>
 
 #include "amino_acid.h"
 #include "blosum_matrix.h"
@@ -32,7 +31,7 @@ class ForwardBackwardAlgorithmTest : public testing::Test
         Profile<AminoAcid> profile(seq.length());
 
         BlosumMatrix m;
-        ConstantAdmixture pca(0.3f);
+        ConstantAdmixture pca(0.1f);
         MatrixPseudocounts<AminoAcid> mpc(&m, &pca);
         mpc.add_to_sequence(seq, profile);
 
@@ -49,9 +48,18 @@ class ForwardBackwardAlgorithmTest : public testing::Test
 
 TEST_F(ForwardBackwardAlgorithmTest, ZincFingerMotif)
 {
-    Sequence<AminoAcid> seq("zinc finger motif", "GQKPFQCRICMRN\n");
-    ForwardBackwardAlgorithm<AminoAcid, Sequence> fb = ForwardBackwardParams().ignore_profile_context(true);
+    Sequence<AminoAcid> seq("zinc finger motif", "CRIC\n");
+    ForwardBackwardAlgorithm<AminoAcid, Sequence> fb;
     shared_ptr<ForwardBackwardMatrices> fb_mat = fb.run(hmm_, seq);
+
+    for (int i = 1; i <= seq.length(); ++i) {
+        for (int k = 1; k <= hmm_.num_states(); ++k) {
+            //            double p = ( fb_mat->f[i][k] * fb_mat->b[i][k] ) / fb_mat->p_forward;
+            double p = fb_mat->f[i][k];
+            std::cout << std::setw(8) << std::right << std::fixed << std::setprecision(5) << p;
+        }
+        std::cout << std::endl;
+    }
 
     EXPECT_EQ(195, hmm_.num_transitions());
     EXPECT_EQ(13, hmm_.num_states());
