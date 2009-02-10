@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
 
 #include <fstream>
-#include <iomanip>
 #include <iostream>
 #include <sstream>
 
@@ -14,9 +13,12 @@
 #include "profile.h"
 #include "sequence.h"
 #include "shared_ptr.h"
+#include "util.h"
 
 namespace cs
 {
+
+const float DELTA = 0.0001;
 
 class ForwardBackwardAlgorithmTest : public testing::Test
 {
@@ -48,21 +50,13 @@ class ForwardBackwardAlgorithmTest : public testing::Test
 
 TEST_F(ForwardBackwardAlgorithmTest, ZincFingerMotif)
 {
-    Sequence<AminoAcid> seq("zinc finger motif", "CRIC\n");
+    Sequence<AminoAcid> seq("zinc finger motif", "GQKPFQCRICMRN\n");
     ForwardBackwardAlgorithm<AminoAcid, Sequence> fb;
-    shared_ptr<ForwardBackwardMatrices> fb_mat = fb.run(hmm_, seq);
+    shared_ptr<ForwardBackwardMatrices> m = fb.run(hmm_, seq);
 
-    for (int i = 1; i <= seq.length(); ++i) {
-        for (int k = 1; k <= hmm_.num_states(); ++k) {
-            //            double p = ( fb_mat->f[i][k] * fb_mat->b[i][k] ) / fb_mat->p_forward;
-            double p = fb_mat->f[i][k];
-            std::cout << std::setw(8) << std::right << std::fixed << std::setprecision(5) << p;
-        }
-        std::cout << std::endl;
-    }
-
-    EXPECT_EQ(195, hmm_.num_transitions());
-    EXPECT_EQ(13, hmm_.num_states());
+    EXPECT_NEAR(0.9566, m->f[1][1] * m->b[1][1] / m->p_forward, DELTA);
+    EXPECT_NEAR(0.4920, m->f[2][2] * m->b[2][2] / m->p_forward, DELTA);
+    EXPECT_NEAR(0.9326, m->f[3][3] * m->b[3][3] / m->p_forward, DELTA);
 }
 
 }  // cs

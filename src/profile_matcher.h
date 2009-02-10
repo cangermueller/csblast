@@ -15,7 +15,6 @@
 #include "exception.h"
 #include "context_profile.h"
 #include "counts_profile.h"
-#include "log.h"
 #include "sequence.h"
 
 namespace cs
@@ -84,9 +83,7 @@ class ProfileMatcher
                 rv += w[j] * profile[j][seq[i]];
             }
         } else {
-            LOG(DEBUG3) << "profile[j=" << center << "][seq[i=" << index << "]=" << seq.chr(index) << "]";
             rv = profile[center][seq[index]];
-            LOG(DEBUG3) << " =" << rv;
         }
         return pow(2.0, rv);
     }

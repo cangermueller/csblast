@@ -11,6 +11,7 @@
 #include <cstdlib>
 #include <cctype>
 #include <cmath>
+#include <cstdarg>
 
 #include <iostream>
 #include <limits>
@@ -96,6 +97,19 @@ template<typename C>
 inline std::string stringify_container(const C& c, char delim = ',')
 {
     return stringify_range(c.begin(), c.end(), delim);
+}
+
+// sprintf-like helper that returns a string.
+inline std::string strprintf(const char* str, ...)
+{
+    char *buffer = new char[1000];
+    va_list ap;
+    va_start(ap, str);
+    vsprintf(buffer, str, ap);
+    va_end(ap);
+    std::string rv(buffer);
+    delete [] buffer;
+    return rv;
 }
 
 }  // cs
