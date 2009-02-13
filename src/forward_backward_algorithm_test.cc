@@ -54,9 +54,9 @@ TEST_F(ForwardBackwardAlgorithmTest, ZincFingerMotif)
     ForwardBackwardAlgorithm<AminoAcid, Sequence> fb;
     shared_ptr<ForwardBackwardMatrices> m = fb.run(hmm_, seq);
 
-    EXPECT_NEAR(0.9566, m->f[1][1] * m->b[1][1] / m->p_forward, DELTA);
-    EXPECT_NEAR(0.4920, m->f[2][2] * m->b[2][2] / m->p_forward, DELTA);
-    EXPECT_NEAR(0.9326, m->f[3][3] * m->b[3][3] / m->p_forward, DELTA);
+    EXPECT_NEAR(0.9566, m->f[1][1] * m->b[1][1] / m->likelihood, DELTA);
+    EXPECT_NEAR(0.4920, m->f[2][2] * m->b[2][2] / m->likelihood, DELTA);
+    EXPECT_NEAR(0.9326, m->f[3][3] * m->b[3][3] / m->likelihood, DELTA);
 }
 
 }  // cs

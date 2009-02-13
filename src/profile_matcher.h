@@ -49,12 +49,11 @@ class ProfileMatcher
         }
     }
 
-    double match(const ContextProfile<Alphabet_T>& profile, const CountsProfile<Alphabet_T>& counts, int index) const
+    double operator() (const ContextProfile<Alphabet_T>& profile, const CountsProfile<Alphabet_T>& counts, int index) const
     {
         double rv = 0.0f;
         const int center = profile.center();
         if (w) {
-            // TODO: can we actually ignore the multinomial normalization factor because it cancels out?
             int beg = std::max(0, index - center);
             int end = std::min(counts.num_cols() - 1, index + center);
             for(int i = beg; i <= end; ++i) {
@@ -71,7 +70,7 @@ class ProfileMatcher
         return pow(2.0, rv);
     }
 
-    double match(const ContextProfile<Alphabet_T>& profile, const Sequence<Alphabet_T>& seq, int index) const
+    double operator() (const ContextProfile<Alphabet_T>& profile, const Sequence<Alphabet_T>& seq, int index) const
     {
         double rv = 0.0f;
         const int center = profile.center();

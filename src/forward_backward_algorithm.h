@@ -61,17 +61,17 @@ class ForwardBackwardParams
 
 struct ForwardBackwardMatrices
 {
-    typedef double value_type;
+    typedef float value_type;
 
     ForwardBackwardMatrices()
-            : p_forward(0.0)
+            : likelihood(0.0)
     { }
 
     ForwardBackwardMatrices(int nrows, int ncols)
             : f(nrows, ncols, 0.0),
               b(nrows, ncols, 0.0),
               e(nrows, ncols, 0.0),
-              p_forward(0.0)
+              likelihood(0.0)
     { }
 
     // Prints the substitution matrix in human readable format to stream.
@@ -80,12 +80,12 @@ struct ForwardBackwardMatrices
         out << "Posterior probability matrix p[i][k]:" << std::endl;
         for (int i = 1; i < m.f.num_rows(); ++i) {
             for (int k = 1; k < m.f.num_cols(); ++k) {
-                value_type p = 100.0 * m.f[i][k] * m.b[i][k] / m.p_forward;
+                value_type p = 100.0 * m.f[i][k] * m.b[i][k] / m.likelihood;
                 out << strprintf("%6.2f  ", p);
             }
             out << std::endl;
         }
-        out << strprintf("P_forward = %-7.2g\n", m.p_forward);
+        out << strprintf("Likelihood = %-7.2g\n", m.likelihood);
         return out;
     }
 
@@ -96,7 +96,7 @@ struct ForwardBackwardMatrices
     // emission probability matrix
     matrix<value_type> e;
     // likelihood P(x)
-    value_type p_forward;
+    value_type likelihood;
 };
 
 template< class Alphabet_T,
@@ -126,8 +126,8 @@ class ForwardBackwardAlgorithm : public ForwardBackwardParams
         shared_ptr<ForwardBackwardMatrices> matrices( new ForwardBackwardMatrices(subject.length() + 1,
                                                                                   hmm.num_states() + 1) );
 
-        forward(hmm, subject, matcher, *matrices);
-        backward(hmm, subject, matcher, *matrices);
+        matrices->likelihood = forward(hmm, subject, matcher, *matrices);
+        backward(hmm, subject, *matrices);
 
         return matrices;
     }
@@ -162,7 +162,7 @@ class ForwardBackwardAlgorithm : public ForwardBackwardParams
                                              t_kl->state, (**s_l).index(), t_kl->probability);
                 }
 
-                m.e[i][(**s_l).index()] = matcher.match(**s_l, subject, i-1);
+                m.e[i][(**s_l).index()] = matcher(**s_l, subject, i-1);
                 f_il *= m.e[i][(**s_l).index()];
                 LOG(DEBUG2) << strprintf("f[%i][%i] *= e[%i][%i]=%-7.5f", i, (**s_l).index(), i, (**s_l).index(), m.e[i][(**s_l).index()]);
 
@@ -171,17 +171,16 @@ class ForwardBackwardAlgorithm : public ForwardBackwardParams
             }
         }
 
-        m.p_forward = 0.0;
+        value_type likelihood = 0.0;
         for (const_transition_iterator t_k0 = hmm[0].in_transitions_begin(); t_k0 != hmm[0].in_transitions_end(); ++t_k0)
-            m.p_forward += m.f[length][t_k0->state] * t_k0->probability;
+            likelihood += m.f[length][t_k0->state] * t_k0->probability;
 
-        LOG(DEBUG) << strprintf("P_forward = %-7.2g", m.p_forward);
-        return m.p_forward;
+        LOG(DEBUG) << strprintf("Forward likelihood = %-7.2g", likelihood);
+        return likelihood;
     }
 
     value_type backward(const HMM<Alphabet_T>& hmm,
                         const Subject_T<Alphabet_T>& subject,
-                        const ProfileMatcher<Alphabet_T>& matcher,
                         ForwardBackwardMatrices& m)
     {
         // TODO: pay attention to ignore BEGIN/END state flags.
@@ -211,12 +210,12 @@ class ForwardBackwardAlgorithm : public ForwardBackwardParams
             }
         }
 
-        value_type p_backward = 0.0;
+        value_type likelihood = 0.0;
         for (const_transition_iterator t_0l = hmm[0].out_transitions_begin(); t_0l != hmm[0].out_transitions_end(); ++t_0l)
-            p_backward += t_0l->probability * matcher.match(hmm[t_0l->state], subject, 0) * m.b[1][t_0l->state];
+            likelihood += t_0l->probability * m.e[1][t_0l->state] * m.b[1][t_0l->state];
 
-        LOG(DEBUG) << strprintf("P_backward = %-7.2g", p_backward);
-        return p_backward;
+        LOG(DEBUG) << strprintf("Backward likelihood = %-7.2g", likelihood);
+        return likelihood;
     }
 };
 
