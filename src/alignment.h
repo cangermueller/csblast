@@ -28,9 +28,6 @@
 using std::setw;
 using std::left;
 
-using std::setw;
-using std::left;
-
 namespace
 {
 
@@ -76,7 +73,7 @@ class Alignment
         PSI      = 4
     };
 
-    // Pblic typedefs
+    // Public typedefs
     typedef matrix<char>::row_type col_type;
     typedef matrix<char>::const_row_type const_col_type;
     typedef matrix<char>::col_type row_type;

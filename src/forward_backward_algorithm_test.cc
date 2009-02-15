@@ -59,4 +59,33 @@ TEST_F(ForwardBackwardAlgorithmTest, ZincFingerMotif)
     EXPECT_NEAR(0.9326, m->f[3][3] * m->b[3][3] / m->likelihood, DELTA);
 }
 
+TEST_F(ForwardBackwardAlgorithmTest, 1Q7L)
+{
+    std::ifstream fin("../data/1Q7L.fas");
+    Alignment<AminoAcid> alignment(fin, Alignment<AminoAcid>::FASTA);
+    fin.close();
+    alignment.assign_match_columns_by_gap_rule();
+    CountsProfile<AminoAcid> profile(alignment, true);
+
+    BlosumMatrix m;
+    ConstantAdmixture pca(0.01f);
+    MatrixPseudocounts<AminoAcid> mpc(&m, &pca);
+    mpc.add_to_profile(profile);
+
+    HMM<AminoAcid> hmm(profile.length());
+    for (int i = 0; i < profile.length(); ++i) {
+            Profile<AminoAcid> p(profile, i, 1);
+            hmm.add_profile(p);
+    }
+    hmm.init_transitions(ConstantTransitionInitializer<AminoAcid>());
+    hmm.transform_states_to_logspace();
+
+    profile.convert_to_counts();
+    ForwardBackwardAlgorithm<AminoAcid, CountsProfile> fb;
+    LOG(INFO) << hmm.num_states();
+    LOG(INFO) << "start";
+    shared_ptr<ForwardBackwardMatrices> mat = fb.run(hmm, profile);
+    LOG(INFO) << "end";
+}
+
 }  // cs

@@ -71,12 +71,37 @@ struct ForwardBackwardMatrices
             : f(nrows, ncols, 0.0),
               b(nrows, ncols, 0.0),
               e(nrows, ncols, 0.0),
+              c(0.0, nrows),
               likelihood(0.0)
     { }
 
-    // Prints the substitution matrix in human readable format to stream.
     friend std::ostream& operator<< (std::ostream& out, const ForwardBackwardMatrices& m)
     {
+        out << "Forward matrix f[i][k]:" << std::endl;
+        for (int i = 1; i < m.f.num_rows(); ++i) {
+            for (int k = 1; k < m.f.num_cols(); ++k) {
+                out << strprintf("%6.4f  ", m.f[i][k]);
+            }
+            out << std::endl;
+        }
+        out << "Backward matrix b[i][k]:" << std::endl;
+        for (int i = 1; i < m.f.num_rows(); ++i) {
+            for (int k = 1; k < m.f.num_cols(); ++k) {
+                out << strprintf("%6.4f  ", m.b[i][k]);
+            }
+            out << std::endl;
+        }
+        out << "Forward row-sums before scaling c[i]:" << std::endl;
+        for (int i = 1; i < m.f.num_rows(); ++i) {
+            out << strprintf("%6.2f  ", m.c[i]);
+        }
+        out << "\nEmission probabilities e[i][k]:" << std::endl;
+        for (int i = 1; i < m.f.num_rows(); ++i) {
+            for (int k = 1; k < m.f.num_cols(); ++k) {
+                out << strprintf("%6.4f  ", m.e[i][k]);
+            }
+            out << std::endl;
+        }
         out << "Posterior probability matrix p[i][k]:" << std::endl;
         for (int i = 1; i < m.f.num_rows(); ++i) {
             for (int k = 1; k < m.f.num_cols(); ++k) {
@@ -95,6 +120,8 @@ struct ForwardBackwardMatrices
     matrix<value_type> b;
     // emission probability matrix
     matrix<value_type> e;
+    // forward matrix column sum c(n) before normalization
+    std::valarray<value_type> c;
     // likelihood P(x)
     value_type likelihood;
 };
@@ -149,6 +176,7 @@ class ForwardBackwardAlgorithm : public ForwardBackwardParams
         m.f[0][0] = 1.0;
         for (int i = 1; i <= length; ++i) {
             LOG(DEBUG) << strprintf("i=%i", i);
+            m.c[i] = 0.0;
 
             for (const_state_iterator s_l = hmm.states_begin(); s_l != hmm.states_end(); ++s_l) {
                 value_type f_il = 0.0;
@@ -167,8 +195,14 @@ class ForwardBackwardAlgorithm : public ForwardBackwardParams
                 LOG(DEBUG2) << strprintf("f[%i][%i] *= e[%i][%i]=%-7.5f", i, (**s_l).index(), i, (**s_l).index(), m.e[i][(**s_l).index()]);
 
                 m.f[i][(**s_l).index()] = f_il;
+                m.c[i] += f_il;
                 LOG(DEBUG1) << strprintf("f[%i][%i] = %-7.2e", i, (**s_l).index(), f_il);
             }
+
+            // Rescale forward values
+            value_type scale_fac = 1.0 / m.c[i];
+            for (int l = 1; l <= hmm.num_states(); ++l)
+                m.f[i][l] *= scale_fac;
         }
 
         value_type likelihood = 0.0;
@@ -205,18 +239,19 @@ class ForwardBackwardAlgorithm : public ForwardBackwardParams
                                              i, (**s_k).index(), t_kl->state, (**s_k).index(), t_kl->probability,
                                              i+1, t_kl->state, m.e[i+1][t_kl->state], i+1, t_kl->state, m.b[i+1][t_kl->state]);
                 }
-                m.b[i][(**s_k).index()] = b_ik;
+                m.b[i][(**s_k).index()] = b_ik / m.c[i+1];
                 LOG(DEBUG1) << strprintf("b[%i][%i] = %-7.2e", i, (**s_k).index(), b_ik);
             }
         }
 
         value_type likelihood = 0.0;
         for (const_transition_iterator t_0l = hmm[0].out_transitions_begin(); t_0l != hmm[0].out_transitions_end(); ++t_0l)
-            likelihood += t_0l->probability * m.e[1][t_0l->state] * m.b[1][t_0l->state];
+            likelihood += t_0l->probability * m.e[1][t_0l->state] * m.b[1][t_0l->state] / m.c[1];
 
         LOG(DEBUG) << strprintf("Backward likelihood = %-7.2g", likelihood);
         return likelihood;
     }
+
 };
 
 }  // cs
