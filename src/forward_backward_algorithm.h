@@ -39,6 +39,9 @@ class ForwardBackwardParams
               weight_decay_(p.weight_decay_)
     { }
 
+    virtual ~ForwardBackwardParams()
+    { }
+
     ForwardBackwardParams& ignore_begin_transitions(bool f) { ignore_begin_transitions_ = f; return *this; }
     ForwardBackwardParams& ignore_end_transitions(bool f) { ignore_end_transitions_ = f; return *this; }
     ForwardBackwardParams& ignore_profile_context(bool f) { ignore_profile_context_ = f; return *this; }
@@ -142,9 +145,9 @@ class ForwardBackwardAlgorithm : public ForwardBackwardParams
 
     shared_ptr<ForwardBackwardMatrices> run(const HMM<Alphabet_T>& hmm, const Subject_T<Alphabet_T>& subject)
     {
-        LOG(DEBUG) << "Running forward-backward algorithm on ...";
-        LOG(DEBUG) << hmm;
-        LOG(DEBUG) << subject;
+        LOG(DEBUG) << "Running forward-backward algorithm ...";
+        LOG(DEBUG1) << hmm;
+        LOG(DEBUG1) << subject;
 
         ProfileMatcher<Alphabet_T> matcher;
         if (!ignore_profile_context() && hmm[1].num_cols() > 1)
@@ -169,34 +172,34 @@ class ForwardBackwardAlgorithm : public ForwardBackwardParams
                        ForwardBackwardMatrices& m)
     {
         // TODO: pay attention to ignore BEGIN/END state flags.
-        LOG(DEBUG) << "Forward pass ...";
+        LOG(DEBUG1) << "Forward pass ...";
 
         const int length = subject.length();
         // Initialization
         m.f[0][0] = 1.0;
         for (int i = 1; i <= length; ++i) {
-            LOG(DEBUG) << strprintf("i=%i", i);
+            LOG(DEBUG1) << strprintf("i=%i", i);
             m.c[i] = 0.0;
 
             for (const_state_iterator s_l = hmm.states_begin(); s_l != hmm.states_end(); ++s_l) {
                 value_type f_il = 0.0;
-                LOG(DEBUG1) << strprintf("f[%i][%i] = 0", i, (**s_l).index());
+                LOG(DEBUG2) << strprintf("f[%i][%i] = 0", i, (**s_l).index());
 
                 for (const_transition_iterator t_kl = (**s_l).in_transitions_begin(); t_kl != (**s_l).in_transitions_end(); ++t_kl) {
                     f_il += m.f[i-1][t_kl->state] * t_kl->probability;
 
-                    LOG(DEBUG2) << strprintf("f[%i][%i] += f[%i][%i]=%-7.2e * tr[%i][%i]=%-7.5f",
+                    LOG(DEBUG3) << strprintf("f[%i][%i] += f[%i][%i]=%-7.2e * tr[%i][%i]=%-7.5f",
                                              i, (**s_l).index(), i-1, t_kl->state, m.f[i-1][t_kl->state],
                                              t_kl->state, (**s_l).index(), t_kl->probability);
                 }
 
                 m.e[i][(**s_l).index()] = matcher(**s_l, subject, i-1);
                 f_il *= m.e[i][(**s_l).index()];
-                LOG(DEBUG2) << strprintf("f[%i][%i] *= e[%i][%i]=%-7.5f", i, (**s_l).index(), i, (**s_l).index(), m.e[i][(**s_l).index()]);
+                LOG(DEBUG3) << strprintf("f[%i][%i] *= e[%i][%i]=%-7.5f", i, (**s_l).index(), i, (**s_l).index(), m.e[i][(**s_l).index()]);
 
                 m.f[i][(**s_l).index()] = f_il;
                 m.c[i] += f_il;
-                LOG(DEBUG1) << strprintf("f[%i][%i] = %-7.2e", i, (**s_l).index(), f_il);
+                LOG(DEBUG2) << strprintf("f[%i][%i] = %-7.2e", i, (**s_l).index(), f_il);
             }
 
             // Rescale forward values
@@ -209,7 +212,7 @@ class ForwardBackwardAlgorithm : public ForwardBackwardParams
         for (const_transition_iterator t_k0 = hmm[0].in_transitions_begin(); t_k0 != hmm[0].in_transitions_end(); ++t_k0)
             likelihood += m.f[length][t_k0->state] * t_k0->probability;
 
-        LOG(DEBUG) << strprintf("Forward likelihood = %-7.2g", likelihood);
+        LOG(DEBUG1) << strprintf("Forward likelihood = %-7.2g", likelihood);
         return likelihood;
     }
 
@@ -218,7 +221,7 @@ class ForwardBackwardAlgorithm : public ForwardBackwardParams
                         ForwardBackwardMatrices& m)
     {
         // TODO: pay attention to ignore BEGIN/END state flags.
-        LOG(DEBUG) << "Backward pass ...";
+        LOG(DEBUG1) << "Backward pass ...";
 
         const int length = subject.length();
         // Initialization
@@ -226,21 +229,21 @@ class ForwardBackwardAlgorithm : public ForwardBackwardParams
             m.b[length][t_k0->state] = t_k0->probability;
 
         for (int i = length-1; i >= 1; --i) {
-            LOG(DEBUG) << strprintf("i=%i", i);
+            LOG(DEBUG1) << strprintf("i=%i", i);
             for (const_state_iterator s_k = hmm.states_begin(); s_k != hmm.states_end(); ++s_k) {
                 value_type b_ik = 0.0;
-                LOG(DEBUG1) << strprintf("b[%i][%i] = 0", i, (**s_k).index());
+                LOG(DEBUG2) << strprintf("b[%i][%i] = 0", i, (**s_k).index());
 
                 for (const_transition_iterator t_kl = (**s_k).out_transitions_begin(); t_kl != (**s_k).out_transitions_end(); ++t_kl) {
                     if (t_kl->state == 0) continue;  // ignore transitions to END-state
                     b_ik += t_kl->probability * m.e[i+1][t_kl->state] * m.b[i+1][t_kl->state];
 
-                    LOG(DEBUG2) << strprintf("b[%i][%i] += tr[%i][%i]=%-7.5f * e[%i][%i]=%-7.5f * f[%i][%i]=%-7.2e",
+                    LOG(DEBUG3) << strprintf("b[%i][%i] += tr[%i][%i]=%-7.5f * e[%i][%i]=%-7.5f * f[%i][%i]=%-7.2e",
                                              i, (**s_k).index(), t_kl->state, (**s_k).index(), t_kl->probability,
                                              i+1, t_kl->state, m.e[i+1][t_kl->state], i+1, t_kl->state, m.b[i+1][t_kl->state]);
                 }
                 m.b[i][(**s_k).index()] = b_ik / m.c[i+1];
-                LOG(DEBUG1) << strprintf("b[%i][%i] = %-7.2e", i, (**s_k).index(), b_ik);
+                LOG(DEBUG2) << strprintf("b[%i][%i] = %-7.2e", i, (**s_k).index(), b_ik);
             }
         }
 
@@ -248,7 +251,7 @@ class ForwardBackwardAlgorithm : public ForwardBackwardParams
         for (const_transition_iterator t_0l = hmm[0].out_transitions_begin(); t_0l != hmm[0].out_transitions_end(); ++t_0l)
             likelihood += t_0l->probability * m.e[1][t_0l->state] * m.b[1][t_0l->state] / m.c[1];
 
-        LOG(DEBUG) << strprintf("Backward likelihood = %-7.2g", likelihood);
+        LOG(DEBUG1) << strprintf("Backward likelihood = %-7.2g", likelihood);
         return likelihood;
     }
 

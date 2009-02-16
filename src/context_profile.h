@@ -28,10 +28,12 @@ class ContextProfile : public Profile<Alphabet_T>
 
      // Constructs a dummy context profile.
     ContextProfile() {}
+    // Constructs a context profile with num_cols columns initialized to zero.
+    explicit ContextProfile(int num_cols);
     // Constructs profile from serialized profile read from input stream.
-    ContextProfile(std::istream& in);
+    explicit ContextProfile(std::istream& in);
     // Constructs a context profile from simple profile and checks if length is valid.
-    ContextProfile(const Profile<Alphabet_T>& profile);
+    explicit ContextProfile(const Profile<Alphabet_T>& profile);
     // Creates a profile from subprofile in other, starting at column index and length columns long.
     ContextProfile(const Profile<Alphabet_T>& other, int index, int length);
 
@@ -56,6 +58,13 @@ class ContextProfile : public Profile<Alphabet_T>
 };  // ContextProfile
 
 
+
+template<class Alphabet_T>
+ContextProfile<Alphabet_T>::ContextProfile(int num_cols)
+        : Profile<Alphabet_T>(num_cols)
+{
+    check();
+}
 
 template<class Alphabet_T>
 ContextProfile<Alphabet_T>::ContextProfile(const Profile<Alphabet_T>& profile)

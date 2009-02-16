@@ -35,7 +35,7 @@ class ProfileMatcher
     void init_weights(int len, float weight_center, float weight_decay)
     {
         if (len % 2 != 1)
-            throw Exception("Profiles length for matching should be odd but is %i!", len);
+            throw Exception("Profile lengths for matching should be odd but is %i!", len);
 
         if (!w) delete w;
         w = new float[len];
@@ -54,8 +54,8 @@ class ProfileMatcher
         double rv = 0.0f;
         const int center = profile.center();
         if (w) {
-            int beg = std::max(0, index - center);
-            int end = std::min(counts.num_cols() - 1, index + center);
+            const int beg = std::max(0, index - center);
+            const int end = std::min(counts.num_cols() - 1, index + center);
             for(int i = beg; i <= end; ++i) {
                 int j = i - index + center;
                 double sum = 0.0f;
@@ -75,8 +75,8 @@ class ProfileMatcher
         double rv = 0.0f;
         const int center = profile.center();
         if (w) {
-            int beg = std::max(0, index - center);
-            int end = std::min(seq.length() - 1, index + center);
+            const int beg = std::max(0, index - center);
+            const int end = std::min(seq.length() - 1, index + center);
             for(int i = beg; i <= end; ++i) {
                 int j = i - index + center;
                 rv += w[j] * profile[j][seq[i]];
