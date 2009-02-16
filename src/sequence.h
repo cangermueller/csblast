@@ -100,7 +100,7 @@ Sequence<Alphabet_T>::Sequence(std::istream& in)
 
 template<class Alphabet_T>
 Sequence<Alphabet_T>::Sequence(const std::string& header,
-                   const std::string& sequence)
+                               const std::string& sequence)
 { init(header, sequence); }
 
 template<class Alphabet_T>

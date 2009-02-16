@@ -70,7 +70,7 @@ struct ForwardBackwardMatrices
     ForwardBackwardMatrices(int nrows, int ncols)
             : f(nrows, ncols, 0.0),
               b(nrows, ncols, 0.0),
-              e(nrows, ncols, 0.0),
+              e(nrows, ncols, 1.0),
               c(0.0, nrows),
               likelihood(0.0)
     { }
