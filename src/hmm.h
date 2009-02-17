@@ -598,12 +598,10 @@ class ConstantTransitionInitializer : public TransitionInitializer<Alphabet_T>
 
     virtual void init(HMM<Alphabet_T>& hmm) const
     {
-        float prob = 1.0f / (hmm.num_states() + 1);
+        float prob = 1.0f / hmm.num_states();
         for (int k = 0; k <= hmm.num_states(); ++k)
-            for (int l = 0; l <= hmm.num_states(); ++l)
+            for (int l = 1; l <= hmm.num_states(); ++l)
                 hmm(k,l) = prob;
-        hmm.erase_transition(0,0);
-        normalize_transitions(hmm);
     }
 };
 
@@ -618,9 +616,8 @@ class RandomTransitionInitializer : public TransitionInitializer<Alphabet_T>
     {
         srand(static_cast<unsigned int>(clock()));
         for (int k = 0; k <= hmm.num_states(); ++k)
-            for (int l = 0; l <= hmm.num_states(); ++l)
+            for (int l = 1; l <= hmm.num_states(); ++l)
                 hmm(k,l) = static_cast<float>(rand()) / (static_cast<float>(RAND_MAX) + 1.0f);
-        hmm.erase_transition(0,0);
         normalize_transitions(hmm);
     }
 };
