@@ -28,28 +28,28 @@ class BaumWelchParams : public ForwardBackwardParams
     BaumWelchParams()
             : ForwardBackwardParams(),
               min_iterations_(3),
-              max_iterations_(10),
-              delta_likelihood_threshold_(1e-4)
+              max_iterations_(100),
+              delta_log_likelihood_threshold_(1e-4)
     { }
 
     BaumWelchParams(const BaumWelchParams& params)
             : ForwardBackwardParams(params),
               min_iterations_(params.min_iterations_),
               max_iterations_(params.max_iterations_),
-              delta_likelihood_threshold_(params.delta_likelihood_threshold_)
+              delta_log_likelihood_threshold_(params.delta_log_likelihood_threshold_)
     { }
 
     float min_iterations() const { return min_iterations_; }
     float max_iterations() const { return max_iterations_; }
-    float delta_likelihood_threshold() const { return delta_likelihood_threshold_; }
+    float delta_log_likelihood_threshold() const { return delta_log_likelihood_threshold_; }
     void min_iterations(float min_iter) { min_iterations_ = min_iter; }
     void max_iterations(float max_iter) { max_iterations_ = max_iter; }
-    void delta_likelihoodthreshold_(float threshold) { delta_likelihood_threshold_ = threshold; }
+    void delta_log_likelihoodthreshold_(float threshold) { delta_log_likelihood_threshold_ = threshold; }
 
   private:
     float min_iterations_;
     float max_iterations_;
-    float delta_likelihood_threshold_;
+    float delta_log_likelihood_threshold_;
 };
 
 template< class Alphabet_T,
@@ -63,15 +63,15 @@ class BaumWelchTraining : public BaumWelchParams
 
     BaumWelchTraining()
             : fb_(NULL),
-              likelihood_(0.0f),
-              likelihood_prev_(0.0f)
+              log_likelihood_(0.0f),
+              log_likelihood_prev_(0.0f)
     { }
 
     BaumWelchTraining(const BaumWelchParams& params)
             : BaumWelchParams(params),
               fb_(NULL),
-              likelihood_(0.0f),
-              likelihood_prev_(0.0f)
+              log_likelihood_(0.0f),
+              log_likelihood_prev_(0.0f)
     { }
 
     virtual ~BaumWelchTraining()
@@ -94,10 +94,10 @@ class BaumWelchTraining : public BaumWelchParams
     // Calculates new HMM parameters by Maxmimum-Likelihood estimation.
     void calculate_and_apply_new_parameters(HMM<Alphabet_T>& hmm);
 
-    // Calculates the the percent difference between the current likelihood and the previous-iteration likelihood.
-    float delta_likelihood()
+    // Calculates the the percent difference between the current log-likelihood and the previous-iteration log-likelihood.
+    float delta_log_likelihood()
     {
-        return likelihood_prev_ == 0.0f ? 1.0 : fabs(likelihood_ - likelihood_prev_) / likelihood_prev_;
+        return log_likelihood_prev_ == 0.0f ? 1.0 : (log_likelihood_ - log_likelihood_prev_) / log_likelihood_prev_;
     }
 
     // Instance of forward-backward algorithm to compute exptected number of transitions and emissions.
@@ -107,9 +107,9 @@ class BaumWelchTraining : public BaumWelchParams
     // Profiles with emission counts
     profiles_vector profiles_;
     // Likelihood of current iteration
-    double likelihood_;
+    double log_likelihood_;
     // Likelihood of previous iteration
-    double likelihood_prev_;
+    double log_likelihood_prev_;
 };
 
 
@@ -122,25 +122,26 @@ float BaumWelchTraining<Alphabet_T, Subject_T>::run(HMM<Alphabet_T>& hmm, const 
     LOG(INFO) << hmm;
     setup(hmm.num_states(), hmm[1].num_cols());
 
-    for (int i = 1; i <= min_iterations() || i <= max_iterations() && delta_likelihood() > delta_likelihood_threshold(); ++i) {
-        likelihood_prev_ = likelihood_;
-        likelihood_ = 0.0f;
+    for (int i = 1; i <= min_iterations() || i <= max_iterations() &&
+             fabs(delta_log_likelihood()) > delta_log_likelihood_threshold(); ++i) {
+        log_likelihood_prev_ = log_likelihood_;
+        log_likelihood_ = 0.0f;
 
         for (typename data_vector::const_iterator di = data.begin(); di != data.end(); ++di) {
             shared_ptr<ForwardBackwardMatrices> fbm = fb_->run(hmm, **di);
             add_contribution_to_transitions(*fbm, hmm);
             add_contribution_to_emissions(*fbm, **di);
 
-            likelihood_ += fbm->likelihood;
+            log_likelihood_ += fbm->log_likelihood;
         }
         calculate_and_apply_new_parameters(hmm);
 
-        LOG(INFO) << strprintf("%-3i  %-15.5g", i, likelihood_);
+        LOG(INFO) << strprintf("%-3i  %-15.5g  %+-15.5g", i, log_likelihood_, delta_log_likelihood());
     }
 
     LOG(INFO) << hmm;
 
-    return likelihood_;
+    return log_likelihood_;
 }
 
 template< class Alphabet_T,
@@ -160,8 +161,8 @@ void BaumWelchTraining<Alphabet_T, Subject_T>::setup(int num_states, int num_col
         profiles_.push_back(profile_ptr);
     }
 
-    likelihood_ = 0.0f;
-    likelihood_prev_ = 0.0f;
+    log_likelihood_ = 0.0f;
+    log_likelihood_prev_ = 0.0f;
 }
 
 template< class Alphabet_T,
@@ -256,9 +257,10 @@ void BaumWelchTraining<Alphabet_T, Subject_T>::calculate_and_apply_new_parameter
         if (sum != 0.0f) {
             float fac = 1.0f / sum;
             for (int l = 0; l <= num_states; ++l)
-                if (transitions_.test(k,l)) {
-                    hmm(k,l) = transitions_[k][l] * fac;
+                if (transitions_[k][l] == 0.0f) {
                     transitions_.erase(k,l);
+                } else if (transitions_.test(k,l)) {
+                    hmm(k,l) = transitions_[k][l] * fac;
                 }
         } else if (k > 0) {
             // no out-transitions for this state -> connect to END-state
@@ -267,6 +269,7 @@ void BaumWelchTraining<Alphabet_T, Subject_T>::calculate_and_apply_new_parameter
             throw Exception("Unable calculate new HMM transition probabilities: BEGIN state has no out-transitions!");
         }
     }
+    transitions_.clear();
 }
 
 }  // cs

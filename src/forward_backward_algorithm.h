@@ -57,7 +57,7 @@ struct ForwardBackwardMatrices
     typedef float value_type;
 
     ForwardBackwardMatrices()
-            : likelihood(0.0)
+            : log_likelihood(0.0)
     { }
 
     ForwardBackwardMatrices(int nrows, int ncols)
@@ -65,7 +65,7 @@ struct ForwardBackwardMatrices
               b(nrows, ncols, 0.0),
               e(nrows, ncols, 1.0),
               s(0.0, nrows),
-              likelihood(0.0)
+              log_likelihood(0.0)
     { }
 
     friend std::ostream& operator<< (std::ostream& out, const ForwardBackwardMatrices& m)
@@ -98,12 +98,12 @@ struct ForwardBackwardMatrices
         out << "Posterior probability matrix p[i][k]:" << std::endl;
         for (int i = 1; i < m.f.num_rows(); ++i) {
             for (int k = 1; k < m.f.num_cols(); ++k) {
-                value_type p = 100.0 * m.f[i][k] * m.b[i][k] / m.likelihood;
+                value_type p = 100.0 * m.f[i][k] * m.b[i][k];
                 out << strprintf("%6.2f  ", p);
             }
             out << std::endl;
         }
-        out << strprintf("Likelihood = %-7.2g\n", m.likelihood);
+        out << strprintf("Log-likelihood = %-7.2g\n", m.log_likelihood);
         return out;
     }
 
@@ -116,7 +116,7 @@ struct ForwardBackwardMatrices
     // forward matrix column sum s(n) before normalization
     std::valarray<value_type> s;
     // likelihood P(x)
-    double likelihood;
+    value_type log_likelihood;
 };
 
 template< class Alphabet_T,
@@ -166,7 +166,7 @@ class ForwardBackwardAlgorithm : public ForwardBackwardParams
         const int length = subject.length();
         // Initialization
         m.f[0][0] = 1.0;
-        m.likelihood = 1.0;
+        m.log_likelihood = 0.0;
         for (int i = 1; i <= length; ++i) {
             LOG(DEBUG1) << strprintf("i=%i", i);
             m.s[i] = 0.0;
@@ -196,10 +196,10 @@ class ForwardBackwardAlgorithm : public ForwardBackwardParams
             value_type scale_fac = 1.0 / m.s[i];
             for (int l = 0; l <= hmm.num_states(); ++l)
                 m.f[i][l] *= scale_fac;
-            m.likelihood *= m.s[i];
+            m.log_likelihood += -log10(m.s[i]);
         }
 
-        LOG(DEBUG) << strprintf("Likelihood = %-7.2g", m.likelihood);
+        LOG(DEBUG) << strprintf("Log-likelihood = %-7.2g", m.log_likelihood);
     }
 
     void backward(const HMM<Alphabet_T>& hmm,
