@@ -41,7 +41,7 @@ class ForwardBackwardAlgorithmTest : public testing::Test
             Profile<AminoAcid> p(profile, i, 1);
             hmm_.add_profile(p);
         }
-        hmm_.init_transitions(ConstantTransitionInitializer<AminoAcid>());
+        hmm_.init_transitions(HomogeneousTransitionInitializer<AminoAcid>());
         hmm_.transform_states_to_logspace();
     }
 
@@ -54,9 +54,9 @@ TEST_F(ForwardBackwardAlgorithmTest, ZincFingerMotif)
     ForwardBackwardAlgorithm<AminoAcid, Sequence> fb;
     shared_ptr<ForwardBackwardMatrices> m = fb.run(hmm_, seq);
 
-    EXPECT_NEAR(0.9566, m->f[1][1] * m->b[1][1] / m->likelihood, DELTA);
-    EXPECT_NEAR(0.4920, m->f[2][2] * m->b[2][2] / m->likelihood, DELTA);
-    EXPECT_NEAR(0.9326, m->f[3][3] * m->b[3][3] / m->likelihood, DELTA);
+    EXPECT_NEAR(0.9566, m->f[0][0] * m->b[0][0], DELTA);
+    EXPECT_NEAR(0.4920, m->f[1][1] * m->b[1][1], DELTA);
+    EXPECT_NEAR(0.9326, m->f[2][2] * m->b[2][2], DELTA);
 }
 
 TEST_F(ForwardBackwardAlgorithmTest, 1Q7L)
@@ -77,7 +77,7 @@ TEST_F(ForwardBackwardAlgorithmTest, 1Q7L)
             Profile<AminoAcid> p(profile, i, 1);
             hmm.add_profile(p);
     }
-    hmm.init_transitions(ConstantTransitionInitializer<AminoAcid>());
+    hmm.init_transitions(HomogeneousTransitionInitializer<AminoAcid>());
     hmm.transform_states_to_logspace();
 
     profile.convert_to_counts();

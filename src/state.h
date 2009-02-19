@@ -29,23 +29,23 @@ class State : public ContextProfile<Alphabet_T>
     typedef typename sparsetable<AnchoredTransition>::const_nonempty_iterator const_transition_iterator;
 
     // Needed to access names in templatized Profile base class
-    using Profile<Alphabet_T>::read;
-    using Profile<Alphabet_T>::write;
-    using Profile<Alphabet_T>::num_cols;
-    using Profile<Alphabet_T>::alphabet_size;
-    using Profile<Alphabet_T>::logspace;
+    using ContextProfile<Alphabet_T>::read;
+    using ContextProfile<Alphabet_T>::write;
+    using ContextProfile<Alphabet_T>::num_cols;
+    using ContextProfile<Alphabet_T>::alphabet_size;
+    using ContextProfile<Alphabet_T>::logspace;
+    using ContextProfile<Alphabet_T>::prior;
+    using ContextProfile<Alphabet_T>::set_prior;
+    using ContextProfile<Alphabet_T>::index;
+    using ContextProfile<Alphabet_T>::set_index;
 
-    // Constructs dummy state for BEGIN/END state in HMM.
-    explicit State(int num_states);
     // Constructs HMM state from serialized state read from input stream.
     explicit State(std::istream& in);
     // Constructs HMM state with given profile and all transitions initialized to zero.
     State(int index, const Profile<Alphabet_T>& profile, int num_states);
 
-    virtual ~State() {}
+    virtual ~State() { }
 
-    // Returns the index of this state.
-    int index() const { return index_; }
     // Returns number of in-transitions.
     int num_in_transitions() const { return in_transitions_.num_nonempty(); }
     // Returns number of out-transitions.
@@ -58,8 +58,6 @@ class State : public ContextProfile<Alphabet_T>
     void clear_transitions();
     // Resizes the transition tables to new HMM size.
     void resize(int num_states);
-    // Assigns context profile probabilities to state.
-    void operator= (const ContextProfile<Alphabet_T>& other);
 
     // Returns a const iterator to start of list with non-null in-transition pointers.
     const_transition_iterator in_transitions_begin() const { return in_transitions_.nonempty_begin(); }
@@ -75,13 +73,11 @@ class State : public ContextProfile<Alphabet_T>
     friend class HMM<Alphabet_T>;
 
     // Needed to access names in templatized Profile base class
-    using Profile<Alphabet_T>::read_header;
-    using Profile<Alphabet_T>::read_body;
-    using Profile<Alphabet_T>::write_header;
-    using Profile<Alphabet_T>::write_body;
+    using ContextProfile<Alphabet_T>::read_header;
+    using ContextProfile<Alphabet_T>::read_body;
+    using ContextProfile<Alphabet_T>::write_header;
+    using ContextProfile<Alphabet_T>::write_body;
     using Profile<Alphabet_T>::print;
-    using Profile<Alphabet_T>::data_;
-    using Profile<Alphabet_T>::logspace_;
 
     // Reads and initializes serialized scalar data members from stream.
     virtual void read_header(std::istream& in);
@@ -94,8 +90,6 @@ class State : public ContextProfile<Alphabet_T>
     // Returns serialization class identity.
     virtual const std::string class_identity() const { static std::string id("State"); return id;}
 
-    // Index of state in HMM states vector.
-    int index_;
     // Size of HMM to which the state belongs.
     int num_states_;
     // List of in-transitions.
@@ -107,18 +101,8 @@ class State : public ContextProfile<Alphabet_T>
 
 
 template<class Alphabet_T>
-State<Alphabet_T>::State(int num_states)
-        : ContextProfile<Alphabet_T>(),
-          index_(0),
-          num_states_(num_states),
-          in_transitions_(num_states + 1),
-          out_transitions_(num_states + 1)
-{}
-
-template<class Alphabet_T>
 State<Alphabet_T>::State(std::istream& in)
         : ContextProfile<Alphabet_T>(),
-          index_(0),
           num_states_(0),
           in_transitions_(0),
           out_transitions_(0)
@@ -128,12 +112,11 @@ State<Alphabet_T>::State(std::istream& in)
 
 template<class Alphabet_T>
 State<Alphabet_T>::State(int index, const Profile<Alphabet_T>& profile, int num_states)
-        : ContextProfile<Alphabet_T>(profile),
-          index_(index),
+        : ContextProfile<Alphabet_T>(index, profile),
           num_states_(num_states),
-          in_transitions_(num_states + 1),
-          out_transitions_(num_states + 1)
-{}
+          in_transitions_(num_states),
+          out_transitions_(num_states)
+{ }
 
 template<class Alphabet_T>
 float State<Alphabet_T>::to(int k) const
@@ -158,53 +141,38 @@ template<class Alphabet_T>
 void State<Alphabet_T>::resize(int num_states)
 {
     clear_transitions();
-    in_transitions_.resize(num_states + 1);
-    out_transitions_.resize(num_states + 1);
+    in_transitions_.resize(num_states);
+    out_transitions_.resize(num_states);
 }
 
 template<class Alphabet_T>
 void State<Alphabet_T>::read_header(std::istream& in)
 {
-    // Read has_counts
-    std::string tmp;
-    if (getline(in, tmp) && tmp.find("index") != std::string::npos)
-        index_ = atoi(tmp.c_str() + 5);
+    ContextProfile<Alphabet_T>::read_header(in);
+
     // Read HMM size
+    std::string tmp;
     if (getline(in, tmp) && tmp.find("num_states") != std::string::npos)
         num_states_ = atoi(tmp.c_str() + 10);
-    in_transitions_.resize(num_states_ + 1);
-    out_transitions_.resize(num_states_ + 1);
 
-    Profile<Alphabet_T>::read_header(in);
+    in_transitions_.resize(num_states_);
+    out_transitions_.resize(num_states_);
 }
 
 template<class Alphabet_T>
 void State<Alphabet_T>::write_header(std::ostream& out) const
 {
-    out << "index\t\t" << index_ << std::endl;
+    ContextProfile<Alphabet_T>::write_header(out);
     out << "num_states\t" << num_states_ << std::endl;
-    Profile<Alphabet_T>::write_header(out);
 }
 
 template<class Alphabet_T>
 void State<Alphabet_T>::print(std::ostream& out) const
 {
-    out << "State " << index_ << ":" << std::endl;
+    out << "State " << index() << ":" << std::endl;
+    out << "prior probability = " << strprintf("%-10.8g", prior()) << std::endl;
     Profile<Alphabet_T>::print(out);
 }
-
-template<class Alphabet_T>
-void State<Alphabet_T>::operator= (const ContextProfile<Alphabet_T>& other)
-{
-    if (other.num_cols() != num_cols())
-        throw Exception("Unable to assign context profile to state: column mismatch!");
-
-    logspace_ = other.logspace();
-    for (int i = 0; i < num_cols(); ++i)
-        for (int a = 0; a < alphabet_size(); ++a)
-            data_[i][a] = other[i][a];
-}
-
 
 
 

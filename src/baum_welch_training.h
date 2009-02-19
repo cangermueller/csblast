@@ -15,6 +15,7 @@
 #include "forward_backward_algorithm.h"
 #include "hmm.h"
 #include "log.h"
+#include "context_profile.h"
 #include "profile_matcher.h"
 #include "shared_ptr.h"
 #include "util.h"
@@ -85,6 +86,8 @@ class BaumWelchTraining : public BaumWelchParams
   private:
     // Prepares the stage for a new training run.
     void setup(int num_states, int num_cols);
+    // Adds the contribution of a subject's forward-backward matrices to prio probabilities of states.
+    void add_contribution_to_priors(const ForwardBackwardMatrices& m);
     // Adds the contribution of a subject's forward-backward matrices to transition counts.
     void add_contribution_to_transitions(const ForwardBackwardMatrices& m, const HMM<Alphabet_T>& hmm);
     // Adds the contribution of a count profile's forward-backward matrices to emission counts.
@@ -122,13 +125,15 @@ float BaumWelchTraining<Alphabet_T, Subject_T>::run(HMM<Alphabet_T>& hmm, const 
     LOG(INFO) << hmm;
     setup(hmm.num_states(), hmm[1].num_cols());
 
-    for (int i = 1; i <= min_iterations() || i <= max_iterations() &&
-             fabs(delta_log_likelihood()) > delta_log_likelihood_threshold(); ++i) {
+    for (int i = 1;
+         i <= min_iterations() || i <= max_iterations() && fabs(delta_log_likelihood()) > delta_log_likelihood_threshold(); ++i) {
         log_likelihood_prev_ = log_likelihood_;
         log_likelihood_ = 0.0f;
 
         for (typename data_vector::const_iterator di = data.begin(); di != data.end(); ++di) {
             shared_ptr<ForwardBackwardMatrices> fbm = fb_->run(hmm, **di);
+
+            add_contribution_to_priors(*fbm);
             add_contribution_to_transitions(*fbm, hmm);
             add_contribution_to_emissions(*fbm, **di);
 
@@ -152,12 +157,11 @@ void BaumWelchTraining<Alphabet_T, Subject_T>::setup(int num_states, int num_col
     fb_ = new ForwardBackwardAlgorithm<Alphabet_T, Subject_T>(*this);
 
     transitions_.clear();
-    transitions_.resize(num_states + 1, num_states + 1);
+    transitions_.resize(num_states, num_states);
 
     profiles_.clear();
-    profiles_.push_back(shared_ptr< ContextProfile<Alphabet_T> >(new ContextProfile<Alphabet_T>()));
-    for (int k = 1; k <= num_states; ++k) {
-        shared_ptr< ContextProfile<Alphabet_T> > profile_ptr(new ContextProfile<Alphabet_T>(num_cols));
+    for (int k = 0; k < num_states; ++k) {
+        shared_ptr< ContextProfile<Alphabet_T> > profile_ptr(new ContextProfile<Alphabet_T>(k, num_cols));
         profiles_.push_back(profile_ptr);
     }
 
@@ -167,21 +171,25 @@ void BaumWelchTraining<Alphabet_T, Subject_T>::setup(int num_states, int num_col
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
+void BaumWelchTraining<Alphabet_T, Subject_T>::add_contribution_to_priors(const ForwardBackwardMatrices& m)
+{
+    const int num_states = profiles_.size();
+    for (int k = 0; k < num_states; ++k)
+        profiles_[k]->set_prior(profiles_[k]->prior() + m.f[0][k] * m.b[0][k]);
+}
+
+template< class Alphabet_T,
+          template<class Alphabet_U> class Subject_T >
 void BaumWelchTraining<Alphabet_T, Subject_T>::add_contribution_to_transitions(const ForwardBackwardMatrices& m,
                                                                                const HMM<Alphabet_T>& hmm)
 {
-    const int slen = m.f.num_rows() - 1;
-    double prob_a_kl = 0.0f;
+    const int slen       = m.f.num_rows();
     for (const_transition_iterator ti = hmm.transitions_begin(); ti != hmm.transitions_end(); ++ti) {
         if (!transitions_.test(ti->from, ti->to)) transitions_[ti->from][ti->to] = 0.0f;
 
-        if (ti->from == 0) {  // k=0 && l>0
-            prob_a_kl = m.f[1][ti->to] * m.b[1][ti->to];
-        } else {  // k>0 && l>0
-            prob_a_kl = 0.0f;
-            for (int i = 1; i < slen; ++i) {
-                prob_a_kl += m.s[i+1] * m.f[i][ti->from] * m.b[i+1][ti->to] * ti->probability * m.e[i+1][ti->to];
-            }
+        double prob_a_kl = 0.0f;
+        for (int i = 0; i < slen-1; ++i) {
+            prob_a_kl += m.s[i+1] * m.f[i][ti->from] * m.b[i+1][ti->to] * ti->probability * m.e[i+1][ti->to];
         }
         transitions_[ti->from][ti->to] = transitions_[ti->from][ti->to] + prob_a_kl;
         LOG(DEBUG1) << strprintf("tr[%i][%i] += %6.4f = %6.4f", ti->from, ti->to, prob_a_kl,
@@ -194,17 +202,20 @@ template< class Alphabet_T,
 void BaumWelchTraining<Alphabet_T, Subject_T>::add_contribution_to_emissions(const ForwardBackwardMatrices& m,
                                                                              const CountsProfile<Alphabet_T>& c)
 {
-    for (int k = 1; k < transitions_.num_rows(); ++k) {
+    const int slen       = m.f.num_rows();
+    const int num_states = transitions_.num_rows();
+    for (int k = 0; k < num_states; ++k) {
         ContextProfile<Alphabet_T>& p_k = *profiles_[k];
         const int ci = p_k.center();
 
-        for (int i = 1; i < m.f.num_rows(); ++i) {
-            const int beg = std::max(0, i - ci - 1);
-            const int end = std::min(c.num_cols() - 1, i + ci - 1);
+        for (int i = 0; i < slen; ++i) {
+            const int beg = std::max(0, i - ci);
+            const int end = std::min(c.num_cols() - 1, i + ci);
 
             for(int h = beg; h <= end; ++h) {
-                int j = h - i + ci + 1;
-                for (int a = 0; a < p_k.alphabet_size(); ++a) {
+                const int j = h - i + ci;
+                const int alphabet_size = p_k.alphabet_size();
+                for (int a = 0; a < alphabet_size; ++a) {
                     p_k[j][a] += c[h][a] * m.f[i][k] * m.b[i][k];
                 }
             }
@@ -217,16 +228,19 @@ template< class Alphabet_T,
 void BaumWelchTraining<Alphabet_T, Subject_T>::add_contribution_to_emissions(const ForwardBackwardMatrices& m,
                                                                              const Sequence<Alphabet_T>& s)
 {
-    for (int k = 1; k < transitions_.num_rows(); ++k) {
+    const int slen       = m.f.num_rows();
+    const int num_states = transitions_.num_rows();
+
+    for (int k = 0; k < num_states; ++k) {
         ContextProfile<Alphabet_T>& p_k = *profiles_[k];
         const int ci = p_k.center();
 
-        for (int i = 1; i < m.f.num_rows(); ++i) {
-            const int beg = std::max(0, i - ci - 1);
-            const int end = std::min(s.length() - 1, i + ci - 1);
+        for (int i = 0; i < slen; ++i) {
+            const int beg = std::max(0, i - ci);
+            const int end = std::min(s.length() - 1, i + ci);
 
             for(int h = beg; h <= end; ++h) {
-                int j = h - i + ci + 1;
+                const int j = h - i + ci;
                 p_k[j][s[h]] += m.f[i][k] * m.b[i][k];
             }
         }
@@ -237,36 +251,50 @@ template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
 void BaumWelchTraining<Alphabet_T, Subject_T>::calculate_and_apply_new_parameters(HMM<Alphabet_T>& hmm)
 {
-    const int num_states = transitions_.num_rows() - 1;
+    const int num_states = hmm.num_states();
 
-    // Calculate and assign new emission probabilities
-    for (int k = 1; k <= num_states; ++k) {
+    // Calculate normalization factor for priors and normalize profiles
+    float sum = 0.0f;
+    for (int k = 0; k < num_states; ++k) {
+        sum += profiles_[k]->prior();
         normalize(*profiles_[k]);
-        profiles_[k]->transform_to_logspace();
-        hmm[k] = *profiles_[k];
-        profiles_[k]->transform_to_linspace();
-        reset(*profiles_[k], 0.0f);
+    }
+    float fac = 1.0f / sum;
+
+    // Assign new priors and emission probabilities
+    for (int k = 0; k < num_states; ++k) {
+        ContextProfile<Alphabet_T>& p_k = *profiles_[k];
+
+        hmm[k].set_prior(p_k.prior() * fac);
+
+        p_k.transform_to_logspace();
+        const int num_cols      = p_k.num_cols();
+        const int alphabet_size = p_k.alphabet_size();
+        for (int i = 0; i < num_cols; ++i)
+            for (int a = 0; a < alphabet_size; ++a)
+                hmm[k][i][a] = p_k[i][a];
+        p_k.transform_to_linspace();
+
+        reset(p_k, 0.0f);
+        p_k.set_prior(0.0f);
     }
 
     // Calculate and assign new transition probabilities
-    for (int k = 0; k <= num_states; ++k) {
-        float sum = 0.0f;
-        for (int l = 0; l <= num_states; ++l)
+    for (int k = 0; k < num_states; ++k) {
+        sum = 0.0f;
+        for (int l = 0; l < num_states; ++l)
             if (transitions_.test(k,l)) sum += transitions_[k][l];
 
         if (sum != 0.0f) {
-            float fac = 1.0f / sum;
-            for (int l = 0; l <= num_states; ++l)
+            fac = 1.0f / sum;
+            for (int l = 0; l < num_states; ++l)
                 if (transitions_[k][l] == 0.0f) {
                     transitions_.erase(k,l);
                 } else if (transitions_.test(k,l)) {
                     hmm(k,l) = transitions_[k][l] * fac;
                 }
-        } else if (k > 0) {
-            // no out-transitions for this state -> connect to END-state
-            transitions_[k][0] = 1.0f;
         } else {
-            throw Exception("Unable calculate new HMM transition probabilities: BEGIN state has no out-transitions!");
+            throw Exception("Unable calculate new HMM transition probabilities: state %i has no out-transitions!", k);
         }
     }
     transitions_.clear();

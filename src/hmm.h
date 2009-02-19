@@ -80,8 +80,8 @@ class HMM
     // Initializes HMM transitions with the provided initializer (previous transitions are lost).
     void init_transitions(const TransitionInitializer<Alphabet_T>& tr_init);
     // Returns true if all states have been fully assembled.
-    bool full() const { return static_cast<int>(states_.size()) - 1 == num_states_; }
-    // Returns the number of states in the HMM (not counting the BEGIN/END state)
+    bool full() const { return static_cast<int>(states_.size()) == num_states_; }
+    // Returns the number of states in the HMM
     int num_states() const { return num_states_; }
     // Returns the number of non-null transitions in the HMM.
     int num_transitions() const { return transitions_.num_nonempty(); }
@@ -106,11 +106,11 @@ class HMM
     // Adds the given profile as state to the HMM and returns its state index. Note that number of profile columns must be odd!
     int add_profile(const Profile<Alphabet_T>& profile);
     // Returns an iterator to a list of pointers of states.
-    state_iterator states_begin() { return ++states_.begin(); }
+    state_iterator states_begin() { return states_.begin(); }
     // Returns an iterator pointing past the end of a list of pointers of states.
     state_iterator states_end() { return states_.end(); }
     // Returns a const iterator to a list of pointers of states.
-    const_state_iterator states_begin() const { return ++states_.begin(); }
+    const_state_iterator states_begin() const { return states_.begin(); }
     // Returns a const iterator pointing past the end of a list of pointers of states.
     const_state_iterator states_end() const { return states_.end(); }
     // Returns an iterator to a list of transitions.
@@ -151,10 +151,10 @@ class HMM
     void print(std::ostream& out) const;
     // Initializes the HMM from a serialized HMM read from stream.
     void read(std::istream& in);
-    // Initializes the HMM with the mandatory BEGIN/END state.
+    // Initializes the HMM.
     void init();
 
-    // Number states in the fully assembled HMM (excl. BEGIN/END state)
+    // Number states in the fully assembled HMM)
     int num_states_;
     // HMM states ordered by index.
     std::vector< shared_ptr< State<Alphabet_T> > > states_;
@@ -172,7 +172,7 @@ template<class Alphabet_T>
 HMM<Alphabet_T>::HMM(int num_states)
         : num_states_(num_states),
           states_(),  // we add states with push_back
-          transitions_(num_states + 1, num_states + 1),
+          transitions_(num_states, num_states),
           transitions_logspace_(false),
           states_logspace_(false)
 {
@@ -196,7 +196,7 @@ HMM<Alphabet_T>::HMM(int num_states,
                      const TransitionInitializer<Alphabet_T>& tr_init)
         : num_states_(num_states),
           states_(),
-          transitions_(num_states + 1, num_states + 1),
+          transitions_(num_states, num_states),
           transitions_logspace_(false),
           states_logspace_(false)
 {
@@ -208,9 +208,8 @@ HMM<Alphabet_T>::HMM(int num_states,
 template<class Alphabet_T>
 inline void HMM<Alphabet_T>::init()
 {
-    states_.reserve(num_states() + 1);
-    states_.push_back( shared_ptr< State<Alphabet_T> >(new State<Alphabet_T>(num_states())) );
-    transitions_.resize(num_states() + 1, num_states() + 1);
+    states_.reserve(num_states());
+    transitions_.resize(num_states(), num_states());
 }
 
 template<class Alphabet_T>
@@ -279,8 +278,9 @@ inline int HMM<Alphabet_T>::add_profile(const Profile<Alphabet_T>& profile)
     shared_ptr< State<Alphabet_T> > state_ptr(new State<Alphabet_T>(states_.size(),
                                                                     profile,
                                                                     num_states()));
+    state_ptr->set_prior(1.0f / num_states());  // start with unbiased prior probabilities
     states_.push_back(state_ptr);
-    return states_.size() - 1;
+    return states_.size();
 }
 
 template<class Alphabet_T>
@@ -358,7 +358,7 @@ void HMM<Alphabet_T>::read(std::istream& in)
     }
     if (!full())
         throw Exception("Error while reading HMM: number of state records is %i but should be %i!",
-                        states_.size() - 1, num_states());
+                        states_.size(), num_states());
 
     // Read all transitions
     std::vector<std::string> tokens;
@@ -419,22 +419,19 @@ void HMM<Alphabet_T>::print(std::ostream& out) const
     for (const_state_iterator si = states_begin(); si != states_end(); ++si)
         (*si)->print(out);
 
-    out << "Transition matrix:" << std::endl << std::setw(4) << std::left << "";
-    out << std::setw(6) << std::right << "END" << "  ";
-    for (int l = 1; l <= num_states(); ++l) out << std::setw(6) << std::right << l << "  ";
+    out << "Transition matrix:" << std::endl;
+    out << "    ";
+    for (int l = 0; l < num_states(); ++l) out << strprintf("%6i  ", l);
     out << std::endl;
 
-    for (int k = 0; k <= num_states(); ++k) {
-        out << std::setw(4) << std::left;
-        if (k == 0) out << "BEG";
-        else out << k;
-        for (int l = 0; l <= num_states(); ++l) {
-            out << std::setw(6) << std::right << std::fixed << std::setprecision(2);
+    for (int k = 0; k < num_states(); ++k) {
+        out << strprintf("%-4i", k);
+        for (int l = 0; l < num_states(); ++l) {
             if (test_transition(k,l))
-                out << 100.0f * (transitions_logspace() ? pow(2.0, transition_probability(k,l)) : transition_probability(k,l));
+                out << strprintf("%6.2f  ", 100.0f * ( transitions_logspace() ?
+                                                       pow(2.0, transition_probability(k,l)) : transition_probability(k,l) ));
             else
-                out << "*";
-            out << "  ";
+                out << "     *  ";
         }
         out << std::endl;
     }
@@ -451,21 +448,17 @@ void normalize_transitions(HMM<Alphabet_T>& hmm)
     const bool logspace = hmm.transitions_logspace();
     if (logspace) hmm.transform_transitions_to_linspace();
 
-    hmm.erase_transition(0,0);
-    for (int k = 0; k <= hmm.num_states(); ++k) {
+    for (int k = 0; k < hmm.num_states(); ++k) {
         float sum = 0.0f;
-        for (int l = 0; l <= hmm.num_states(); ++l)
+        for (int l = 0; l < hmm.num_states(); ++l)
             if (hmm.test_transition(k,l)) sum += hmm(k,l);
 
         if (sum != 0.0f) {
             float fac = 1.0f / sum;
-            for (int l = 0; l <= hmm.num_states(); ++l)
+            for (int l = 0; l < hmm.num_states(); ++l)
                 if (hmm.test_transition(k,l)) hmm(k,l) = hmm(k,l) * fac;
-        } else if (k > 0) {
-            // no out-transitions for this state -> connect to END-state
-            hmm(k,0) = 1.0f;
         } else {
-            throw Exception("Unable to normalize HMM transitions: BEGIN state has no out-transitions!");
+            throw Exception("Unable to normalize HMM transitions: state %i has no out-transitions!", k);
         }
     }
 
@@ -479,8 +472,8 @@ void sparsify(HMM<Alphabet_T>& hmm, float threshold)
     const bool logspace = hmm.transitions_logspace();
     if (logspace) hmm.transform_transitions_to_linspace();
 
-    for (int k = 0; k <= hmm.num_states(); ++k)
-        for (int l = 0; l <= hmm.num_states(); ++l)
+    for (int k = 0; k < hmm.num_states(); ++k)
+        for (int l = 0; l < hmm.num_states(); ++l)
             if (hmm.test_transition(k,l) && hmm(k,l) <= threshold)
                 hmm.erase_transition(k,l);
 
@@ -536,7 +529,7 @@ class RandomSampleStateInitializer : public StateInitializer<Alphabet_T>
 
     virtual void init(HMM<Alphabet_T>& hmm) const
     {
-        LOG(INFO) << "Initializing HMM with " << hmm.num_states() << "profile windows randomly sampled from "
+        LOG(INFO) << "Initializing HMM with " << hmm.num_states() << " profile windows randomly sampled from "
                   << profiles_.size() << " training profiles ...";
 
         // Iterate over randomly shuffled profiles; from each profile sample a fraction of profile windows until HMM is full.
@@ -568,14 +561,14 @@ class RandomSampleStateInitializer : public StateInitializer<Alphabet_T>
                 LOG(DEBUG) << "Extracted profile window at position " << *i << ":";
                 p.convert_to_frequencies(); // make sure that profile contains frequencies not counts
                 pc_.add_to_profile(p);
-                hmm.add_profile(p);
+                std::cerr << hmm.add_profile(p);
             }
         }
         if (!hmm.full())
             throw Exception("Could not fully initialize %i HMM states. Maybe too few training profiles provided?",
                             hmm.num_states());
-        LOG(DEBUG) << "HMM after full state assembly:";
-        LOG(DEBUG) << hmm;
+        LOG(INFO) << "HMM after full state assembly:";
+        LOG(INFO) << hmm;
     }
 
   private:
@@ -590,18 +583,20 @@ class RandomSampleStateInitializer : public StateInitializer<Alphabet_T>
 };  // RandomSampleStateInitializer
 
 template<class Alphabet_T>
-class ConstantTransitionInitializer : public TransitionInitializer<Alphabet_T>
+class HomogeneousTransitionInitializer : public TransitionInitializer<Alphabet_T>
 {
   public:
-    ConstantTransitionInitializer() {}
-    virtual ~ConstantTransitionInitializer() {};
+    HomogeneousTransitionInitializer() {}
+    virtual ~HomogeneousTransitionInitializer() {};
 
     virtual void init(HMM<Alphabet_T>& hmm) const
     {
         float prob = 1.0f / hmm.num_states();
-        for (int k = 0; k <= hmm.num_states(); ++k)
-            for (int l = 1; l <= hmm.num_states(); ++l)
+        for (int k = 0; k < hmm.num_states(); ++k) {
+            for (int l = 0; l < hmm.num_states(); ++l) {
                 hmm(k,l) = prob;
+            }
+        }
     }
 };
 
@@ -615,8 +610,8 @@ class RandomTransitionInitializer : public TransitionInitializer<Alphabet_T>
     virtual void init(HMM<Alphabet_T>& hmm) const
     {
         srand(static_cast<unsigned int>(clock()));
-        for (int k = 0; k <= hmm.num_states(); ++k)
-            for (int l = 1; l <= hmm.num_states(); ++l)
+        for (int k = 0; k < hmm.num_states(); ++k)
+            for (int l = 0; l < hmm.num_states(); ++l)
                 hmm(k,l) = static_cast<float>(rand()) / (static_cast<float>(RAND_MAX) + 1.0f);
         normalize_transitions(hmm);
     }

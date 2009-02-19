@@ -42,7 +42,7 @@ class BaumWelchTrainingTest : public testing::Test
             Profile<AminoAcid> p(profile, i, 1);
             hmm_.add_profile(p);
         }
-        hmm_.init_transitions(ConstantTransitionInitializer<AminoAcid>());
+        hmm_.init_transitions(HomogeneousTransitionInitializer<AminoAcid>());
         hmm_.transform_states_to_logspace();
 
         std::ifstream fin("../data/zinc_finger_proteins.fas");

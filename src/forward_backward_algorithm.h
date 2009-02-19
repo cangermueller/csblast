@@ -60,44 +60,44 @@ struct ForwardBackwardMatrices
             : log_likelihood(0.0)
     { }
 
-    ForwardBackwardMatrices(int nrows, int ncols)
-            : f(nrows, ncols, 0.0),
-              b(nrows, ncols, 0.0),
-              e(nrows, ncols, 1.0),
-              s(0.0, nrows),
+    ForwardBackwardMatrices(int slen, int nstates)
+            : f(slen, nstates, 0.0),
+              b(slen, nstates, 0.0),
+              e(slen, nstates, 1.0),
+              s(0.0, slen),
               log_likelihood(0.0)
     { }
 
     friend std::ostream& operator<< (std::ostream& out, const ForwardBackwardMatrices& m)
     {
         out << "Forward matrix f[i][k]:" << std::endl;
-        for (int i = 1; i < m.f.num_rows(); ++i) {
-            for (int k = 1; k < m.f.num_cols(); ++k) {
+        for (int i = 0; i < m.f.num_rows(); ++i) {
+            for (int k = 0; k < m.f.num_cols(); ++k) {
                 out << strprintf("%6.4f  ", m.f[i][k]);
             }
             out << std::endl;
         }
         out << "Backward matrix b[i][k]:" << std::endl;
-        for (int i = 1; i < m.f.num_rows(); ++i) {
-            for (int k = 1; k < m.f.num_cols(); ++k) {
+        for (int i = 0; i < m.f.num_rows(); ++i) {
+            for (int k = 0; k < m.f.num_cols(); ++k) {
                 out << strprintf("%6.4f  ", m.b[i][k]);
             }
             out << std::endl;
         }
         out << "Forward row-sums before scaling s[i]:" << std::endl;
-        for (int i = 1; i < m.f.num_rows(); ++i) {
+        for (int i = 0; i < m.f.num_rows(); ++i) {
             out << strprintf("%6.2f  ", m.s[i]);
         }
         out << "\nEmission probabilities e[i][k]:" << std::endl;
-        for (int i = 1; i < m.f.num_rows(); ++i) {
-            for (int k = 1; k < m.f.num_cols(); ++k) {
+        for (int i = 0; i < m.f.num_rows(); ++i) {
+            for (int k = 0; k < m.f.num_cols(); ++k) {
                 out << strprintf("%6.4f  ", m.e[i][k]);
             }
             out << std::endl;
         }
         out << "Posterior probability matrix p[i][k]:" << std::endl;
-        for (int i = 1; i < m.f.num_rows(); ++i) {
-            for (int k = 1; k < m.f.num_cols(); ++k) {
+        for (int i = 0; i < m.f.num_rows(); ++i) {
+            for (int k = 0; k < m.f.num_cols(); ++k) {
                 value_type p = 100.0 * m.f[i][k] * m.b[i][k];
                 out << strprintf("%6.2f  ", p);
             }
@@ -143,8 +143,8 @@ class ForwardBackwardAlgorithm : public ForwardBackwardParams
         if (!ignore_profile_context() && hmm[1].num_cols() > 1)
             matcher.init_weights(hmm[1].num_cols(), weight_center(), weight_decay());
 
-        shared_ptr<ForwardBackwardMatrices> matrices( new ForwardBackwardMatrices(subject.length() + 1,
-                                                                                  hmm.num_states() + 1) );
+        shared_ptr<ForwardBackwardMatrices> matrices( new ForwardBackwardMatrices(subject.length(),
+                                                                                  hmm.num_states()) );
 
         forward(hmm, subject, matcher, *matrices);
         backward(hmm, subject, *matrices);
@@ -162,39 +162,46 @@ class ForwardBackwardAlgorithm : public ForwardBackwardParams
                        ForwardBackwardMatrices& m)
     {
         LOG(DEBUG) << "Forward pass ...";
+        const int length     = subject.length();
+        const int num_states = hmm.num_states();
 
-        const int length = subject.length();
         // Initialization
-        m.f[0][0] = 1.0;
+        LOG(DEBUG1) << strprintf("i=%i", 0);
+        for (int k = 0; k < num_states; ++k) {
+            m.e[0][k] = matcher(hmm[k], subject, 0);
+            m.f[0][k] = hmm[k].prior() * m.e[0][k];
+            LOG(DEBUG2) << strprintf("f[%i][%i] = %-7.2e", 0, k, m.f[0][k]);
+        }
         m.log_likelihood = 0.0;
-        for (int i = 1; i <= length; ++i) {
+
+        // Recursion
+        for (int i = 1; i < length; ++i) {
             LOG(DEBUG1) << strprintf("i=%i", i);
             m.s[i] = 0.0;
 
-            for (const_state_iterator s_l = hmm.states_begin(); s_l != hmm.states_end(); ++s_l) {
+            for (int l = 0; l < num_states; ++l) {
                 value_type f_il = 0.0;
-                LOG(DEBUG2) << strprintf("f[%i][%i] = 0", i, (**s_l).index());
+                LOG(DEBUG2) << strprintf("f[%i][%i] = 0", i, l);
 
-                for (const_transition_iterator t_kl = (**s_l).in_transitions_begin(); t_kl != (**s_l).in_transitions_end(); ++t_kl) {
+                for (const_transition_iterator t_kl = hmm[l].in_transitions_begin(); t_kl != hmm[l].in_transitions_end(); ++t_kl) {
                     f_il += m.f[i-1][t_kl->state] * t_kl->probability;
 
                     LOG(DEBUG3) << strprintf("f[%i][%i] += f[%i][%i]=%-7.2e * tr[%i][%i]=%-7.5f",
-                                             i, (**s_l).index(), i-1, t_kl->state, m.f[i-1][t_kl->state],
-                                             t_kl->state, (**s_l).index(), t_kl->probability);
+                                             i, l, i-1, t_kl->state, m.f[i-1][t_kl->state], t_kl->state, l, t_kl->probability);
                 }
 
-                m.e[i][(**s_l).index()] = matcher(**s_l, subject, i-1);
-                f_il *= m.e[i][(**s_l).index()];
-                LOG(DEBUG3) << strprintf("f[%i][%i] *= e[%i][%i]=%-7.5f", i, (**s_l).index(), i, (**s_l).index(), m.e[i][(**s_l).index()]);
+                m.e[i][l] = matcher(hmm[l], subject, i);
+                f_il *= m.e[i][l];
+                LOG(DEBUG3) << strprintf("f[%i][%i] *= e[%i][%i]=%-7.5f", i, l, i, l, m.e[i][l]);
 
-                m.f[i][(**s_l).index()] = f_il;
+                m.f[i][l] = f_il;
                 m.s[i] += f_il;
-                LOG(DEBUG2) << strprintf("f[%i][%i] = %-7.2e", i, (**s_l).index(), f_il);
+                LOG(DEBUG2) << strprintf("f[%i][%i] = %-7.2e", i, l, f_il);
             }
 
             // Rescale forward values
             value_type scale_fac = 1.0 / m.s[i];
-            for (int l = 0; l <= hmm.num_states(); ++l)
+            for (int l = 0; l < num_states; ++l)
                 m.f[i][l] *= scale_fac;
             m.log_likelihood += -log10(m.s[i]);
         }
@@ -207,27 +214,32 @@ class ForwardBackwardAlgorithm : public ForwardBackwardParams
                         ForwardBackwardMatrices& m)
     {
         LOG(DEBUG) << "Backward pass ...";
+        const int length     = subject.length();
+        const int num_states = hmm.num_states();
 
-        const int length = subject.length();
         // Initialization
-        for (int l = 0; l <= hmm.num_states(); ++l)
-            m.b[length][l] = 1.0;
+        LOG(DEBUG1) << strprintf("i=%i", length-1);
+        for (int l = 0; l < num_states; ++l) {
+            m.b[length-1][l] = 1.0;
+            LOG(DEBUG2) << strprintf("b[%i][%i] = %-7.2e", length-1, l, m.b[length-1][l]);
+        }
 
-        for (int i = length-1; i >= 1; --i) {
+        // Recursion
+        for (int i = length-2; i >= 0; --i) {
             LOG(DEBUG1) << strprintf("i=%i", i);
-            for (const_state_iterator s_k = hmm.states_begin(); s_k != hmm.states_end(); ++s_k) {
+            for (int k = 0; k < num_states; ++k) {
                 value_type b_ik = 0.0;
-                LOG(DEBUG2) << strprintf("b[%i][%i] = 0", i, (**s_k).index());
+                LOG(DEBUG2) << strprintf("b[%i][%i] = 0", i, k);
 
-                for (const_transition_iterator t_kl = (**s_k).out_transitions_begin(); t_kl != (**s_k).out_transitions_end(); ++t_kl) {
+                for (const_transition_iterator t_kl = hmm[k].out_transitions_begin(); t_kl != hmm[k].out_transitions_end(); ++t_kl) {
                     b_ik += t_kl->probability * m.e[i+1][t_kl->state] * m.b[i+1][t_kl->state];
 
                     LOG(DEBUG3) << strprintf("b[%i][%i] += tr[%i][%i]=%-7.5f * e[%i][%i]=%-7.5f * f[%i][%i]=%-7.2e",
-                                             i, (**s_k).index(), t_kl->state, (**s_k).index(), t_kl->probability,
-                                             i+1, t_kl->state, m.e[i+1][t_kl->state], i+1, t_kl->state, m.b[i+1][t_kl->state]);
+                                             i, k, t_kl->state, k, t_kl->probability, i+1, t_kl->state, m.e[i+1][t_kl->state],
+                                             i+1, t_kl->state, m.b[i+1][t_kl->state]);
                 }
-                m.b[i][(**s_k).index()] = b_ik / m.s[i+1];
-                LOG(DEBUG2) << strprintf("b[%i][%i] = %-7.2e", i, (**s_k).index(), m.b[i][(**s_k).index()]);
+                m.b[i][k] = b_ik / m.s[i+1];
+                LOG(DEBUG2) << strprintf("b[%i][%i] = %-7.2e", i, k, m.b[i][k]);
             }
         }
     }

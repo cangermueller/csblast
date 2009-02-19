@@ -75,10 +75,6 @@ class CountsProfile : public Profile<Alphabet_T>
     virtual void print(std::ostream& out) const;
 
   private:
-    // Disallow copy and assign
-    CountsProfile(const CountsProfile&);
-    void operator=(const CountsProfile&);
-
     // Return serialization class identity.
     virtual const std::string class_identity() const { static std::string id("CountsProfile"); return id;}
 
