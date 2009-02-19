@@ -135,8 +135,8 @@ CountsProfile<Alphabet_T>::CountsProfile(const Alignment<Alphabet_T>& alignment,
 
 template<class Alphabet_T>
 CountsProfile<Alphabet_T>::CountsProfile(const CountsProfile& other,
-                                           int index,
-                                           int length)
+                                         int index,
+                                         int length)
         : Profile<Alphabet_T>(other, index, length)
 {
     neff_.insert(neff_.begin(), other.neff_.begin() + index, other.neff_.begin() + index + length);

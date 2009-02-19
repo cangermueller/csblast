@@ -414,7 +414,7 @@ void HMM<Alphabet_T>::print(std::ostream& out) const
     out << "HMM" << std::endl;
     out << "Total number of states:        " << num_states() << std::endl;
     out << "Total number of transitions:   " << num_transitions() << std::endl;
-    out << "Average number of transitions: " << iround(static_cast<float>(num_transitions()) / (num_states() + 1)) << std::endl;
+    out << "Average number of transitions: " << iround(static_cast<float>(num_transitions()) / num_states()) << std::endl;
 
     for (const_state_iterator si = states_begin(); si != states_end(); ++si)
         (*si)->print(out);
@@ -567,8 +567,8 @@ class RandomSampleStateInitializer : public StateInitializer<Alphabet_T>
         if (!hmm.full())
             throw Exception("Could not fully initialize %i HMM states. Maybe too few training profiles provided?",
                             hmm.num_states());
-        LOG(INFO) << "HMM after full state assembly:";
-        LOG(INFO) << hmm;
+        LOG(DEBUG) << "HMM after full state assembly:";
+        LOG(DEBUG) << hmm;
     }
 
   private:
