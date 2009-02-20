@@ -59,7 +59,7 @@ class BaumWelchTrainingTest : public testing::Test
         ali_in.close();
 
         // Convert alignments to counts and add pseudocounts
-        DivergenceDependentAdmixture pca2(1.0f, 5.0f);
+        DivergenceDependentAdmixture pca2(0.5f, 5.0f);
         mpc.set_admixture(&pca2);
         for (std::vector< shared_ptr< Alignment<AminoAcid> > >::iterator ai = alis.begin(); ai != alis.end(); ++ai) {
             shared_ptr< CountsProfile<AminoAcid> > p_ptr(new CountsProfile<AminoAcid>(**ai, true));
@@ -76,14 +76,24 @@ class BaumWelchTrainingTest : public testing::Test
 
 TEST_F(BaumWelchTrainingTest, ZincFingerSeqsTraining)
 {
+    TrainingProgressInfo prg_info(std::cout);
     BaumWelchTraining<AminoAcid, Sequence> bwt;
-    bwt.run(hmm_, seqs_);
+    bwt.run(hmm_, seqs_, &prg_info);
+
+    hmm_.transform_states_to_linspace();
+    EXPECT_NEAR(1.0, hmm_[0][0][AminoAcid::instance().ctoi('C')], DELTA);
+    EXPECT_NEAR(1.0, hmm_[5][0][AminoAcid::instance().ctoi('C')], DELTA);
 }
 
 TEST_F(BaumWelchTrainingTest, ZincFingerAlisTraining)
 {
+    TrainingProgressInfo prg_info(std::cout);
     BaumWelchTraining<AminoAcid, CountsProfile> bwt;
-    bwt.run(hmm_, counts_);
+    bwt.run(hmm_, counts_, &prg_info);
+
+    hmm_.transform_states_to_linspace();
+    EXPECT_NEAR(0.7424, hmm_[0][0][AminoAcid::instance().ctoi('C')], DELTA);
+    EXPECT_NEAR(0.7424, hmm_[3][0][AminoAcid::instance().ctoi('C')], DELTA);
 }
 
 }  // cs

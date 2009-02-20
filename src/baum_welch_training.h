@@ -10,6 +10,7 @@
 
 #include <cmath>
 
+#include <iostream>
 #include <vector>
 
 #include "forward_backward_algorithm.h"
@@ -53,6 +54,76 @@ class BaumWelchParams : public ForwardBackwardParams
     float delta_log_likelihood_threshold_;
 };
 
+
+
+class TrainingProgressInfo
+{
+  public:
+    TrainingProgressInfo(std::ostream& out = std::cout)
+            : out_(out),
+              total_(0),
+              progress_(0),
+              bar_(0),
+              iter_(0)
+    {
+        out_ << strprintf("%-4s %-47s  %7s %8s\n", "Iter", "Progress", "-log(L)", "+/-\%");
+        out_ << std::string(TABLE_WIDTH, '-') << std::endl;
+    }
+
+    void init(int iter, int total)
+    {
+        iter_     = iter;
+        total_    = total;
+        progress_ = 0;
+        bar_      = 0;
+
+        out_ << strprintf("%-3i  [", iter);
+        out_.flush();
+    }
+
+    void increment(int incr)
+    {
+        progress_ += incr;
+        const int bar_incr = round(static_cast<float>(progress_) / total_ * PRG_BAR_WIDTH) - bar_;
+        std::string prg_str(bar_incr, '=');
+
+        out_ << prg_str;
+        if (progress_ == total_) out_ << "] 100%  ";
+        out_.flush();
+
+        bar_ += bar_incr;
+    }
+
+    void print_stats(float log_likelihood, float delta)
+    {
+        if (iter_ == 0) {
+            out_ << strprintf("%7.0f\n", log_likelihood);
+            LOG(DEBUG) << strprintf("%-3i  %7.0f", iter_, log_likelihood);
+        } else {
+            out_ << strprintf("%7.0f %+7.3f", log_likelihood, delta * 100.0f) << "%\n";
+            LOG(DEBUG) << strprintf("%-3i  %7.0f %+7.3f", iter_, log_likelihood, delta * 100.0f) << "%";
+        }
+        out_.flush();
+    }
+
+  private:
+    static const int TABLE_WIDTH   = 70;
+    static const int PRG_BAR_WIDTH = 40;
+
+    // Output stream.
+    std::ostream& out_;
+    // Time complexity of iteration: O(NKL)
+    int total_;
+    // Progress so far.
+    int progress_;
+    // With of bar printed so far.
+    int bar_;
+    // .Current iteration
+    int iter_;
+};
+
+
+
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
 class BaumWelchTraining : public BaumWelchParams
@@ -81,11 +152,13 @@ class BaumWelchTraining : public BaumWelchParams
     }
 
     // Trains the HMM with the data provided until one of the termination criterions is fullfilled.
-    float run(HMM<Alphabet_T>& hmm, const data_vector& data);
+    float run(HMM<Alphabet_T>& hmm, const data_vector& data, TrainingProgressInfo* prg_info = NULL);
 
   private:
     // Prepares the stage for a new training run.
     void setup(int num_states, int num_cols);
+    // Runs forward backward algorithm on provided data.
+    void run_forward_backward(HMM<Alphabet_T>& hmm, const data_vector& data, TrainingProgressInfo* prg_info = NULL);
     // Adds the contribution of a subject's forward-backward matrices to prio probabilities of states.
     void add_contribution_to_priors(const ForwardBackwardMatrices& m);
     // Adds the contribution of a subject's forward-backward matrices to transition counts.
@@ -100,7 +173,7 @@ class BaumWelchTraining : public BaumWelchParams
     // Calculates the the percent difference between the current log-likelihood and the previous-iteration log-likelihood.
     float delta_log_likelihood()
     {
-        return log_likelihood_prev_ == 0.0f ? 1.0 : (log_likelihood_ - log_likelihood_prev_) / log_likelihood_prev_;
+        return log_likelihood_prev_ == 0.0f ? 1.0f : (log_likelihood_ - log_likelihood_prev_) / log_likelihood_prev_;
     }
 
     // Instance of forward-backward algorithm to compute exptected number of transitions and emissions.
@@ -113,40 +186,62 @@ class BaumWelchTraining : public BaumWelchParams
     double log_likelihood_;
     // Likelihood of previous iteration
     double log_likelihood_prev_;
+    // Number of traning iterations applied so far.
+    int iter_;
 };
 
 
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-float BaumWelchTraining<Alphabet_T, Subject_T>::run(HMM<Alphabet_T>& hmm, const data_vector& data)
+float BaumWelchTraining<Alphabet_T, Subject_T>::run(HMM<Alphabet_T>& hmm,
+                                                    const data_vector& data,
+                                                    TrainingProgressInfo* prg_info)
 {
-    LOG(INFO) << "Running Baum-Welch training on ...";
-    LOG(INFO) << hmm;
+    LOG(DEBUG) << "Running Baum-Welch training on ...";
+    LOG(DEBUG) << hmm;
     setup(hmm.num_states(), hmm[1].num_cols());
 
-    for (int i = 1;
-         i <= min_iterations() || i <= max_iterations() && fabs(delta_log_likelihood()) > delta_log_likelihood_threshold(); ++i) {
-        log_likelihood_prev_ = log_likelihood_;
-        log_likelihood_ = 0.0f;
+    // Calculate log-likelihood baseline
+    run_forward_backward(hmm, data, prg_info);
+    if (prg_info) prg_info->print_stats(log_likelihood_, delta_log_likelihood());
 
-        for (typename data_vector::const_iterator di = data.begin(); di != data.end(); ++di) {
+    do {
+        calculate_and_apply_new_parameters(hmm);
+        run_forward_backward(hmm, data, prg_info);
+
+        if (prg_info) prg_info->print_stats(log_likelihood_, delta_log_likelihood());
+
+    } while(iter_ < min_iterations() || iter_ < max_iterations() &&
+            fabs(delta_log_likelihood()) > delta_log_likelihood_threshold());
+
+    LOG(INFO) << hmm;
+    return log_likelihood_;
+}
+
+template< class Alphabet_T,
+          template<class Alphabet_U> class Subject_T >
+void BaumWelchTraining<Alphabet_T, Subject_T>::run_forward_backward(HMM<Alphabet_T>& hmm,
+                                                                    const data_vector& data,
+                                                                    TrainingProgressInfo* prg_info)
+{
+    if (prg_info) {
+        int total = 0;
+        for (typename data_vector::const_iterator di = data.begin(); di != data.end(); ++di)
+            total += hmm.num_states() * (**di).length();
+        prg_info->init(iter_, total);
+    }
+
+    for (typename data_vector::const_iterator di = data.begin(); di != data.end(); ++di) {
             shared_ptr<ForwardBackwardMatrices> fbm = fb_->run(hmm, **di);
+            if (prg_info) prg_info->increment(hmm.num_states() * (**di).length());
 
             add_contribution_to_priors(*fbm);
             add_contribution_to_transitions(*fbm, hmm);
             add_contribution_to_emissions(*fbm, **di);
 
             log_likelihood_ += fbm->log_likelihood;
-        }
-        calculate_and_apply_new_parameters(hmm);
-
-        LOG(INFO) << strprintf("%-3i  %-15.5g  %+-15.5g", i, log_likelihood_, delta_log_likelihood());
     }
-
-    LOG(INFO) << hmm;
-
-    return log_likelihood_;
 }
 
 template< class Alphabet_T,
@@ -165,8 +260,9 @@ void BaumWelchTraining<Alphabet_T, Subject_T>::setup(int num_states, int num_col
         profiles_.push_back(profile_ptr);
     }
 
-    log_likelihood_ = 0.0f;
+    log_likelihood_      = 0.0f;
     log_likelihood_prev_ = 0.0f;
+    iter_                = 0;
 }
 
 template< class Alphabet_T,
@@ -192,8 +288,6 @@ void BaumWelchTraining<Alphabet_T, Subject_T>::add_contribution_to_transitions(c
             prob_a_kl += m.s[i+1] * m.f[i][ti->from] * m.b[i+1][ti->to] * ti->probability * m.e[i+1][ti->to];
         }
         transitions_[ti->from][ti->to] = transitions_[ti->from][ti->to] + prob_a_kl;
-        LOG(DEBUG1) << strprintf("tr[%i][%i] += %6.4f = %6.4f", ti->from, ti->to, prob_a_kl,
-                                 static_cast<float>(transitions_[ti->from][ti->to]));
     }
 }
 
@@ -251,9 +345,13 @@ template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
 void BaumWelchTraining<Alphabet_T, Subject_T>::calculate_and_apply_new_parameters(HMM<Alphabet_T>& hmm)
 {
-    const int num_states = hmm.num_states();
+    // Prepare for next iteration
+    ++iter_;
+    log_likelihood_prev_ = log_likelihood_;
+    log_likelihood_ = 0.0;
 
     // Calculate normalization factor for priors and normalize profiles
+    const int num_states = hmm.num_states();
     float sum = 0.0f;
     for (int k = 0; k < num_states; ++k) {
         sum += profiles_[k]->prior();
