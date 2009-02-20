@@ -73,7 +73,7 @@ class BaumWelchTrainingTest : public testing::Test
 
 TEST_F(BaumWelchTrainingTest, ZincFingerSeqsTraining)
 {
-    TrainingProgressInfo prg_info(std::cout);
+    TrainingProgressInfo<AminoAcid> prg_info(hmm_, std::cout);
     BaumWelchTraining<AminoAcid, Sequence> bwt;
     bwt.run(hmm_, seqs_, &prg_info);
 
@@ -84,7 +84,7 @@ TEST_F(BaumWelchTrainingTest, ZincFingerSeqsTraining)
 
 TEST_F(BaumWelchTrainingTest, ZincFingerAlisTraining)
 {
-    TrainingProgressInfo prg_info(std::cout);
+    TrainingProgressInfo<AminoAcid> prg_info(hmm_, std::cout);
     BaumWelchTraining<AminoAcid, CountsProfile> bwt;
     bwt.run(hmm_, counts_, &prg_info);
 

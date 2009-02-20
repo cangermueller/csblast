@@ -88,6 +88,8 @@ class HMM
     int num_states() const { return num_states_; }
     // Returns the number of columns in each context state.
     int num_cols() const { return num_cols_; }
+    // Returns the number of training iterations.
+    int iterations() const { return iterations_; }
     // Returns the number of non-null transitions in the HMM.
     int num_transitions() const { return transitions_.num_nonempty(); }
     // Accessor methods for state i, where i is from interval [0,num_states].
@@ -140,6 +142,8 @@ class HMM
     void transform_states_to_logspace();
     // Transforms state profiles to linspace.
     void transform_states_to_linspace();
+    // Increments the training iteration counter.
+    HMM& operator++() { ++iterations_; return *this; }
 
     // Prints HMM in human-readable format for debugging.
     friend std::ostream& operator<< (std::ostream& out, const HMM& hmm)
@@ -163,6 +167,8 @@ class HMM
     int num_states_;
     // Number of columns in each context state.
     int num_cols_;
+    // Number of training iterations performed on this HMM.
+    int iterations_;
     // HMM states ordered by index.
     std::vector< shared_ptr< State<Alphabet_T> > > states_;
     // Sparse matrix with state transitions.
@@ -179,6 +185,7 @@ template<class Alphabet_T>
 HMM<Alphabet_T>::HMM(int num_states, int num_cols)
         : num_states_(num_states),
           num_cols_(num_cols),
+          iterations_(0),
           states_(),
           transitions_(num_states, num_states),
           transitions_logspace_(false),
@@ -191,6 +198,7 @@ template<class Alphabet_T>
 HMM<Alphabet_T>::HMM(std::istream& in)
         : num_states_(0),
           num_cols_(0),
+          iterations_(0),
           states_(),
           transitions_(),
           transitions_logspace_(false),
@@ -206,6 +214,7 @@ HMM<Alphabet_T>::HMM(int num_states,
                      const TransitionInitializer<Alphabet_T>& tr_init)
         : num_states_(num_states),
           num_cols_(num_cols),
+          iterations_(0),
           states_(),
           transitions_(num_states, num_states),
           transitions_logspace_(false),
@@ -363,6 +372,11 @@ void HMM<Alphabet_T>::read(std::istream& in)
         num_cols_= atoi(tmp.c_str() + 8);
     else
         throw Exception("Bad format: serialized HMM does not contain 'num_cols' record!");
+    // Read number of iterations
+    if (getline(in, tmp) && tmp.find("iterations") != std::string::npos)
+        iterations_= atoi(tmp.c_str() + 10);
+    else
+        throw Exception("Bad format: serialized HMM does not contain 'num_cols' record!");
     // Read transitions_logspace
     if (getline(in, tmp) && tmp.find("transitions_logspace") != std::string::npos)
         transitions_logspace_ = atoi(tmp.c_str() + 20) == 1;
@@ -406,6 +420,7 @@ void HMM<Alphabet_T>::write(std::ostream& out) const
     out << "num_states\t\t"         << num_states() << std::endl;
     out << "num_transitions\t\t"    << num_transitions() << std::endl;
     out << "num_cols\t\t"           << num_cols() << std::endl;
+    out << "iterations\t\t"         << iterations() << std::endl;
     out << "transitions_logspace\t" << (transitions_logspace() ? 1 : 0) << std::endl;
     out << "states_logspace\t\t"    << (states_logspace() ? 1 : 0) << std::endl;
 
@@ -436,6 +451,7 @@ void HMM<Alphabet_T>::print(std::ostream& out) const
     out << "Total number of transitions:   " << num_transitions() << std::endl;
     out << "Average number of transitions: " << iround(static_cast<float>(num_transitions()) / num_states()) << std::endl;
     out << "Context profile columns:       " << num_cols() << std::endl;
+    out << "Training iterations:           " << iterations() << std::endl;
 
     for (const_state_iterator si = states_begin(); si != states_end(); ++si)
         (*si)->print(out);
