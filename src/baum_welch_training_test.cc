@@ -27,7 +27,7 @@ class BaumWelchTrainingTest : public testing::Test
 {
   protected:
     BaumWelchTrainingTest()
-            : hmm_(23)
+            : hmm_(23, 1)
     { }
 
     virtual void SetUp()
@@ -37,9 +37,8 @@ class BaumWelchTrainingTest : public testing::Test
         Profile<AminoAcid> profile(seq.length());
 
         BlosumMatrix m;
-        ConstantAdmixture pca(1.0f);
-        MatrixPseudocounts<AminoAcid> mpc(&m, &pca);
-        mpc.add_to_sequence(seq, profile);
+        MatrixPseudocounts<AminoAcid> mpc(&m);
+        mpc.add_to_sequence(seq, profile, ConstantAdmixture(1.0f));
 
         for (int i = 0; i < seq.length(); ++i) {
             Profile<AminoAcid> p(profile, i, 1);
@@ -59,11 +58,9 @@ class BaumWelchTrainingTest : public testing::Test
         ali_in.close();
 
         // Convert alignments to counts and add pseudocounts
-        DivergenceDependentAdmixture pca2(0.5f, 5.0f);
-        mpc.set_admixture(&pca2);
         for (std::vector< shared_ptr< Alignment<AminoAcid> > >::iterator ai = alis.begin(); ai != alis.end(); ++ai) {
             shared_ptr< CountsProfile<AminoAcid> > p_ptr(new CountsProfile<AminoAcid>(**ai, true));
-            mpc.add_to_profile(*p_ptr);
+            mpc.add_to_profile(*p_ptr, DivergenceDependentAdmixture(0.5f, 5.0f));
             p_ptr->convert_to_counts();
             counts_.push_back(p_ptr);
         }

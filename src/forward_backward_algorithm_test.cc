@@ -24,7 +24,7 @@ class ForwardBackwardAlgorithmTest : public testing::Test
 {
   protected:
     ForwardBackwardAlgorithmTest()
-            : hmm_(13)
+            : hmm_(13, 1)
     { }
 
     virtual void SetUp()
@@ -33,9 +33,8 @@ class ForwardBackwardAlgorithmTest : public testing::Test
         Profile<AminoAcid> profile(seq.length());
 
         BlosumMatrix m;
-        ConstantAdmixture pca(0.1f);
-        MatrixPseudocounts<AminoAcid> mpc(&m, &pca);
-        mpc.add_to_sequence(seq, profile);
+        MatrixPseudocounts<AminoAcid> mpc(&m);
+        mpc.add_to_sequence(seq, profile, ConstantAdmixture(0.1f));
 
         for (int i = 0; i < seq.length(); ++i) {
             Profile<AminoAcid> p(profile, i, 1);
@@ -68,11 +67,10 @@ TEST_F(ForwardBackwardAlgorithmTest, 1Q7L)
     CountsProfile<AminoAcid> profile(alignment, true);
 
     BlosumMatrix m;
-    ConstantAdmixture pca(0.01f);
-    MatrixPseudocounts<AminoAcid> mpc(&m, &pca);
-    mpc.add_to_profile(profile);
+    MatrixPseudocounts<AminoAcid> mpc(&m);
+    mpc.add_to_profile(profile, ConstantAdmixture(0.01f));
 
-    HMM<AminoAcid> hmm(profile.length());
+    HMM<AminoAcid> hmm(profile.length(), 1);
     for (int i = 0; i < profile.length(); ++i) {
             Profile<AminoAcid> p(profile, i, 1);
             hmm.add_profile(p);

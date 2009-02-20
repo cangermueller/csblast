@@ -25,39 +25,30 @@ class CountsProfile;
 class Admixture
 {
   public:
-    Admixture() {}
-    virtual ~Admixture() {};
+    Admixture() { }
+    virtual ~Admixture() { };
 
-    virtual float calculate(float neff) const = 0;
+    virtual float operator() (float neff) const = 0;
 };
 
 template<class Alphabet_T>
 class Pseudocounts
 {
   public:
-    Pseudocounts(const Admixture* pca) : pca_(pca) { }
-    virtual ~Pseudocounts() {}
+    Pseudocounts() { }
+    virtual ~Pseudocounts() { }
 
     // Adds pseudocounts to sequence and stores resulting frequencies in given profile.
     virtual void add_to_sequence(const Sequence<Alphabet_T>& seq,
-                                 Profile<Alphabet_T>& p) const = 0;
+                                 Profile<Alphabet_T>& p,
+                                 const Admixture& pca) const = 0;
     // Adds pseudocounts to alignment derived profile.
-    virtual void add_to_profile(CountsProfile<Alphabet_T>& p) const = 0;
-
-    // Sets pseudocount admixture formula to be used.
-    void set_admixture(const Admixture* pca) { pca_ = pca; }
-
-  protected:
-    // Calculates pseudocount admixute depending on alignment diversity.
-    float admixture(float neff) const { return pca_->calculate(neff); }
+    virtual void add_to_profile(CountsProfile<Alphabet_T>& p, const Admixture& pca) const = 0;
 
   private:
     // Disallow copy and assign
     Pseudocounts(const Pseudocounts&);
     void operator=(const Pseudocounts&);
-
-    // The admixture formula to be used.
-    const Admixture* pca_;
 };  // Pseudocounts
 
 
@@ -66,10 +57,10 @@ class Pseudocounts
 class ConstantAdmixture : public Admixture
 {
   public:
-    ConstantAdmixture(float x) : x_(x) {}
-    ~ConstantAdmixture() {};
+    ConstantAdmixture(float x) : x_(x) { }
+    ~ConstantAdmixture() { };
 
-    virtual float calculate(float neff) const { return 0 * neff + std::min(1.0f, x_); }
+    virtual float operator() (float neff) const { return 0 * neff + std::min(1.0f, x_); }
 
   private:
     const float x_;
@@ -82,7 +73,7 @@ class DivergenceDependentAdmixture : public Admixture
     DivergenceDependentAdmixture(float a, float b) : a_(a), b_(b) {}
     ~DivergenceDependentAdmixture() {};
 
-    virtual float calculate(float neff) const
+    virtual float operator() (float neff) const
     { return std::min(1.0f, a_ * (b_ + 1.0f) / (b_ + neff)); }
 
   private:

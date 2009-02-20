@@ -140,8 +140,8 @@ class ForwardBackwardAlgorithm : public ForwardBackwardParams
         LOG(DEBUG1) << subject;
 
         ProfileMatcher<Alphabet_T> matcher;
-        if (!ignore_profile_context() && hmm[1].num_cols() > 1)
-            matcher.init_weights(hmm[1].num_cols(), weight_center(), weight_decay());
+        if (!ignore_profile_context() && hmm.num_cols() > 1)
+            matcher.init_weights(hmm.num_cols(), weight_center(), weight_decay());
 
         shared_ptr<ForwardBackwardMatrices> matrices( new ForwardBackwardMatrices(subject.length(),
                                                                                   hmm.num_states()) );

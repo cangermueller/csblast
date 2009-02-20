@@ -67,11 +67,14 @@ class HMM
     typedef typename sparse_matrix<Transition>::const_nonempty_iterator const_transition_iterator;
 
     // Constructs an empty HMM of given size without any states or transitions.
-    HMM(int num_states);
+    HMM(int num_states, int num_cols);
     // Constructs context HMM from serialized HMM read from input stream.
     HMM(std::istream& in);
     // Constructs context HMM with the help of a state- and a transition-initializer.
-    HMM(int num_states, const StateInitializer<Alphabet_T>& st_init, const TransitionInitializer<Alphabet_T>& tr_init);
+    HMM(int num_states,
+        int num_cols,
+        const StateInitializer<Alphabet_T>& st_init,
+        const TransitionInitializer<Alphabet_T>& tr_init);
 
     virtual ~HMM() {}
 
@@ -83,6 +86,8 @@ class HMM
     bool full() const { return static_cast<int>(states_.size()) == num_states_; }
     // Returns the number of states in the HMM
     int num_states() const { return num_states_; }
+    // Returns the number of columns in each context state.
+    int num_cols() const { return num_cols_; }
     // Returns the number of non-null transitions in the HMM.
     int num_transitions() const { return transitions_.num_nonempty(); }
     // Accessor methods for state i, where i is from interval [0,num_states].
@@ -156,6 +161,8 @@ class HMM
 
     // Number states in the fully assembled HMM)
     int num_states_;
+    // Number of columns in each context state.
+    int num_cols_;
     // HMM states ordered by index.
     std::vector< shared_ptr< State<Alphabet_T> > > states_;
     // Sparse matrix with state transitions.
@@ -169,9 +176,10 @@ class HMM
 
 
 template<class Alphabet_T>
-HMM<Alphabet_T>::HMM(int num_states)
+HMM<Alphabet_T>::HMM(int num_states, int num_cols)
         : num_states_(num_states),
-          states_(),  // we add states with push_back
+          num_cols_(num_cols),
+          states_(),
           transitions_(num_states, num_states),
           transitions_logspace_(false),
           states_logspace_(false)
@@ -182,6 +190,7 @@ HMM<Alphabet_T>::HMM(int num_states)
 template<class Alphabet_T>
 HMM<Alphabet_T>::HMM(std::istream& in)
         : num_states_(0),
+          num_cols_(0),
           states_(),
           transitions_(),
           transitions_logspace_(false),
@@ -192,9 +201,11 @@ HMM<Alphabet_T>::HMM(std::istream& in)
 
 template<class Alphabet_T>
 HMM<Alphabet_T>::HMM(int num_states,
+                     int num_cols,
                      const StateInitializer<Alphabet_T>& st_init,
                      const TransitionInitializer<Alphabet_T>& tr_init)
         : num_states_(num_states),
+          num_cols_(num_cols),
           states_(),
           transitions_(num_states, num_states),
           transitions_logspace_(false),
@@ -274,6 +285,9 @@ inline int HMM<Alphabet_T>::add_profile(const Profile<Alphabet_T>& profile)
 {
     if (full())
         throw Exception("Unable to add state: the HMM contains already %i states!", num_states());
+    if (profile.num_cols() != num_cols())
+        throw Exception("Unable to add state: provided profile has %i columns but should have %i!",
+                        profile.num_cols(), num_cols());
 
     shared_ptr< State<Alphabet_T> > state_ptr(new State<Alphabet_T>(states_.size(),
                                                                     profile,
@@ -337,13 +351,18 @@ void HMM<Alphabet_T>::read(std::istream& in)
     if (getline(in, tmp) && tmp.find("num_states") != std::string::npos)
         num_states_ = atoi(tmp.c_str() + 10);
     else
-        throw Exception("Bad format: serialized profile does not contain 'size' record!");
+        throw Exception("Bad format: serialized HMM does not contain 'size' record!");
     // Read number of transitions
     int ntr = 0;
     if (getline(in, tmp) && tmp.find("num_transitions") != std::string::npos)
         ntr = atoi(tmp.c_str() + 15);
     else
-        throw Exception("Bad format: serialized profile does not contain 'num_transitions' record!");
+        throw Exception("Bad format: serialized HMM does not contain 'num_transitions' record!");
+    // Read number of columns
+    if (getline(in, tmp) && tmp.find("num_cols") != std::string::npos)
+        num_cols_= atoi(tmp.c_str() + 8);
+    else
+        throw Exception("Bad format: serialized HMM does not contain 'num_cols' record!");
     // Read transitions_logspace
     if (getline(in, tmp) && tmp.find("transitions_logspace") != std::string::npos)
         transitions_logspace_ = atoi(tmp.c_str() + 20) == 1;
@@ -384,10 +403,11 @@ void HMM<Alphabet_T>::write(std::ostream& out) const
 {
     // Write header
     out << "HMM" << std::endl;
-    out << "num_states\t\t" << num_states() << std::endl;
-    out << "num_transitions\t\t" << num_transitions() << std::endl;
+    out << "num_states\t\t"         << num_states() << std::endl;
+    out << "num_transitions\t\t"    << num_transitions() << std::endl;
+    out << "num_cols\t\t"           << num_cols() << std::endl;
     out << "transitions_logspace\t" << (transitions_logspace() ? 1 : 0) << std::endl;
-    out << "states_logspace\t\t" << (states_logspace() ? 1 : 0) << std::endl;
+    out << "states_logspace\t\t"    << (states_logspace() ? 1 : 0) << std::endl;
 
     // Write states (excl. BEGIN/END state)
     for (const_state_iterator si = states_begin(); si != states_end(); ++si)
@@ -415,6 +435,7 @@ void HMM<Alphabet_T>::print(std::ostream& out) const
     out << "Total number of states:        " << num_states() << std::endl;
     out << "Total number of transitions:   " << num_transitions() << std::endl;
     out << "Average number of transitions: " << iround(static_cast<float>(num_transitions()) / num_states()) << std::endl;
+    out << "Context profile columns:       " << num_cols() << std::endl;
 
     for (const_state_iterator si = states_begin(); si != states_end(); ++si)
         (*si)->print(out);
@@ -506,26 +527,58 @@ class TransitionAdaptor {
 };
 
 
-
 template<class Alphabet_T>
-class RandomSampleStateInitializer : public StateInitializer<Alphabet_T>
+class SamplingStateInitializerParams
 {
   public:
     typedef typename std::vector< shared_ptr< CountsProfile<Alphabet_T> > > profile_vector;
 
-    RandomSampleStateInitializer(profile_vector profiles,
-                                 int num_cols,
-                                 float sample_rate,
-                                 const Pseudocounts<Alphabet_T>& pc)
+    SamplingStateInitializerParams(profile_vector profiles, const Pseudocounts<Alphabet_T>* pc)
             : profiles_(profiles),
-              num_cols_(num_cols),
-              sample_rate_(sample_rate),
-              pc_(pc)
+              pc_(pc),
+              sample_rate_(0.2f),
+              state_pseudocount_admixture_(1.0f)
     {
         random_shuffle(profiles_.begin(), profiles_.end());
     }
 
-    virtual ~RandomSampleStateInitializer() {};
+    SamplingStateInitializerParams(const SamplingStateInitializerParams& p)
+            : profiles_(p.profiles_),
+              pc_(p.pc_),
+              sample_rate_(p.sample_rate_),
+              state_pseudocount_admixture_(p.state_pseudocount_admixture_)
+    { }
+
+    virtual ~SamplingStateInitializerParams()
+    { }
+
+    SamplingStateInitializerParams& sample_rate(float r) { sample_rate_ = r; return *this; }
+    SamplingStateInitializerParams& state_pseudocount_admixture(float pca) { state_pseudocount_admixture_ = pca; return *this; }
+
+    float sample_rate() const { return sample_rate_; }
+    float state_pseudocount_admixture() const { return state_pseudocount_admixture_; }
+
+  protected:
+    // Pool of full length sequence profiles to be sampled from.
+    profile_vector profiles_;
+    // Pseudocount factory for state profiles.
+    const Pseudocounts<Alphabet_T>* pc_;
+    // Fraction of profile windows sampled from each subject.
+    float sample_rate_;
+    // Constant pseudocounts to be added to each context profile.
+    float state_pseudocount_admixture_;
+};
+
+template<class Alphabet_T>
+class SamplingStateInitializer : public StateInitializer<Alphabet_T>,
+                                 public SamplingStateInitializerParams<Alphabet_T>
+{
+  public:
+    SamplingStateInitializer(const SamplingStateInitializerParams<Alphabet_T>& params)
+            : SamplingStateInitializerParams<Alphabet_T>(params)
+    { }
+
+    virtual ~SamplingStateInitializer() { };
 
     virtual void init(HMM<Alphabet_T>& hmm) const
     {
@@ -533,16 +586,16 @@ class RandomSampleStateInitializer : public StateInitializer<Alphabet_T>
                   << profiles_.size() << " training profiles ...";
 
         // Iterate over randomly shuffled profiles; from each profile sample a fraction of profile windows until HMM is full.
-        typedef typename profile_vector::const_iterator const_profile_iterator;
+        typedef typename std::vector< shared_ptr< CountsProfile<Alphabet_T> > >::const_iterator const_profile_iterator;
         for (const_profile_iterator pi = profiles_.begin(); pi != profiles_.end() && !hmm.full(); ++pi) {
-            if ((*pi)->num_cols() < num_cols_) continue;
+            if ((*pi)->num_cols() < hmm.num_cols()) continue;
 
             LOG(DEBUG) << "Processing next training profile ...";
             LOG(DEBUG) << **pi;
 
             // Prepare sample of indices
             std::vector<int> idx;
-            for (int i = 0; i <= (*pi)->num_cols() - num_cols_; ++i) idx.push_back(i);
+            for (int i = 0; i <= (*pi)->num_cols() - hmm.num_cols(); ++i) idx.push_back(i);
             LOG(DEBUG) << "Available column indices:";
             LOG(DEBUG) << stringify_container(idx);
 
@@ -557,10 +610,10 @@ class RandomSampleStateInitializer : public StateInitializer<Alphabet_T>
 
             // Add sub-profiles at sampled indices to HMM
             for (std::vector<int>::const_iterator i = idx.begin(); i != idx.end() && !hmm.full(); ++i) {
-                CountsProfile<Alphabet_T> p(**pi, *i, num_cols_);
+                CountsProfile<Alphabet_T> p(**pi, *i, hmm.num_cols());
                 LOG(DEBUG) << "Extracted profile window at position " << *i << ":";
                 p.convert_to_frequencies(); // make sure that profile contains frequencies not counts
-                pc_.add_to_profile(p);
+                pc_->add_to_profile(p, ConstantAdmixture(state_pseudocount_admixture_));
                 hmm.add_profile(p);
             }
         }
@@ -571,16 +624,13 @@ class RandomSampleStateInitializer : public StateInitializer<Alphabet_T>
         LOG(DEBUG) << hmm;
     }
 
-  private:
-    // Pool of full length sequence profiles (possibly with pseudocounts) to be sampled from.
-    profile_vector profiles_;
-    // Number of columns per state profile.
-    const int num_cols_;
-    // Fraction of profile windows to be sampled from each training profile.
-    const float sample_rate_;
-    // Pseudocounts to be added to sampled profiles.
-    const Pseudocounts<Alphabet_T>& pc_;
-};  // RandomSampleStateInitializer
+  protected:
+    // Needed to access names in templatized Profile base class
+    using SamplingStateInitializerParams<Alphabet_T>::profiles_;
+    using SamplingStateInitializerParams<Alphabet_T>::pc_;
+    using SamplingStateInitializerParams<Alphabet_T>::sample_rate_;
+    using SamplingStateInitializerParams<Alphabet_T>::state_pseudocount_admixture_;
+};  // SamplingStateInitializer
 
 template<class Alphabet_T>
 class HomogeneousTransitionInitializer : public TransitionInitializer<Alphabet_T>

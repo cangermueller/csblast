@@ -52,7 +52,7 @@ class HMMTest : public testing::Test
 
 TEST_F(HMMTest, SimpleConstruction)
 {
-    HMM<Nucleotide> hmm(3);
+    HMM<Nucleotide> hmm(3, 5);
 
     EXPECT_FALSE(hmm.full());
     EXPECT_EQ(0, hmm.num_transitions());
@@ -98,7 +98,7 @@ TEST_F(HMMTest, SimpleConstruction)
 
 TEST_F(HMMTest, ConstructionFromSerializedHMM)
 {
-    HMM<Nucleotide> hmm1(3);
+    HMM<Nucleotide> hmm1(3, 5);
     hmm1.add_profile(p1_);
     hmm1.add_profile(p2_);
     hmm1.add_profile(p3_);
@@ -127,7 +127,7 @@ TEST_F(HMMTest, ConstructionFromSerializedHMM)
 
 TEST_F(HMMTest, NormalizeTransitions)
 {
-    HMM<Nucleotide> hmm(3);
+    HMM<Nucleotide> hmm(3, 5);
     hmm.add_profile(p1_);
     hmm.add_profile(p2_);
     hmm.add_profile(p3_);
@@ -146,7 +146,7 @@ TEST_F(HMMTest, NormalizeTransitions)
 
 TEST_F(HMMTest, LinLogTransformation)
 {
-    HMM<Nucleotide> hmm(3);
+    HMM<Nucleotide> hmm(3, 5);
     hmm.add_profile(p1_);
     hmm.add_profile(p2_);
     hmm.add_profile(p3_);
@@ -183,11 +183,6 @@ TEST(HMMTestInitialization, RandomSampleInitializer)
     fin.close();
     ali.assign_match_columns_by_gap_rule();
 
-    const int HMM_SIZE = 10;
-    const int NUM_COLS = 5;
-    const float PC_ADMIXTURE = 0.6f;
-    const float SAMPLE_RATE = 0.2f;
-
     // setup training profiles
     typedef shared_ptr< CountsProfile<AminoAcid> > profile_ptr;
     profile_ptr p(new CountsProfile<AminoAcid>(ali, true));
@@ -195,14 +190,18 @@ TEST(HMMTestInitialization, RandomSampleInitializer)
 
     // setup substitution matrix pseudocounts
     BlosumMatrix m;
-    ConstantAdmixture pca(PC_ADMIXTURE);
-    MatrixPseudocounts<AminoAcid> mpc(&m, &pca);
-    HMM<AminoAcid> hmm(HMM_SIZE,
-                       RandomSampleStateInitializer<AminoAcid>(profiles, NUM_COLS, SAMPLE_RATE, mpc),
-                       HomogeneousTransitionInitializer<AminoAcid>());
+    MatrixPseudocounts<AminoAcid> pc(&m);
+    SamplingStateInitializer<AminoAcid> st_init =
+        SamplingStateInitializerParams<AminoAcid>(profiles, &pc)
+        .sample_rate(0.2f)
+        .state_pseudocount_admixture(0.2f);
+    HomogeneousTransitionInitializer<AminoAcid> tr_init;
+    HMM<AminoAcid> hmm(10, 5, st_init, tr_init);
 
-    EXPECT_EQ(HMM_SIZE, hmm.num_states());
-    EXPECT_EQ(HMM_SIZE*HMM_SIZE, hmm.num_transitions());
+    EXPECT_EQ(10, hmm.num_states());
+    EXPECT_EQ(100, hmm.num_transitions());
+    EXPECT_EQ(5, hmm.num_cols());
+    EXPECT_EQ(5, hmm[0].num_cols());
 }
 
 }  // cs

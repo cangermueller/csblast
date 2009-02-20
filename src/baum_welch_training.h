@@ -200,7 +200,7 @@ float BaumWelchTraining<Alphabet_T, Subject_T>::run(HMM<Alphabet_T>& hmm,
 {
     LOG(DEBUG) << "Running Baum-Welch training on ...";
     LOG(DEBUG) << hmm;
-    setup(hmm.num_states(), hmm[1].num_cols());
+    setup(hmm.num_states(), hmm.num_cols());
 
     // Calculate log-likelihood baseline
     run_forward_backward(hmm, data, prg_info);
