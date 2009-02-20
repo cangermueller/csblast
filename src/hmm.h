@@ -561,7 +561,7 @@ class RandomSampleStateInitializer : public StateInitializer<Alphabet_T>
                 LOG(DEBUG) << "Extracted profile window at position " << *i << ":";
                 p.convert_to_frequencies(); // make sure that profile contains frequencies not counts
                 pc_.add_to_profile(p);
-                std::cerr << hmm.add_profile(p);
+                hmm.add_profile(p);
             }
         }
         if (!hmm.full())
