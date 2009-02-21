@@ -553,7 +553,7 @@ class SamplingStateInitializerParams
             : profiles_(profiles),
               pc_(pc),
               sample_rate_(0.2f),
-              state_pseudocount_admixture_(1.0f)
+              state_pseudocounts_(1.0f)
     {
         random_shuffle(profiles_.begin(), profiles_.end());
     }
@@ -562,17 +562,17 @@ class SamplingStateInitializerParams
             : profiles_(p.profiles_),
               pc_(p.pc_),
               sample_rate_(p.sample_rate_),
-              state_pseudocount_admixture_(p.state_pseudocount_admixture_)
+              state_pseudocounts_(p.state_pseudocounts_)
     { }
 
     virtual ~SamplingStateInitializerParams()
     { }
 
     SamplingStateInitializerParams& sample_rate(float r) { sample_rate_ = r; return *this; }
-    SamplingStateInitializerParams& state_pseudocount_admixture(float pca) { state_pseudocount_admixture_ = pca; return *this; }
+    SamplingStateInitializerParams& state_pseudocounts(float pca) { state_pseudocounts_ = pca; return *this; }
 
     float sample_rate() const { return sample_rate_; }
-    float state_pseudocount_admixture() const { return state_pseudocount_admixture_; }
+    float state_pseudocounts() const { return state_pseudocounts_; }
 
   protected:
     // Pool of full length sequence profiles to be sampled from.
@@ -582,7 +582,7 @@ class SamplingStateInitializerParams
     // Fraction of profile windows sampled from each subject.
     float sample_rate_;
     // Constant pseudocounts to be added to each context profile.
-    float state_pseudocount_admixture_;
+    float state_pseudocounts_;
 };
 
 template<class Alphabet_T>
@@ -629,7 +629,7 @@ class SamplingStateInitializer : public StateInitializer<Alphabet_T>,
                 CountsProfile<Alphabet_T> p(**pi, *i, hmm.num_cols());
                 LOG(DEBUG) << "Extracted profile window at position " << *i << ":";
                 p.convert_to_frequencies(); // make sure that profile contains frequencies not counts
-                pc_->add_to_profile(p, ConstantAdmixture(state_pseudocount_admixture_));
+                pc_->add_to_profile(p, ConstantAdmixture(state_pseudocounts_));
                 hmm.add_profile(p);
             }
         }
@@ -645,7 +645,7 @@ class SamplingStateInitializer : public StateInitializer<Alphabet_T>,
     using SamplingStateInitializerParams<Alphabet_T>::profiles_;
     using SamplingStateInitializerParams<Alphabet_T>::pc_;
     using SamplingStateInitializerParams<Alphabet_T>::sample_rate_;
-    using SamplingStateInitializerParams<Alphabet_T>::state_pseudocount_admixture_;
+    using SamplingStateInitializerParams<Alphabet_T>::state_pseudocounts_;
 };  // SamplingStateInitializer
 
 template<class Alphabet_T>

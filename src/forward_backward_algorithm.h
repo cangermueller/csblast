@@ -54,7 +54,7 @@ class ForwardBackwardParams
 
 struct ForwardBackwardMatrices
 {
-    typedef float value_type;
+    typedef double value_type;
 
     ForwardBackwardMatrices()
             : log_likelihood(0.0)
@@ -161,7 +161,7 @@ class ForwardBackwardAlgorithm : public ForwardBackwardParams
                        const ProfileMatcher<Alphabet_T>& matcher,
                        ForwardBackwardMatrices& m)
     {
-        LOG(DEBUG) << "Forward pass ...";
+        LOG(DEBUG1) << "Forward pass ...";
         const int length     = subject.length();
         const int num_states = hmm.num_states();
 
@@ -203,17 +203,17 @@ class ForwardBackwardAlgorithm : public ForwardBackwardParams
             value_type scale_fac = 1.0 / m.s[i];
             for (int l = 0; l < num_states; ++l)
                 m.f[i][l] *= scale_fac;
-            m.log_likelihood += -log10(m.s[i]);
+            m.log_likelihood += log10(m.s[i]);
         }
 
-        LOG(DEBUG) << strprintf("Log-likelihood = %-7.2g", m.log_likelihood);
+        LOG(DEBUG) << strprintf("log(L) = %-7.2g", m.log_likelihood);
     }
 
     void backward(const HMM<Alphabet_T>& hmm,
                         const Subject_T<Alphabet_T>& subject,
                         ForwardBackwardMatrices& m)
     {
-        LOG(DEBUG) << "Backward pass ...";
+        LOG(DEBUG1) << "Backward pass ...";
         const int length     = subject.length();
         const int num_states = hmm.num_states();
 

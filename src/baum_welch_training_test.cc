@@ -60,7 +60,7 @@ class BaumWelchTrainingTest : public testing::Test
         // Convert alignments to counts and add pseudocounts
         for (std::vector< shared_ptr< Alignment<AminoAcid> > >::iterator ai = alis.begin(); ai != alis.end(); ++ai) {
             shared_ptr< CountsProfile<AminoAcid> > p_ptr(new CountsProfile<AminoAcid>(**ai, true));
-            mpc.add_to_profile(*p_ptr, DivergenceDependentAdmixture(0.5f, 5.0f));
+            mpc.add_to_profile(*p_ptr, ConstantAdmixture(0.01f));
             p_ptr->convert_to_counts();
             counts_.push_back(p_ptr);
         }
@@ -74,23 +74,27 @@ class BaumWelchTrainingTest : public testing::Test
 TEST_F(BaumWelchTrainingTest, ZincFingerSeqsTraining)
 {
     TrainingProgressInfo<AminoAcid> prg_info(hmm_, std::cout);
-    BaumWelchTraining<AminoAcid, Sequence> bwt;
+    BaumWelchTraining<AminoAcid, Sequence> bwt =
+        BaumWelchParams().transition_pseudocounts(0.0f);
     bwt.run(hmm_, seqs_, &prg_info);
 
     hmm_.transform_states_to_linspace();
-    EXPECT_NEAR(1.0, hmm_[0][0][AminoAcid::instance().ctoi('C')], DELTA);
-    EXPECT_NEAR(1.0, hmm_[5][0][AminoAcid::instance().ctoi('C')], DELTA);
+    EXPECT_NEAR(0.8977, hmm_[0][0][AminoAcid::instance().ctoi('C')], DELTA);
+    EXPECT_NEAR(0.8977, hmm_[5][0][AminoAcid::instance().ctoi('C')], DELTA);
 }
 
 TEST_F(BaumWelchTrainingTest, ZincFingerAlisTraining)
 {
     TrainingProgressInfo<AminoAcid> prg_info(hmm_, std::cout);
-    BaumWelchTraining<AminoAcid, CountsProfile> bwt;
+    BaumWelchTraining<AminoAcid, CountsProfile> bwt =
+        BaumWelchParams()
+        .transition_pseudocounts(-0.1f)
+        .max_iterations(10);
     bwt.run(hmm_, counts_, &prg_info);
 
     hmm_.transform_states_to_linspace();
-    EXPECT_NEAR(0.7424, hmm_[0][0][AminoAcid::instance().ctoi('C')], DELTA);
-    EXPECT_NEAR(0.7424, hmm_[3][0][AminoAcid::instance().ctoi('C')], DELTA);
+    EXPECT_NEAR(0.9948, hmm_[0][0][AminoAcid::instance().ctoi('C')], DELTA);
+    EXPECT_NEAR(0.9948, hmm_[5][0][AminoAcid::instance().ctoi('C')], DELTA);
 }
 
 }  // cs

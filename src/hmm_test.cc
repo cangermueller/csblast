@@ -194,7 +194,7 @@ TEST(HMMTestInitialization, RandomSampleInitializer)
     SamplingStateInitializer<AminoAcid> st_init =
         SamplingStateInitializerParams<AminoAcid>(profiles, &pc)
         .sample_rate(0.2f)
-        .state_pseudocount_admixture(0.2f);
+        .state_pseudocounts(0.2f);
     HomogeneousTransitionInitializer<AminoAcid> tr_init;
     HMM<AminoAcid> hmm(10, 5, st_init, tr_init);
 
