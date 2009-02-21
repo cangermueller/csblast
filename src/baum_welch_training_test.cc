@@ -89,9 +89,9 @@ TEST_F(BaumWelchTrainingTest, ZincFingerAlisTraining)
     BaumWelchTraining<AminoAcid, CountsProfile> bwt =
         BaumWelchParams()
         .transition_pseudocounts(-0.1f)
-        .max_iterations(10);
+        .log_likelihood_threshold(0.2)
+        .max_connectivity(5);
     bwt.run(hmm_, counts_, &prg_info);
-
     hmm_.transform_states_to_linspace();
     EXPECT_NEAR(0.9948, hmm_[0][0][AminoAcid::instance().ctoi('C')], DELTA);
     EXPECT_NEAR(0.9948, hmm_[5][0][AminoAcid::instance().ctoi('C')], DELTA);

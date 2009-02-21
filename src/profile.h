@@ -134,7 +134,7 @@ void reset(Profile<Alphabet_T>& profile, float value = 0.0f);
 
 // Normalize profile columns to value or to one if none provided.
 template<class Alphabet_T>
-void normalize(Profile<Alphabet_T>& profile, float value = 1.0f);
+bool normalize(Profile<Alphabet_T>& profile, float value = 1.0f);
 
 
 
@@ -346,13 +346,14 @@ void reset(Profile<Alphabet_T>& profile, float value)
 }
 
 template<class Alphabet_T>
-void normalize(Profile<Alphabet_T>& profile, float value)
+bool normalize(Profile<Alphabet_T>& profile, float value)
 {
     const bool logspace = profile.logspace();
     if (logspace) profile.transform_to_linspace();
 
     const int num_cols = profile.num_cols();
     const int alphabet_size  = profile.alphabet_size();
+    bool rv = true;
     for (int i = 0; i < num_cols; ++i) {
         float sum = 0.0f;
         for (int a = 0; a < alphabet_size; ++a) sum += profile[i][a];
@@ -360,11 +361,12 @@ void normalize(Profile<Alphabet_T>& profile, float value)
             float fac = value / sum;
             for (int a = 0; a < alphabet_size; ++a) profile[i][a] *= fac;
         } else {
-            throw Exception("Unable to normalize profile to one. Sum of column %i is zero!", i);
+            rv = false;  // couldn't normalize at least one column
         }
     }
 
     if (logspace) profile.transform_to_logspace();
+    return rv;
 }
 
 }  // cs

@@ -92,6 +92,8 @@ class HMM
     int iterations() const { return iterations_; }
     // Returns the number of non-null transitions in the HMM.
     int num_transitions() const { return transitions_.num_nonempty(); }
+    // Returns the average state connectivity.
+    float connectivity() const { return static_cast<float>(num_transitions()) / num_states(); }
     // Accessor methods for state i, where i is from interval [0,num_states].
     State<Alphabet_T>& operator[](int i) { return *states_[i]; }
     const State<Alphabet_T>& operator[](int i) const { return *states_[i]; }
@@ -447,11 +449,11 @@ void HMM<Alphabet_T>::print(std::ostream& out) const
     std::ios_base::fmtflags flags = out.flags();  // save flags
 
     out << "HMM" << std::endl;
-    out << "Total number of states:        " << num_states() << std::endl;
-    out << "Total number of transitions:   " << num_transitions() << std::endl;
-    out << "Average number of transitions: " << iround(static_cast<float>(num_transitions()) / num_states()) << std::endl;
-    out << "Context profile columns:       " << num_cols() << std::endl;
-    out << "Training iterations:           " << iterations() << std::endl;
+    out << "Total number of states:      " << num_states() << std::endl;
+    out << "Total number of transitions: " << num_transitions() << std::endl;
+    out << "Average connectivity:        " << strprintf("%-7.1f", connectivity()) << std::endl;
+    out << "Context profile columns:     " << num_cols() << std::endl;
+    out << "Training iterations:         " << iterations() << std::endl;
 
     for (const_state_iterator si = states_begin(); si != states_end(); ++si)
         (*si)->print(out);
