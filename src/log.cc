@@ -68,7 +68,7 @@ Log::~Log()
 
 LogLevel& Log::reporting_level()
 {
-    static LogLevel log_level = DEBUG4;
+    static LogLevel log_level = DEBUG;
     return log_level;
 }
 

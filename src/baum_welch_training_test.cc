@@ -75,7 +75,7 @@ TEST_F(BaumWelchTrainingTest, ZincFingerSeqsTraining)
 {
     TrainingProgressInfo<AminoAcid> prg_info(hmm_, std::cout);
     BaumWelchTraining<AminoAcid, Sequence> bwt =
-        BaumWelchParams().transition_pseudocounts(0.0f);
+        BaumWelchParams().alpha(1.0f);
     bwt.run(hmm_, seqs_, &prg_info);
 
     hmm_.transform_states_to_linspace();
@@ -88,8 +88,8 @@ TEST_F(BaumWelchTrainingTest, ZincFingerAlisTraining)
     TrainingProgressInfo<AminoAcid> prg_info(hmm_, std::cout);
     BaumWelchTraining<AminoAcid, CountsProfile> bwt =
         BaumWelchParams()
-        .transition_pseudocounts(-0.1f)
-        .log_likelihood_threshold(0.2)
+        .alpha(0.8)
+        .log_likelihood_threshold(0.02)
         .max_connectivity(5);
     bwt.run(hmm_, counts_, &prg_info);
     hmm_.transform_states_to_linspace();
