@@ -46,7 +46,7 @@ class ForwardBackwardParams
     float weight_center() const { return weight_center_; }
     float weight_decay() const { return weight_decay_; }
 
-  private:
+  protected:
     bool ignore_profile_context_;
     float weight_center_;
     float weight_decay_;

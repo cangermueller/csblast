@@ -100,3 +100,25 @@ LogLevel Log::from_string(const std::string& log_level)
     return INFO;
 }
 
+LogLevel Log::from_integer(int log_level)
+{
+    if (log_level == 7)
+        return DEBUG4;
+    if (log_level == 6)
+        return DEBUG3;
+    if (log_level == 5)
+        return DEBUG2;
+    if (log_level == 4)
+        return DEBUG1;
+    if (log_level == 3)
+        return DEBUG;
+    if (log_level == 2)
+        return INFO;
+    if (log_level == 1)
+        return WARNING;
+    if (log_level == 0)
+        return ERROR;
+    Log().get(WARNING) << "Unknown logging level '" << log_level << "'. Using INFO level as default.";
+    return INFO;
+}
+

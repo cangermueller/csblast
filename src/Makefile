@@ -41,7 +41,7 @@ endif
 GTEST_CXXFLAGS += -g
 
 # All non-test executables produced by this Makefile
-TARGETS = test
+TARGETS = test cstrain_aa
 
 # Libraries against which TARGETS should be build
 LIBS = 
@@ -53,9 +53,12 @@ EXT = cc
 BUILDDIR = build
 
 # C++ source files
-SOURCES = $(wildcard *.$(EXT))
+#SOURCES = $(wildcard *.$(EXT))
+SOURCES = $(filter-out $(patsubst %, %.$(EXT), $(TARGETS)), $(wildcard *.$(EXT)))
 OBJECTS = $(patsubst %.$(EXT), $(BUILDDIR)/%.o, $(SOURCES))
 DEPS    = $(patsubst %.$(EXT), $(BUILDDIR)/%.dep, $(SOURCES))
+OBJECTS_NO_TESTS = $(filter-out $(patsubst %.$(EXT), $(BUILDDIR)/%.o, $(wildcard *test*.$(EXT))), $(OBJECTS))
+DEPS_NO_TESTS    = $(filter-out $(patsubst %.$(EXT), $(BUILDDIR)/%.dep, $(wildcard *test*.$(EXT))), $(DEPS))
 
 # All Google Test headers.  Usually you shouldn't change this
 # definition.
@@ -87,8 +90,8 @@ $(BUILDDIR)/gtest-all.o : $(GTEST_SRCS_) $(BUILDDIR)/.tag
 $(BUILDDIR)/gtest_main.o : $(GTEST_SRCS_) $(BUILDDIR)/.tag
 	$(CXX) $(CPPFLAGS) $(GTEST_CXXFLAGS) -c $(GTEST_DIR)/src/gtest_main.cc -o $@
 
-gtest.a : $(BUILDDIR)/gtest-all.o
-	$(AR) $(ARFLAGS) $@ $^
+# gtest.a : $(BUILDDIR)/gtest-all.o
+# 	$(AR) $(ARFLAGS) $@ $^
 
 gtest_main.a : $(BUILDDIR)/gtest-all.o $(BUILDDIR)/gtest_main.o
 	$(AR) $(ARFLAGS) $@ $^
@@ -111,5 +114,5 @@ test : $(OBJECTS) $(DEPS) gtest_main.a
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $(OBJECTS) gtest_main.a
 
 # Executable targets:
-# xxx: $(OBJECTS) $(DEPS)
-# 	$(CXX) $(CXXFLAGS) -o $@ $(OBJECTS) $(LIBS)
+cstrain_aa: cstrain_aa.cc $(OBJECTS_NO_TESTS) $(DEPS_NO_TESTS)
+	$(CXX) $(CXXFLAGS) -o $@ $@.cc $(OBJECTS_NO_TESTS) $(LIBS)

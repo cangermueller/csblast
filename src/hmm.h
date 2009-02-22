@@ -545,25 +545,17 @@ class TransitionAdaptor {
 };
 
 
-template<class Alphabet_T>
+
 class SamplingStateInitializerParams
 {
   public:
-    typedef typename std::vector< shared_ptr< CountsProfile<Alphabet_T> > > profile_vector;
-
-    SamplingStateInitializerParams(profile_vector profiles, const Pseudocounts<Alphabet_T>* pc)
-            : profiles_(profiles),
-              pc_(pc),
-              sample_rate_(0.2f),
+    SamplingStateInitializerParams()
+            : sample_rate_(0.2f),
               state_pseudocounts_(1.0f)
-    {
-        random_shuffle(profiles_.begin(), profiles_.end());
-    }
+    { }
 
     SamplingStateInitializerParams(const SamplingStateInitializerParams& p)
-            : profiles_(p.profiles_),
-              pc_(p.pc_),
-              sample_rate_(p.sample_rate_),
+            : sample_rate_(p.sample_rate_),
               state_pseudocounts_(p.state_pseudocounts_)
     { }
 
@@ -577,10 +569,6 @@ class SamplingStateInitializerParams
     float state_pseudocounts() const { return state_pseudocounts_; }
 
   protected:
-    // Pool of full length sequence profiles to be sampled from.
-    profile_vector profiles_;
-    // Pseudocount factory for state profiles.
-    const Pseudocounts<Alphabet_T>* pc_;
     // Fraction of profile windows sampled from each subject.
     float sample_rate_;
     // Constant pseudocounts to be added to each context profile.
@@ -589,12 +577,25 @@ class SamplingStateInitializerParams
 
 template<class Alphabet_T>
 class SamplingStateInitializer : public StateInitializer<Alphabet_T>,
-                                 public SamplingStateInitializerParams<Alphabet_T>
+                                 public SamplingStateInitializerParams
 {
   public:
-    SamplingStateInitializer(const SamplingStateInitializerParams<Alphabet_T>& params)
-            : SamplingStateInitializerParams<Alphabet_T>(params)
-    { }
+    typedef typename std::vector< shared_ptr< CountsProfile<Alphabet_T> > > profile_vector;
+
+    SamplingStateInitializer(profile_vector profiles,
+                             const Pseudocounts<Alphabet_T>* pc)
+            : SamplingStateInitializerParams(),
+              profiles_(profiles),
+              pc_(pc)
+    { random_shuffle(profiles_.begin(), profiles_.end()); }
+
+    SamplingStateInitializer(profile_vector profiles,
+                             const Pseudocounts<Alphabet_T>* pc,
+                             const SamplingStateInitializerParams& params)
+            : SamplingStateInitializerParams(params),
+              profiles_(profiles),
+              pc_(pc)
+    { random_shuffle(profiles_.begin(), profiles_.end()); }
 
     virtual ~SamplingStateInitializer() { };
 
@@ -642,12 +643,11 @@ class SamplingStateInitializer : public StateInitializer<Alphabet_T>,
         LOG(DEBUG) << hmm;
     }
 
-  protected:
-    // Needed to access names in templatized Profile base class
-    using SamplingStateInitializerParams<Alphabet_T>::profiles_;
-    using SamplingStateInitializerParams<Alphabet_T>::pc_;
-    using SamplingStateInitializerParams<Alphabet_T>::sample_rate_;
-    using SamplingStateInitializerParams<Alphabet_T>::state_pseudocounts_;
+  private:
+    // Pool of full length sequence profiles to be sampled from.
+    profile_vector profiles_;
+    // Pseudocount factory for state profiles.
+    const Pseudocounts<Alphabet_T>* pc_;
 };  // SamplingStateInitializer
 
 template<class Alphabet_T>

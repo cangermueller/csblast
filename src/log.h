@@ -20,6 +20,7 @@ class Log
     static LogLevel& reporting_level();
     static std::string to_string(LogLevel log_level);
     static LogLevel from_string(const std::string& log_level);
+    static LogLevel from_integer(int log_level);
 
   protected:
     std::ostringstream os;

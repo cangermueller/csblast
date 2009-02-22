@@ -183,18 +183,15 @@ TEST(HMMTestInitialization, RandomSampleInitializer)
     fin.close();
     ali.assign_match_columns_by_gap_rule();
 
-    // setup training profiles
     typedef shared_ptr< CountsProfile<AminoAcid> > profile_ptr;
     profile_ptr p(new CountsProfile<AminoAcid>(ali, true));
     std::vector<profile_ptr> profiles(10, p);
 
-    // setup substitution matrix pseudocounts
     BlosumMatrix m;
     MatrixPseudocounts<AminoAcid> pc(&m);
-    SamplingStateInitializer<AminoAcid> st_init =
-        SamplingStateInitializerParams<AminoAcid>(profiles, &pc)
-        .sample_rate(0.2f)
-        .state_pseudocounts(0.2f);
+    SamplingStateInitializer<AminoAcid> st_init(profiles, &pc);
+    st_init.sample_rate(0.2f);
+    st_init.state_pseudocounts(0.2f);
     HomogeneousTransitionInitializer<AminoAcid> tr_init;
     HMM<AminoAcid> hmm(10, 5, st_init, tr_init);
 
