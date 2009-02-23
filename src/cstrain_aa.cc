@@ -6,26 +6,22 @@
 #include <iostream>
 
 #include "amino_acid.h"
-#include "cstrain_params.h"
+#include "cstrain.h"
 #include "log.h"
+
+std::ostream& usage(std::ostream& out);
 
 int main(int argc, char* argv[])
 {
-    cs::CSTrainParams<cs::AminoAcid> params;
     GetOpt_pp options(argc, argv);
+    cs::CSTrain<cs::AminoAcid> cstrain;
 
     if(argc < 2 || options >> OptionPresent('h', "help")) {
-        params.usage(std::cout);
+        cstrain.usage(std::cout);
         return 2;
     }
-
     try {
-        params.parse(options);
-        params.check();
-
-        std::cout << "num_states=" << params.num_states() << std::endl;
-        std::cout << "log_level=" << Log::reporting_level() << std::endl;
-
+        cstrain.run(options);
     } catch(const std::exception& e) {
         LOG(ERROR) << e.what();
         std::cout << e.what() << std::endl;

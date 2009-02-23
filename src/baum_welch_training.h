@@ -60,7 +60,7 @@ class BaumWelchParams : public ForwardBackwardParams
     BaumWelchParams& log_likelihood_threshold(float t) { log_likelihood_threshold_ = t; return *this; }
     BaumWelchParams& alpha(float pc) { alpha_ = pc; return *this; }
 
-  private:
+  protected:
     int min_iterations_;
     int max_iterations_;
     int max_connectivity_;
@@ -168,9 +168,9 @@ class BaumWelchTraining : public BaumWelchParams
     }
 
     // Trains the HMM with the data provided until one of the termination criterions is fullfilled.
-    float run(HMM<Alphabet_T>& hmm,
-              const data_vector& data,
-              TrainingProgressInfo<Alphabet_T>* prg_info = NULL);
+    bool run(HMM<Alphabet_T>& hmm,
+             const data_vector& data,
+             TrainingProgressInfo<Alphabet_T>* prg_info = NULL);
 
   private:
     // Prepares the stage for a new training run.
@@ -211,9 +211,9 @@ class BaumWelchTraining : public BaumWelchParams
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-float BaumWelchTraining<Alphabet_T, Subject_T>::run(HMM<Alphabet_T>& hmm,
-                                                    const data_vector& data,
-                                                    TrainingProgressInfo<Alphabet_T>* prg_info)
+bool BaumWelchTraining<Alphabet_T, Subject_T>::run(HMM<Alphabet_T>& hmm,
+                                                   const data_vector& data,
+                                                   TrainingProgressInfo<Alphabet_T>* prg_info)
 {
     LOG(DEBUG) << "Running Baum-Welch training on ...";
     LOG(DEBUG) << hmm;
@@ -234,7 +234,7 @@ float BaumWelchTraining<Alphabet_T, Subject_T>::run(HMM<Alphabet_T>& hmm,
              max_connectivity() != 0 && hmm.connectivity() > max_connectivity()) );
 
     LOG(DEBUG) << hmm;
-    return log_likelihood_;
+    return fabs(log_likelihood_change()) <= log_likelihood_threshold();
 }
 
 template< class Alphabet_T,
