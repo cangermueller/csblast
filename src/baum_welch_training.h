@@ -32,7 +32,7 @@ class BaumWelchParams : public ForwardBackwardParams
               min_iterations_(3),
               max_iterations_(100),
               max_connectivity_(0),
-              log_likelihood_threshold_(1e-4),
+              log_likelihood_threshold_(0.001f),
               alpha_(1.0f)
     { }
 
@@ -80,7 +80,7 @@ class TrainingProgressInfo
               progress_(0),
               bar_(0)
     {
-        out_ << strprintf("%-4s %-37s %9s %9s %12s\n", "Iter", "Progress", "log(L)", "+/-log(L)", "Connectivity");
+        out_ << strprintf("%-4s %-37s %10s %8s %12s\n", "Iter", "Progress", "log(L)", "+/-", "Connectivity");
         out_ << std::string(TABLE_WIDTH, '-') << std::endl;
     }
 
@@ -107,17 +107,16 @@ class TrainingProgressInfo
         bar_ += bar_incr;
     }
 
-    void print_stats(float log_likelihood, float delta = 1.0f)
+    void print_stats(float log_likelihood, float delta = 1.0f, bool show_delta = true)
     {
-        if (delta == 1.0f) {
-            out_ << strprintf("%+9.0f %9s %12.2f\n", log_likelihood, "", hmm_.connectivity());
-            LOG(DEBUG) << strprintf("iter=%-3i log(L)=%-8.0f connectivity=%-7.2f",
-                                    hmm_.iterations(), log_likelihood, hmm_.connectivity());
+        if (show_delta) {
+            out_ << strprintf("%10.0f %+8.5f %12.2f\n", log_likelihood, delta, hmm_.connectivity());
+            LOG(DEBUG) << strprintf("iter=%-3i log(L)=%-9.2e change=%-+8.5f connectivity=%-7.2f",
+                                    hmm_.iterations(), log_likelihood, delta, hmm_.connectivity());
         } else {
-            out_ << strprintf("%+9.0f %+8.3f%s %12.2f\n",
-                              log_likelihood, delta * 100, "%", hmm_.connectivity());
-            LOG(DEBUG) << strprintf("iter=%-3i log(L)=%-8.0f change=%-+7.5f%s connectivity=%-7.2f",
-                                    hmm_.iterations(), log_likelihood, delta, "%", hmm_.connectivity());
+            out_ << strprintf("%10.0f %8s %12.2f\n", log_likelihood, "", hmm_.connectivity());
+            LOG(DEBUG) << strprintf("iter=%-3i log(L)=%-9.2e connectivity=%-7.2f",
+                                    hmm_.iterations(), log_likelihood, hmm_.connectivity());
         }
         out_.flush();
     }
@@ -168,7 +167,7 @@ class BaumWelchTraining : public BaumWelchParams
     }
 
     // Trains the HMM with the data provided until one of the termination criterions is fullfilled.
-    bool run(HMM<Alphabet_T>& hmm,
+    void run(HMM<Alphabet_T>& hmm,
              const data_vector& data,
              TrainingProgressInfo<Alphabet_T>* prg_info = NULL);
 
@@ -190,8 +189,7 @@ class BaumWelchTraining : public BaumWelchParams
     // Calculates new HMM parameters by Maxmimum-Likelihood estimation.
     void assign_new_parameters(HMM<Alphabet_T>& hmm);
     // Calculates the change between the current log-likelihood and the previous-iteration log-likelihood.
-    float log_likelihood_change()
-    { return log_likelihood_prev_ == 0.0f ? 1.0f : (log_likelihood_ - log_likelihood_prev_) / fabs(log_likelihood_prev_); }
+    float log_likelihood_change(const data_vector& data);
 
     // Instance of forward-backward algorithm to compute exptected number of transitions and emissions.
     ForwardBackwardAlgorithm<Alphabet_T, Subject_T>* fb_;
@@ -211,7 +209,7 @@ class BaumWelchTraining : public BaumWelchParams
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-bool BaumWelchTraining<Alphabet_T, Subject_T>::run(HMM<Alphabet_T>& hmm,
+void BaumWelchTraining<Alphabet_T, Subject_T>::run(HMM<Alphabet_T>& hmm,
                                                    const data_vector& data,
                                                    TrainingProgressInfo<Alphabet_T>* prg_info)
 {
@@ -221,20 +219,19 @@ bool BaumWelchTraining<Alphabet_T, Subject_T>::run(HMM<Alphabet_T>& hmm,
 
     // Calculate log-likelihood baseline
     run_forward_backward(hmm, data, prg_info);
-    if (prg_info) prg_info->print_stats(log_likelihood_, log_likelihood_change());
+    if (prg_info) prg_info->print_stats(log_likelihood_, log_likelihood_change(data), false);
 
     do {
         assign_new_parameters(hmm);
         run_forward_backward(hmm, data, prg_info);
 
-        if (prg_info) prg_info->print_stats(log_likelihood_, log_likelihood_change());
+        if (prg_info) prg_info->print_stats(log_likelihood_, log_likelihood_change(data));
 
     } while( iterations_ < min_iterations() || iterations_ < max_iterations() &&
-             (fabs(log_likelihood_change()) > log_likelihood_threshold() ||
+             (fabs(log_likelihood_change(data)) > log_likelihood_threshold() ||
              max_connectivity() != 0 && hmm.connectivity() > max_connectivity()) );
 
     LOG(DEBUG) << hmm;
-    return fabs(log_likelihood_change()) <= log_likelihood_threshold();
 }
 
 template< class Alphabet_T,
@@ -422,6 +419,16 @@ void BaumWelchTraining<Alphabet_T, Subject_T>::assign_new_parameters(HMM<Alphabe
     }
     LOG(INFO) << hmm;
     transitions_.clear();
+}
+
+template< class Alphabet_T,
+          template<class Alphabet_U> class Subject_T >
+float BaumWelchTraining<Alphabet_T, Subject_T>::log_likelihood_change(const data_vector& data)
+{
+    int data_cols = 0;
+    for (typename data_vector::const_iterator di = data.begin(); di != data.end(); ++di)
+        data_cols += (**di).length();
+    return (log_likelihood_ - log_likelihood_prev_) / data_cols;
 }
 
 }  // cs

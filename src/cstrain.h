@@ -84,11 +84,11 @@ void CSTrain<Alphabet_T>::run(GetOpt_pp& options)
     typedef typename std::vector< shared_ptr<CountsProfile<Alphabet_T> > >::iterator counts_iterator;
 
     // Read input alignments
-    std::ifstream ali_in(infile_.c_str());
-    ali_vector alis = Alignment<Alphabet_T>::readall(ali_in, Alignment<Alphabet_T>::FASTA);
-    ali_in.close();
-    for (ali_iterator ai = alis.begin(); ai != alis.end(); ++ai)
-        (*ai)->assign_match_columns_by_sequence();
+    std::ifstream fin(infile_.c_str());
+    ali_vector alis = Alignment<Alphabet_T>::readall(fin, Alignment<Alphabet_T>::A3M);
+    fin.close();
+    // for (ali_iterator ai = alis.begin(); ai != alis.end(); ++ai)
+    //     (*ai)->assign_match_columns_by_sequence();
 
     // Convert alignments to counts profiles
     counts_vector counts;
@@ -104,6 +104,7 @@ void CSTrain<Alphabet_T>::run(GetOpt_pp& options)
     SamplingStateInitializer<Alphabet_T> state_init(counts, &sm_pc, *this);
     HomogeneousTransitionInitializer<Alphabet_T> transition_init;
     HMM<Alphabet_T> hmm(num_states_, window_length_, state_init, transition_init);
+    hmm.transform_states_to_logspace();
 
     // Add pseudocounts to observed counts
     for (counts_iterator ci = counts.begin(); ci != counts.end(); ++ci) {
@@ -115,6 +116,14 @@ void CSTrain<Alphabet_T>::run(GetOpt_pp& options)
     TrainingProgressInfo<Alphabet_T> prg_info(hmm);
     BaumWelchTraining<Alphabet_T, CountsProfile> training(*this);
     training.run(hmm, counts, &prg_info);
+
+    // Write HMM to outfile.
+    std::fstream fout(outfile_.c_str(), std::ios_base::out);
+    if(!fout)
+        throw Exception("Unable to write to output file '%s'!", outfile_.c_str());
+    else
+        hmm.write(fout);
+    fout.close();
 }
 
 template<class Alphabet_T>
@@ -123,11 +132,21 @@ std::ostream& CSTrain<Alphabet_T>::usage(std::ostream& out)
     out << "Train an HMM of context-states on a dataset of alignments.\n";
     out << "(C) Andreas Biegert, Johannes Soding, and Ludwig-Maximillians University Munich\n\n";
 
-    out << "Usage: cstrain_aa -i <alifile> -K <num_states> [options]\n\n";
+    out << "Usage: cstrain -i <infile> -o <outfile> -K <num_states> [options]\n\n";
 
     out << "Options:\n";
-    out << cs::strprintf("  %-30s %s\n",          "-K, --num-states <int>", "Number of states in the HMM to be trained");
-    out << cs::strprintf("  %-30s %s (def=%i)\n", "-l, --log-max-level <int>", "Maximal reporting level for logging", log_level_);
+    out << strprintf("  %-30s %s\n",             "-i, --infile <filename>", "Input file with alignments for training");
+    out << strprintf("  %-30s %s\n",             "-o, --outfile <filename>", "Output file with trained HMM");
+    out << strprintf("  %-30s %s\n",             "-K, --num-states [0,inf[]", "Number of states in the HMM to be trained");
+    out << strprintf("  %-30s %s (def=%i)\n",    "-W, --window-length [0,inf[", "Length of context-window", window_length_);
+    out << strprintf("  %-30s %s (def=%3.1f)\n", "-t, --threshold [0,inf[", "Likelihood change threshold for convergence", log_likelihood_threshold_);
+    out << strprintf("  %-30s %s (def=%3.1f)\n", "-a, --alpha <float>", "Parameter alpha for transitions prior", alpha_);
+    out << strprintf("  %-30s %s (def=%3.1f)\n", "-r, --sample-rate [0,1]", "Context window sample rate in HMM initialization", sample_rate_);
+    out << strprintf("  %-30s %s (def=%i)\n",    "    --min-iterations [0,inf[", "Minimal number of training iterations", min_iterations_);
+    out << strprintf("  %-30s %s (def=%i)\n",    "    --max-iterations [0,inf[", "Maximal number of training iterations", max_iterations_);
+    out << strprintf("  %-30s %s (def=%3.1f)\n", "    --state-pseudocounts [0,1]", "Pseudocounts for state profiles", state_pseudocounts_);
+    out << strprintf("  %-30s %s (def=%4.2f)\n", "    --data-pseudocounts [0,1]", "Pseudocounts for data counts", data_pseudocounts_);
+    out << strprintf("  %-30s %s (def=%i)\n",    "    --log-max-level <int>", "Maximal reporting level for logging", log_level_);
 
     return out;
 }
@@ -139,11 +158,14 @@ void CSTrain<Alphabet_T>::parse(GetOpt_pp& options)
     options >> Option('o', "outfile", outfile_, outfile_);
     options >> Option('K', "num-states", num_states_, num_states_);
     options >> Option('W', "window-length", window_length_, window_length_);
-    options >> Option('d', "data-pseudocounts", data_pseudocounts_, data_pseudocounts_);
-    options >> Option('s', "state-pseudocounts", state_pseudocounts_, state_pseudocounts_);
-    options >> Option('r', "sample-rate", sample_rate_, sample_rate_);
+    options >> Option('t', "threshold", log_likelihood_threshold_, log_likelihood_threshold_);
     options >> Option('a', "alpha", alpha_, alpha_);
-    options >> Option('l', "max-log-level", log_level_, log_level_);
+    options >> Option('r', "sample-rate", sample_rate_, sample_rate_);
+    options >> Option(' ', "data-pseudocounts", data_pseudocounts_, data_pseudocounts_);
+    options >> Option(' ', "state-pseudocounts", state_pseudocounts_, state_pseudocounts_);
+    options >> Option(' ', "min-iterations", min_iterations_, min_iterations_);
+    options >> Option(' ', "max-iterations", max_iterations_, max_iterations_);
+    options >> Option(' ', "max-log-level", log_level_, log_level_);
     Log::reporting_level() = Log::from_integer(log_level_);
 
     check();

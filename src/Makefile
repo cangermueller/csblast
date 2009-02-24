@@ -115,4 +115,4 @@ test : $(OBJECTS) $(DEPS) gtest_main.a
 
 # Executable targets:
 cstrain_aa: cstrain_aa.cc $(OBJECTS_NO_TESTS) $(DEPS_NO_TESTS)
-	$(CXX) $(CXXFLAGS) -o $@ $@.cc $(OBJECTS_NO_TESTS) $(LIBS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $@.cc $(OBJECTS_NO_TESTS) $(LIBS)

@@ -28,12 +28,6 @@ inline float log2(float x)
     return 1.442695041 * log(x);
 }
 
-// Returns the base 10 logarithm of num.
-inline float log10(float x)
-{
-    return 0.434294481 * log(x);
-}
-
 // Round to the nearest integer.
 inline int iround(double x)
 {
