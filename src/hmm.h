@@ -362,7 +362,7 @@ void HMM<Alphabet_T>::read(std::istream& in)
     if (getline(in, tmp) && tmp.find("num_states") != std::string::npos)
         num_states_ = atoi(tmp.c_str() + 10);
     else
-        throw Exception("Bad format: serialized HMM does not contain 'size' record!");
+        throw Exception("Bad format: serialized HMM does not contain 'num_states' record!");
     // Read number of transitions
     int ntr = 0;
     if (getline(in, tmp) && tmp.find("num_transitions") != std::string::npos)

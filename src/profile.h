@@ -266,7 +266,7 @@ void Profile<Alphabet_T>::read_body(std::istream& in)
         i = atoi(tokens[0].c_str()) - 1;
         for (int a = 0; a < alphabet_size(); ++a) {
             float log_p = tokens[a+1][0] == '*' ? std::numeric_limits<int>::max() : atoi(tokens[a+1].c_str());
-            data_[i][a] = (logspace_ ? -log_p / SCALE_FACTOR : pow(2.0, -log_p / SCALE_FACTOR)) ;
+            data_[i][a] = logspace_ ? -log_p / SCALE_FACTOR : pow(2.0, -log_p / SCALE_FACTOR);
         }
         tokens.clear();
     }
