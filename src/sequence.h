@@ -41,7 +41,7 @@ class Sequence
     ~Sequence() {}
 
     // Reads all available sequences from the input stream and returns them in a vector.
-    static std::vector< shared_ptr<Sequence> > readall(std::istream& in);
+    static void readall(std::istream& in, std::vector< shared_ptr<Sequence> >& v);
 
     // Accessors for integer at position i of the sequence.
     char& operator[](int i) { return seq_[i]; }
@@ -90,12 +90,12 @@ class Sequence
 
 
 template<class Alphabet_T>
-Sequence<Alphabet_T>::Sequence(int length)
+inline Sequence<Alphabet_T>::Sequence(int length)
         : seq_(length)
 {}
 
 template<class Alphabet_T>
-Sequence<Alphabet_T>::Sequence(std::istream& in)
+inline Sequence<Alphabet_T>::Sequence(std::istream& in)
 { read(in); }
 
 template<class Alphabet_T>
@@ -104,15 +104,12 @@ Sequence<Alphabet_T>::Sequence(const std::string& header,
 { init(header, sequence); }
 
 template<class Alphabet_T>
-std::vector< shared_ptr< Sequence<Alphabet_T> > > Sequence<Alphabet_T>::readall(std::istream& in)
+inline void Sequence<Alphabet_T>::readall(std::istream& in, std::vector< shared_ptr<Sequence> >& v)
 {
-    std::vector< shared_ptr<Sequence> > sequences;
     while (in.good()) {
         shared_ptr<Sequence> p(new Sequence(in));
-        sequences.push_back(p);
+        v.push_back(p);
     }
-
-    return sequences;
 }
 
 template<class Alphabet_T>

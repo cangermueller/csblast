@@ -34,6 +34,11 @@ class BlosumMatrix : public SubstitutionMatrix<AminoAcid>
     void init(const float* blosum_xx);
 };
 
+
+
+// Converts a BLOSUM matrix string to a BLOSUM matrix type.
+BlosumMatrix::Type blosum_matrix_type_from_string(const std::string& s);
+
 }  // cs
 
 #endif

@@ -125,4 +125,16 @@ void BlosumMatrix::init(const float* blosum_xx)
     init_from_target_frequencies();
 }
 
+BlosumMatrix::Type blosum_matrix_type_from_string(const std::string& s)
+{
+    if (s == "BLOSUM45")
+        return BlosumMatrix::BLOSUM45;
+    else if (s == "BLOSUM62")
+        return BlosumMatrix::BLOSUM62;
+    else if (s == "BLOSUM80")
+        return BlosumMatrix::BLOSUM80;
+    else
+        throw Exception("Unable to infer BLOSUM matrix from string '%s'!", s.c_str());
+}
+
 }  // cs

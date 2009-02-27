@@ -42,7 +42,7 @@ class ContextProfile : public Profile<Alphabet_T>
     virtual ~ContextProfile() {}
 
     // Reads all available profiles from the input stream and returns them in a vector.
-    static std::vector< shared_ptr<ContextProfile> > readall(std::istream& in);
+    static void readall(std::istream& in, std::vector< shared_ptr<ContextProfile> >& v);
 
     // Returns the index of this context profile.
     int index() const { return index_; }
@@ -83,14 +83,14 @@ class ContextProfile : public Profile<Alphabet_T>
 
 
 template<class Alphabet_T>
-ContextProfile<Alphabet_T>::ContextProfile()
+inline ContextProfile<Alphabet_T>::ContextProfile()
         : Profile<Alphabet_T>(),
           index_(0),
           prior_(0.0f)
 { }
 
 template<class Alphabet_T>
-ContextProfile<Alphabet_T>::ContextProfile(int index, int num_cols)
+inline ContextProfile<Alphabet_T>::ContextProfile(int index, int num_cols)
         : Profile<Alphabet_T>(num_cols),
           index_(index),
           prior_(0.0f)
@@ -99,7 +99,7 @@ ContextProfile<Alphabet_T>::ContextProfile(int index, int num_cols)
 }
 
 template<class Alphabet_T>
-ContextProfile<Alphabet_T>::ContextProfile(int index, const Profile<Alphabet_T>& profile)
+inline ContextProfile<Alphabet_T>::ContextProfile(int index, const Profile<Alphabet_T>& profile)
         : Profile<Alphabet_T>(profile),
           index_(index),
           prior_(0.0f)
@@ -108,7 +108,7 @@ ContextProfile<Alphabet_T>::ContextProfile(int index, const Profile<Alphabet_T>&
 }
 
 template<class Alphabet_T>
-ContextProfile<Alphabet_T>::ContextProfile(std::istream& in)
+inline ContextProfile<Alphabet_T>::ContextProfile(std::istream& in)
         : Profile<Alphabet_T>(),
           index_(0),
           prior_(0.0f)
@@ -118,15 +118,12 @@ ContextProfile<Alphabet_T>::ContextProfile(std::istream& in)
 }
 
 template<class Alphabet_T>
-std::vector< shared_ptr< ContextProfile<Alphabet_T> > > ContextProfile<Alphabet_T>::readall(std::istream& in)
+inline void ContextProfile<Alphabet_T>::readall(std::istream& in, std::vector< shared_ptr<ContextProfile> >& v)
 {
-    std::vector< shared_ptr<ContextProfile> > profiles;
     while (in.peek() && in.good()) {  // peek first to make sure that we don't read beyond '//'
         shared_ptr<ContextProfile> p(new ContextProfile(in));
-        profiles.push_back(p);
+        v.push_back(p);
     }
-
-    return profiles;
 }
 
 template<class Alphabet_T>

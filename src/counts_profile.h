@@ -48,7 +48,7 @@ class CountsProfile : public Profile<Alphabet_T>
     virtual ~CountsProfile() {}
 
     // Reads all available profiles from the input stream and returns them in a vector.
-    static std::vector< shared_ptr<CountsProfile> > readall(std::istream& in);
+    static void readall(std::istream& in, std::vector< shared_ptr<CountsProfile> >& v);
     // Returns the number of effective sequences in alignment column i
     float neff(int i) const { return neff_[i]; }
     // Converts the profile to counts of alphabet letters.
@@ -134,7 +134,7 @@ CountsProfile<Alphabet_T>::CountsProfile(const Alignment<Alphabet_T>& alignment,
 }
 
 template<class Alphabet_T>
-CountsProfile<Alphabet_T>::CountsProfile(const CountsProfile& other,
+inline CountsProfile<Alphabet_T>::CountsProfile(const CountsProfile& other,
                                          int index,
                                          int length)
         : Profile<Alphabet_T>(other, index, length)
@@ -144,15 +144,12 @@ CountsProfile<Alphabet_T>::CountsProfile(const CountsProfile& other,
 }
 
 template<class Alphabet_T>
-std::vector< shared_ptr< CountsProfile<Alphabet_T> > > CountsProfile<Alphabet_T>::readall(std::istream& in)
+inline void CountsProfile<Alphabet_T>::readall(std::istream& in, std::vector< shared_ptr<CountsProfile> >& v)
 {
-    std::vector< shared_ptr<CountsProfile> > profiles;
     while (in.peek() && in.good()) { //peek first to make sure that we don't read beyond '//'
         shared_ptr<CountsProfile> p(new CountsProfile(in));
-        profiles.push_back(p);
+        v.push_back(p);
     }
-
-    return profiles;
 }
 
 template<class Alphabet_T>

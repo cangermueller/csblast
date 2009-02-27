@@ -44,7 +44,8 @@ TEST(SequenceTest, ConstructionOfMultipleSequencesFromInputStream)
     data.append(">seq1\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
     data.append(">seq2\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
     std::istringstream ss(data);
-    std::vector< shared_ptr<Sequence<Nucleotide> > > seqs(Sequence<Nucleotide>::readall(ss));
+    std::vector< shared_ptr<Sequence<Nucleotide> > > seqs;
+    Sequence<Nucleotide>::readall(ss, seqs);
 
     EXPECT_EQ(2, static_cast<int>(seqs.size()));
     EXPECT_EQ(Nucleotide::instance().ctoi('C'), (*seqs[0])[1]);

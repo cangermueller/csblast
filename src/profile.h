@@ -52,7 +52,7 @@ class Profile
     virtual ~Profile() {}
 
     // Reads all available profiles from the input stream and returns them in a vector.
-    static std::vector< shared_ptr<Profile> > readall(std::istream& in);
+    static void readall(std::istream& in, std::vector< shared_ptr<Profile> >& v);
 
     // Access methods to get the (i,j) element
     col_type operator[](int i) { return data_[i]; }
@@ -173,15 +173,12 @@ Profile<Alphabet_T>::Profile(const Profile& other,
 }
 
 template<class Alphabet_T>
-std::vector< shared_ptr< Profile<Alphabet_T> > > Profile<Alphabet_T>::readall(std::istream& in)
+inline void Profile<Alphabet_T>::readall(std::istream& in, std::vector< shared_ptr<Profile> >& v)
 {
-    std::vector< shared_ptr<Profile> > profiles;
     while (in.peek() && in.good()) { //peek first to make sure that we don't read beyond '//'
         shared_ptr<Profile> p(new Profile(in));
-        profiles.push_back(p);
+        v.push_back(p);
     }
-
-    return profiles;
 }
 
 template<class Alphabet_T>

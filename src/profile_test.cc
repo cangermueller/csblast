@@ -52,7 +52,8 @@ TEST(ProfileTest, ConstructionOfMultipleProfilesFromInputStream)
     data.append("//\n");
     std::istringstream ss(data+data);
 
-    std::vector< shared_ptr<Profile<Nucleotide> > > profiles(Profile<Nucleotide>::readall(ss));
+    std::vector< shared_ptr<Profile<Nucleotide> > > profiles;
+    Profile<Nucleotide>::readall(ss, profiles);
 
     EXPECT_EQ(2, static_cast<int>(profiles.size()));
     EXPECT_EQ(6, (*profiles[0]).num_cols());

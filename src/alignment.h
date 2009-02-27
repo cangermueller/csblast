@@ -87,7 +87,7 @@ class Alignment
     ~Alignment() {}
 
     // Reads all available alignments from the input stream and returns them in a vector.
-    static std::vector< shared_ptr<Alignment> > readall(std::istream& in, Format format);
+    static void readall(std::istream& in, Format format, std::vector< shared_ptr<Alignment> >& v);
 
     // Access methods to get the integer representation of character in match column i of sequence k.
     col_type operator[](int i) { return seqs_[match_indexes[i]]; }
@@ -192,24 +192,25 @@ float global_weights_and_diversity(const Alignment<Alphabet_T>& alignment, std::
 template<class Alphabet_T>
 std::vector<float> position_specific_weights_and_diversity(const Alignment<Alphabet_T>& alignment, matrix<float>& w);
 
+// Returns the alignment format corresponding to provided filename extension
+template<class Alphabet_T>
+typename Alignment<Alphabet_T>::Format alignment_format_from_string(const std::string& s);
+
 
 
 template<class Alphabet_T>
-Alignment<Alphabet_T>::Alignment(std::istream& in, Format format)
+inline Alignment<Alphabet_T>::Alignment(std::istream& in, Format format)
 {
     read(in, format);
 }
 
 template<class Alphabet_T>
-std::vector< shared_ptr< Alignment<Alphabet_T> > > Alignment<Alphabet_T>::readall(std::istream& in, Format format)
+inline void Alignment<Alphabet_T>::readall(std::istream& in, Format format, std::vector< shared_ptr<Alignment> >& v)
 {
-    std::vector< shared_ptr<Alignment> > alis;
     while (in.good()) {
         shared_ptr<Alignment> p(new Alignment(in, format));
-        alis.push_back(p);
+        v.push_back(p);
     }
-
-    return alis;
 }
 
 template<class Alphabet_T>
@@ -694,6 +695,23 @@ std::vector<float> position_specific_weights_and_diversity(const Alignment<Alpha
     }  // for i over num_cols
 
     return neff;
+}
+
+template<class Alphabet_T>
+typename Alignment<Alphabet_T>::Format alignment_format_from_string(const std::string& s)
+{
+    if (s == "fas")
+        return Alignment<Alphabet_T>::FASTA;
+    else if (s == "a2m")
+        return Alignment<Alphabet_T>::A2M;
+    else if (s == "a3m")
+        return Alignment<Alphabet_T>::A3M;
+    else if (s == "clu")
+        return Alignment<Alphabet_T>::CLUSTAL;
+    else if (s == "psi")
+        return Alignment<Alphabet_T>::PSI;
+    else
+        throw Exception("Unable to infer alignment format from filename extension '%s'!", s.c_str());
 }
 
 }  // cs

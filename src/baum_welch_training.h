@@ -33,7 +33,7 @@ class BaumWelchParams : public ForwardBackwardParams
               max_iterations_(100),
               max_connectivity_(0),
               log_likelihood_threshold_(0.001f),
-              alpha_(1.0f)
+              transition_pseudocounts_(1.0f)
     { }
 
     BaumWelchParams(const BaumWelchParams& params)
@@ -42,7 +42,7 @@ class BaumWelchParams : public ForwardBackwardParams
               max_iterations_(params.max_iterations_),
               max_connectivity_(params.max_connectivity_),
               log_likelihood_threshold_(params.log_likelihood_threshold_),
-              alpha_(params.alpha_)
+              transition_pseudocounts_(params.transition_pseudocounts_)
     { }
 
     virtual ~BaumWelchParams()
@@ -52,20 +52,20 @@ class BaumWelchParams : public ForwardBackwardParams
     int max_iterations() const { return max_iterations_; }
     int max_connectivity() const { return max_connectivity_; }
     float log_likelihood_threshold() const { return log_likelihood_threshold_; }
-    float alpha() const { return alpha_; }
+    float transition_pseudocounts() const { return transition_pseudocounts_; }
 
     BaumWelchParams& min_iterations(int min_iter) { min_iterations_ = min_iter; return *this; }
     BaumWelchParams& max_iterations(int max_iter) { max_iterations_ = max_iter; return *this; }
     BaumWelchParams& max_connectivity(int max_connect) { max_connectivity_ = max_connect; return *this; }
     BaumWelchParams& log_likelihood_threshold(float t) { log_likelihood_threshold_ = t; return *this; }
-    BaumWelchParams& alpha(float pc) { alpha_ = pc; return *this; }
+    BaumWelchParams& transition_pseudocounts(float pc) { transition_pseudocounts_ = pc; return *this; }
 
   protected:
     int min_iterations_;
     int max_iterations_;
     int max_connectivity_;
     float log_likelihood_threshold_;
-    float alpha_;
+    float transition_pseudocounts_;
 };
 
 
@@ -399,8 +399,8 @@ void BaumWelchTraining<Alphabet_T, Subject_T>::assign_new_parameters(HMM<Alphabe
         sum = 0.0f;
         for (int l = 0; l < num_states; ++l) {
             if (transitions_.test(k,l)) {
-                if (transitions_[k][l] > 1.0f - alpha()) {
-                    transitions_[k][l] = transitions_[k][l] - 1.0f + alpha();
+                if (transitions_[k][l] > 1.0f - transition_pseudocounts()) {
+                    transitions_[k][l] = transitions_[k][l] + transition_pseudocounts() - 1.0f;
                     sum += transitions_[k][l];
                 } else {
                     transitions_.erase(k,l);

@@ -54,7 +54,8 @@ class BaumWelchTrainingTest : public testing::Test
 
         // Read zinc finger alignments and construct count profiles
         std::ifstream ali_in("../data/zinc_finger_alignments.fas");
-        std::vector< shared_ptr< Alignment<AminoAcid> > > alis = Alignment<AminoAcid>::readall(ali_in, Alignment<AminoAcid>::FASTA);
+        std::vector< shared_ptr< Alignment<AminoAcid> > > alis;
+        Alignment<AminoAcid>::readall(ali_in, Alignment<AminoAcid>::FASTA, alis);
         ali_in.close();
 
         // Convert alignments to counts and add pseudocounts

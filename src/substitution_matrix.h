@@ -27,6 +27,9 @@ template<class Alphabet_T>
 class SubstitutionMatrix
 {
   public:
+    SubstitutionMatrix();
+    virtual ~SubstitutionMatrix() = 0;
+
     // Return substitution score S(a,b).
     float s(int a, int b) const { return s_[a][b]; }
     // Returns joint probability P(a,b).
@@ -45,10 +48,7 @@ class SubstitutionMatrix
         return out;
     }
 
-  protected:
-    // To be used by derived classes.
-    SubstitutionMatrix();
-    virtual ~SubstitutionMatrix() = 0;
+protected:
 
     // Initializes the other matrix data members from target frequencies.
     void init_from_target_frequencies();

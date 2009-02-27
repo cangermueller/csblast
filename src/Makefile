@@ -41,7 +41,7 @@ endif
 GTEST_CXXFLAGS += -g
 
 # All non-test executables produced by this Makefile
-TARGETS = test cstrain_aa
+TARGETS = test cstrain_aa cstrain_nt
 
 # Libraries against which TARGETS should be build
 LIBS = 
@@ -115,4 +115,7 @@ test : $(OBJECTS) $(DEPS) gtest_main.a
 
 # Executable targets:
 cstrain_aa: cstrain_aa.cc $(OBJECTS_NO_TESTS) $(DEPS_NO_TESTS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $@.cc $(OBJECTS_NO_TESTS) $(LIBS)
+
+cstrain_nt: cstrain_nt.cc $(OBJECTS_NO_TESTS) $(DEPS_NO_TESTS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $@.cc $(OBJECTS_NO_TESTS) $(LIBS)

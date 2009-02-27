@@ -106,6 +106,62 @@ inline std::string strprintf(const char* str, ...)
     return rv;
 }
 
+// Returns the file extension of the given file name.
+inline std::string get_file_ext(const std::string& s)
+{
+    size_t i = s.rfind('.', s.length());
+    if (i != std::string::npos) {
+        return(s.substr(i+1, s.length() - i));
+    }
+
+    return("");
+}
+
+// Returns the last component of the filename. If ext is false
+// the file extension is removed.
+inline std::string get_file_basename(const std::string& s, bool ext = true)
+{
+    char sep = '/';
+
+#ifdef _WIN32
+    sep = '\\';
+#endif
+
+    size_t i = s.rfind(sep, s.length());
+    if (i != std::string::npos) {
+        if (ext) {
+            return(s.substr(i+1, s.length() - i));
+        } else {
+            size_t j = s.rfind('.', s.length());
+            if (j != std::string::npos && j > i) {
+                return(s.substr(i+1, j-i));
+            } else {
+                return(s.substr(i+1, s.length() - i));
+            }
+        }
+    }
+
+    return("");
+}
+
+// Returns all components of the filename except the last one.
+inline std::string get_file_dirname(const std::string& s)
+{
+    char sep = '/';
+
+#ifdef _WIN32
+    sep = '\\';
+#endif
+
+    size_t i = s.rfind(sep, s.length( ));
+    if (i != std::string::npos) {
+        return(s.substr(0, i));
+    }
+
+    return("");
+}
+
+
 }  // cs
 
 #endif
