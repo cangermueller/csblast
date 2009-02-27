@@ -21,7 +21,7 @@
 namespace cs
 {
 
-const float DELTA = 0.0001;
+const float DELTA = 0.01;
 
 class BaumWelchTrainingTest : public testing::Test
 {
@@ -49,7 +49,7 @@ class BaumWelchTrainingTest : public testing::Test
 
         // Read zinc finger sequences
         std::ifstream seq_in("../data/zinc_finger_proteins.fas");
-        seqs_ = Sequence<AminoAcid>::readall(seq_in);
+        Sequence<AminoAcid>::readall(seq_in, seqs_);
         seq_in.close();
 
         // Read zinc finger alignments and construct count profiles
@@ -75,8 +75,7 @@ class BaumWelchTrainingTest : public testing::Test
 TEST_F(BaumWelchTrainingTest, ZincFingerSeqsTraining)
 {
     TrainingProgressInfo<AminoAcid> prg_info(hmm_, std::cout);
-    BaumWelchTraining<AminoAcid, Sequence> bwt =
-        BaumWelchParams().alpha(1.0f);
+    BaumWelchTraining<AminoAcid, Sequence> bwt;
     bwt.run(hmm_, seqs_, &prg_info);
 
     hmm_.transform_states_to_linspace();
@@ -89,7 +88,7 @@ TEST_F(BaumWelchTrainingTest, ZincFingerAlisTraining)
     TrainingProgressInfo<AminoAcid> prg_info(hmm_, std::cout);
     BaumWelchTraining<AminoAcid, CountsProfile> bwt =
         BaumWelchParams()
-        .alpha(0.8)
+        .transition_pseudocounts(0.8)
         .log_likelihood_threshold(0.02)
         .max_connectivity(5);
     bwt.run(hmm_, counts_, &prg_info);
