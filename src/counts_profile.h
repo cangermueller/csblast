@@ -87,7 +87,7 @@ class CountsProfile : public Profile<Alphabet_T>
 
 
 template<class Alphabet_T>
-CountsProfile<Alphabet_T>::CountsProfile(std::istream& in)
+inline CountsProfile<Alphabet_T>::CountsProfile(std::istream& in)
         : neff_(),
           has_counts_(false)
 {
@@ -95,7 +95,7 @@ CountsProfile<Alphabet_T>::CountsProfile(std::istream& in)
 }
 
 template<class Alphabet_T>
-CountsProfile<Alphabet_T>::CountsProfile(const Sequence<Alphabet_T>& sequence)
+inline CountsProfile<Alphabet_T>::CountsProfile(const Sequence<Alphabet_T>& sequence)
         : Profile<Alphabet_T>(sequence.length()),
           neff_(sequence.length(), 1.0f),
           has_counts_(false)
@@ -105,7 +105,7 @@ CountsProfile<Alphabet_T>::CountsProfile(const Sequence<Alphabet_T>& sequence)
 }
 
 template<class Alphabet_T>
-CountsProfile<Alphabet_T>::CountsProfile(const Alignment<Alphabet_T>& alignment, bool position_specific_weights)
+inline CountsProfile<Alphabet_T>::CountsProfile(const Alignment<Alphabet_T>& alignment, bool position_specific_weights)
         : Profile<Alphabet_T>(alignment.num_match_cols()),
           neff_(alignment.num_match_cols()),
           has_counts_(false)

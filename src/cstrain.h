@@ -50,6 +50,14 @@ class CSTrain : public BaumWelchParams,
     typedef typename ali_vector::iterator ali_iterator;
     typedef std::vector< shared_ptr< CountsProfile<Alphabet_T> > > counts_vector;
     typedef typename counts_vector::iterator counts_iterator;
+    typedef std::vector< shared_ptr< Sequence<Alphabet_T> > > seq_vector;
+    typedef typename seq_vector::iterator seq_iterator;
+
+#ifdef _WIN32
+    static const char DIR_SEP = '\\';
+#else
+    static const char DIR_SEP = '/';
+#endif
 
     // Checks if all parameters are valid for running the training.
     void check();
@@ -70,6 +78,8 @@ class CSTrain : public BaumWelchParams,
     std::string directory_;
     // File format of input alignment
     std::string format_;
+    // HMM input file for restarting
+    std::string hmmfile_;
     // Match column assignment for FASTA alignments
     int matchcol_assignment_;
     // The number of states in the HMM to train.
@@ -110,46 +120,59 @@ template<class Alphabet_T>
 void CSTrain<Alphabet_T>::run(GetOpt_pp& options, std::ostream& out)
 {
     parse(options);
+    shared_ptr< HMM<Alphabet_T> > hmm_ptr;
     shared_ptr< SubstitutionMatrix<Alphabet_T> > sm_ptr(get_substitution_matrix());
     MatrixPseudocounts<Alphabet_T> sm_pc(sm_ptr.get());
     counts_vector data;
 
     read_training_data(data, out);
 
-    // construct the HMM
-    out << strprintf("Initializing HMM by sampling %i context profiles from training profiles ...", num_states_);
-    out.flush();
-    LOG(INFO) << strprintf("Initializing HMM by sampling %i context profiles from training profiles ...", num_states_);
-    SamplingStateInitializer<Alphabet_T> state_init(data, &sm_pc, *this);
-    HomogeneousTransitionInitializer<Alphabet_T> transition_init;
-    HMM<Alphabet_T> hmm(num_states_, window_length_, state_init, transition_init);
-    hmm.transform_states_to_logspace();
-    out << std::endl;
+    // construct or read the HMM
+    if (hmmfile_.empty()) {
+        out << strprintf("Initializing HMM by sampling %i context profiles from training profiles ...", num_states_);
+        out.flush();
+        LOG(INFO) << strprintf("Initializing HMM by sampling %i context profiles from training profiles ...", num_states_);
+        SamplingStateInitializer<Alphabet_T> state_init(data, &sm_pc, *this);
+        HomogeneousTransitionInitializer<Alphabet_T> transition_init;
+        hmm_ptr = shared_ptr< HMM<Alphabet_T> >(new HMM<Alphabet_T>(num_states_, window_length_, state_init, transition_init));
+        hmm_ptr->transform_states_to_logspace();
+        out << std::endl;
+    } else {
+        std::ifstream fin(hmmfile_.c_str());
+        out << strprintf("Reading HMM from %s ...", get_file_basename(hmmfile_).c_str());
+        out.flush();
+        LOG(INFO) << strprintf("Reading HMM from %s ...", get_file_basename(hmmfile_).c_str());
+        hmm_ptr = shared_ptr< HMM<Alphabet_T> >(new HMM<Alphabet_T>(fin));
+        out << std::endl;
+    }
 
     // add pseudocounts to training data
     out << strprintf("Adding pseudocounts to training profiles (admixture=%.2f) ...", data_pseudocounts_);
     out.flush();
     LOG(INFO) << strprintf("Adding pseudocounts to training profiles (admixture=%.2f) ...", data_pseudocounts_);
-    int ncols = 0;
+    int num_data_cols = 0;
     for (counts_iterator ci = data.begin(); ci != data.end(); ++ci) {
         sm_pc.add_to_profile(**ci, ConstantAdmixture(data_pseudocounts_));
         (*ci)->convert_to_counts();
-        ncols += (*ci)->num_cols();
+        num_data_cols += (*ci)->num_cols();
     }
     out << std::endl;
 
     // run Baum-Welch training on HMM
-    out << strprintf("Running Baum-Welch training on HMM (K=%i, N=%i, W=%i) ...", num_states_, ncols, window_length_);
+    out << strprintf("Running Baum-Welch training on HMM (K=%i, W=%i, N=%i) ...",
+                     hmm_ptr->num_states(), hmm_ptr->num_cols(), num_data_cols);
     out.flush();
-    LOG(INFO) << strprintf("Running Baum-Welch training on HMM (K=%i, N=%i, W=%i) ...", num_states_, ncols, window_length_);
+    LOG(INFO) << strprintf("Running Baum-Welch training on HMM (K=%i, W=%i, N=%i) ...",
+                           hmm_ptr->num_states(), hmm_ptr->num_cols(), num_data_cols);
     out << std::endl << std::endl;
-    TrainingProgressInfo<Alphabet_T> prg_info(hmm, out);
+    TrainingProgressInfo<Alphabet_T> prg_info(*hmm_ptr, out);
     BaumWelchTraining<Alphabet_T, CountsProfile> training(*this);
-    training.run(hmm, data, &prg_info);
+    training.run(*hmm_ptr, data, &prg_info);
 
     // write HMM to outfile
     std::fstream fout(outfile_.c_str(), std::ios_base::out);
-    hmm.write(fout);
+    if (!fout) throw Exception("Unable to write HMM to output file '%s'!", outfile_.c_str());
+    hmm_ptr->write(fout);
     fout.close();
     out << std::endl << strprintf("Wrote HMM to %s", outfile_.c_str()) << std::endl;
     LOG(INFO) << strprintf("Wrote HMM to %s", outfile_.c_str());
@@ -169,13 +192,33 @@ void CSTrain<Alphabet_T>::read_training_data(counts_vector& v, std::ostream& out
         out << strprintf(" %i profiles read", v.size()) << std::endl;
         LOG(INFO) << strprintf("%i profiles read", v.size());
 
+    } else if (format_ == "seq") {
+        // read sequences and convert to counts profiles
+        seq_vector seqs;
+        out << strprintf("Reading training sequences from %s ...", get_file_basename(infile_).c_str());
+        out.flush();
+        LOG(INFO) << strprintf("Reading training sequences from %s ...", get_file_basename(infile_).c_str());
+        Sequence<Alphabet_T>::readall(fin, seqs);
+        out << strprintf(" %i sequences read", seqs.size()) << std::endl;
+        LOG(INFO) << strprintf("%i sequences read", seqs.size());
+
+        // convert alignments to counts profiles
+        out << "Converting training sequences to profiles ...";
+        out.flush();
+        LOG(INFO) << "Converting training sequences to profiles ...";
+        for (seq_iterator si = seqs.begin(); si != seqs.end(); ++si) {
+            shared_ptr< CountsProfile<Alphabet_T> > cp_ptr(new CountsProfile<Alphabet_T>(**si));
+            v.push_back(cp_ptr);
+        }
+        out << std::endl;
+
     } else {
-        // read alignments and convert those to counts profiles
+        // read alignments and convert to counts profiles
         ali_vector alis;
         typename Alignment<Alphabet_T>::Format f = alignment_format_from_string<Alphabet_T>(get_file_ext(infile_));
         out << strprintf("Reading training alignments from %s ...", get_file_basename(infile_).c_str());
         out.flush();
-        LOG(INFO) << strprintf("Reading training profiles from %s ...", get_file_basename(infile_).c_str());
+        LOG(INFO) << strprintf("Reading training alignments from %s ...", get_file_basename(infile_).c_str());
         Alignment<Alphabet_T>::readall(fin, f, alis);
         out << strprintf(" %i alignments read", alis.size()) << std::endl;
         LOG(INFO) << strprintf("%i alignments read", alis.size());
@@ -234,7 +277,7 @@ std::ostream& CSTrain<Alphabet_T>::usage(std::ostream& out)
     out << strprintf("  %-38s %s\n",             "-o, --outfile <filename>", "Path to output file with trained HMM");
     out << strprintf("  %-38s %s (def=%s)\n",    "-d, --directory <directory>", "Directory for temporary and output files",
                      directory_.empty() ? "." : directory_.c_str());
-    out << strprintf("  %-38s %s (def=%s)\n",    "-f, --format <string>", "Format of training data: prf, fas, a2m, or a3m",
+    out << strprintf("  %-38s %s (def=%s)\n",    "-f, --format <string>", "Format of training data: prf, seq, fas, a2m, or a3m",
                      format_.c_str());
     out << strprintf("  %-38s %s\n",             "-M, --matchcol-assignment [0:100]", "Make all FASTA columns with less than X% gaps match columns");
     out << strprintf("  %-38s %s\n",             "", "(def: make columns with residue in first sequence match columns)");
@@ -249,6 +292,7 @@ std::ostream& CSTrain<Alphabet_T>::usage(std::ostream& out)
                      transition_pseudocounts_);
     out << strprintf("  %-38s %s (def=%3.1f)\n", "-s, --sample-rate [0,1]", "Context window sample rate for initialization",
                      sample_rate_);
+    out << strprintf("  %-38s %s\n",             "-j, --jumpstart <filename>", "Jumpstart the HMM training with a serialized HMM.");
     substitution_matrix_options(out);
     out << strprintf("  %-38s %s (def=%i)\n",    "    --min-iterations [0,inf[", "Minimal number of training iterations",
                      min_iterations_);
@@ -297,6 +341,7 @@ void CSTrain<Alphabet_T>::parse(GetOpt_pp& options)
     options >> Option('c', "connectivity", max_connectivity_, max_connectivity_);
     options >> Option('t', "transition_pseudocounts", transition_pseudocounts_, transition_pseudocounts_);
     options >> Option('s', "sample-rate", sample_rate_, sample_rate_);
+    options >> Option('j', "jumpstart", hmmfile_, hmmfile_);
     options >> Option('m', "matrix", blosum_type_, blosum_type_);
     options >> Option('q', "mismatch-score", nucleotide_mismatch_, nucleotide_mismatch_);
     options >> Option('r', "match-score", nucleotide_match_, nucleotide_match_);
@@ -309,6 +354,7 @@ void CSTrain<Alphabet_T>::parse(GetOpt_pp& options)
     Log::reporting_level() = Log::from_integer(log_level_);
 
     check();
+    if (directory_.empty() || *directory_.rbegin() != DIR_SEP) directory_.append(1, DIR_SEP);
     if (outfile_.empty()) outfile_ = directory_ + get_file_basename(infile_, false) + "hmm";
     if (format_ == "auto") format_ = get_file_ext(infile_);
 }
@@ -316,8 +362,8 @@ void CSTrain<Alphabet_T>::parse(GetOpt_pp& options)
 template<class Alphabet_T>
 void CSTrain<Alphabet_T>::check()
 {
-    if (num_states_ == 0) throw cs::Exception("No value for number of HMM states provided!");
-    if (infile_.empty()) throw cs::Exception("No input file provided!");
+    if (num_states_ == 0 && hmmfile_.empty()) throw cs::Exception("No value for number of HMM states provided!");
+    if (infile_.empty()) throw cs::Exception("No input file with training data provided!");
 }
 
 }  // cs
