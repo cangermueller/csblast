@@ -46,12 +46,8 @@ class CSTrain : public BaumWelchParams,
     std::ostream& usage(std::ostream& out);
 
   private:
-    typedef std::vector< shared_ptr< Alignment<Alphabet_T> > > ali_vector;
-    typedef typename ali_vector::iterator ali_iterator;
     typedef std::vector< shared_ptr< CountsProfile<Alphabet_T> > > counts_vector;
     typedef typename counts_vector::iterator counts_iterator;
-    typedef std::vector< shared_ptr< Sequence<Alphabet_T> > > seq_vector;
-    typedef typename seq_vector::iterator seq_iterator;
 
 #ifdef _WIN32
     static const char DIR_SEP = '\\';
@@ -193,58 +189,48 @@ void CSTrain<Alphabet_T>::read_training_data(counts_vector& v, std::ostream& out
         LOG(INFO) << strprintf("%i profiles read", v.size());
 
     } else if (format_ == "seq") {
-        // read sequences and convert to counts profiles
-        seq_vector seqs;
-        out << strprintf("Reading training sequences from %s ...", get_file_basename(infile_).c_str());
+        // read sequences and convert to counts
+        out << strprintf("Processing training sequences in %s ...\n", get_file_basename(infile_).c_str());
         out.flush();
-        LOG(INFO) << strprintf("Reading training sequences from %s ...", get_file_basename(infile_).c_str());
-        Sequence<Alphabet_T>::readall(fin, seqs);
-        out << strprintf(" %i sequences read", seqs.size()) << std::endl;
-        LOG(INFO) << strprintf("%i sequences read", seqs.size());
+        LOG(INFO) << strprintf("Processing training sequences in %s ...", get_file_basename(infile_).c_str());
 
-        // convert alignments to counts profiles
-        out << "Converting training sequences to profiles ...";
-        out.flush();
-        LOG(INFO) << "Converting training sequences to profiles ...";
-        for (seq_iterator si = seqs.begin(); si != seqs.end(); ++si) {
-            shared_ptr< CountsProfile<Alphabet_T> > cp_ptr(new CountsProfile<Alphabet_T>(**si));
+        int i = 0;
+        while (fin.good()) {
+            Sequence<Alphabet_T> seq(fin);
+            shared_ptr< CountsProfile<Alphabet_T> > cp_ptr(new CountsProfile<Alphabet_T>(seq));
             v.push_back(cp_ptr);
+
+            i += 1;
+            out << '.';
+            out.flush();
+            if (i % 100 == 0) out << " " << i << std::endl;
         }
-        out << std::endl;
+        if (i % 100 != 0) out << std::string(100 - i % 100, ' ') << " " << i << std::endl;
 
     } else {
-        // read alignments and convert to counts profiles
-        ali_vector alis;
+        // read alignments and convert to counts
+        out << strprintf("Processing training alignments in %s ...\n", get_file_basename(infile_).c_str());
+        LOG(INFO) << strprintf("Processing training alignments in %s ...", get_file_basename(infile_).c_str());
+
         typename Alignment<Alphabet_T>::Format f = alignment_format_from_string<Alphabet_T>(get_file_ext(infile_));
-        out << strprintf("Reading training alignments from %s ...", get_file_basename(infile_).c_str());
-        out.flush();
-        LOG(INFO) << strprintf("Reading training alignments from %s ...", get_file_basename(infile_).c_str());
-        Alignment<Alphabet_T>::readall(fin, f, alis);
-        out << strprintf(" %i alignments read", alis.size()) << std::endl;
-        LOG(INFO) << strprintf("%i alignments read", alis.size());
-
-        // for FASTA alignments, assign match columns by first sequence or gap rule.
-        if (f == Alignment<Alphabet_T>::FASTA) {
-            out << "Assigning match columns in FASTA alignments ...";
-            out.flush();
-            LOG(INFO) << "Assigning match columns in FASTA alignments ...";
-            for (ali_iterator ai = alis.begin(); ai != alis.end(); ++ai)
+        int i = 0;
+        while (fin.good()) {
+            Alignment<Alphabet_T> ali(fin, f);
+            if (f == Alignment<Alphabet_T>::FASTA) {
                 if (matchcol_assignment_ < 0)
-                    (*ai)->assign_match_columns_by_sequence();
+                    ali.assign_match_columns_by_sequence();
                 else
-                    (*ai)->assign_match_columns_by_gap_rule(matchcol_assignment_);
-            out << std::endl;
-        }
-
-        // convert alignments to counts profiles
-        out << "Converting training alignments to profiles ...";
-        out.flush();
-        LOG(INFO) << "Converting training alignments to profiles ...";
-        for (ali_iterator ai = alis.begin(); ai != alis.end(); ++ai) {
-            shared_ptr< CountsProfile<Alphabet_T> > cp_ptr(new CountsProfile<Alphabet_T>(**ai, !global_weights_));
+                    ali.assign_match_columns_by_gap_rule(matchcol_assignment_);
+            }
+            shared_ptr< CountsProfile<Alphabet_T> > cp_ptr(new CountsProfile<Alphabet_T>(ali, !global_weights_));
             v.push_back(cp_ptr);
+
+            i += 1;
+            out << '.';
+            out.flush();
+            if (i % 100 == 0) out << " " << i << std::endl;
         }
-        out << std::endl;
+        if (i % 100 != 0) out << std::string(100 - i % 100, ' ') << " " << i << std::endl;
     }
 
     fin.close();
