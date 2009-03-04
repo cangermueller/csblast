@@ -106,7 +106,7 @@ Sequence<Alphabet_T>::Sequence(const std::string& header,
 template<class Alphabet_T>
 inline void Sequence<Alphabet_T>::readall(std::istream& in, std::vector< shared_ptr<Sequence> >& v)
 {
-    while (in.good()) {
+    while (in.peek() && in.good()) {
         shared_ptr<Sequence> p(new Sequence(in));
         v.push_back(p);
     }

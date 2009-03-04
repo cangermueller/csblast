@@ -195,17 +195,19 @@ void CSTrain<Alphabet_T>::read_training_data(counts_vector& v, std::ostream& out
         LOG(INFO) << strprintf("Processing training sequences in %s ...", get_file_basename(infile_).c_str());
 
         int i = 0;
-        while (fin.good()) {
+        while (fin.peek() && fin.good()) {
             Sequence<Alphabet_T> seq(fin);
             shared_ptr< CountsProfile<Alphabet_T> > cp_ptr(new CountsProfile<Alphabet_T>(seq));
             v.push_back(cp_ptr);
 
             i += 1;
-            out << '.';
-            out.flush();
+            if (i % 2 == 0) {
+                out << '.';
+                out.flush();
+            }
             if (i % 100 == 0) out << " " << i << std::endl;
         }
-        if (i % 100 != 0) out << std::string(100 - i % 100, ' ') << " " << i << std::endl;
+        if (i % 100 != 0) out << std::string(50 - iround((i % 100) / 2), ' ') << " " << i << std::endl;
 
     } else {
         // read alignments and convert to counts
@@ -214,7 +216,7 @@ void CSTrain<Alphabet_T>::read_training_data(counts_vector& v, std::ostream& out
 
         typename Alignment<Alphabet_T>::Format f = alignment_format_from_string<Alphabet_T>(get_file_ext(infile_));
         int i = 0;
-        while (fin.good()) {
+        while (fin.peek() && fin.good()) {
             Alignment<Alphabet_T> ali(fin, f);
             if (f == Alignment<Alphabet_T>::FASTA) {
                 if (matchcol_assignment_ < 0)
@@ -226,11 +228,13 @@ void CSTrain<Alphabet_T>::read_training_data(counts_vector& v, std::ostream& out
             v.push_back(cp_ptr);
 
             i += 1;
-            out << '.';
-            out.flush();
+            if (i % 2 == 0) {
+                out << '.';
+                out.flush();
+            }
             if (i % 100 == 0) out << " " << i << std::endl;
         }
-        if (i % 100 != 0) out << std::string(100 - i % 100, ' ') << " " << i << std::endl;
+        if (i % 100 != 0) out << std::string(50 - iround((i % 100) / 2), ' ') << " " << i << std::endl;
     }
 
     fin.close();

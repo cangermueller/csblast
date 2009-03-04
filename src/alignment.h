@@ -207,7 +207,7 @@ inline Alignment<Alphabet_T>::Alignment(std::istream& in, Format format)
 template<class Alphabet_T>
 inline void Alignment<Alphabet_T>::readall(std::istream& in, Format format, std::vector< shared_ptr<Alignment> >& v)
 {
-    while (in.good()) {
+    while (in.peek() && in.good()) {
         shared_ptr<Alignment> p(new Alignment(in, format));
         v.push_back(p);
     }
