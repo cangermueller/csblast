@@ -297,7 +297,11 @@ void Alignment<Alphabet_T>::read_fasta_flavors(std::istream& in, std::vector<std
     seqs.clear();
     std::string buffer;
 
+    while (in.peek() != '>') getline(in, buffer);  // advance to first sequence
     while (in.good()) {
+        // Terminator encountered
+        if (buffer[0] == '#') break;
+
         // Read header
         if (getline(in, buffer)) {
             if (buffer.empty() ||  buffer[0] != '>')
@@ -310,14 +314,14 @@ void Alignment<Alphabet_T>::read_fasta_flavors(std::istream& in, std::vector<std
         // Read sequence
         seqs.push_back("");
         while (in.peek() != '>' && getline(in, buffer)) {
-            if (buffer.empty()) break;
+            if (buffer.empty()) continue;
+            if (buffer[0] == '#') break;
             seqs.back().append(buffer.begin(), buffer.end());
         }
         // Remove whitespace from sequence
         seqs.back().erase(remove_if(seqs.back().begin(), seqs.back().end(), isspace), seqs.back().end());
-        // Terminate reading when empty line encountered
-        if (buffer.empty()) break;
     }
+    if (headers.empty()) throw Exception("Bad alignment input: no alignment data found in stream!");
 }
 
 template<class Alphabet_T>
