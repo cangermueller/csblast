@@ -270,7 +270,7 @@ std::ostream& CSTrain<Alphabet_T>::usage(std::ostream& out)
     out << "Train an HMM of context-states on a dataset of alignments or sequences.\n";
     out << "(C) Andreas Biegert, Johannes Soding, and Ludwig-Maximillians University Munich\n\n";
 
-    out << "Usage: cstrain -i <infile> -o <outfile> -K <num_states> [options]\n\n";
+    out << "Usage: cstrain -i <infile> -K <num_states> [options]\n\n";
 
     out << "Options:\n";
     out << strprintf("  %-38s %s\n",             "-i, --infile <filename>", "Path to input file with training alignments or profiles");
@@ -354,7 +354,7 @@ void CSTrain<Alphabet_T>::parse(GetOpt_pp& options)
     Log::reporting_level() = Log::from_integer(log_level_);
 
     check();
-    if (directory_.empty() || *directory_.rbegin() != DIR_SEP) directory_.append(1, DIR_SEP);
+    if (!directory_.empty() && *directory_.rbegin() != DIR_SEP) directory_.append(1, DIR_SEP);
     if (outfile_.empty()) outfile_ = directory_ + get_file_basename(infile_, false) + "hmm";
     if (format_ == "auto") format_ = get_file_ext(infile_);
 }
