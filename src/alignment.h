@@ -297,7 +297,7 @@ void Alignment<Alphabet_T>::read_fasta_flavors(std::istream& in, std::vector<std
     seqs.clear();
     std::string buffer;
 
-    while (in.peek() != '>') getline(in, buffer);  // advance to first sequence
+    while (in.peek() != '>' && in.good()) getline(in, buffer);  // advance to first sequence
     while (in.good()) {
         // Terminator encountered
         if (buffer[0] == '#') break;
