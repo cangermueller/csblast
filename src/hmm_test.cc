@@ -189,9 +189,10 @@ TEST(HMMTestInitialization, RandomSampleInitializer)
 
     BlosumMatrix m;
     MatrixPseudocounts<AminoAcid> pc(&m);
-    SamplingStateInitializer<AminoAcid> st_init(profiles, &pc);
-    st_init.sample_rate(0.2f);
-    st_init.state_pseudocounts(0.2f);
+    SamplingStateInitializerParams params;
+    params.sample_rate        = 0.2f;
+    params.state_pseudocounts = 0.2f;
+    SamplingStateInitializer<AminoAcid> st_init(profiles, &pc, params);
     HomogeneousTransitionInitializer<AminoAcid> tr_init;
     HMM<AminoAcid> hmm(10, 5, st_init, tr_init);
 

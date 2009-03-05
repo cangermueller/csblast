@@ -74,8 +74,9 @@ class BaumWelchTrainingTest : public testing::Test
 
 TEST_F(BaumWelchTrainingTest, ZincFingerSeqsTraining)
 {
+    BaumWelchParams p;
+    BaumWelchTraining<AminoAcid, Sequence> bwt(p);
     TrainingProgressInfo<AminoAcid> prg_info(hmm_, std::cout);
-    BaumWelchTraining<AminoAcid, Sequence> bwt;
     bwt.run(hmm_, seqs_, &prg_info);
 
     hmm_.transform_states_to_linspace();
@@ -85,13 +86,14 @@ TEST_F(BaumWelchTrainingTest, ZincFingerSeqsTraining)
 
 TEST_F(BaumWelchTrainingTest, ZincFingerAlisTraining)
 {
+    BaumWelchParams p;
+    p.transition_pseudocounts  = 0.8;
+    p.log_likelihood_threshold = 0.02;
+    p.max_connectivity         = 5;
+    BaumWelchTraining<AminoAcid, CountsProfile> bwt(p);
     TrainingProgressInfo<AminoAcid> prg_info(hmm_, std::cout);
-    BaumWelchTraining<AminoAcid, CountsProfile> bwt =
-        BaumWelchParams()
-        .transition_pseudocounts(0.8)
-        .log_likelihood_threshold(0.02)
-        .max_connectivity(5);
     bwt.run(hmm_, counts_, &prg_info);
+
     hmm_.transform_states_to_linspace();
     EXPECT_NEAR(0.9948, hmm_[0][0][AminoAcid::instance().ctoi('C')], DELTA);
     EXPECT_NEAR(0.9948, hmm_[5][0][AminoAcid::instance().ctoi('C')], DELTA);

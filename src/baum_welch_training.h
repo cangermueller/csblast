@@ -24,51 +24,6 @@
 namespace cs
 {
 
-class BaumWelchParams : public ForwardBackwardParams
-{
-  public:
-    BaumWelchParams()
-            : ForwardBackwardParams(),
-              min_iterations_(3),
-              max_iterations_(100),
-              max_connectivity_(0),
-              log_likelihood_threshold_(0.001f),
-              transition_pseudocounts_(1.0f)
-    { }
-
-    BaumWelchParams(const BaumWelchParams& params)
-            : ForwardBackwardParams(params),
-              min_iterations_(params.min_iterations_),
-              max_iterations_(params.max_iterations_),
-              max_connectivity_(params.max_connectivity_),
-              log_likelihood_threshold_(params.log_likelihood_threshold_),
-              transition_pseudocounts_(params.transition_pseudocounts_)
-    { }
-
-    virtual ~BaumWelchParams()
-    { }
-
-    int min_iterations() const { return min_iterations_; }
-    int max_iterations() const { return max_iterations_; }
-    int max_connectivity() const { return max_connectivity_; }
-    float log_likelihood_threshold() const { return log_likelihood_threshold_; }
-    float transition_pseudocounts() const { return transition_pseudocounts_; }
-
-    BaumWelchParams& min_iterations(int min_iter) { min_iterations_ = min_iter; return *this; }
-    BaumWelchParams& max_iterations(int max_iter) { max_iterations_ = max_iter; return *this; }
-    BaumWelchParams& max_connectivity(int max_connect) { max_connectivity_ = max_connect; return *this; }
-    BaumWelchParams& log_likelihood_threshold(float t) { log_likelihood_threshold_ = t; return *this; }
-    BaumWelchParams& transition_pseudocounts(float pc) { transition_pseudocounts_ = pc; return *this; }
-
-  protected:
-    int min_iterations_;
-    int max_iterations_;
-    int max_connectivity_;
-    float log_likelihood_threshold_;
-    float transition_pseudocounts_;
-};
-
-
 template< class Alphabet_T>
 class TrainingProgressInfo
 {
@@ -139,23 +94,46 @@ class TrainingProgressInfo
 
 
 
+struct BaumWelchParams : public ForwardBackwardParams
+{
+    BaumWelchParams()
+            : ForwardBackwardParams(),
+              min_iterations(3),
+              max_iterations(100),
+              max_connectivity(0),
+              log_likelihood_threshold(0.001f),
+              transition_pseudocounts(1.0f)
+    { }
+
+    BaumWelchParams(const BaumWelchParams& params)
+            : ForwardBackwardParams(params),
+              min_iterations(params.min_iterations),
+              max_iterations(params.max_iterations),
+              max_connectivity(params.max_connectivity),
+              log_likelihood_threshold(params.log_likelihood_threshold),
+              transition_pseudocounts(params.transition_pseudocounts)
+    { }
+
+    int min_iterations;
+    int max_iterations;
+    int max_connectivity;
+    float log_likelihood_threshold;
+    float transition_pseudocounts;
+};
+
+
+
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-class BaumWelchTraining : public BaumWelchParams
+class BaumWelchTraining
 {
   public:
     typedef typename std::vector< shared_ptr< Subject_T<Alphabet_T> > > data_vector;
     typedef typename std::vector< shared_ptr< ContextProfile<Alphabet_T> > > profiles_vector;
     typedef typename HMM<Alphabet_T>::const_transition_iterator const_transition_iterator;
 
-    BaumWelchTraining()
-            : fb_(NULL),
-              log_likelihood_(0.0f),
-              log_likelihood_prev_(0.0f)
-    { }
-
     BaumWelchTraining(const BaumWelchParams& params)
-            : BaumWelchParams(params),
+            : params_(params),
               fb_(NULL),
               log_likelihood_(0.0f),
               log_likelihood_prev_(0.0f)
@@ -191,6 +169,8 @@ class BaumWelchTraining : public BaumWelchParams
     // Calculates the change between the current log-likelihood and the previous-iteration log-likelihood.
     float log_likelihood_change(const data_vector& data);
 
+    // Parameter wrapper for Baum-Welch training.
+    const BaumWelchParams& params_;
     // Instance of forward-backward algorithm to compute exptected number of transitions and emissions.
     ForwardBackwardAlgorithm<Alphabet_T, Subject_T>* fb_;
     // Transition counts
@@ -227,9 +207,9 @@ void BaumWelchTraining<Alphabet_T, Subject_T>::run(HMM<Alphabet_T>& hmm,
 
         if (prg_info) prg_info->print_stats(log_likelihood_, log_likelihood_change(data));
 
-    } while ( iterations_ < min_iterations() || iterations_ < max_iterations() &&
-              (fabs(log_likelihood_change(data)) > log_likelihood_threshold() ||
-               max_connectivity() != 0 && hmm.connectivity() > max_connectivity()) );
+    } while ( iterations_ < params_.min_iterations || iterations_ < params_.max_iterations &&
+              (fabs(log_likelihood_change(data)) > params_.log_likelihood_threshold ||
+               params_.max_connectivity != 0 && hmm.connectivity() > params_.max_connectivity) );
 
     LOG(DEBUG) << hmm;
 }
@@ -264,7 +244,7 @@ template< class Alphabet_T,
 void BaumWelchTraining<Alphabet_T, Subject_T>::setup(int num_states, int num_cols)
 {
     if (fb_) delete fb_;
-    fb_ = new ForwardBackwardAlgorithm<Alphabet_T, Subject_T>(*this);
+    fb_ = new ForwardBackwardAlgorithm<Alphabet_T, Subject_T>(params_);
 
     transitions_.clear();
     transitions_.resize(num_states, num_states);
@@ -399,8 +379,8 @@ void BaumWelchTraining<Alphabet_T, Subject_T>::assign_new_parameters(HMM<Alphabe
         sum = 0.0f;
         for (int l = 0; l < num_states; ++l) {
             if (transitions_.test(k,l)) {
-                if (transitions_[k][l] > 1.0f - transition_pseudocounts()) {
-                    transitions_[k][l] = transitions_[k][l] + transition_pseudocounts() - 1.0f;
+                if (transitions_[k][l] > 1.0f - params_.transition_pseudocounts) {
+                    transitions_[k][l] = transitions_[k][l] + params_.transition_pseudocounts - 1.0f;
                     sum += transitions_[k][l];
                 } else {
                     transitions_.erase(k,l);

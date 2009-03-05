@@ -20,38 +20,6 @@
 namespace cs
 {
 
-class ForwardBackwardParams
-{
-  public:
-    ForwardBackwardParams()
-            : ignore_profile_context_(false),
-              weight_center_(1.6f),
-              weight_decay_(0.85f)
-    { }
-
-    ForwardBackwardParams(const ForwardBackwardParams& p)
-            : ignore_profile_context_(p.ignore_profile_context_),
-              weight_center_(p.weight_center_),
-              weight_decay_(p.weight_decay_)
-    { }
-
-    virtual ~ForwardBackwardParams()
-    { }
-
-    ForwardBackwardParams& ignore_profile_context(bool f) { ignore_profile_context_ = f; return *this; }
-    ForwardBackwardParams& weight_center(float w) { weight_center_ = w; return *this; }
-    ForwardBackwardParams& weight_decay(float b) { weight_decay_ = b; return *this; }
-
-    bool ignore_profile_context() const { return ignore_profile_context_; }
-    float weight_center() const { return weight_center_; }
-    float weight_decay() const { return weight_decay_; }
-
-  protected:
-    bool ignore_profile_context_;
-    float weight_center_;
-    float weight_decay_;
-};
-
 struct ForwardBackwardMatrices
 {
     typedef double value_type;
@@ -119,6 +87,32 @@ struct ForwardBackwardMatrices
     value_type log_likelihood;
 };
 
+
+
+struct ForwardBackwardParams
+{
+    ForwardBackwardParams()
+            : ignore_profile_context(false),
+              weight_center(1.6f),
+              weight_decay(0.85f)
+    { }
+
+    ForwardBackwardParams(const ForwardBackwardParams& p)
+            : ignore_profile_context(p.ignore_profile_context),
+              weight_center(p.weight_center),
+              weight_decay(p.weight_decay)
+    { }
+
+    virtual ~ForwardBackwardParams()
+    { }
+
+    bool ignore_profile_context;
+    float weight_center;
+    float weight_decay;
+};
+
+
+
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
 class ForwardBackwardAlgorithm : public ForwardBackwardParams
@@ -126,11 +120,8 @@ class ForwardBackwardAlgorithm : public ForwardBackwardParams
   public:
     typedef typename ForwardBackwardMatrices::value_type value_type;
 
-    ForwardBackwardAlgorithm()
-    { }
-
     ForwardBackwardAlgorithm(const ForwardBackwardParams& params)
-            : ForwardBackwardParams(params)
+            : params_(params)
     { }
 
     shared_ptr<ForwardBackwardMatrices> run(const HMM<Alphabet_T>& hmm, const Subject_T<Alphabet_T>& subject)
@@ -140,8 +131,8 @@ class ForwardBackwardAlgorithm : public ForwardBackwardParams
         LOG(DEBUG1) << subject;
 
         ProfileMatcher<Alphabet_T> matcher;
-        if (!ignore_profile_context() && hmm.num_cols() > 1)
-            matcher.init_weights(hmm.num_cols(), weight_center(), weight_decay());
+        if (!params_.ignore_profile_context && hmm.num_cols() > 1)
+            matcher.init_weights(hmm.num_cols(), params_.weight_center, params_.weight_decay);
 
         shared_ptr<ForwardBackwardMatrices> matrices( new ForwardBackwardMatrices(subject.length(),
                                                                                   hmm.num_states()) );
@@ -243,6 +234,9 @@ class ForwardBackwardAlgorithm : public ForwardBackwardParams
             }
         }
     }
+
+  private:
+    const ForwardBackwardParams& params_;
 };
 
 }  // cs
