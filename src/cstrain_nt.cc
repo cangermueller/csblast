@@ -9,8 +9,6 @@
 #include "cstrain.h"
 #include "log.h"
 
-std::ostream& usage(std::ostream& out);
-
 int main(int argc, char* argv[])
 {
     GetOpt_pp options(argc, argv);

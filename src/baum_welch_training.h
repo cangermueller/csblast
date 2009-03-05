@@ -227,9 +227,9 @@ void BaumWelchTraining<Alphabet_T, Subject_T>::run(HMM<Alphabet_T>& hmm,
 
         if (prg_info) prg_info->print_stats(log_likelihood_, log_likelihood_change(data));
 
-    } while( iterations_ < min_iterations() || iterations_ < max_iterations() &&
-             (fabs(log_likelihood_change(data)) > log_likelihood_threshold() ||
-             max_connectivity() != 0 && hmm.connectivity() > max_connectivity()) );
+    } while ( iterations_ < min_iterations() || iterations_ < max_iterations() &&
+              (fabs(log_likelihood_change(data)) > log_likelihood_threshold() ||
+               max_connectivity() != 0 && hmm.connectivity() > max_connectivity()) );
 
     LOG(DEBUG) << hmm;
 }
