@@ -132,47 +132,46 @@ class BaumWelchTraining
     typedef typename std::vector< shared_ptr< ContextProfile<Alphabet_T> > > profiles_vector;
     typedef typename HMM<Alphabet_T>::const_transition_iterator const_transition_iterator;
 
-    BaumWelchTraining(const BaumWelchParams& params)
-            : params_(params),
-              fb_(NULL),
-              log_likelihood_(0.0f),
-              log_likelihood_prev_(0.0f)
-    { }
+    // Initializes a new training object.
+    BaumWelchTraining(HMM<Alphabet_T>& hmm,
+                      const data_vector& data,
+                      const BaumWelchParams& params,
+                      TrainingProgressInfo<Alphabet_T>* progress_info = NULL);
 
     virtual ~BaumWelchTraining()
-    {
-        if (fb_) delete fb_;
-    }
+    { }
 
     // Trains the HMM with the data provided until one of the termination criterions is fullfilled.
-    void run(HMM<Alphabet_T>& hmm,
-             const data_vector& data,
-             TrainingProgressInfo<Alphabet_T>* prg_info = NULL);
+    void run();
 
   private:
-    // Prepares the stage for a new training run.
-    void setup(int num_states, int num_cols);
+    // Prepares all members for HMM training.
+    void init();
     // Runs forward backward algorithm on provided data.
-    void run_forward_backward(HMM<Alphabet_T>& hmm,
-                              const data_vector& data,
-                              TrainingProgressInfo<Alphabet_T>* prg_info = NULL);
+    void run_forward_backward();
     // Adds the contribution of a subject's forward-backward matrices to prio probabilities of states.
     void add_contribution_to_priors(const ForwardBackwardMatrices& m);
     // Adds the contribution of a subject's forward-backward matrices to transition counts.
-    void add_contribution_to_transitions(const ForwardBackwardMatrices& m, const HMM<Alphabet_T>& hmm);
+    void add_contribution_to_transitions(const ForwardBackwardMatrices& m);
     // Adds the contribution of a count profile's forward-backward matrices to emission counts.
     void add_contribution_to_emissions(const ForwardBackwardMatrices& m, const CountsProfile<Alphabet_T>& c);
     // Adds the contribution of a sequence's forward-backward matrices to emission counts.
     void add_contribution_to_emissions(const ForwardBackwardMatrices& m, const Sequence<Alphabet_T>& s);
     // Calculates new HMM parameters by Maxmimum-Likelihood estimation.
-    void assign_new_parameters(HMM<Alphabet_T>& hmm);
+    void assign_new_parameters();
     // Calculates the change between the current log-likelihood and the previous-iteration log-likelihood.
-    float log_likelihood_change(const data_vector& data);
+    float log_likelihood_change();
+    // Returns true if any termination conditions is fullfilled.
+    bool terminate();
 
+    // HMM to be trained
+    HMM<Alphabet_T>& hmm_;
+    // Training data (either sequences or counts profiles)
+    const data_vector& data_;
     // Parameter wrapper for Baum-Welch training.
     const BaumWelchParams& params_;
-    // Instance of forward-backward algorithm to compute exptected number of transitions and emissions.
-    ForwardBackwardAlgorithm<Alphabet_T, Subject_T>* fb_;
+    // Progress info object for output of progress table
+    TrainingProgressInfo<Alphabet_T>* progress_info_;
     // Transition counts
     sparse_matrix<float> transitions_;
     // Profiles with emission counts and prior counts
@@ -189,93 +188,109 @@ class BaumWelchTraining
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-void BaumWelchTraining<Alphabet_T, Subject_T>::run(HMM<Alphabet_T>& hmm,
-                                                   const data_vector& data,
-                                                   TrainingProgressInfo<Alphabet_T>* prg_info)
+inline BaumWelchTraining<Alphabet_T, Subject_T>::BaumWelchTraining(HMM<Alphabet_T>& hmm,
+                                                                   const data_vector& data,
+                                                                   const BaumWelchParams& params,
+                                                                   TrainingProgressInfo<Alphabet_T>* progress_info)
+        : hmm_(hmm),
+          data_(data),
+          params_(params),
+          progress_info_(progress_info),
+          transitions_(hmm.num_states(), hmm.num_states()),
+          profiles_(),
+          log_likelihood_(0.0f),
+          log_likelihood_prev_(0.0f),
+          iterations_(0)
 {
-    LOG(DEBUG) << "Running Baum-Welch training on ...";
-    LOG(DEBUG) << hmm;
-    setup(hmm.num_states(), hmm.num_cols());
-
-    // Calculate log-likelihood baseline
-    run_forward_backward(hmm, data, prg_info);
-    if (prg_info) prg_info->print_stats(log_likelihood_, log_likelihood_change(data), false);
-
-    do {
-        assign_new_parameters(hmm);
-        run_forward_backward(hmm, data, prg_info);
-
-        if (prg_info) prg_info->print_stats(log_likelihood_, log_likelihood_change(data));
-
-    } while ( iterations_ < params_.min_iterations || iterations_ < params_.max_iterations &&
-              (fabs(log_likelihood_change(data)) > params_.log_likelihood_threshold ||
-               params_.max_connectivity != 0 && hmm.connectivity() > params_.max_connectivity) );
-
-    LOG(DEBUG) << hmm;
+    init();
 }
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-void BaumWelchTraining<Alphabet_T, Subject_T>::run_forward_backward(HMM<Alphabet_T>& hmm,
-                                                                    const data_vector& data,
-                                                                    TrainingProgressInfo<Alphabet_T>* prg_info)
+void BaumWelchTraining<Alphabet_T, Subject_T>::init()
 {
-    if (prg_info) {
-        int total = 0;
-        for (typename data_vector::const_iterator di = data.begin(); di != data.end(); ++di)
-            total += hmm.num_states() * (**di).length();
-        prg_info->init(total);
-    }
-
-    for (typename data_vector::const_iterator di = data.begin(); di != data.end(); ++di) {
-            shared_ptr<ForwardBackwardMatrices> fbm = fb_->run(hmm, **di);
-            if (prg_info) prg_info->increment(hmm.num_states() * (**di).length());
-
-            add_contribution_to_priors(*fbm);
-            add_contribution_to_transitions(*fbm, hmm);
-            add_contribution_to_emissions(*fbm, **di);
-
-            log_likelihood_ += fbm->log_likelihood;
-    }
-}
-
-template< class Alphabet_T,
-          template<class Alphabet_U> class Subject_T >
-void BaumWelchTraining<Alphabet_T, Subject_T>::setup(int num_states, int num_cols)
-{
-    if (fb_) delete fb_;
-    fb_ = new ForwardBackwardAlgorithm<Alphabet_T, Subject_T>(params_);
-
-    transitions_.clear();
-    transitions_.resize(num_states, num_states);
-
-    profiles_.clear();
-    for (int k = 0; k < num_states; ++k) {
-        shared_ptr< ContextProfile<Alphabet_T> > profile_ptr(new ContextProfile<Alphabet_T>(k, num_cols));
+    for (int k = 0; k < hmm_.num_states(); ++k) {
+        shared_ptr< ContextProfile<Alphabet_T> > profile_ptr(new ContextProfile<Alphabet_T>(k, hmm_.num_cols()));
         profiles_.push_back(profile_ptr);
     }
-
-    log_likelihood_      = 0.0f;
-    log_likelihood_prev_ = 0.0f;
-    iterations_          = 0;
 }
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-void BaumWelchTraining<Alphabet_T, Subject_T>::add_contribution_to_priors(const ForwardBackwardMatrices& m)
+void BaumWelchTraining<Alphabet_T, Subject_T>::run()
 {
-    const int num_states = profiles_.size();
+    LOG(DEBUG) << "Running Baum-Welch training on ...";
+    LOG(DEBUG) << hmm_;
+
+    // Calculate log-likelihood baseline
+    run_forward_backward();
+    if (progress_info_) progress_info_->print_stats(log_likelihood_, log_likelihood_change(), false);
+
+    do {
+        assign_new_parameters();
+        run_forward_backward();
+
+        if (progress_info_) progress_info_->print_stats(log_likelihood_, log_likelihood_change());
+
+    } while (!terminate());
+
+    LOG(DEBUG) << hmm_;
+}
+
+template< class Alphabet_T,
+          template<class Alphabet_U> class Subject_T >
+inline bool BaumWelchTraining<Alphabet_T, Subject_T>::terminate()
+{
+    if (iterations_ < params_.min_iterations)
+        return false;
+    else if (iterations_ >= params_.max_iterations)
+        return true;
+    else if (params_.max_connectivity == 0)
+        return fabs(log_likelihood_change()) <= params_.log_likelihood_threshold;
+    else
+        return fabs(log_likelihood_change()) <= params_.log_likelihood_threshold && hmm_.connectivity() <= params_.max_connectivity;
+}
+
+template< class Alphabet_T,
+          template<class Alphabet_U> class Subject_T >
+inline void BaumWelchTraining<Alphabet_T, Subject_T>::run_forward_backward()
+{
+    if (progress_info_) {
+        int total = 0;
+        for (typename data_vector::const_iterator di = data_.begin(); di != data_.end(); ++di)
+            total += hmm_.num_states() * (**di).length();
+        progress_info_->init(total);
+    }
+
+    for (typename data_vector::const_iterator di = data_.begin(); di != data_.end(); ++di) {
+        shared_ptr<ForwardBackwardMatrices> fbm = forward_backward_algorithm(hmm_, **di, params_);
+        if (progress_info_) progress_info_->increment(hmm_.num_states() * (**di).length());
+
+        add_contribution_to_priors(*fbm);
+        add_contribution_to_transitions(*fbm);
+        add_contribution_to_emissions(*fbm, **di);
+
+        log_likelihood_ += fbm->log_likelihood;
+    }
+}
+
+template< class Alphabet_T,
+          template<class Alphabet_U> class Subject_T >
+inline void BaumWelchTraining<Alphabet_T, Subject_T>::add_contribution_to_priors(const ForwardBackwardMatrices& m)
+{
+    const int num_states = hmm_.num_states();
+
     for (int k = 0; k < num_states; ++k)
         profiles_[k]->set_prior(profiles_[k]->prior() + m.f[0][k] * m.b[0][k]);
 }
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-void BaumWelchTraining<Alphabet_T, Subject_T>::add_contribution_to_transitions(const ForwardBackwardMatrices& m,
-                                                                               const HMM<Alphabet_T>& hmm)
+inline void BaumWelchTraining<Alphabet_T, Subject_T>::add_contribution_to_transitions(const ForwardBackwardMatrices& m)
 {
     const int slen = m.f.num_rows();
-    for (const_transition_iterator ti = hmm.transitions_begin(); ti != hmm.transitions_end(); ++ti) {
+
+    for (const_transition_iterator ti = hmm_.transitions_begin(); ti != hmm_.transitions_end(); ++ti) {
         double w_kl = 0.0;
         for (int i = 0; i < slen-1; ++i) {
             w_kl += m.f[i][ti->from] * m.b[i+1][ti->to] * ti->probability * m.e[i+1][ti->to] / m.s[i+1];
@@ -290,11 +305,12 @@ void BaumWelchTraining<Alphabet_T, Subject_T>::add_contribution_to_transitions(c
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-void BaumWelchTraining<Alphabet_T, Subject_T>::add_contribution_to_emissions(const ForwardBackwardMatrices& m,
+inline void BaumWelchTraining<Alphabet_T, Subject_T>::add_contribution_to_emissions(const ForwardBackwardMatrices& m,
                                                                              const CountsProfile<Alphabet_T>& c)
 {
     const int slen       = m.f.num_rows();
-    const int num_states = transitions_.num_rows();
+    const int num_states = hmm_.num_states();
+
     for (int k = 0; k < num_states; ++k) {
         ContextProfile<Alphabet_T>& p_k = *profiles_[k];
         const int ci = p_k.center();
@@ -316,11 +332,11 @@ void BaumWelchTraining<Alphabet_T, Subject_T>::add_contribution_to_emissions(con
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-void BaumWelchTraining<Alphabet_T, Subject_T>::add_contribution_to_emissions(const ForwardBackwardMatrices& m,
+inline void BaumWelchTraining<Alphabet_T, Subject_T>::add_contribution_to_emissions(const ForwardBackwardMatrices& m,
                                                                              const Sequence<Alphabet_T>& s)
 {
     const int slen       = m.f.num_rows();
-    const int num_states = transitions_.num_rows();
+    const int num_states = hmm_.num_states();
 
     for (int k = 0; k < num_states; ++k) {
         ContextProfile<Alphabet_T>& p_k = *profiles_[k];
@@ -340,14 +356,14 @@ void BaumWelchTraining<Alphabet_T, Subject_T>::add_contribution_to_emissions(con
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-void BaumWelchTraining<Alphabet_T, Subject_T>::assign_new_parameters(HMM<Alphabet_T>& hmm)
+void BaumWelchTraining<Alphabet_T, Subject_T>::assign_new_parameters()
 {
-    const int num_states    = hmm.num_states();
-    const int num_cols      = hmm.num_cols();
-    const int alphabet_size = hmm[0].alphabet_size();
+    const int num_states    = hmm_.num_states();
+    const int num_cols      = hmm_.num_cols();
+    const int alphabet_size = hmm_[0].alphabet_size();
 
     // Advance iteration counters and likelihoods
-    ++hmm;
+    ++hmm_;
     ++iterations_;
     log_likelihood_prev_ = log_likelihood_;
     log_likelihood_ = 0.0;
@@ -361,12 +377,12 @@ void BaumWelchTraining<Alphabet_T, Subject_T>::assign_new_parameters(HMM<Alphabe
     for (int k = 0; k < num_states; ++k) {
         ContextProfile<Alphabet_T>& p_k = *profiles_[k];
 
-        hmm[k].set_prior(p_k.prior() * fac);
+        hmm_[k].set_prior(p_k.prior() * fac);
         if (normalize(p_k)) {  // don't update profiles that did'n get any evidence
             p_k.transform_to_logspace();
             for (int i = 0; i < num_cols; ++i)
                 for (int a = 0; a < alphabet_size; ++a)
-                    hmm[k][i][a] = p_k[i][a];
+                    hmm_[k][i][a] = p_k[i][a];
             p_k.transform_to_linspace();
         }
         reset(p_k, 0.0f);
@@ -374,7 +390,7 @@ void BaumWelchTraining<Alphabet_T, Subject_T>::assign_new_parameters(HMM<Alphabe
     }
 
     // Calculate and assign new transition probabilities
-    hmm.clear_transitions();
+    hmm_.clear_transitions();
     for (int k = 0; k < num_states; ++k) {
         sum = 0.0f;
         for (int l = 0; l < num_states; ++l) {
@@ -391,22 +407,22 @@ void BaumWelchTraining<Alphabet_T, Subject_T>::assign_new_parameters(HMM<Alphabe
             fac = 1.0f / sum;
             for (int l = 0; l < num_states; ++l) {
                 if (transitions_.test(k,l)) {
-                    hmm(k,l) = transitions_[k][l] * fac;
-                    LOG(DEBUG2) << strprintf("tr[%i][%i]=%-8.5f", k, l, static_cast<float>(hmm(k,l)));
+                    hmm_(k,l) = transitions_[k][l] * fac;
+                    LOG(DEBUG2) << strprintf("tr[%i][%i]=%-8.5f", k, l, static_cast<float>(hmm_(k,l)));
                 }
             }
         }
     }
-    LOG(INFO) << hmm;
+    LOG(INFO) << hmm_;
     transitions_.clear();
 }
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-float BaumWelchTraining<Alphabet_T, Subject_T>::log_likelihood_change(const data_vector& data)
+inline float BaumWelchTraining<Alphabet_T, Subject_T>::log_likelihood_change()
 {
     int data_cols = 0;
-    for (typename data_vector::const_iterator di = data.begin(); di != data.end(); ++di)
+    for (typename data_vector::const_iterator di = data_.begin(); di != data_.end(); ++di)
         data_cols += (**di).length();
     return (log_likelihood_ - log_likelihood_prev_) / data_cols;
 }

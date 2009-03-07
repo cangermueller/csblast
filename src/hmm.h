@@ -580,7 +580,9 @@ class SamplingStateInitializer : public StateInitializer<Alphabet_T>,
             : params_(params),
               profiles_(profiles),
               pc_(pc)
-    { random_shuffle(profiles_.begin(), profiles_.end()); }
+    {
+        random_shuffle(profiles_.begin(), profiles_.end());
+    }
 
     virtual ~SamplingStateInitializer() { };
 
