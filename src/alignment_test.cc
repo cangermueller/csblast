@@ -132,4 +132,28 @@ TEST(AlignmentTest, ConstructionFromA3M)
     EXPECT_EQ(AminoAcid::instance().gap(), alignment.seq(0,27));
 }
 
+TEST(AlignmentTest, RemoveInsertColumns)
+{
+    std::string data;
+    data.append(">seq1\nA-GTacGTACACGTACGTACACGTACGTAC\nACGTACGTACA---ACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
+    data.append(">seq2\nACGT..GTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTA---GTACGT--\n");
+    data.append(">seq3\nACGT..GTACGTACGTACACGTACGTACAC\nACGTACCACGTACGTACACGGTATACGTAC\nACGTACGTAGTACGT-----\n");
+    std::istringstream ss(data);
+    Alignment<Nucleotide> alignment(ss, Alignment<Nucleotide>::A2M);
+
+    ASSERT_EQ(3, alignment.num_seqs());
+    ASSERT_EQ(80, alignment.num_cols());
+    ASSERT_TRUE(alignment.match_column(3));
+    ASSERT_FALSE(alignment.match_column(4));
+    ASSERT_EQ('A', alignment.chr(0,4));
+
+    alignment.remove_insert_columns();
+
+    ASSERT_EQ(3, alignment.num_seqs());
+    ASSERT_EQ(78, alignment.num_cols());
+    ASSERT_TRUE(alignment.match_column(3));
+    ASSERT_TRUE(alignment.match_column(4));
+    ASSERT_EQ('G', alignment.chr(0,4));
+}
+
 }  // cs

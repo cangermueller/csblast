@@ -34,25 +34,25 @@ namespace
 // Converts a character to uppercase and '.' to '-'.
 inline char to_match_chr(char c)
 {
-    return (isalpha(c) ? toupper(c) : (c == '.' ? '-' : c));
+    return isalpha(c) ? toupper(c) : (c == '.' ? '-' : c);
 }
 
 // Converts a character to lowercase and '-' to '.'.
 inline char to_insert_chr(char c)
 {
-    return (isalpha(c) ? tolower(c) : (c == '-' ? '.' : c));
+    return isalpha(c) ? tolower(c) : (c == '-' ? '.' : c);
 }
 
 // Predicate indicating if character belongs to match column.
 inline bool match_chr(char c)
 {
-    return isalpha(c) && isupper(c) || c == '-';
+    return (isalpha(c) && isupper(c)) || c == '-';
 }
 
 // Predicate indicating if character belongs to insert column.
 inline char insert_chr(char c)
 {
-    return isalpha(c) && islower(c) || c == '.';
+    return (isalpha(c) && islower(c)) || c == '.';
 }
 
 } // namespace
@@ -138,6 +138,8 @@ class Alignment
     void write(std::ostream& out, Format format, int width = 100) const;
     // Returns true if column i is a match column.
     bool match_column(int i) const { return match_column_[i]; }
+    // Removes all insert columns from the alignment.
+    void remove_insert_columns();
 
     // Prints the Alignment in A2M format for debugging.
     friend std::ostream& operator<< (std::ostream& out, const Alignment& alignment)
@@ -537,6 +539,33 @@ void Alignment<Alphabet_T>::assign_match_columns_by_gap_rule(int gap_threshold)
 }
 
 template<class Alphabet_T>
+void Alignment<Alphabet_T>::remove_insert_columns()
+{
+    // create new sequence matrix
+    const int match_cols = num_match_cols();
+    matrix<char> new_seqs(match_cols, num_seqs());
+    for (int i = 0; i < match_cols; ++i) {
+        for (int k = 0; k < num_seqs(); ++k) {
+            new_seqs[i][k] = seqs_[match_indexes[i]][k];
+        }
+    }
+    seqs_.resize(match_cols, num_seqs());
+    seqs_ = new_seqs;
+
+    // update match indexes
+    column_indexes_.resize(match_cols);
+    match_indexes.resize(match_cols);
+    match_column_.resize(match_cols);
+    for (int i = 0; i < match_cols; ++i) {
+        column_indexes_[i] = i;
+        match_column_[i]   = true;
+    }
+    set_match_indexes();
+}
+
+
+
+template<class Alphabet_T>
 float global_weights_and_diversity(const Alignment<Alphabet_T>& alignment, std::vector<float>& wg)
 {
     const float ZERO = 1E-10;  // for calculation of entropy
@@ -547,12 +576,12 @@ float global_weights_and_diversity(const Alignment<Alphabet_T>& alignment, std::
 
     // Return values
     wg.assign(num_seqs, 0.0f);  // global sequence weights
-    float neff = 0.0f;       // diversity of alignment
+    float neff = 0.0f;          // diversity of alignment
 
     // Helper variables
-    std::vector<int> n(num_seqs, 0);         // number of residues in sequence i (excl. ANY)
-    std::vector<float> fj(alphabet_size, 0.0f);   // to calculate entropy
-    std::vector<int> adiff(num_cols, 0);     // number of different alphabet letters in each column
+    std::vector<int> n(num_seqs, 0);                 // number of residues in sequence i (excl. ANY)
+    std::vector<float> fj(alphabet_size, 0.0f);      // to calculate entropy
+    std::vector<int> adiff(num_cols, 0);             // number of different alphabet letters in each column
     matrix<int> counts(num_cols, alphabet_size, 0);  // counts of alphabet letters in each column (excl. ANY)
 
     LOG(INFO) << "Calculation of global weights and alignment diversity ...";
@@ -597,7 +626,7 @@ template<class Alphabet_T>
 std::vector<float> position_specific_weights_and_diversity(const Alignment<Alphabet_T>& alignment, matrix<float>& w)
 {
     const float MAX_ENDGAP_FRACTION = 0.1;  // maximal fraction of sequences with an endgap
-    const int MIN_COLS = 10;  // minimum number of columns in subalignments
+    const int MIN_COLS = 10;   // minimum number of columns in subalignments
     const float ZERO = 1E-10;  // for calculation of entropy
     const int num_seqs  = alignment.num_seqs();
     const int num_cols  = alignment.num_match_cols();
@@ -606,7 +635,7 @@ std::vector<float> position_specific_weights_and_diversity(const Alignment<Alpha
     const int endgap = Alphabet_T::instance().endgap();
 
     // Return values
-    std::vector<float> neff(num_cols, 0.0f);  // diversity of subalignment i
+    std::vector<float> neff(num_cols, 0.0f);     // diversity of subalignment i
     w.resize(num_cols, num_seqs);                // w(i,k) weight of sequence k in column i, calculated from subalignment i
     w = matrix<float>(num_cols, num_seqs, 0.0f); // init to zero
 
@@ -616,12 +645,12 @@ std::vector<float> position_specific_weights_and_diversity(const Alignment<Alpha
     int ndiff = 0;        // number of different alphabet letters
     bool change = false;  // has the set of sequences in subalignment changed?
 
-    matrix<int> n(num_cols, endgap + 1, 0);     // n(j,a) = number of seq's with some residue at column i AND a at position j
-    std::vector<float> fj(alphabet_size, 0.0f);      // to calculate entropy
-    std::vector<float> wi(num_seqs, 0.0f);      // weight of sequence k in column i, calculated from subalignment i
-    std::vector<float> wg;                   // global weights
-    std::vector<int> nseqi_debug(num_cols, 0);  // debugging
-    std::vector<int> ncoli_debug(num_cols, 0);  // debugging
+    matrix<int> n(num_cols, endgap + 1, 0);      // n(j,a) = number of seq's with some residue at column i AND a at position j
+    std::vector<float> fj(alphabet_size, 0.0f);  // to calculate entropy
+    std::vector<float> wi(num_seqs, 0.0f);       // weight of sequence k in column i, calculated from subalignment i
+    std::vector<float> wg;                       // global weights
+    std::vector<int> nseqi_debug(num_cols, 0);   // debugging
+    std::vector<int> ncoli_debug(num_cols, 0);   // debugging
 
     global_weights_and_diversity(alignment, wg);  // compute global sequence weights
 

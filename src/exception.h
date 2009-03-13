@@ -49,7 +49,7 @@ public:
     virtual const char* what() const throw()
     { return msg.c_str(); }
 
-    virtual const int code() const
+    virtual int code() const
     { return c; }
 
 private:

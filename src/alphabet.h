@@ -49,7 +49,7 @@ class Alphabet
     char any_chr() const { return any_; }
     // Returns true if the character belongs to the alphabet.
     bool valid(char letter, bool allow_gap = false) const
-    { return ctoi_[toupper(letter)] != INVALID_CHAR && (allow_gap || letter != '-' && letter != '.'); }
+    { return ctoi_[toupper(letter)] != INVALID_CHAR && (allow_gap || (letter != '-' && letter != '.')); }
     // Returns a const iterator to the first character in the alphabet.
     const_iterator begin() const { return itoc_.begin(); }
     // Returns a const iterator just past the end of last distinct character in the alphabet.
