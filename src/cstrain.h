@@ -31,14 +31,15 @@ using namespace GetOpt;
 namespace cs
 {
 
-struct Params : public BaumWelchParams,
-                public SamplingStateInitializerParams
+struct Params : public BaumWelchParams
 {
     Params()
             : format("auto"),
               matchcol_assignment(-1),
               num_states(0),
               window_length(1),
+              sample_rate(0.2f),
+              state_pseudocounts(1.0f),
               data_pseudocounts(0.01f),
               global_weights(false),
               blosum_type("BLOSUM62"),
@@ -76,6 +77,10 @@ struct Params : public BaumWelchParams,
     int num_states;
     // The number of columns in the context window.
     int window_length;
+    // Fraction of profile windows sampled from each full length subject.
+    float sample_rate;
+    // Pseudocounts to be added to each state profile.
+    float state_pseudocounts;
     // Pseudocounts to be added to observed data counts.
     float data_pseudocounts;
     // Use global instead of position specific weights for profile construction.
@@ -89,6 +94,7 @@ struct Params : public BaumWelchParams,
     // The reporting level for logging.
     int log_level;
 };
+
 
 
 void Params::parse_options(GetOpt_pp& options)
@@ -112,8 +118,10 @@ void Params::parse_options(GetOpt_pp& options)
     options >> Option(' ', "state-pseudocounts", state_pseudocounts, state_pseudocounts);
     options >> Option(' ', "min-iterations", min_iterations, min_iterations);
     options >> Option(' ', "max-iterations", max_iterations, max_iterations);
+    options >> Option(' ', "weight-center", weight_center, weight_center);
+    options >> Option(' ', "weight-decay", weight_decay, weight_decay);
     options >> OptionPresent(' ', "global-weights", global_weights);
-    options >> Option(' ', "max-log-level", log_level, log_level);
+    options >> Option(' ', "log-level", log_level, log_level);
     Log::reporting_level() = Log::from_integer(log_level);
 
     check();
@@ -165,7 +173,7 @@ std::ostream& usage(const Params& params, std::ostream& out = std::cout)
                      params.max_connectivity);
     out << strprintf("  %-38s %s (def=%3.1f)\n", "-t, --transition-pseudocounts <float>", "Transition pseudocounts",
                      params.transition_pseudocounts);
-    out << strprintf("  %-38s %s (def=%3.1f)\n", "-s, --sample-rate [0,1]", "Context window sample rate for initialization",
+    out << strprintf("  %-38s %s (def=%3.1f)\n", "-s, --sample-rate [0,1]", "Fraction of profile windows sampled per subject for HMM initialization",
                      params.sample_rate);
     out << strprintf("  %-38s %s\n",             "-j, --jumpstart <filename>", "Jumpstart the HMM training with a serialized HMM.");
 
@@ -179,8 +187,12 @@ std::ostream& usage(const Params& params, std::ostream& out = std::cout)
                      params.state_pseudocounts);
     out << strprintf("  %-38s %s (def=%4.2f)\n", "    --data-pseudocounts [0,1]", "Pseudocounts for training data",
                      params.data_pseudocounts);
+    out << strprintf("  %-38s %s (def=%4.2f)\n", "    --weight-center [0,1]", "Weight of central profile column in context window.",
+                     params.weight_center);
+    out << strprintf("  %-38s %s (def=%4.2f)\n", "    --weight-decay [0,1]", "Exponential decay of positional window weights.",
+                     params.weight_decay);
     out << strprintf("  %-38s %s\n",             "    --global-weights", "Use global instead of position-specific weights for profiles");
-    out << strprintf("  %-38s %s (def=%i)\n",    "    --log-max-level <int>", "Maximal reporting level for logging",
+    out << strprintf("  %-38s %s (def=%i)\n",    "    --log-level <int>", "Maximal reporting level for logging",
                      params.log_level);
 
     return out;
@@ -236,7 +248,7 @@ void cstrain(const Params& params, std::ostream& out)
         out << strprintf("Initializing HMM by sampling %i context profiles from training profiles ...", params.num_states);
         out.flush();
         LOG(INFO) << strprintf("Initializing HMM by sampling %i context profiles from training profiles ...", params.num_states);
-        SamplingStateInitializer<Alphabet_T> state_init(data, &sm_pc, params);
+        SamplingStateInitializer<Alphabet_T> state_init(data, params.sample_rate, &sm_pc, params.state_pseudocounts);
         HomogeneousTransitionInitializer<Alphabet_T> transition_init;
         hmm_ptr = shared_ptr< HMM<Alphabet_T> >(new HMM<Alphabet_T>(params.num_states, params.window_length, state_init, transition_init));
         hmm_ptr->transform_states_to_logspace();

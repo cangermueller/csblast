@@ -92,13 +92,13 @@ struct ForwardBackwardMatrices
 struct ForwardBackwardParams
 {
     ForwardBackwardParams()
-            : ignore_profile_context(false),
+            : ignore_context(false),
               weight_center(1.6f),
               weight_decay(0.85f)
     { }
 
     ForwardBackwardParams(const ForwardBackwardParams& p)
-            : ignore_profile_context(p.ignore_profile_context),
+            : ignore_context(p.ignore_context),
               weight_center(p.weight_center),
               weight_decay(p.weight_decay)
     { }
@@ -106,7 +106,7 @@ struct ForwardBackwardParams
     virtual ~ForwardBackwardParams()
     { }
 
-    bool ignore_profile_context;
+    bool ignore_context;
     float weight_center;
     float weight_decay;
 };
@@ -115,32 +115,24 @@ struct ForwardBackwardParams
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-shared_ptr<ForwardBackwardMatrices> forward_backward_algorithm(const HMM<Alphabet_T>& hmm,
-                                                               const Subject_T<Alphabet_T>& subject,
-                                                               const ForwardBackwardParams& params)
+void forward_backward_algorithm(const HMM<Alphabet_T>& hmm,
+                                const Subject_T<Alphabet_T>& subject,
+                                const ForwardBackwardParams& params,
+                                ForwardBackwardMatrices& m)
 {
     LOG(DEBUG) << "Running forward-backward algorithm ...";
     LOG(DEBUG1) << hmm;
     LOG(DEBUG1) << subject;
 
-    ProfileMatcher<Alphabet_T> matcher;
-    if (!params.ignore_profile_context && hmm.num_cols() > 1)
-        matcher.init_weights(hmm.num_cols(), params.weight_center, params.weight_decay);
-
-    shared_ptr<ForwardBackwardMatrices> matrices( new ForwardBackwardMatrices(subject.length(),
-                                                                              hmm.num_states()) );
-
-    forward_algorithm(hmm, subject, matcher, *matrices);
-    backward_algorithm(hmm, subject, *matrices);
-
-    return matrices;
+    forward_algorithm(hmm, subject, params, m);
+    backward_algorithm(hmm, subject, m);
 }
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
 void forward_algorithm(const HMM<Alphabet_T>& hmm,
                        const Subject_T<Alphabet_T>& subject,
-                       const ProfileMatcher<Alphabet_T>& matcher,
+                       const ForwardBackwardParams& params,
                        ForwardBackwardMatrices& m)
 {
     typedef typename ForwardBackwardMatrices::value_type value_type;
@@ -150,6 +142,11 @@ void forward_algorithm(const HMM<Alphabet_T>& hmm,
     LOG(DEBUG1) << "Forward pass ...";
     const int length     = subject.length();
     const int num_states = hmm.num_states();
+
+    // Setup profile matcher
+    ProfileMatcher<Alphabet_T> matcher;
+    if (!params.ignore_context && hmm.num_cols() > 1)
+        matcher.set_positional_weights(hmm.num_cols(), params.weight_center, params.weight_decay);
 
     // Initialization
     LOG(DEBUG1) << strprintf("i=%i", 0);

@@ -32,7 +32,7 @@ class ProfileMatcher
         if (!w) delete w;
     }
 
-    void init_weights(int len, float weight_center, float weight_decay)
+    void set_positional_weights(int len, float weight_center, float weight_decay)
     {
         if (len % 2 != 1)
             throw Exception("Unable to set positional weights: length of context window should be odd but is %i!", len);

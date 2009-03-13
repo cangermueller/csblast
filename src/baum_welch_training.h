@@ -263,14 +263,15 @@ inline void BaumWelchTraining<Alphabet_T, Subject_T>::run_forward_backward()
     }
 
     for (typename data_vector::const_iterator di = data_.begin(); di != data_.end(); ++di) {
-        shared_ptr<ForwardBackwardMatrices> fbm = forward_backward_algorithm(hmm_, **di, params_);
+        ForwardBackwardMatrices fbm((*di)->length(), hmm_.num_states());
+        forward_backward_algorithm(hmm_, **di, params_, fbm);
         if (progress_info_) progress_info_->increment(hmm_.num_states() * (**di).length());
 
-        add_contribution_to_priors(*fbm);
-        add_contribution_to_transitions(*fbm);
-        add_contribution_to_emissions(*fbm, **di);
+        add_contribution_to_priors(fbm);
+        add_contribution_to_transitions(fbm);
+        add_contribution_to_emissions(fbm, **di);
 
-        log_likelihood_ += fbm->log_likelihood;
+        log_likelihood_ += fbm.log_likelihood;
     }
 }
 
