@@ -309,6 +309,7 @@ void Alignment<Alphabet_T>::read_fasta_flavors(std::istream& in, std::vector<std
             if (buffer.empty() ||  buffer[0] != '>')
                 throw Exception("Bad format: header of sequence %i does not start with '>'!", headers.size() + 1);
             headers.push_back(std::string(buffer.begin()+1, buffer.end()));
+            LOG(DEBUG) << headers.back();
         } else {
             throw Exception("Failed to read from alignment input stream!");
         }

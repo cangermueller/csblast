@@ -114,7 +114,7 @@ inline std::string get_file_ext(const std::string& s)
         return(s.substr(i+1, s.length() - i));
     }
 
-    return("");
+    return "";
 }
 
 // Returns the last component of the filename. If ext is false
@@ -129,19 +129,21 @@ inline std::string get_file_basename(const std::string& s, bool ext = true)
 
     size_t i = s.rfind(sep, s.length());
     if (i != std::string::npos) {
-        if (ext) {
-            return(s.substr(i+1, s.length() - i));
-        } else {
-            size_t j = s.rfind('.', s.length());
-            if (j != std::string::npos && j > i) {
-                return(s.substr(i+1, j-i));
-            } else {
-                return(s.substr(i+1, s.length() - i));
-            }
-        }
-    }
+        if (ext) return(s.substr(i+1, s.length() - i));
 
-    return("");
+        size_t j = s.rfind('.', s.length());
+        if (j != std::string::npos && j > i)
+            return(s.substr(i+1, j-i));
+        else
+            return(s.substr(i+1, s.length() - i));
+    } else if (!ext) {
+        size_t j = s.rfind('.', s.length());
+        if (j != std::string::npos)
+            return(s.substr(0, j+1));
+        else
+            return s;
+    }
+    return s;
 }
 
 // Returns all components of the filename except the last one.
@@ -158,7 +160,7 @@ inline std::string get_file_dirname(const std::string& s)
         return(s.substr(0, i));
     }
 
-    return("");
+    return "";
 }
 
 

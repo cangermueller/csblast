@@ -2,5 +2,5 @@ bin
 src/build
 src/test
 src/*.a
-src/cstrain_aa
-src/cstrain_nt
+src/*_aa
+src/*_nt
