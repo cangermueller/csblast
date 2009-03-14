@@ -360,17 +360,19 @@ void Alignment<Alphabet_T>::read_a3m(std::istream& in, std::vector<std::string>&
     }
 
     // Insert gaps into A3M alignment
-    std::vector<std::string> seqs_a2m(seqs.size(), "");     // sequences in A2M format
-    matrix<std::string> inserts(seqs.size(), num_match_cols, "");   // inserts of sequence k after match state i
-    std::vector<int> max_insert_len(num_match_cols, 0);             // maximal length of inserts after match state i
+    std::vector<std::string> seqs_a2m(seqs.size(), "");            // sequences in A2M format
+    matrix<std::string> inserts(seqs.size(), num_match_cols, "");  // inserts of sequence k after match state i
+    std::vector<int> max_insert_len(num_match_cols, 0);            // maximal length of inserts after match state i
 
-    // Move inserts BEFORE first match state into seqs_a2m
+    // Move inserts before first match state into seqs_a2m and keep track of longes first insert
+    int max_first_insert_len = 0;
     for (int k = 0; k < num_seqs; ++k) {
         std::string::iterator i = find_if(seqs[k].begin(), seqs[k].end(), match_chr);
         if (i != seqs[k].end()) {
             seqs_a2m[k].append(seqs[k].begin(), i);
             seqs[k].erase(seqs[k].begin(), i);
         }
+        max_first_insert_len = std::max(max_first_insert_len, i - seqs[k].begin());
     }
 
     // Extract all inserts and keep track of longest insert after each match column
@@ -389,6 +391,7 @@ void Alignment<Alphabet_T>::read_a3m(std::istream& in, std::vector<std::string>&
 
     // Build new A2M alignment
     for (int k = 0; k < num_seqs; ++k) {
+        seqs_a2m[k].append(max_first_insert_len - seqs_a2m[k].length(), '.');
         int i = 0;
         std::string::iterator match = seqs[k].begin();
         while (match != seqs[k].end()) {
