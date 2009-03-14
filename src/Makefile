@@ -41,7 +41,7 @@ endif
 GTEST_CXXFLAGS += -g
 
 # All non-test executables produced by this Makefile
-TARGETS = test cstrain_aa cstrain_nt csbuild_aa csbuild_nt
+TARGETS = test cstrain_aa cstrain_nt csbuild_aa csbuild_nt cssample_aa cssample_nt
 
 # Libraries against which TARGETS should be build
 LIBS = 
@@ -124,4 +124,10 @@ csbuild_aa: csbuild_aa.cc $(OBJECTS_NO_TESTS) $(DEPS_NO_TESTS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $@.cc $(OBJECTS_NO_TESTS) $(LIBS)
 
 csbuild_nt: csbuild_nt.cc $(OBJECTS_NO_TESTS) $(DEPS_NO_TESTS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $@.cc $(OBJECTS_NO_TESTS) $(LIBS)
+
+cssample_aa: cssample_aa.cc $(OBJECTS_NO_TESTS) $(DEPS_NO_TESTS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $@.cc $(OBJECTS_NO_TESTS) $(LIBS)
+
+cssample_nt: cssample_nt.cc $(OBJECTS_NO_TESTS) $(DEPS_NO_TESTS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $@.cc $(OBJECTS_NO_TESTS) $(LIBS)

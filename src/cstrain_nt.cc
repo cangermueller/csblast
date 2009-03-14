@@ -17,7 +17,7 @@ int main(int argc, char* argv[])
     GetOpt_pp options(argc, argv);
     cs::Params params;
 
-    if(argc < 2 || options >> OptionPresent('h', "help")) {
+    if (argc < 2 || options >> OptionPresent('h', "help")) {
         cs::usage<cs::Nucleotide>(params, std::cout);
         return 2;
     }

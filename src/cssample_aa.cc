@@ -6,7 +6,7 @@
 #include <iostream>
 
 #include "amino_acid.h"
-#include "cstrain.h"
+#include "cssample.h"
 #include "getopt_pp.h"
 #include "log.h"
 
@@ -18,12 +18,12 @@ int main(int argc, char* argv[])
     cs::Params params;
 
     if (argc < 2 || options >> OptionPresent('h', "help")) {
-        cs::usage<cs::AminoAcid>(params, std::cout);
+        cs::usage(params, std::cout);
         return 2;
     }
     try {
         params.parse_options(options);
-        cs::cstrain<cs::AminoAcid>(params);
+        cs::cssample<cs::AminoAcid>(params);
     } catch(const std::exception& e) {
         LOG(ERROR) << e.what();
         std::cout << e.what() << std::endl;

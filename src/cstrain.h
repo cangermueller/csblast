@@ -157,7 +157,7 @@ std::ostream& usage(const Params& params, std::ostream& out = std::cout)
 
     out << "Options:\n";
     out << strprintf("  %-38s %s\n",             "-i, --infile <filename>", "Path to input file with training alignments or profiles");
-    out << strprintf("  %-38s %s\n",             "-o, --outfile <filename>", "Path to output file with trained HMM");
+    out << strprintf("  %-38s %s\n",             "-o, --outfile <filename>", "Path for output file with trained HMM");
     out << strprintf("  %-38s %s (def=%s)\n",    "-d, --directory <directory>", "Directory for temporary and output files",
                      params.directory.empty() ? "." : params.directory.c_str());
     out << strprintf("  %-38s %s (def=%s)\n",    "-f, --format <string>", "Format of training data: prf, seq, fas, a2m, or a3m",
@@ -286,7 +286,7 @@ void cstrain(const Params& params, std::ostream& out)
     training.run();
 
     // write HMM to outfile
-    std::fstream fout(params.outfile.c_str(), std::ios_base::out);
+    std::ofstream fout(params.outfile.c_str(), std::ios_base::out);
     if (!fout) throw Exception("Unable to write HMM to output file '%s'!", params.outfile.c_str());
     hmm_ptr->write(fout);
     fout.close();
@@ -298,6 +298,7 @@ template<class Alphabet_T>
 void read_training_data(const Params& params, std::vector< shared_ptr< CountsProfile<Alphabet_T> > >& v, std::ostream& out)
 {
     std::ifstream fin(params.infile.c_str());
+    if (!fin) throw Exception("Unable to read from input file '%s'!", params.infile.c_str());
 
     if (params.format == "prf") {
         // read data counts directly from serialized counts profiles
