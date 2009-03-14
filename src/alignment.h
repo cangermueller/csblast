@@ -226,7 +226,7 @@ void Alignment<Alphabet_T>::init(const std::vector<std::string>& headers, const 
     const int num_cols = seqs[0].length();
     for (int k = 1; k < num_seqs; ++k)
         if (static_cast<int>(seqs[k].length()) != num_cols)
-            throw Exception("Bad alignment: sequence %i has length %i but should have %i!", k, seqs[k].length(), num_cols);
+            throw Exception("Bad alignment: sequence %i has length %i but should have %i!", k+1, seqs[k].length(), num_cols);
 
     // Validate characters and convert to integer representation
     const Alphabet_T& alphabet = Alphabet_T::instance();
@@ -309,7 +309,6 @@ void Alignment<Alphabet_T>::read_fasta_flavors(std::istream& in, std::vector<std
             if (buffer.empty() ||  buffer[0] != '>')
                 throw Exception("Bad format: header of sequence %i does not start with '>'!", headers.size() + 1);
             headers.push_back(std::string(buffer.begin()+1, buffer.end()));
-            LOG(DEBUG) << headers.back();
         } else {
             throw Exception("Failed to read from alignment input stream!");
         }
@@ -323,6 +322,8 @@ void Alignment<Alphabet_T>::read_fasta_flavors(std::istream& in, std::vector<std
         }
         // Remove whitespace from sequence
         seqs.back().erase(remove_if(seqs.back().begin(), seqs.back().end(), isspace), seqs.back().end());
+        LOG(DEBUG) << headers.back();
+        LOG(DEBUG) << "seqlen=" << seqs.back().length();
     }
     if (headers.empty()) throw Exception("Bad alignment input: no alignment data found in stream!");
 }

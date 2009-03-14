@@ -120,7 +120,7 @@ void csbuild(const Params& params, std::ostream& out = std::cout)
         LOG(INFO) << strprintf("Wrote profile with %i columns to %s\n", profile.num_cols(), params.outfile.c_str());
 
     } else {
-        typename Alignment<Alphabet_T>::Format f = alignment_format_from_string<Alphabet_T>(get_file_ext(params.infile));
+        typename Alignment<Alphabet_T>::Format f = alignment_format_from_string<Alphabet_T>(params.format);
         Alignment<Alphabet_T> ali(fin, f);
         if (f == Alignment<Alphabet_T>::FASTA) {
             if (params.matchcol_assignment < 0)

@@ -335,7 +335,7 @@ void read_training_data(const Params& params, std::vector< shared_ptr< CountsPro
         out << strprintf("Processing training alignments in %s ...\n", get_file_basename(params.infile).c_str());
         LOG(INFO) << strprintf("Processing training alignments in %s ...", get_file_basename(params.infile).c_str());
 
-        typename Alignment<Alphabet_T>::Format f = alignment_format_from_string<Alphabet_T>(get_file_ext(params.infile));
+        typename Alignment<Alphabet_T>::Format f = alignment_format_from_string<Alphabet_T>(params.format);
         int i = 0;
         while (fin.peek() && fin.good()) {
             Alignment<Alphabet_T> ali(fin, f);
