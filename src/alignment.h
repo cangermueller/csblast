@@ -461,7 +461,7 @@ void Alignment<Alphabet_T>::write_fasta_flavors(std::ostream& out, Format format
 template<class Alphabet_T>
 void Alignment<Alphabet_T>::write_clustal_flavors(std::ostream& out, Format format, int width) const
 {
-    const int kHeaderLength = 18;
+    const int HEADER_WIDTH = 18;
 
     // convert alignment to character representation
     std::vector<std::string> seqs(num_seqs(), "");
@@ -478,10 +478,10 @@ void Alignment<Alphabet_T>::write_clustal_flavors(std::ostream& out, Format form
     while (!seqs.front().empty()) {
         for (int k = 0; k < num_seqs(); ++k) {
             std::string header(headers_[k].substr(0, headers_[k].find_first_of(' ')));
-            if (static_cast<int>(header.length()) <= kHeaderLength)
-                out << header + std::string(kHeaderLength - header.length(), ' ') << ' ';
+            if (static_cast<int>(header.length()) <= HEADER_WIDTH)
+                out << header + std::string(HEADER_WIDTH - header.length(), ' ') << ' ';
             else
-                out << header.substr(0, kHeaderLength) << ' ';
+                out << header.substr(0, HEADER_WIDTH) << ' ';
 
             out << seqs[k].substr(0, std::min(width, static_cast<int>(seqs[k].length()))) << std::endl;
             seqs[k].erase(0, std::min(width, static_cast<int>(seqs[k].length())));
