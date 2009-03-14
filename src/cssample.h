@@ -77,6 +77,7 @@ void Params::check()
 {
     if (infile.empty()) throw Exception("No input file provided!");
     if (outfile.empty()) throw Exception("No output file provided!");
+    if (sample_size == std::numeric_limits<int>::max()) throw Exception("No sample size provided!");
 }
 
 
