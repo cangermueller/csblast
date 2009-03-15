@@ -146,7 +146,7 @@ void cssample(const Params& params, std::ostream& out)
         (*it)->write(fout);
         num_cols += (*it)->num_cols();
     }
-    out << std::endl << strprintf("Wrote %i profiles with a total number of %i columns to %s\n",
+    out << strprintf("Wrote %i profiles with a total number of %i columns to %s\n",
                                   samples.size(), num_cols, params.outfile.c_str());
     LOG(INFO) << strprintf("Wrote %i profiles with a total number of %i columns to %s",
                                   samples.size(), num_cols, params.outfile.c_str());
@@ -167,18 +167,9 @@ void sample_profiles(const Params& params,
     LOG(INFO) << strprintf("Sampling %i profiles from pool of %i profiles ...\n", params.sample_size, profiles.size());
 
     // iterate over input data and build counts profiles either by full-length conversion or by sampling of context windows
-    int i = 0;
     for (profile_iterator it = profiles.begin(); it != profiles.end() && static_cast<int>(samples.size()) < params.sample_size; ++it) {
         if (params.window_length == 0) {  // add full length profile to samples
             samples.push_back(*it);
-
-            i += 1;
-            if (i % 2 == 0) {
-                out << '.';
-                out.flush();
-            }
-            if (i % 100 == 0) out << " " << i << std::endl;
-
         } else if ((*it)->num_cols() >= params.window_length) {  // sample context windows if profile has sufficient length
             // prepare sample of indices
             std::vector<int> idx;
@@ -191,17 +182,9 @@ void sample_profiles(const Params& params,
             for (index_iterator ii = idx.begin(); ii != idx.end() && static_cast<int>(samples.size()) < params.sample_size; ++ii) {
                 shared_ptr< CountsProfile<Alphabet_T> > p(new CountsProfile<Alphabet_T>(**it, *ii, params.window_length));
                 samples.push_back(p);
-
-                i += 1;
-                if (i % 2 == 0) {
-                    out << '.';
-                    out.flush();
-                }
-                if (i % 100 == 0) out << " " << i << std::endl;
             }
         }
     }
-    if (i % 100 != 0) out << std::string(50 - iround((i % 100) / 2), ' ') << " " << i << std::endl;
 }
 
 }  // cs
