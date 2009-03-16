@@ -18,7 +18,7 @@
 
 #include "log.h"
 #include "matrix.h"
-#include "util.h"
+#include "utils.h"
 
 namespace cs
 {

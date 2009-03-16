@@ -9,7 +9,7 @@
 // An abstract base class for pseudocount methods.
 
 #include "log.h"
-#include "util.h"
+#include "utils.h"
 #include "matrix.h"
 #include "profile.h"
 #include "counts_profile.h"

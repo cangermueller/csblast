@@ -24,7 +24,7 @@
 #include "getopt_pp.h"
 #include "matrix_pseudocounts.h"
 #include "shared_ptr.h"
-#include "util.h"
+#include "utils.h"
 
 using namespace GetOpt;
 

@@ -29,7 +29,7 @@
 #include "sparse_matrix.h"
 #include "state.h"
 #include "transition.h"
-#include "util.h"
+#include "utils.h"
 
 namespace cs
 {
