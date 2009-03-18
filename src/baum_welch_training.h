@@ -102,7 +102,10 @@ struct BaumWelchParams : public ForwardBackwardParams
               max_iterations(100),
               max_connectivity(0),
               log_likelihood_threshold(0.001f),
-              transition_pseudocounts(1.0f)
+              transition_pseudocounts(1.0f),
+              block_size(100),
+              epsilon(0.05f),
+              beta(1.0f)
     { }
 
     BaumWelchParams(const BaumWelchParams& params)
@@ -114,11 +117,22 @@ struct BaumWelchParams : public ForwardBackwardParams
               transition_pseudocounts(params.transition_pseudocounts)
     { }
 
+    // Minimal number of training iterations.
     int min_iterations;
+    // Maximum number of training iterations.
     int max_iterations;
+    // Maximum average connectivity for convergence.
     int max_connectivity;
+    // Log-likelihood change per column for convergence.
     float log_likelihood_threshold;
+    // Pseudocounts added to transitions (values below 1 enforce sparsity).
     float transition_pseudocounts;
+    // Number of training profiles in each training block.
+    int block_size;
+    // Initial value for epsilon (1-epsilon is the preserved fraction of recently visited training profiles).
+    float epsilon;
+    // Paramter governing exponential decay of epsilon per scan.
+    float beta;
 };
 
 
