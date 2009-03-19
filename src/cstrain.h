@@ -282,7 +282,7 @@ void cstrain(const Params& params, std::ostream& out)
                            hmm_ptr->num_states(), hmm_ptr->num_cols(), num_data_cols);
     out << std::endl << std::endl;
     TrainingProgressInfo<Alphabet_T> prg_info(*hmm_ptr, out);
-    BaumWelchTraining<Alphabet_T, CountsProfile> training(*hmm_ptr, data, params, &prg_info);
+    BaumWelchTraining<Alphabet_T, CountsProfile> training(params, data, *hmm_ptr, &prg_info);
     training.run();
 
     // write HMM to outfile
