@@ -106,7 +106,7 @@ void Params::parse_options(GetOpt_pp& options)
     options >> Option('M', "matchcol", matchcol_assignment, matchcol_assignment);
     options >> Option('K', "num-states", num_states, num_states);
     options >> Option('W', "window-length", window_length, window_length);
-    options >> Option('l', "likelihod-change", log_likelihood_threshold, log_likelihood_threshold);
+    options >> Option('l', "likelihod-change", log_likelihood_change, log_likelihood_change);
     options >> Option('c', "connectivity", max_connectivity, max_connectivity);
     options >> Option('t', "transition-pc", transition_pseudocounts, transition_pseudocounts);
     options >> Option('s', "sample-rate", sample_rate, sample_rate);
@@ -171,7 +171,7 @@ std::ostream& usage(const Params& params, std::ostream& out = std::cout)
     out << strprintf("  %-30s %s (def=%i)\n",    "-W, --window-length [0,inf[", "Length of context-window",
                      params.window_length);
     out << strprintf("  %-30s %s (def=%3.1g)\n", "-l, --likelihood [0,inf[", "Maximal likelihood change per column for convergence",
-                     params.log_likelihood_threshold);
+                     params.log_likelihood_change);
     out << strprintf("  %-30s %s (def=off)\n",   "-c, --connectivity [1,K]", "Maximal state connectivity",
                      params.max_connectivity);
     out << strprintf("  %-30s %s (def=%3.1f)\n", "-t, --transition-pc <float>", "Transition pseudocounts",

@@ -146,7 +146,7 @@ void forward_algorithm(const HMM<Alphabet_T>& hmm,
     // Setup profile matcher
     ProfileMatcher<Alphabet_T> matcher;
     if (!params.ignore_context && hmm.num_cols() > 1)
-        matcher.set_positional_weights(hmm.num_cols(), params.weight_center, params.weight_decay);
+        matcher.set_weights(hmm.num_cols(), params.weight_center, params.weight_decay);
 
     // Initialization
     LOG(DEBUG1) << strprintf("i=%i", 0);
@@ -186,7 +186,7 @@ void forward_algorithm(const HMM<Alphabet_T>& hmm,
         value_type scale_fac = 1.0 / m.s[i];
             for (int l = 0; l < num_states; ++l)
                 m.f[i][l] *= scale_fac;
-            m.log_likelihood += log10(m.s[i]);
+            m.log_likelihood += log(m.s[i]);
     }
 
     LOG(DEBUG) << strprintf("log(L) = %-7.2g", m.log_likelihood);

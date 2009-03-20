@@ -24,36 +24,48 @@ template< class Alphabet_T>
 class ProfileMatcher
 {
   public:
-    ProfileMatcher() : w(NULL)
+    ProfileMatcher()
+            : weights_(NULL),
+              window_length_(1)
     { }
 
     ~ProfileMatcher()
     {
-        if (!w) delete w;
+        if (!weights_) delete weights_;
     }
 
-    void set_positional_weights(int len, float weight_center, float weight_decay)
+    void set_weights(int len, float weight_center, float weight_decay)
     {
         if (len % 2 != 1)
             throw Exception("Unable to set positional weights: length of context window should be odd but is %i!", len);
 
-        if (!w) delete w;
-        w = new float[len];
+        if (!weights_) delete weights_;
+        weights_ = new float[len];
 
         const int center = (len - 1) / 2;
-        w[center] = weight_center;
+        window_length_ = len;
+        weights_[center] = weight_center;
         for (int i = 1; i <= center; ++i) {
             float weight = weight_center * pow(weight_decay, i);
-            w[center - i] = weight;
-            w[center + i] = weight;
+            weights_[center - i] = weight;
+            weights_[center + i] = weight;
         }
+    }
+
+    float num_eff_cols()
+    {
+        if (!weights_) return 1.0f;
+
+        float sum = 0.0f;
+        for (int i = 0; i < window_length_; ++i) sum += weights_[i];
+        return sum;
     }
 
     double operator() (const ContextProfile<Alphabet_T>& profile, const CountsProfile<Alphabet_T>& counts, int index) const
     {
         double rv = 0.0f;
         const int center = profile.center();
-        if (w) {
+        if (weights_) {
             const int beg = std::max(0, index - center);
             const int end = std::min(counts.num_cols() - 1, index + center);
             for(int i = beg; i <= end; ++i) {
@@ -61,7 +73,7 @@ class ProfileMatcher
                 double sum = 0.0f;
                 for (int a = 0; a < profile.alphabet_size(); ++a)
                     sum += counts[i][a] * profile[j][a];
-                rv += w[j] * sum;
+                rv += weights_[j] * sum;
             }
         } else {
             for (int a = 0; a < profile.alphabet_size(); ++a)
@@ -74,12 +86,12 @@ class ProfileMatcher
     {
         double rv = 0.0f;
         const int center = profile.center();
-        if (w) {
+        if (weights_) {
             const int beg = std::max(0, index - center);
             const int end = std::min(seq.length() - 1, index + center);
             for(int i = beg; i <= end; ++i) {
                 int j = i - index + center;
-                rv += w[j] * profile[j][seq[i]];
+                rv += weights_[j] * profile[j][seq[i]];
             }
         } else {
             rv = profile[center][seq[index]];
@@ -92,8 +104,10 @@ class ProfileMatcher
     ProfileMatcher(const ProfileMatcher&);
     void operator=(const ProfileMatcher&);
 
-    // positional window weights
-    float* w;
+    // Positional window weights
+    float* weights_;
+    // Length of context window
+    int window_length_;
 };
 
 }  // cs
