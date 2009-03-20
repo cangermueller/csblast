@@ -64,7 +64,7 @@ void Params::parse_options(GetOpt_pp& options)
     options >> Option('i', "infile", infile, infile);
     options >> Option('o', "outfile", outfile, outfile);
     options >> Option('f', "format", format, format);
-    options >> Option('M', "matchcol-assignment", matchcol_assignment, matchcol_assignment);
+    options >> Option('M', "matchcol", matchcol_assignment, matchcol_assignment);
     options >> OptionPresent(' ', "global-weights", global_weights);
     options >> Option(' ', "log-level", log_level, log_level);
     Log::reporting_level() = Log::from_integer(log_level);
@@ -89,14 +89,14 @@ std::ostream& usage(const Params& params, std::ostream& out = std::cout)
     out << "Usage: csbuild -i <infile> [options]\n\n";
 
     out << "Options:\n";
-    out << strprintf("  %-38s %s\n",             "-i, --infile <filename>", "Path to input file with alignment or sequence");
-    out << strprintf("  %-38s %s\n",             "-o, --outfile <filename>", "Path for output file with serialized profile");
-    out << strprintf("  %-38s %s (def=%s)\n",    "-f, --format <string>", "Input data format: seq, fas, a2m, or a3m",
+    out << strprintf("  %-30s %s\n",             "-i, --infile <filename>", "Path to input file with alignment or sequence");
+    out << strprintf("  %-30s %s\n",             "-o, --outfile <filename>", "Path for output file with serialized profile");
+    out << strprintf("  %-30s %s (def=%s)\n",    "-f, --format <string>", "Input data format: seq, fas, a2m, or a3m",
                      params.format.c_str());
-    out << strprintf("  %-38s %s\n",             "-M, --matchcol-assignment [0:100]", "Make all FASTA columns with less than X% gaps match columns");
-    out << strprintf("  %-38s %s\n",             "", "(def: make columns with residue in first sequence match columns)");
-    out << strprintf("  %-38s %s\n",             "    --global-weights", "Use global instead of position-specific weights for profiles");
-    out << strprintf("  %-38s %s (def=%i)\n",    "    --log-level <int>", "Maximal reporting level for logging",
+    out << strprintf("  %-30s %s\n",             "-M, --matchcol [0:100]", "Make all FASTA columns with less than X% gaps match columns");
+    out << strprintf("  %-30s %s\n",             "", "(def: make columns with residue in first sequence match columns)");
+    out << strprintf("  %-30s %s\n",             "    --global-weights", "Use global instead of position-specific weights for profiles");
+    out << strprintf("  %-30s %s (def=%i)\n",    "    --log-level <int>", "Maximal reporting level for logging",
                      params.log_level);
 
     return out;

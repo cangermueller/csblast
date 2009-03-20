@@ -90,13 +90,13 @@ std::ostream& usage(const Params& params, std::ostream& out = std::cout)
     out << "Usage: cssample -i <infile> -o <outfile> -N <sample_size> [options]\n\n";
 
     out << "Options:\n";
-    out << strprintf("  %-38s %s\n",             "-i, --infile <filename>", "Path to input file with profile database");
-    out << strprintf("  %-38s %s\n",             "-o, --outfile <filename>", "Path for output file with sampled profiles");
-    out << strprintf("  %-38s %s\n",             "-N, --num-profiles [0,inf[", "Number of profiles to sample");
-    out << strprintf("  %-38s %s\n",             "-W, --window-length [0,inf[", "Sample context profiles of length W instead of full-length profiles");
-    out << strprintf("  %-38s %s (def=%3.1f)\n", "-s, --sample-rate [0,1]", "Fraction of context profiles sampled from each full-length profile",
+    out << strprintf("  %-30s %s\n",             "-i, --infile <filename>", "Path to input file with profile database");
+    out << strprintf("  %-30s %s\n",             "-o, --outfile <filename>", "Path for output file with sampled profiles");
+    out << strprintf("  %-30s %s\n",             "-N, --num-profiles [0,inf[", "Number of profiles to sample");
+    out << strprintf("  %-30s %s\n",             "-W, --window-length [0,inf[", "Sample context profiles of length W instead of full-length profiles");
+    out << strprintf("  %-30s %s (def=%3.1f)\n", "-s, --sample-rate [0,1]", "Fraction of context profiles sampled per full-length profile",
                      params.sample_rate);
-    out << strprintf("  %-38s %s (def=%i)\n",    "    --log-level <int>", "Maximal reporting level for logging",
+    out << strprintf("  %-30s %s (def=%i)\n",    "    --log-level <int>", "Maximal reporting level for logging",
                      params.log_level);
 
     return out;

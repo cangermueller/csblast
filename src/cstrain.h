@@ -103,23 +103,26 @@ void Params::parse_options(GetOpt_pp& options)
     options >> Option('o', "outfile", outfile, outfile);
     options >> Option('d', "directory", directory, directory);
     options >> Option('f', "format", format, format);
-    options >> Option('M', "matchcol-assignment", matchcol_assignment, matchcol_assignment);
+    options >> Option('M', "matchcol", matchcol_assignment, matchcol_assignment);
     options >> Option('K', "num-states", num_states, num_states);
     options >> Option('W', "window-length", window_length, window_length);
     options >> Option('l', "likelihod-change", log_likelihood_threshold, log_likelihood_threshold);
     options >> Option('c', "connectivity", max_connectivity, max_connectivity);
-    options >> Option('t', "transition_pseudocounts", transition_pseudocounts, transition_pseudocounts);
+    options >> Option('t', "transition-pc", transition_pseudocounts, transition_pseudocounts);
     options >> Option('s', "sample-rate", sample_rate, sample_rate);
     options >> Option('j', "jumpstart", hmmfile, hmmfile);
+    options >> Option('B', "blocks", num_blocks, num_blocks);
     options >> Option('m', "matrix", blosum_type, blosum_type);
     options >> Option('q', "mismatch-score", nucleotide_mismatch, nucleotide_mismatch);
     options >> Option('r', "match-score", nucleotide_match, nucleotide_match);
-    options >> Option(' ', "data-pseudocounts", data_pseudocounts, data_pseudocounts);
-    options >> Option(' ', "state-pseudocounts", state_pseudocounts, state_pseudocounts);
-    options >> Option(' ', "min-iterations", min_iterations, min_iterations);
-    options >> Option(' ', "max-iterations", max_iterations, max_iterations);
+    options >> Option(' ', "data-pc", data_pseudocounts, data_pseudocounts);
+    options >> Option(' ', "state-pc", state_pseudocounts, state_pseudocounts);
+    options >> Option(' ', "min-scans", min_scans, min_scans);
+    options >> Option(' ', "max-scans", max_scans, max_scans);
     options >> Option(' ', "weight-center", weight_center, weight_center);
     options >> Option(' ', "weight-decay", weight_decay, weight_decay);
+    options >> Option(' ', "epsilon", epsilon_null, epsilon_null);
+    options >> Option(' ', "beta", beta, beta);
     options >> OptionPresent(' ', "global-weights", global_weights);
     options >> Option(' ', "log-level", log_level, log_level);
     Log::reporting_level() = Log::from_integer(log_level);
@@ -156,43 +159,49 @@ std::ostream& usage(const Params& params, std::ostream& out = std::cout)
     out << "Usage: cstrain -i <infile> -K <num_states> [options]\n\n";
 
     out << "Options:\n";
-    out << strprintf("  %-38s %s\n",             "-i, --infile <filename>", "Path to input file with training alignments or profiles");
-    out << strprintf("  %-38s %s\n",             "-o, --outfile <filename>", "Path for output file with trained HMM");
-    out << strprintf("  %-38s %s (def=%s)\n",    "-d, --directory <directory>", "Directory for temporary and output files",
+    out << strprintf("  %-30s %s\n",             "-i, --infile <filename>", "Path to input file with training alignments or profiles");
+    out << strprintf("  %-30s %s\n",             "-o, --outfile <filename>", "Path for output file with trained HMM");
+    out << strprintf("  %-30s %s (def=%s)\n",    "-d, --directory <directory>", "Directory for temporary and output files",
                      params.directory.empty() ? "." : params.directory.c_str());
-    out << strprintf("  %-38s %s (def=%s)\n",    "-f, --format <string>", "Format of training data: prf, seq, fas, a2m, or a3m",
+    out << strprintf("  %-30s %s (def=%s)\n",    "-f, --format <string>", "Format of training data: prf, seq, fas, a2m, or a3m",
                      params.format.c_str());
-    out << strprintf("  %-38s %s\n",             "-M, --matchcol-assignment [0:100]", "Make all FASTA columns with less than X% gaps match columns");
-    out << strprintf("  %-38s %s\n",             "", "(def: make columns with residue in first sequence match columns)");
-    out << strprintf("  %-38s %s\n",             "-K, --num-states [0,inf[", "Number of states in the HMM to be trained");
-    out << strprintf("  %-38s %s (def=%i)\n",    "-W, --window-length [0,inf[", "Length of context-window",
+    out << strprintf("  %-30s %s\n",             "-M, --matchcol [0:100]", "Make all FASTA columns with less than X% gaps match columns");
+    out << strprintf("  %-30s %s\n",             "", "(def: make columns with residue in first sequence match columns)");
+    out << strprintf("  %-30s %s\n",             "-K, --num-states [0,inf[", "Number of states in the HMM to be trained");
+    out << strprintf("  %-30s %s (def=%i)\n",    "-W, --window-length [0,inf[", "Length of context-window",
                      params.window_length);
-    out << strprintf("  %-38s %s (def=%3.1g)\n", "-l, --likelihood [0,inf[", "Maximal likelihood change per column for convergence",
+    out << strprintf("  %-30s %s (def=%3.1g)\n", "-l, --likelihood [0,inf[", "Maximal likelihood change per column for convergence",
                      params.log_likelihood_threshold);
-    out << strprintf("  %-38s %s (def=off)\n",   "-c, --connectivity [1,K]", "Maximal state connectivity",
+    out << strprintf("  %-30s %s (def=off)\n",   "-c, --connectivity [1,K]", "Maximal state connectivity",
                      params.max_connectivity);
-    out << strprintf("  %-38s %s (def=%3.1f)\n", "-t, --transition-pseudocounts <float>", "Transition pseudocounts",
+    out << strprintf("  %-30s %s (def=%3.1f)\n", "-t, --transition-pc <float>", "Transition pseudocounts",
                      params.transition_pseudocounts);
-    out << strprintf("  %-38s %s (def=%3.1f)\n", "-s, --sample-rate [0,1]", "Fraction of profile windows sampled per subject for HMM initialization",
+    out << strprintf("  %-30s %s (def=%3.1f)\n", "-s, --sample-rate [0,1]", "Fraction of profile windows sampled per subject",
                      params.sample_rate);
-    out << strprintf("  %-38s %s\n",             "-j, --jumpstart <filename>", "Jumpstart the HMM training with a serialized HMM.");
+    out << strprintf("  %-30s %s\n",             "-j, --jumpstart <filename>", "Jumpstart the HMM training with a serialized HMM.");
+    out << strprintf("  %-30s %s\n",             "-B, --blocks [0,N]", "Number of blocks for online training (def: off, set to 0 for B=N^3/8)",
+                     params.num_blocks);
 
     substitution_matrix_options<Alphabet_T>(params, out);
 
-    out << strprintf("  %-38s %s (def=%i)\n",    "    --min-iterations [0,inf[", "Minimal number of training iterations",
-                     params.min_iterations);
-    out << strprintf("  %-38s %s (def=%i)\n",    "    --max-iterations [0,inf[", "Maximal number of training iterations",
-                     params.max_iterations);
-    out << strprintf("  %-38s %s (def=%3.1f)\n", "    --state-pseudocounts [0,1]", "Pseudocounts for state profiles",
+    out << strprintf("  %-30s %s (def=%i)\n",    "    --min-scans [0,inf[", "Minimal number of training data scans",
+                     params.min_scans);
+    out << strprintf("  %-30s %s (def=%i)\n",    "    --max-scans [0,inf[", "Maximal number of training data scans",
+                     params.max_scans);
+    out << strprintf("  %-30s %s (def=%3.1f)\n", "    --state-pc [0,1]", "Pseudocounts for state profiles",
                      params.state_pseudocounts);
-    out << strprintf("  %-38s %s (def=%4.2f)\n", "    --data-pseudocounts [0,1]", "Pseudocounts for training data",
+    out << strprintf("  %-30s %s (def=%4.2f)\n", "    --data-pc [0,1]", "Pseudocounts for training data",
                      params.data_pseudocounts);
-    out << strprintf("  %-38s %s (def=%4.2f)\n", "    --weight-center [0,1]", "Weight of central profile column in context window.",
+    out << strprintf("  %-30s %s (def=%4.2f)\n", "    --weight-center [0,1]", "Weight of central profile column in context window",
                      params.weight_center);
-    out << strprintf("  %-38s %s (def=%4.2f)\n", "    --weight-decay [0,1]", "Exponential decay of positional window weights.",
+    out << strprintf("  %-30s %s (def=%4.2f)\n", "    --weight-decay [0,1]", "Exponential decay of positional window weights",
                      params.weight_decay);
-    out << strprintf("  %-38s %s\n",             "    --global-weights", "Use global instead of position-specific weights for profiles");
-    out << strprintf("  %-38s %s (def=%i)\n",    "    --log-level <int>", "Maximal reporting level for logging",
+    out << strprintf("  %-30s %s (def=%4.2f)\n", "    --epsilon [0,1]", "Start value for learning rate epsilon in online training",
+                     params.epsilon_null);
+    out << strprintf("  %-30s %s (def=%4.2f)\n", "    --beta [0,1]", "Exponential decay of epsilon in online training",
+                     params.beta);
+    out << strprintf("  %-30s %s\n",             "    --global-weights", "Use global instead of position-specific weights for profiles");
+    out << strprintf("  %-30s %s (def=%i)\n",    "    --log-level <int>", "Maximal reporting level for logging",
                      params.log_level);
 
     return out;
@@ -201,9 +210,9 @@ std::ostream& usage(const Params& params, std::ostream& out = std::cout)
 template<class Alphabet_T>
 std::ostream& substitution_matrix_options(const Params& params, std::ostream& out)
 {
-    out << strprintf("  %-38s %s (def=%.0f)\n",  "-q, --mismatch-score <int>", "Penalty for a nucleotide mismatch",
+    out << strprintf("  %-30s %s (def=%.0f)\n",  "-q, --mismatch-score <int>", "Penalty for a nucleotide mismatch",
                      params.nucleotide_mismatch);
-    out << strprintf("  %-38s %s (def=%.0f)\n",  "-r, --match-score <int>", "Reward for a nucleotide match",
+    out << strprintf("  %-30s %s (def=%.0f)\n",  "-r, --match-score <int>", "Reward for a nucleotide match",
                      params.nucleotide_match);
     return out;
 }
@@ -211,7 +220,7 @@ std::ostream& substitution_matrix_options(const Params& params, std::ostream& ou
 template<>
 std::ostream& substitution_matrix_options<AminoAcid>(const Params& params, std::ostream& out)
 {
-    out << strprintf("  %-38s %s (def=%s)\n",    "-m, --matrix <string>", "Substitution matrix: BLOSUM45, BLOSUM62, or BLOSUM80",
+    out << strprintf("  %-30s %s (def=%s)\n",    "-m, --matrix <string>", "Substitution matrix: BLOSUM45, BLOSUM62, or BLOSUM80",
                      params.blosum_type.c_str());
     return out;
 }
@@ -281,7 +290,7 @@ void cstrain(const Params& params, std::ostream& out)
     LOG(INFO) << strprintf("Running Baum-Welch training on HMM (K=%i, W=%i, N=%i) ...",
                            hmm_ptr->num_states(), hmm_ptr->num_cols(), num_data_cols);
     out << std::endl << std::endl;
-    TrainingProgressInfo<Alphabet_T> prg_info(*hmm_ptr, out);
+    TrainingProgressInfo prg_info(out);
     BaumWelchTraining<Alphabet_T, CountsProfile> training(params, data, *hmm_ptr, &prg_info);
     training.run();
 
