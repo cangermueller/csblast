@@ -106,8 +106,8 @@ struct BaumWelchParams : public ForwardBackwardParams
               transition_pseudocounts(1.0f),
               num_blocks(1),
               epsilon_null(0.5f),
-              beta(0.4f),
-              epsilon_batch(0.01f)
+              beta(0.2f),
+              epsilon_batch(0.05f)
     { }
 
     BaumWelchParams(const BaumWelchParams& params)
