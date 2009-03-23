@@ -372,7 +372,7 @@ void Alignment<Alphabet_T>::read_a3m(std::istream& in, std::vector<std::string>&
             seqs_a2m[k].append(seqs[k].begin(), i);
             seqs[k].erase(seqs[k].begin(), i);
         }
-        max_first_insert_len = std::max(max_first_insert_len, i - seqs[k].begin());
+        max_first_insert_len = std::max(max_first_insert_len, static_cast<int>(i - seqs[k].begin()));
     }
 
     // Extract all inserts and keep track of longest insert after each match column
