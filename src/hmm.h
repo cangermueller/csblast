@@ -14,8 +14,6 @@
 
 #include <algorithm>
 #include <iostream>
-#include <iomanip>
-#include <iterator>
 #include <limits>
 #include <vector>
 
@@ -36,7 +34,11 @@ namespace cs
 
 // Forward declarations
 template<class Alphabet_T>
+class HMM;
+
+template<class Alphabet_T>
 class TransitionAdaptor;
+
 
 template<class Alphabet_T>
 class StateInitializer
@@ -55,6 +57,7 @@ class TransitionInitializer
     virtual ~TransitionInitializer() {};
     virtual void init(HMM<Alphabet_T>& hmm) const = 0;
 };
+
 
 template<class Alphabet_T>
 class HMM
@@ -158,14 +161,14 @@ class HMM
     // Scaling factor for serialization of profile log values
     static const int SCALE_FACTOR = 1000;
 
-    // Prints the HMM in human-readable format to output stream. TODO!!!
+    // Prints the HMM in human-readable format to output stream.
     void print(std::ostream& out) const;
     // Initializes the HMM from a serialized HMM read from stream.
     void read(std::istream& in);
     // Initializes the HMM.
     void init();
 
-    // Number states in the fully assembled HMM)
+    // Number states in the fully assembled HMM
     int num_states_;
     // Number of columns in each context state.
     int num_cols_;
@@ -300,12 +303,11 @@ inline int HMM<Alphabet_T>::add_profile(const Profile<Alphabet_T>& profile)
         throw Exception("Unable to add state: provided profile has %i columns but should have %i!",
                         profile.num_cols(), num_cols());
 
-    shared_ptr< State<Alphabet_T> > state_ptr(new State<Alphabet_T>(states_.size(),
-                                                                    profile,
-                                                                    num_states()));
+    shared_ptr< State<Alphabet_T> > state_ptr(new State<Alphabet_T>(states_.size(), profile, num_states()));
     state_ptr->set_prior(1.0f / num_states());  // start with unbiased prior probabilities
     states_.push_back(state_ptr);
-    return states_.size();
+
+    return states_.size() - 1;
 }
 
 template<class Alphabet_T>
@@ -426,7 +428,7 @@ void HMM<Alphabet_T>::write(std::ostream& out) const
     out << "transitions_logspace\t" << (transitions_logspace() ? 1 : 0) << std::endl;
     out << "states_logspace\t\t"    << (states_logspace() ? 1 : 0) << std::endl;
 
-    // Write states (excl. BEGIN/END state)
+    // Write states
     for (const_state_iterator si = states_begin(); si != states_end(); ++si)
         (*si)->write(out);
 
@@ -446,8 +448,6 @@ void HMM<Alphabet_T>::write(std::ostream& out) const
 template<class Alphabet_T>
 void HMM<Alphabet_T>::print(std::ostream& out) const
 {
-    std::ios_base::fmtflags flags = out.flags();  // save flags
-
     out << "HMM" << std::endl;
     out << "Total number of states:      " << num_states() << std::endl;
     out << "Total number of transitions: " << num_transitions() << std::endl;
@@ -456,7 +456,7 @@ void HMM<Alphabet_T>::print(std::ostream& out) const
     out << "Training iterations:         " << iterations() << std::endl;
 
     for (const_state_iterator si = states_begin(); si != states_end(); ++si)
-        (*si)->print(out);
+        out << **si;
 
     out << "Transition matrix:" << std::endl;
     out << "    ";
@@ -474,8 +474,6 @@ void HMM<Alphabet_T>::print(std::ostream& out) const
         }
         out << std::endl;
     }
-
-    out.flags(flags);
 }
 
 
@@ -551,6 +549,7 @@ class SamplingStateInitializer : public StateInitializer<Alphabet_T>
 {
   public:
     typedef typename std::vector< shared_ptr< CountsProfile<Alphabet_T> > > profile_vector;
+    typedef typename profile_vector::const_iterator profile_iterator;
 
     SamplingStateInitializer(profile_vector profiles,
                              float sample_rate,
@@ -568,45 +567,44 @@ class SamplingStateInitializer : public StateInitializer<Alphabet_T>
 
     virtual void init(HMM<Alphabet_T>& hmm) const
     {
-        LOG(INFO) << "Initializing HMM with " << hmm.num_states() << " profile windows randomly sampled from "
+        LOG(DEBUG) << "Initializing HMM with " << hmm.num_states() << " profile windows randomly sampled from "
                   << profiles_.size() << " training profiles ...";
 
-        // Iterate over randomly shuffled profiles; from each profile sample a fraction of profile windows until HMM is full.
-        typedef typename std::vector< shared_ptr< CountsProfile<Alphabet_T> > >::const_iterator const_profile_iterator;
-        for (const_profile_iterator pi = profiles_.begin(); pi != profiles_.end() && !hmm.full(); ++pi) {
+        // Iterate over randomly shuffled profiles; from each profile we sample a fraction of profile windows.
+        for (profile_iterator pi = profiles_.begin(); pi != profiles_.end() && !hmm.full(); ++pi) {
             if ((*pi)->num_cols() < hmm.num_cols()) continue;
 
-            LOG(DEBUG) << "Processing next training profile ...";
-            LOG(DEBUG) << **pi;
+            LOG(DEBUG1) << "Processing next training profile ...";
+            LOG(DEBUG1) << **pi;
 
             // Prepare sample of indices
             std::vector<int> idx;
             for (int i = 0; i <= (*pi)->num_cols() - hmm.num_cols(); ++i) idx.push_back(i);
-            LOG(DEBUG) << "Available column indices:";
-            LOG(DEBUG) << stringify_container(idx);
+            LOG(DEBUG2) << "Available column indices:";
+            LOG(DEBUG2) << stringify_container(idx);
 
             random_shuffle(idx.begin(), idx.end());
-            LOG(DEBUG) << "Shuffled column indices:";
-            LOG(DEBUG) << stringify_container(idx);
+            LOG(DEBUG2) << "Shuffled column indices:";
+            LOG(DEBUG2) << stringify_container(idx);
 
             const int sample_size = iround(sample_rate_ * idx.size());
             idx.erase(idx.begin() + sample_size, idx.end());  // sample only a fraction of the profile indices.
-            LOG(DEBUG) << "Sampled column indicices to be actually used::";
-            LOG(DEBUG) << stringify_container(idx);
+            LOG(DEBUG2) << "Sampled column indicices to be actually used::";
+            LOG(DEBUG2) << stringify_container(idx);
 
             // Add sub-profiles at sampled indices to HMM
             for (std::vector<int>::const_iterator i = idx.begin(); i != idx.end() && !hmm.full(); ++i) {
                 CountsProfile<Alphabet_T> p(**pi, *i, hmm.num_cols());
-                LOG(DEBUG) << "Extracted profile window at position " << *i << ":";
+                LOG(DEBUG1) << "Extracted profile window at position " << *i << ":";
                 p.convert_to_frequencies(); // make sure that profile contains frequencies not counts
                 if (pc_) pc_->add_to_profile(p, ConstantAdmixture(pc_admixture_));
                 hmm.add_profile(p);
             }
         }
         if (!hmm.full())
-            throw Exception("Could not fully initialize %i HMM states. Maybe too few training profiles provided?",
+            throw Exception("Could not fully initialize all %i HMM states. Maybe too few training profiles provided?",
                             hmm.num_states());
-        LOG(DEBUG) << "HMM after full state assembly:";
+        LOG(DEBUG) << "HMM after state initialization:";
         LOG(DEBUG) << hmm;
     }
 

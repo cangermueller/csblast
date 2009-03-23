@@ -59,11 +59,11 @@ TEST_F(HMMTest, SimpleConstruction)
     EXPECT_EQ(3, hmm.num_states());
 
     int index_p1 = hmm.add_profile(p1_);
-    EXPECT_EQ(1, index_p1);
+    EXPECT_EQ(0, index_p1);
     int index_p2 = hmm.add_profile(p2_);
-    EXPECT_EQ(2, index_p2);
+    EXPECT_EQ(1, index_p2);
     int index_p3 = hmm.add_profile(p3_);
-    EXPECT_EQ(3, index_p3);
+    EXPECT_EQ(2, index_p3);
 
     EXPECT_FLOAT_EQ(1.0f, hmm[0][0][0]);
     EXPECT_FLOAT_EQ(0.0f, hmm[0][1][0]);
@@ -93,7 +93,6 @@ TEST_F(HMMTest, SimpleConstruction)
     EXPECT_FLOAT_EQ(1.0f, hmm(1,2));
 
     EXPECT_EQ(3, hmm.num_transitions());
-    EXPECT_EQ(3, hmm.num_states());
 }
 
 TEST_F(HMMTest, ConstructionFromSerializedHMM)

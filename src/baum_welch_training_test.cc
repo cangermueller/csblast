@@ -75,9 +75,11 @@ class BaumWelchTrainingTest : public testing::Test
 TEST_F(BaumWelchTrainingTest, ZincFingerSeqsTraining)
 {
     BaumWelchParams p;
-    p.num_blocks   = 1;
-    p.epsilon_null = 1.0;
-    p.beta         = 0.0;
+    p.num_blocks    = 1;
+    p.epsilon_null  = 1.0;
+    p.beta          = 0.0;
+    p.epsilon_batch = 0.0f;
+    p.min_scans     = 3;
     TrainingProgressInfo prg_info(std::cout);
     BaumWelchTraining<AminoAcid, Sequence> bwt(p, seqs_, hmm_, &prg_info);
     bwt.run();
@@ -90,12 +92,13 @@ TEST_F(BaumWelchTrainingTest, ZincFingerSeqsTraining)
 TEST_F(BaumWelchTrainingTest, ZincFingerAlisTraining)
 {
     BaumWelchParams p;
-    p.transition_pseudocounts  = 0.8;
-    p.log_likelihood_change    = 0.02;
+    p.transition_pseudocounts  = 0.8f;
+    p.log_likelihood_change    = 0.02f;
     p.max_connectivity         = 5;
     p.num_blocks               = 1;
-    p.epsilon_null             = 1.0;
-    p.beta                     = 0.0;
+    p.epsilon_null             = 1.0f;
+    p.beta                     = 0.0f;
+    p.min_scans                = 3;
     TrainingProgressInfo prg_info(std::cout);
     BaumWelchTraining<AminoAcid, CountsProfile> bwt(p, counts_, hmm_, &prg_info);
     bwt.run();
@@ -108,18 +111,20 @@ TEST_F(BaumWelchTrainingTest, ZincFingerAlisTraining)
 TEST_F(BaumWelchTrainingTest, ZincFingerAlisOnlineTraining)
 {
     BaumWelchParams p;
-    p.transition_pseudocounts  = 0.8;
-    p.log_likelihood_change    = 0.02;
+    p.transition_pseudocounts  = 0.8f;
+    p.log_likelihood_change    = 0.02f;
     p.max_connectivity         = 5;
     p.num_blocks               = 2;
-    p.epsilon_null             = 0.05;
-    p.beta                     = 0.5;
+    p.epsilon_null             = 0.05f;
+    p.beta                     = 0.5f;
+    p.min_scans                = 3;
     TrainingProgressInfo prg_info(std::cout);
     BaumWelchTraining<AminoAcid, CountsProfile> bwt(p, counts_, hmm_, &prg_info);
     bwt.run();
 
     hmm_.transform_states_to_linspace();
-    // TODO: write assertions!!!
+    EXPECT_NEAR(0.9948, hmm_[0][0][AminoAcid::instance().ctoi('C')], DELTA);
+    EXPECT_NEAR(0.9948, hmm_[5][0][AminoAcid::instance().ctoi('C')], DELTA);
 }
 
 }  // cs
