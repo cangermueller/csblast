@@ -37,7 +37,7 @@ class ProfileMatcher
     void set_weights(int len, float weight_center, float weight_decay)
     {
         if (len % 2 != 1)
-            throw Exception("Unable to set positional weights: length of context window should be odd but is %i!", len);
+            throw Exception("Unable to set weights: window length should be odd but is %i!", len);
 
         if (!weights_) delete weights_;
         weights_ = new float[len];
@@ -61,7 +61,9 @@ class ProfileMatcher
         return sum;
     }
 
-    double operator() (const ContextProfile<Alphabet_T>& profile, const CountsProfile<Alphabet_T>& counts, int index) const
+    double operator() (const ContextProfile<Alphabet_T>& profile,
+                       const CountsProfile<Alphabet_T>& counts,
+                       int index) const
     {
         double rv = 0.0f;
         const int center = profile.center();
@@ -82,7 +84,9 @@ class ProfileMatcher
         return pow(2.0, rv);
     }
 
-    double operator() (const ContextProfile<Alphabet_T>& profile, const Sequence<Alphabet_T>& seq, int index) const
+    double operator() (const ContextProfile<Alphabet_T>& profile,
+                       const Sequence<Alphabet_T>& seq,
+                       int index) const
     {
         double rv = 0.0f;
         const int center = profile.center();

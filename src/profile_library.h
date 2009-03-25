@@ -63,6 +63,8 @@ class ProfileLibrary
     bool full() const { return static_cast<int>(profiles_.size()) == num_profiles_; }
     // Returns the number of states in the profile library
     int num_profiles() const { return num_profiles_; }
+    // Returns the number of states in the profile library
+    int size() const { return num_profiles_; }
     // Returns the number of columns in each context profile.
     int num_cols() const { return num_cols_; }
     // Returns the number of clustering iterations.

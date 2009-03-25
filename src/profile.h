@@ -332,14 +332,16 @@ void Profile<Alphabet_T>::resize(int num_cols, int alphabet_size)
     data_.resize(num_cols, alphabet_size);
 }
 
+
+
 template<class Alphabet_T>
-void reset(Profile<Alphabet_T>& profile, float value)
+void reset(Profile<Alphabet_T>& profile)
 {
     const int num_cols = profile.num_cols();
     const int alphabet_size = profile.alphabet_size();
     for(int i = 0; i < num_cols; ++i)
         for(int a = 0; a < alphabet_size; ++a)
-            profile[i][a] = value;
+            profile[i][a] = 0.0f;
 }
 
 template<class Alphabet_T>

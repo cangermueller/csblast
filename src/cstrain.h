@@ -179,8 +179,7 @@ std::ostream& usage(const Params& params, std::ostream& out = std::cout)
     out << strprintf("  %-30s %s (def=%3.1f)\n", "-s, --sample-rate [0,1]", "Fraction of profile windows sampled per subject",
                      params.sample_rate);
     out << strprintf("  %-30s %s\n",             "-j, --jumpstart <filename>", "Jumpstart the HMM training with a serialized HMM.");
-    out << strprintf("  %-30s %s\n",             "-B, --blocks [0,N]", "Number of blocks for online training (def: off, set to 0 for B=N^3/8)",
-                     params.num_blocks);
+    out << strprintf("  %-30s %s\n",             "-B, --blocks [0,N]", "Number of blocks for online training (def: B=N^3/8)");
 
     substitution_matrix_options<Alphabet_T>(params, out);
 
@@ -290,8 +289,8 @@ void cstrain(const Params& params, std::ostream& out)
     LOG(INFO) << strprintf("Running Baum-Welch training on HMM (K=%i, W=%i, N=%i) ...",
                            hmm_ptr->num_states(), hmm_ptr->num_cols(), num_data_cols);
     out << std::endl << std::endl;
-    TrainingProgressInfo prg_info(out);
-    BaumWelchTraining<Alphabet_T, CountsProfile> training(params, data, *hmm_ptr, &prg_info);
+    TrainingProgressTable prg_table(out);
+    BaumWelchTraining<Alphabet_T, CountsProfile> training(params, data, *hmm_ptr, &prg_table);
     training.run();
 
     // write HMM to outfile

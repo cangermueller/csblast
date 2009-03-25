@@ -11,6 +11,7 @@
 #include <cmath>
 
 #include <iostream>
+#include <valarray>
 #include <vector>
 
 #include "forward_backward_algorithm.h"
@@ -123,59 +124,51 @@ class Clustering
     typedef typename std::vector<data_vector> blocks_vector;
     typedef typename std::vector< shared_ptr< ContextProfile<Alphabet_T> > > profiles_vector;
 
-    // Initializes a new training object.
-    BaumWelchTraining(const BaumWelchParams& params,
-                      const data_vector& data,
-                      HMM<Alphabet_T>& hmm,
-                      TrainingProgressInfo* progress_info = NULL);
+    // Initializes a new clustering object.
+    Clustering(const ClusteringParams& params,
+               const data_vector& data,
+               ProfileLibrary<Alphabet_T>& lib,
+               ClusteringProgressTable* progress_table = NULL);
 
-    virtual ~BaumWelchTraining()
+    virtual ~Clustering()
     { }
 
-    // Trains the HMM with the data provided until one of the termination criterions is fullfilled.
+    // Optimize the profile library by EM clustering.
     void run();
 
   private:
-    // Runs forward backward algorithm on provided data.
+    // Evaluates the responsibilities using the current parameter values.
     void expectation_step(const data_vector& block, float epsilon);
-    // Calculates and assigns new HMM parameters by Maxmimum-Likelihood estimation.
+    // Reestimate teh parameters using the current responsibilities.
     void maximization_step();
-    // Adds the contribution of a subject's forward-backward matrices to prio probabilities of states.
+    // Adds the contribution of the responsibilities for a subject to sufficient statistics for priors.
     void add_contribution_to_priors(const ForwardBackwardMatrices& m);
-    // Adds the contribution of a subject's forward-backward matrices to transition counts.
-    void add_contribution_to_transitions(const ForwardBackwardMatrices& m);
-    // Adds the contribution of a count profile's forward-backward matrices to emission counts.
-    void add_contribution_to_emissions(const ForwardBackwardMatrices& m, const CountsProfile<Alphabet_T>& c);
-    // Adds the contribution of a sequence's forward-backward matrices to emission counts.
-    void add_contribution_to_emissions(const ForwardBackwardMatrices& m, const Sequence<Alphabet_T>& s);
+    // Adds the contribution of the responsibilities for a counts profile to sufficient statistics for emissions.
+    void add_contribution_to_emissions(const std::valarray<float>& p_zn, const CountsProfile<Alphabet_T>& c);
+    // Adds the contribution of the responsibilities for a sequence to sufficient statistics for emissions.
+    void add_contribution_to_emissions(const std::valarray<float>& p_zn, const Sequence<Alphabet_T>& s);
     // Updates global sufficient statistics with sufficient statistics calculated on current block.
     void update_sufficient_statistics(float epsilon);
     // Fills the blocks vector with training data.
     void setup_blocks(bool batch_mode = false);
-    // Prepares all members for HMM training.
+    // Prepares all members for clustering.
     void init();
-    // Calculates the change between the current log-likelihood and the previous-iteration log-likelihood.
+    // Calculates the change between current log-likelihood and the log-likelihood in previous scan.
     float log_likelihood_change();
-    // Returns true if any termination conditions is fullfilled.
+    // Returns true if any termination condition is fullfilled.
     bool terminate();
 
-    // Parameter wrapper for Baum-Welch training.
-    const BaumWelchParams& params_;
+    // Parameter wrapper for clustering.
+    const ClusteringParams& params_;
     // Training data (either sequences or counts profiles)
     const data_vector& data_;
-    // HMM to be trained
-    HMM<Alphabet_T>& hmm_;
-    // Blocks of training data
+    // Blocks of training data.
     blocks_vector blocks_;
-    // Progress info object for output of progress table
-    TrainingProgressInfo* progress_info_;
-    // Global expected sufficient statistics for transitions
-    sparse_matrix<float> transition_stats_;
-    // Global expeted sufficient statistics for emissions and state priors
+    // Profile library to be optimized.
+    ProfileLibrary<Alphabet_T>& lib_;
+    // Global expected sufficient statistics for emissions and state priors.
     profiles_vector profile_stats_;
-    // Expected sufficient statistics for transitions based on current block
-    sparse_matrix<float> transition_stats_block_;
-    // Expeted sufficient statistics for emissions and state priors based on current block
+    // Expeted sufficient statistics for emissions and state priors based on current block.
     profiles_vector profile_stats_block_;
     // Incremental likelihood in current iteration
     float log_likelihood_;
@@ -187,48 +180,53 @@ class Clustering
     int scan_;
     // Effective number of training columns.
     int num_eff_cols_;
+    // Profile matcher for calculation of emission probabilities.
+    ProfileMatcher profile_matcher_;
+    // Progress info object for output of progress table.
+    ClusteringProgressTable* progress_table_;
 };
 
 
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-inline BaumWelchTraining<Alphabet_T, Subject_T>::BaumWelchTraining(const BaumWelchParams& params,
-                                                                   const data_vector& data,
-                                                                   HMM<Alphabet_T>& hmm,
-                                                                   TrainingProgressInfo* progress_info)
+inline Clustering<Alphabet_T, Subject_T>::Clustering(const ClusteringParams& params,
+                                                     const data_vector& data,
+                                                     ProfileLibrary<Alphabet_T>& lib,
+                                                     TrainingProgressTable* progress_table)
         : params_(params),
           data_(data),
-          hmm_(hmm),
           blocks_(),
-          progress_info_(progress_info),
-          transition_stats_(hmm.num_states(), hmm.num_states()),
+          lib_(lib),
           profile_stats_(),
-          transition_stats_block_(hmm.num_states(), hmm.num_states()),
           profile_stats_block_(),
           log_likelihood_(0.0f),
           log_likelihood_prev_(0.0f),
           iterations_(0),
           scan_(1),
-          num_eff_cols_(0)
+          num_eff_cols_(0),
+          profile_matcher_(),
+          progress_table_(progress_table)
 {
     init();
 }
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-void BaumWelchTraining<Alphabet_T, Subject_T>::run()
+void Clustering<Alphabet_T, Subject_T>::run()
 {
-    LOG(DEBUG) << "Running Baum-Welch training on ...";
-    LOG(DEBUG) << hmm_;
+    LOG(DEBUG) << "Running expecation-maximization clustering on ...";
+    LOG(DEBUG) << lib_;
+
+    if (progress_table_) progress_table_->print_header();
 
     // Calculate log-likelihood baseline by batch EM without blocks
     float epsilon = 1.0f;
-    if (progress_info_) progress_info_->start_scan(scan_, hmm_.iterations(), hmm_.connectivity(), 1, epsilon);
+    if (progress_table_) progress_table_->print_row_begin(scan_, lib_.iterations(), 1, epsilon);
     expectation_step(data_, epsilon);
     maximization_step();
     ++iterations_;
-    if (progress_info_) progress_info_->complete_scan(log_likelihood_);
+    if (progress_table_) progress_table_->print_row_end(log_likelihood_);
 
     // Perform E-step and M-step on each training block until convergence
     setup_blocks();
@@ -238,37 +236,42 @@ void BaumWelchTraining<Alphabet_T, Subject_T>::run()
         log_likelihood_      = 0.0;
         ++scan_;
 
-        if (progress_info_) progress_info_->start_scan(scan_, hmm_.iterations(), hmm_.connectivity(), blocks_.size(), epsilon);
+        if (progress_table_) progress_table_->print_row_begin(scan_, lib_.iterations(), blocks_.size(), epsilon);
         for (int b = 0; b < static_cast<int>(blocks_.size()); ++b) {
             expectation_step(blocks_[b], epsilon);
             maximization_step();
             ++iterations_;
         }
-        if (progress_info_) progress_info_->complete_scan(log_likelihood_, log_likelihood_change());
+        if (progress_table_) progress_table_->print_row_end(log_likelihood_, log_likelihood_change());
         if (epsilon < params_.epsilon_batch && static_cast<int>(blocks_.size()) > 1) {
             setup_blocks(true);
             epsilon = 1.0f;
         }
     }
 
-    LOG(DEBUG) << hmm_;
+    LOG(DEBUG) << lib_;
 }
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-inline void BaumWelchTraining<Alphabet_T, Subject_T>::expectation_step(const data_vector& block, float epsilon)
+inline void Clustering<Alphabet_T, Subject_T>::expectation_step(const data_vector& block, float epsilon)
 {
-    // Run forward and backward algorithm on each subject in current block
+    const int num_profiles = lib_.num_profiles();
+    std::valarray<float> pp(0.0f, lib_.num_profiles());
+
+    // Given each training window compute posterior probabilities p_zn[k] of profile k
     for (typename data_vector::const_iterator bi = block.begin(); bi != block.end(); ++bi) {
-        ForwardBackwardMatrices fbm((*bi)->length(), hmm_.num_states());
-        forward_backward_algorithm(hmm_, **bi, params_, fbm);
+        float sum = 0.0f;
+        for (int k = 0; k < num_profiles; ++k) {
+            p_zn[k] = lib_[k].prior() * profile_matcher_(lib_[k], **bi, lib_[k].center());
+            sum += p_zn[k];
+        }
+        p_zn /= sum;
+        add_contribution_to_priors(p_zn);
+        add_contribution_to_emissions(p_zn, **bi);
+        log_likelihood_ += sum / num_eff_cols_;
 
-        if (progress_info_) progress_info_->progress(hmm_.num_states() * (**bi).length());
-        add_contribution_to_priors(fbm);
-        add_contribution_to_transitions(fbm);
-        add_contribution_to_emissions(fbm, **bi);
-
-        log_likelihood_ += fbm.log_likelihood / num_eff_cols_;
+        if (progress_table_) progress_table_->print_progress(lib_.num_profiles() * (**bi).length());
     }
 
     update_sufficient_statistics(epsilon);
@@ -276,7 +279,7 @@ inline void BaumWelchTraining<Alphabet_T, Subject_T>::expectation_step(const dat
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-void BaumWelchTraining<Alphabet_T, Subject_T>::maximization_step()
+void Clustering<Alphabet_T, Subject_T>::maximization_step()
 {
     const int num_states    = hmm_.num_states();
     const int num_cols      = hmm_.num_cols();
@@ -301,86 +304,34 @@ void BaumWelchTraining<Alphabet_T, Subject_T>::maximization_step()
         }
     }
 
-    // Calculate and assign new transition probabilities
-    hmm_.clear_transitions();
-    for (int k = 0; k < num_states; ++k) {
-        sum = 0.0f;
-        for (int l = 0; l < num_states; ++l) {
-            if (transition_stats_.test(k,l)) {
-                const float a_kl = transition_stats_[k][l] + params_.transition_pseudocounts - 1.0f;
-                if (a_kl > 0.0f) {
-                    transition_stats_[k][l] = a_kl;
-                    sum += a_kl;
-                } else {
-                    transition_stats_.erase(k,l);
-                }
-            }
-        }
-        if (sum != 0.0f) {
-            fac = 1.0f / sum;
-            for (int l = 0; l < num_states; ++l) {
-                if (transition_stats_.test(k,l)) {
-                    hmm_(k,l) = transition_stats_[k][l] * fac;
-                    LOG(DEBUG2) << strprintf("tr[%i][%i]=%-8.5f", k, l, static_cast<float>(hmm_(k,l)));
-                }
-            }
-        }
-    }
-
     // Increment iteration counter in HMM
     ++hmm_;
 }
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-inline void BaumWelchTraining<Alphabet_T, Subject_T>::add_contribution_to_priors(const ForwardBackwardMatrices& m)
+inline void Clustering<Alphabet_T, Subject_T>::add_contribution_to_priors(const std::valarray<float>& p_zn)
 {
-    const int num_states = hmm_.num_states();
-    for (int k = 0; k < num_states; ++k)
-        profile_stats_block_[k]->set_prior(profile_stats_block_[k]->prior() + m.f[0][k] * m.b[0][k]);
+    const int num_profiles = lib_.num_profiles();
+    for (int k = 0; k < num_profiles; ++k)
+        profile_stats_block_[k]->set_prior(profile_stats_block_[k]->prior() + p_zn[k]);
 }
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-inline void BaumWelchTraining<Alphabet_T, Subject_T>::add_contribution_to_transitions(const ForwardBackwardMatrices& m)
+inline void Clustering<Alphabet_T, Subject_T>::add_contribution_to_emissions(const std::valarray<float>& p_zn,
+                                                                             const CountsProfile<Alphabet_T>& c)
 {
-    const int slen = m.f.num_rows();
+    const int num_profiles  = lib_.num_profiles();
+    const int num_cols      = lib_num_cols();
+    const int alphabet_size = c.alphabet_size();
 
-    for (const_transition_iterator ti = hmm_.transitions_begin(); ti != hmm_.transitions_end(); ++ti) {
-        double w_kl = 0.0;
-        for (int i = 0; i < slen-1; ++i) {
-            w_kl += m.f[i][ti->from] * m.b[i+1][ti->to] * ti->probability * m.e[i+1][ti->to] / m.s[i+1];
-        }
-
-        if (w_kl != 0.0) {
-            if (!transition_stats_block_.test(ti->from, ti->to)) transition_stats_block_[ti->from][ti->to] = 0.0f;
-            transition_stats_block_[ti->from][ti->to] = transition_stats_block_[ti->from][ti->to] + w_kl;
-        }
-    }
-}
-
-template< class Alphabet_T,
-          template<class Alphabet_U> class Subject_T >
-inline void BaumWelchTraining<Alphabet_T, Subject_T>::add_contribution_to_emissions(const ForwardBackwardMatrices& m,
-                                                                                    const CountsProfile<Alphabet_T>& c)
-{
-    const int slen       = m.f.num_rows();
-    const int num_states = hmm_.num_states();
-
-    for (int k = 0; k < num_states; ++k) {
+    for (int k = 0; k < num_profiles; ++k) {
         ContextProfile<Alphabet_T>& p_k = *profile_stats_block_[k];
-        const int ci = p_k.center();
 
-        for (int i = 0; i < slen; ++i) {
-            const int beg = std::max(0, i - ci);
-            const int end = std::min(c.num_cols() - 1, i + ci);
-
-            for(int h = beg; h <= end; ++h) {
-                const int j = h - i + ci;
-                const int alphabet_size = p_k.alphabet_size();
-                for (int a = 0; a < alphabet_size; ++a) {
-                    p_k[j][a] += c[h][a] * m.f[i][k] * m.b[i][k];
-                }
+        for (int j = 0; j < num_cols; ++j) {
+            for (int a = 0; a < alphabet_size; ++a) {
+                p_k[j][a] += c[j][a] * p_zn[k];
             }
         }
     }
@@ -388,51 +339,35 @@ inline void BaumWelchTraining<Alphabet_T, Subject_T>::add_contribution_to_emissi
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-inline void BaumWelchTraining<Alphabet_T, Subject_T>::add_contribution_to_emissions(const ForwardBackwardMatrices& m,
-                                                                                    const Sequence<Alphabet_T>& s)
+inline void Clustering<Alphabet_T, Subject_T>::add_contribution_to_emissions(const std::valarray<float>& p_zn,
+                                                                             const Sequence<Alphabet_T>& s)
 {
-    const int slen       = m.f.num_rows();
-    const int num_states = hmm_.num_states();
+    const int num_profiles  = lib_.num_profiles();
+    const int num_cols      = lib_num_cols();
 
-    for (int k = 0; k < num_states; ++k) {
+    for (int k = 0; k < num_profiles; ++k) {
         ContextProfile<Alphabet_T>& p_k = *profile_stats_block_[k];
-        const int ci = p_k.center();
 
-        for (int i = 0; i < slen; ++i) {
-            const int beg = std::max(0, i - ci);
-            const int end = std::min(s.length() - 1, i + ci);
-
-            for(int h = beg; h <= end; ++h) {
-                const int j = h - i + ci;
-                p_k[j][s[h]] += m.f[i][k] * m.b[i][k];
-            }
+        for (int j = 0; j < num_cols; ++j) {
+            p_k[j][s[j]] += p_zn[k];
         }
     }
 }
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-inline void BaumWelchTraining<Alphabet_T, Subject_T>::update_sufficient_statistics(float epsilon)
+inline void Clustering<Alphabet_T, Subject_T>::update_sufficient_statistics(float epsilon)
 {
-    const float gamma = 1.0f - epsilon;
-
-    // Update transition statistics
-    for (const_transition_iterator ti = hmm_.transitions_begin(); ti != hmm_.transitions_end(); ++ti) {
-        if (transition_stats_block_.test(ti->from, ti->to)) {
-            if (!transition_stats_.test(ti->from, ti->to)) transition_stats_[ti->from][ti->to] = 0.0f;
-            transition_stats_[ti->from][ti->to] =
-                gamma * transition_stats_[ti->from][ti->to] + transition_stats_block_[ti->from][ti->to];
-        }
-    }
-    transition_stats_block_.clear();
+    const float gamma      = 1.0f - epsilon;
+    const int num_profiles = lib_.num_profiles();
+    const int num_cols     = lib_num_cols();
 
     // Update priors and emissions statistics
-    const int num_states = hmm_.num_states();
-    const int num_cols   = hmm_.num_cols();
-    for (int k = 0; k < num_states; ++k) {
+    for (int k = 0; k < num_profiles; ++k) {
+        const int alphabet_size = p.alphabet_size();
+
         ContextProfile<Alphabet_T>& p_block = *profile_stats_block_[k];
         ContextProfile<Alphabet_T>& p       = *profile_stats_[k];
-        const int alphabet_size = p.alphabet_size();
 
         p.set_prior(p.prior() * gamma + p_block.prior());
         for (int j = 0; j < num_cols; ++j) {
@@ -440,37 +375,35 @@ inline void BaumWelchTraining<Alphabet_T, Subject_T>::update_sufficient_statisti
                 p[j][a] = gamma * p[j][a]  + p_block[j][a];
             }
         }
-        reset(p_block, 0.0f);
-        p_block.set_prior(0.0f);
+        reset(p_block);
     }
 }
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-void BaumWelchTraining<Alphabet_T, Subject_T>::init()
+void Clustering<Alphabet_T, Subject_T>::init()
 {
     // Create profiles for global and block-level sufficient statistics
-    for (int k = 0; k < hmm_.num_states(); ++k) {
-        profile_stats_.push_back(shared_ptr< ContextProfile<Alphabet_T> >(new ContextProfile<Alphabet_T>(k, hmm_.num_cols())));
-        profile_stats_block_.push_back(shared_ptr< ContextProfile<Alphabet_T> >(new ContextProfile<Alphabet_T>(k, hmm_.num_cols())));
+    for (int k = 0; k < lib_.num_profiles(); ++k) {
+        profile_stats_.push_back(shared_ptr< ContextProfile<Alphabet_T> >(new ContextProfile<Alphabet_T>(k, lib_.num_cols())));
+        profile_stats_block_.push_back(shared_ptr< ContextProfile<Alphabet_T> >(new ContextProfile<Alphabet_T>(k, lib_.num_cols())));
     }
 
     // Compute total number of data columns for progress bar
     int num_cols = 0;
     for (typename data_vector::const_iterator di = data_.begin(); di != data_.end(); ++di)
         num_cols += (**di).length();
-    if (progress_info_) progress_info_->init(hmm_.num_states() * num_cols);
+    if (progress_table_) progress_table_->init(lib_.num_profiles() * num_cols);
 
-    // Set number of effective columsn for log-likelihood calculation
-    ProfileMatcher<Alphabet_T> matcher;
-    if (!params_.ignore_context && hmm_.num_cols() > 1)
-        matcher.set_weights(hmm_.num_cols(), params_.weight_center, params_.weight_decay);
-    num_eff_cols_ = matcher.num_eff_cols() * num_cols;
+    // Set number of effective columns for log-likelihood calculation
+    if (!params_.ignore_context && lib_.num_cols() > 1)
+        profile_matcher.set_weights(lib_.num_cols(), params_.weight_center, params_.weight_decay);
+    num_eff_cols_ = profile_matcher.num_eff_cols() * num_cols;
 }
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-inline void BaumWelchTraining<Alphabet_T, Subject_T>::setup_blocks(bool batch_mode)
+inline void Clustering<Alphabet_T, Subject_T>::setup_blocks(bool batch_mode)
 {
     if (batch_mode) {
         if (static_cast<int>(blocks_.size()) == 1) return;  // already in batch mode
@@ -496,23 +429,21 @@ inline void BaumWelchTraining<Alphabet_T, Subject_T>::setup_blocks(bool batch_mo
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-inline float BaumWelchTraining<Alphabet_T, Subject_T>::log_likelihood_change()
+inline float Clustering<Alphabet_T, Subject_T>::log_likelihood_change()
 {
     return log_likelihood_ - log_likelihood_prev_;
 }
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-inline bool BaumWelchTraining<Alphabet_T, Subject_T>::terminate()
+inline bool Clustering<Alphabet_T, Subject_T>::terminate()
 {
     if (scan_ < params_.min_scans)
         return false;
     else if (scan_ >= params_.max_scans)
         return true;
-    else if (params_.max_connectivity == 0)
-        return fabs(log_likelihood_change()) <= params_.log_likelihood_change;
     else
-        return fabs(log_likelihood_change()) <= params_.log_likelihood_change && hmm_.connectivity() <= params_.max_connectivity;
+        return fabs(log_likelihood_change()) <= params_.log_likelihood_change;
 }
 
 }  // cs

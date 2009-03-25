@@ -80,8 +80,8 @@ TEST_F(BaumWelchTrainingTest, ZincFingerSeqsTraining)
     p.beta          = 0.0;
     p.epsilon_batch = 0.0f;
     p.min_scans     = 3;
-    TrainingProgressInfo prg_info(std::cout);
-    BaumWelchTraining<AminoAcid, Sequence> bwt(p, seqs_, hmm_, &prg_info);
+    TrainingProgressTable prg_table(std::cout);
+    BaumWelchTraining<AminoAcid, Sequence> bwt(p, seqs_, hmm_, &prg_table);
     bwt.run();
 
     hmm_.transform_states_to_linspace();
@@ -99,8 +99,8 @@ TEST_F(BaumWelchTrainingTest, ZincFingerAlisTraining)
     p.epsilon_null             = 1.0f;
     p.beta                     = 0.0f;
     p.min_scans                = 3;
-    TrainingProgressInfo prg_info(std::cout);
-    BaumWelchTraining<AminoAcid, CountsProfile> bwt(p, counts_, hmm_, &prg_info);
+    TrainingProgressTable prg_table(std::cout);
+    BaumWelchTraining<AminoAcid, CountsProfile> bwt(p, counts_, hmm_, &prg_table);
     bwt.run();
 
     hmm_.transform_states_to_linspace();
@@ -118,8 +118,8 @@ TEST_F(BaumWelchTrainingTest, ZincFingerAlisOnlineTraining)
     p.epsilon_null             = 0.05f;
     p.beta                     = 0.5f;
     p.min_scans                = 3;
-    TrainingProgressInfo prg_info(std::cout);
-    BaumWelchTraining<AminoAcid, CountsProfile> bwt(p, counts_, hmm_, &prg_info);
+    TrainingProgressTable prg_table(std::cout);
+    BaumWelchTraining<AminoAcid, CountsProfile> bwt(p, counts_, hmm_, &prg_table);
     bwt.run();
 
     hmm_.transform_states_to_linspace();

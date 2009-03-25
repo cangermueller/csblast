@@ -163,6 +163,20 @@ void ContextProfile<Alphabet_T>::print(std::ostream& out) const
     Profile<Alphabet_T>::print(out);
 }
 
+
+
+template<class Alphabet_T>
+void reset(ContextProfile<Alphabet_T>& profile)
+{
+    const int num_cols = profile.num_cols();
+    const int alphabet_size = profile.alphabet_size();
+
+    profile.set_prior(0.0f);
+    for(int i = 0; i < num_cols; ++i)
+        for(int a = 0; a < alphabet_size; ++a)
+            profile[i][a] = 0.0f;
+}
+
 }  // cs
 
 #endif
