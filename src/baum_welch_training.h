@@ -76,7 +76,7 @@ struct BaumWelchParams : public ForwardBackwardParams
 {
     BaumWelchParams()
             : ForwardBackwardParams(),
-              min_scans(50),
+              min_scans(10),
               max_scans(500),
               max_connectivity(0),
               log_likelihood_change(2e-4f),

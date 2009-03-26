@@ -77,7 +77,7 @@ struct ClusteringParams : public ForwardBackwardParams
 {
     ClusteringParams()
             : ForwardBackwardParams(),
-              min_scans(50),
+              min_scans(10),
               max_scans(500),
               log_likelihood_change(2e-4f),
               num_blocks(0),

@@ -6,7 +6,7 @@
  ***************************************************************************/
 
 // DESCRIPTION:
-// Encapsulation for HMM training.
+// CLI for HMM training.
 
 #include <iostream>
 #include <fstream>
@@ -153,7 +153,7 @@ std::ostream& substitution_matrix_options<AminoAcid>(const Params& params, std::
 template<class Alphabet_T>
 std::ostream& usage(const Params& params, std::ostream& out = std::cout)
 {
-    out << "Train an HMM of context-states on a dataset of alignments or sequences.\n";
+    out << "Train a context HMM on a dataset of full-length profiles, alignments, or sequences.\n";
     out << "(C) Andreas Biegert, Johannes Soding, and Ludwig-Maximillians University Munich\n\n";
 
     out << "Usage: cstrain -i <infile> -K <num_states> [options]\n\n";

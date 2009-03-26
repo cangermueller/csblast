@@ -131,17 +131,18 @@ TEST(ProfileLibraryTestInitialization, RandomSampleInitializer)
     ali.assign_match_columns_by_gap_rule();
 
     typedef shared_ptr< CountsProfile<AminoAcid> > profile_ptr;
-    profile_ptr p(new CountsProfile<AminoAcid>(ali, true));
-    std::vector<profile_ptr> profiles(10, p);
+    CountsProfile<AminoAcid> p_full(ali, true);
+    profile_ptr p_window(new CountsProfile<AminoAcid>(p_full, 0, 13));
+    std::vector<profile_ptr> profiles(100, p_window);
 
     BlosumMatrix m;
     MatrixPseudocounts<AminoAcid> pc(&m);
-    SamplingProfileInitializer<AminoAcid> profile_init(profiles, 0.2f, &pc, 0.2f);
-    ProfileLibrary<AminoAcid> lib(10, 5, profile_init);
+    SamplingProfileInitializer<AminoAcid> profile_init(profiles, &pc, 0.2f);
+    ProfileLibrary<AminoAcid> lib(10, 13, profile_init);
 
     EXPECT_EQ(10, lib.num_profiles());
-    EXPECT_EQ(5, lib.num_cols());
-    EXPECT_EQ(5, lib[0].num_cols());
+    EXPECT_EQ(13, lib.num_cols());
+    EXPECT_EQ(13, lib[0].num_cols());
 }
 
 }  // cs

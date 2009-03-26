@@ -12,6 +12,9 @@
 # project, except GTEST_HEADERS, which you can use in your own targets
 # but shouldn't modify.
 
+# All non-test executables produced by this Makefile
+TARGETS = test cstrain_aa cstrain_nt csbuild_aa csbuild_nt cssample_aa cssample_nt csclust_aa csclust_nt
+
 # Points to the root of Google Test, relative to where this file is.
 # Remember to tweak this if you move this file.
 GTEST_DIR = ../../../lib/gtest
@@ -39,9 +42,6 @@ endif
 
 # Flags passed to the C++ compiler for Google Test compilation
 GTEST_CXXFLAGS += -g
-
-# All non-test executables produced by this Makefile
-TARGETS = test cstrain_aa cstrain_nt csbuild_aa csbuild_nt cssample_aa cssample_nt
 
 # Libraries against which TARGETS should be build
 LIBS = 
@@ -114,12 +114,6 @@ test : $(OBJECTS) $(DEPS) gtest_main.a
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $(OBJECTS) gtest_main.a
 
 # Executable targets:
-cstrain_aa: cstrain_aa.cc $(OBJECTS_NO_TESTS) $(DEPS_NO_TESTS)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $@.cc $(OBJECTS_NO_TESTS) $(LIBS)
-
-cstrain_nt: cstrain_nt.cc $(OBJECTS_NO_TESTS) $(DEPS_NO_TESTS)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $@.cc $(OBJECTS_NO_TESTS) $(LIBS)
-
 csbuild_aa: csbuild_aa.cc $(OBJECTS_NO_TESTS) $(DEPS_NO_TESTS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $@.cc $(OBJECTS_NO_TESTS) $(LIBS)
 
@@ -130,4 +124,16 @@ cssample_aa: cssample_aa.cc $(OBJECTS_NO_TESTS) $(DEPS_NO_TESTS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $@.cc $(OBJECTS_NO_TESTS) $(LIBS)
 
 cssample_nt: cssample_nt.cc $(OBJECTS_NO_TESTS) $(DEPS_NO_TESTS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $@.cc $(OBJECTS_NO_TESTS) $(LIBS)
+
+cstrain_aa: cstrain_aa.cc $(OBJECTS_NO_TESTS) $(DEPS_NO_TESTS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $@.cc $(OBJECTS_NO_TESTS) $(LIBS)
+
+cstrain_nt: cstrain_nt.cc $(OBJECTS_NO_TESTS) $(DEPS_NO_TESTS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $@.cc $(OBJECTS_NO_TESTS) $(LIBS)
+
+csclust_aa: csclust_aa.cc $(OBJECTS_NO_TESTS) $(DEPS_NO_TESTS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $@.cc $(OBJECTS_NO_TESTS) $(LIBS)
+
+csclust_nt: csclust_nt.cc $(OBJECTS_NO_TESTS) $(DEPS_NO_TESTS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $@.cc $(OBJECTS_NO_TESTS) $(LIBS)

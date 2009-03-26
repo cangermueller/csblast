@@ -281,11 +281,9 @@ class SamplingProfileInitializer : public ProfileInitializer<Alphabet_T>
     typedef typename profile_vector::const_iterator profile_iterator;
 
     SamplingProfileInitializer(profile_vector profiles,
-                               float sample_rate,
                                const Pseudocounts<Alphabet_T>* pc = NULL,
                                float pc_admixture = 1.0f)
             : profiles_(profiles),
-              sample_rate_(sample_rate),
               pc_(pc),
               pc_admixture_(pc_admixture)
     {
@@ -299,49 +297,28 @@ class SamplingProfileInitializer : public ProfileInitializer<Alphabet_T>
         LOG(DEBUG) << "Initializing profile library with " << lib.num_profiles() << " profile windows randomly sampled from "
                   << profiles_.size() << " training profiles ...";
 
-        // Iterate over randomly shuffled profiles; from each profile we sample a fraction of profile windows
+        // Iterate over randomly shuffled profiles and add them to the library until the library is full.
         for (profile_iterator pi = profiles_.begin(); pi != profiles_.end() && !lib.full(); ++pi) {
-            if ((*pi)->num_cols() < lib.num_cols()) continue;
+            if (lib.num_cols() != (*pi)->num_cols())
+                throw Exception("Unable to initialize profiles: library profiles have length %i but found training profile with length %i!",
+                                lib.num_cols(), (*pi)->num_cols());
 
-            LOG(DEBUG1) << "Processing next training profile ...";
-            LOG(DEBUG1) << **pi;
-
-            // Prepare sample of indices
-            std::vector<int> idx;
-            for (int i = 0; i <= (*pi)->num_cols() - lib.num_cols(); ++i) idx.push_back(i);
-            LOG(DEBUG2) << "Available column indices:";
-            LOG(DEBUG2) << stringify_container(idx);
-
-            random_shuffle(idx.begin(), idx.end());
-            LOG(DEBUG2) << "Shuffled column indices:";
-            LOG(DEBUG2) << stringify_container(idx);
-
-            const int sample_size = iround(sample_rate_ * idx.size());
-            idx.erase(idx.begin() + sample_size, idx.end());  // sample only a fraction of the profile indices.
-            LOG(DEBUG2) << "Sampled column indicices to be actually used::";
-            LOG(DEBUG2) << stringify_container(idx);
-
-            // Add sub-profiles at sampled indices to ProfileLibrary
-            for (std::vector<int>::const_iterator i = idx.begin(); i != idx.end() && !lib.full(); ++i) {
-                CountsProfile<Alphabet_T> p(**pi, *i, lib.num_cols());
-                LOG(DEBUG1) << "Extracted profile window at position " << *i << ":";
-                p.convert_to_frequencies(); // make sure that profile contains frequencies not counts
-                if (pc_) pc_->add_to_profile(p, ConstantAdmixture(pc_admixture_));
-                lib.add_profile(p);
-            }
+            CountsProfile<Alphabet_T> p(**pi);
+            p.convert_to_frequencies(); // make sure that profile contains frequencies not counts
+            if (pc_) pc_->add_to_profile(p, ConstantAdmixture(pc_admixture_));
+            lib.add_profile(p);
         }
         if (!lib.full())
             throw Exception("Could not fully initialize all %i library profiles. Maybe too few training profiles provided?",
                             lib.num_profiles());
+
         LOG(DEBUG) << "Profile library after profile initialization:";
         LOG(DEBUG) << lib;
     }
 
   private:
-    // Pool of full length sequence profiles to sample from.
+    // Pool of profile windows to sample from.
     profile_vector profiles_;
-    // Fraction of profile windows sampled from each subject.
-    float sample_rate_;
     // Pseudocount factory for library profiles.
     const Pseudocounts<Alphabet_T>* pc_;
     // Constant pseudocount admixture for library profiles.
