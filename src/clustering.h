@@ -14,7 +14,7 @@
 #include <valarray>
 #include <vector>
 
-#include "forward_backward_algorithm.h"
+#include "forward_backward_algorithm.h"  // FIXME: remove dependence on ForwardBackward params!
 #include "log.h"
 #include "context_profile.h"
 #include "profile_matcher.h"
@@ -45,7 +45,7 @@ class ClusteringProgressTable : public ProgressBar
     {
         out_ << strprintf("%-4s %4s %4s %7s  %-30s  %9s  %8s\n",
                           "Scan", "Itrs", "Blks", "Epsilon", "E-Step", "log(L)", "+/-");
-        out_ << std::string(82, '-') << std::endl;
+        out_ << std::string(76, '-') << std::endl;
     }
 
     // Starts a new row and prints statistics to outstream.
@@ -75,7 +75,7 @@ class ClusteringProgressTable : public ProgressBar
 
 struct ClusteringParams : public ForwardBackwardParams
 {
-    BaumWelchParams()
+    ClusteringParams()
             : ForwardBackwardParams(),
               min_scans(50),
               max_scans(500),
@@ -86,7 +86,7 @@ struct ClusteringParams : public ForwardBackwardParams
               epsilon_batch(0.05f)
     { }
 
-    BaumWelchParams(const BaumWelchParams& params)
+    ClusteringParams(const ClusteringParams& params)
             : ForwardBackwardParams(params),
               min_scans(params.min_scans),
               max_scans(params.max_scans),
@@ -142,7 +142,7 @@ class Clustering
     // Reestimate teh parameters using the current responsibilities.
     void maximization_step();
     // Adds the contribution of the responsibilities for a subject to sufficient statistics for priors.
-    void add_contribution_to_priors(const ForwardBackwardMatrices& m);
+    void add_contribution_to_priors(const std::valarray<float>& p_zn);
     // Adds the contribution of the responsibilities for a counts profile to sufficient statistics for emissions.
     void add_contribution_to_emissions(const std::valarray<float>& p_zn, const CountsProfile<Alphabet_T>& c);
     // Adds the contribution of the responsibilities for a sequence to sufficient statistics for emissions.
@@ -181,7 +181,7 @@ class Clustering
     // Effective number of training columns.
     int num_eff_cols_;
     // Profile matcher for calculation of emission probabilities.
-    ProfileMatcher profile_matcher_;
+    ProfileMatcher<Alphabet_T> profile_matcher_;
     // Progress info object for output of progress table.
     ClusteringProgressTable* progress_table_;
 };
@@ -193,7 +193,7 @@ template< class Alphabet_T,
 inline Clustering<Alphabet_T, Subject_T>::Clustering(const ClusteringParams& params,
                                                      const data_vector& data,
                                                      ProfileLibrary<Alphabet_T>& lib,
-                                                     TrainingProgressTable* progress_table)
+                                                     ClusteringProgressTable* progress_table)
         : params_(params),
           data_(data),
           blocks_(),
@@ -257,7 +257,7 @@ template< class Alphabet_T,
 inline void Clustering<Alphabet_T, Subject_T>::expectation_step(const data_vector& block, float epsilon)
 {
     const int num_profiles = lib_.num_profiles();
-    std::valarray<float> pp(0.0f, lib_.num_profiles());
+    std::valarray<float> p_zn(0.0f, lib_.num_profiles());
 
     // Given each training window compute posterior probabilities p_zn[k] of profile k
     for (typename data_vector::const_iterator bi = block.begin(); bi != block.end(); ++bi) {
@@ -269,9 +269,9 @@ inline void Clustering<Alphabet_T, Subject_T>::expectation_step(const data_vecto
         p_zn /= sum;
         add_contribution_to_priors(p_zn);
         add_contribution_to_emissions(p_zn, **bi);
-        log_likelihood_ += sum / num_eff_cols_;
+        log_likelihood_ += log(sum) / num_eff_cols_;
 
-        if (progress_table_) progress_table_->print_progress(lib_.num_profiles() * (**bi).length());
+        if (progress_table_) progress_table_->print_progress(lib_.num_profiles());
     }
 
     update_sufficient_statistics(epsilon);
@@ -281,31 +281,30 @@ template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
 void Clustering<Alphabet_T, Subject_T>::maximization_step()
 {
-    const int num_states    = hmm_.num_states();
-    const int num_cols      = hmm_.num_cols();
-    const int alphabet_size = hmm_[0].alphabet_size();
+    const int num_profiles  = lib_.num_profiles();
+    const int num_cols      = lib_.num_cols();
+    const int alphabet_size = lib_.alphabet_size();
 
-    // Calculate normalization factor for priors
     float sum = 0.0f;
-    for (int k = 0; k < num_states; ++k) sum += profile_stats_[k]->prior();
+    for (int k = 0; k < num_profiles; ++k) sum += profile_stats_[k]->prior();
     float fac = 1.0f / sum;
 
     // Assign new priors and emission probabilities
-    for (int k = 0; k < num_states; ++k) {
+    for (int k = 0; k < num_profiles; ++k) {
         ContextProfile<Alphabet_T>& p_k = *profile_stats_[k];
 
-        hmm_[k].set_prior(p_k.prior() * fac);
+        lib_[k].set_prior(p_k.prior() * fac);
         ContextProfile<Alphabet_T> tmp(p_k);
         if (normalize(tmp)) {  // don't update profiles that did'n get any evidence
             tmp.transform_to_logspace();
             for (int i = 0; i < num_cols; ++i)
                 for (int a = 0; a < alphabet_size; ++a)
-                    hmm_[k][i][a] = tmp[i][a];
+                    lib_[k][i][a] = tmp[i][a];
         }
     }
 
     // Increment iteration counter in HMM
-    ++hmm_;
+    ++lib_;
 }
 
 template< class Alphabet_T,
@@ -323,8 +322,8 @@ inline void Clustering<Alphabet_T, Subject_T>::add_contribution_to_emissions(con
                                                                              const CountsProfile<Alphabet_T>& c)
 {
     const int num_profiles  = lib_.num_profiles();
-    const int num_cols      = lib_num_cols();
-    const int alphabet_size = c.alphabet_size();
+    const int num_cols      = lib_.num_cols();
+    const int alphabet_size = lib_.alphabet_size();
 
     for (int k = 0; k < num_profiles; ++k) {
         ContextProfile<Alphabet_T>& p_k = *profile_stats_block_[k];
@@ -343,7 +342,8 @@ inline void Clustering<Alphabet_T, Subject_T>::add_contribution_to_emissions(con
                                                                              const Sequence<Alphabet_T>& s)
 {
     const int num_profiles  = lib_.num_profiles();
-    const int num_cols      = lib_num_cols();
+    const int num_cols      = lib_.num_cols();
+    const int alphabet_size = lib_.alphabet_size();
 
     for (int k = 0; k < num_profiles; ++k) {
         ContextProfile<Alphabet_T>& p_k = *profile_stats_block_[k];
@@ -358,14 +358,13 @@ template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
 inline void Clustering<Alphabet_T, Subject_T>::update_sufficient_statistics(float epsilon)
 {
-    const float gamma      = 1.0f - epsilon;
-    const int num_profiles = lib_.num_profiles();
-    const int num_cols     = lib_num_cols();
+    const float gamma       = 1.0f - epsilon;
+    const int num_profiles  = lib_.num_profiles();
+    const int num_cols      = lib_.num_cols();
+    const int alphabet_size = lib_.alphabet_size();
 
     // Update priors and emissions statistics
     for (int k = 0; k < num_profiles; ++k) {
-        const int alphabet_size = p.alphabet_size();
-
         ContextProfile<Alphabet_T>& p_block = *profile_stats_block_[k];
         ContextProfile<Alphabet_T>& p       = *profile_stats_[k];
 
@@ -389,16 +388,13 @@ void Clustering<Alphabet_T, Subject_T>::init()
         profile_stats_block_.push_back(shared_ptr< ContextProfile<Alphabet_T> >(new ContextProfile<Alphabet_T>(k, lib_.num_cols())));
     }
 
-    // Compute total number of data columns for progress bar
-    int num_cols = 0;
-    for (typename data_vector::const_iterator di = data_.begin(); di != data_.end(); ++di)
-        num_cols += (**di).length();
-    if (progress_table_) progress_table_->init(lib_.num_profiles() * num_cols);
+    // Initialize total amount of work per scan
+    if (progress_table_) progress_table_->init(lib_.num_profiles() * data_.size());
 
     // Set number of effective columns for log-likelihood calculation
     if (!params_.ignore_context && lib_.num_cols() > 1)
-        profile_matcher.set_weights(lib_.num_cols(), params_.weight_center, params_.weight_decay);
-    num_eff_cols_ = profile_matcher.num_eff_cols() * num_cols;
+        profile_matcher_.set_weights(lib_.num_cols(), params_.weight_center, params_.weight_decay);
+    num_eff_cols_ = profile_matcher_.num_eff_cols() * data_.size();
 }
 
 template< class Alphabet_T,

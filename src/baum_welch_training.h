@@ -291,7 +291,7 @@ void BaumWelchTraining<Alphabet_T, Subject_T>::maximization_step()
 {
     const int num_states    = hmm_.num_states();
     const int num_cols      = hmm_.num_cols();
-    const int alphabet_size = hmm_[0].alphabet_size();
+    const int alphabet_size = hmm_.alphabet_size();
 
     // Calculate normalization factor for priors
     float sum = 0.0f;
@@ -402,7 +402,7 @@ template< class Alphabet_T,
 inline void BaumWelchTraining<Alphabet_T, Subject_T>::add_contribution_to_emissions(const ForwardBackwardMatrices& m,
                                                                                     const Sequence<Alphabet_T>& s)
 {
-    const int slen       = c.length();
+    const int slen       = s.length();
     const int num_states = hmm_.num_states();
 
     for (int k = 0; k < num_states; ++k) {

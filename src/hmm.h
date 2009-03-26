@@ -91,6 +91,8 @@ class HMM
     int num_states() const { return num_states_; }
     // Returns the number of columns in each context state.
     int num_cols() const { return num_cols_; }
+    // Returns the size of the alphabet of the HMM.
+    int alphabet_size() const { return Alphabet_T::instance().size();  }
     // Returns the number of training iterations.
     int iterations() const { return iterations_; }
     // Returns the number of non-null transitions in the HMM.

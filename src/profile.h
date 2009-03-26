@@ -350,9 +350,10 @@ bool normalize(Profile<Alphabet_T>& profile, float value)
     const bool logspace = profile.logspace();
     if (logspace) profile.transform_to_linspace();
 
-    const int num_cols = profile.num_cols();
+    const int num_cols       = profile.num_cols();
     const int alphabet_size  = profile.alphabet_size();
     bool rv = true;
+
     for (int i = 0; i < num_cols; ++i) {
         float sum = 0.0f;
         for (int a = 0; a < alphabet_size; ++a) sum += profile[i][a];

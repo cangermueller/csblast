@@ -67,6 +67,8 @@ class ProfileLibrary
     int size() const { return num_profiles_; }
     // Returns the number of columns in each context profile.
     int num_cols() const { return num_cols_; }
+    // Returns the size of the alphabet of the profile library.
+    int alphabet_size() const { return Alphabet_T::instance().size();  }
     // Returns the number of clustering iterations.
     int iterations() const { return iterations_; }
     // Accessor methods for state i, where i is from interval [0,num_states].
@@ -176,8 +178,8 @@ inline int ProfileLibrary<Alphabet_T>::add_profile(const Profile<Alphabet_T>& pr
 
     shared_ptr< ContextProfile<Alphabet_T> > profile_ptr(new ContextProfile<Alphabet_T>(profiles_.size(), profile));
     profile_ptr->set_prior(1.0f / num_profiles());  // start with unbiased prior probabilities
-    profiles_.push_back(profile_ptr);
 
+    profiles_.push_back(profile_ptr);
     return profiles_.size() - 1;
 }
 

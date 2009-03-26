@@ -47,11 +47,11 @@ class ContextProfile : public Profile<Alphabet_T>
     // Returns the index of this context profile.
     int index() const { return index_; }
     // Sets the index of this context profile.
-    void set_index(int index) { index_ = index; }
+    void set_index(int i) { index_ = i; }
     // Returns the prior probability of this context profile.
     float prior() const { return prior_; }
     // Sets the prior probability of this context profile.
-    void set_prior(float prior) { prior_ = prior; }
+    void set_prior(float p) { prior_ = p; }
     // Returns index of central profile column.
     int center() const { return (num_cols() - 1) / 2; }
 
@@ -158,8 +158,8 @@ void ContextProfile<Alphabet_T>::write_header(std::ostream& out) const
 template<class Alphabet_T>
 void ContextProfile<Alphabet_T>::print(std::ostream& out) const
 {
-    out << "Context-profile " << index() << ":" << std::endl;
-    out << "prior probability = " << strprintf("%-10.8g") << std::endl;
+    out << "Context-Profile " << index() << ":" << std::endl;
+    out << "prior probability = " << strprintf("%-10.8g", prior()) << std::endl;
     Profile<Alphabet_T>::print(out);
 }
 
