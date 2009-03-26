@@ -660,7 +660,7 @@ std::vector<float> position_specific_weights_and_diversity(const Alignment<Alpha
     global_weights_and_diversity(alignment, wg);  // compute global sequence weights
 
     LOG(INFO) << "Calculation of position-specific weights and alignment diversity on subalignments ...";
-    LOG(DEBUG1) << "i      ncol   nseq   neff";
+    LOG(DEBUG2) << "i      ncol   nseq   neff";
 
     for (int i = 0; i < num_cols; ++i) {
         change = false;
@@ -729,7 +729,7 @@ std::vector<float> position_specific_weights_and_diversity(const Alignment<Alpha
         for (int k = 0; k < num_seqs; ++k) w[i][k] = wi[k];
         ncoli_debug[i] = ncoli;
 
-        LOG(DEBUG1) << left << setw(7) << i << setw(7) << ncoli_debug[i] << setw(7) << nseqi_debug[i] << setw(7) << neff[i];
+        LOG(DEBUG2) << left << setw(7) << i << setw(7) << ncoli_debug[i] << setw(7) << nseqi_debug[i] << setw(7) << neff[i];
     }  // for i over num_cols
 
     return neff;

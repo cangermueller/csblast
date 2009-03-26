@@ -64,8 +64,8 @@ void MatrixPseudocounts<Alphabet_T>::add_to_sequence(const Sequence<Alphabet_T>&
                                                      Profile<Alphabet_T>& p,
                                                      const Admixture& pca) const
 {
-    LOG(DEBUG) << "Adding substitution matrix pseudocounts to sequence ...";
-    LOG(DEBUG1) << p;
+    LOG(DEBUG2) << "Adding substitution matrix pseudocounts to sequence ...";
+    LOG(DEBUG2) << p;
     if (seq.length() != p.num_cols())
         throw Exception("Cannot add substitution matrix pseudocounts: sequence and profile have different length!");
 
@@ -78,14 +78,14 @@ void MatrixPseudocounts<Alphabet_T>::add_to_sequence(const Sequence<Alphabet_T>&
         }
     }
     normalize(p);
-    LOG(DEBUG1) << p;
+    LOG(DEBUG2) << p;
 }
 
 template<class Alphabet_T>
 void MatrixPseudocounts<Alphabet_T>::add_to_profile(CountsProfile<Alphabet_T>& p, const Admixture& pca) const
 {
-    LOG(DEBUG) << "Adding substitution matrix pseudocounts to profile ...";
-    LOG(DEBUG1) << p;
+    LOG(DEBUG2) << "Adding substitution matrix pseudocounts to profile ...";
+    LOG(DEBUG2) << p;
     const bool logspace = p.logspace();
     if (logspace) p.transform_to_linspace();
 
@@ -108,7 +108,7 @@ void MatrixPseudocounts<Alphabet_T>::add_to_profile(CountsProfile<Alphabet_T>& p
 
     if (logspace) p.transform_to_logspace();
     normalize(p);
-    LOG(DEBUG1) << p;
+    LOG(DEBUG2) << p;
 }
 
 }  // cs

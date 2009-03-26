@@ -248,6 +248,7 @@ void csclust(const Params& params, std::ostream& out)
         sm_pc.add_to_profile(**ci, ConstantAdmixture(params.data_pseudocounts));
         (*ci)->convert_to_counts();
     }
+    out << std::endl;
 
     // cluster training data
     out << strprintf("Clustering training data by expectation maximization (K=%i, W=%i, N=%i) ...",

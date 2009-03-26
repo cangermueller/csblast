@@ -45,7 +45,7 @@ class ClusteringProgressTable : public ProgressBar
     {
         out_ << strprintf("%-4s %4s %4s %7s  %-30s  %9s  %8s\n",
                           "Scan", "Itrs", "Blks", "Epsilon", "E-Step", "log(L)", "+/-");
-        out_ << std::string(76, '-') << std::endl;
+        out_ << std::string(75, '-') << std::endl;
     }
 
     // Starts a new row and prints statistics to outstream.
@@ -142,11 +142,11 @@ class Clustering
     // Reestimate teh parameters using the current responsibilities.
     void maximization_step();
     // Adds the contribution of the responsibilities for a subject to sufficient statistics for priors.
-    void add_contribution_to_priors(const std::valarray<float>& p_zn);
+    void add_contribution_to_priors(const std::valarray<double>& p_zn);
     // Adds the contribution of the responsibilities for a counts profile to sufficient statistics for emissions.
-    void add_contribution_to_emissions(const std::valarray<float>& p_zn, const CountsProfile<Alphabet_T>& c);
+    void add_contribution_to_emissions(const std::valarray<double>& p_zn, const CountsProfile<Alphabet_T>& c);
     // Adds the contribution of the responsibilities for a sequence to sufficient statistics for emissions.
-    void add_contribution_to_emissions(const std::valarray<float>& p_zn, const Sequence<Alphabet_T>& s);
+    void add_contribution_to_emissions(const std::valarray<double>& p_zn, const Sequence<Alphabet_T>& s);
     // Updates global sufficient statistics with sufficient statistics calculated on current block.
     void update_sufficient_statistics(float epsilon);
     // Fills the blocks vector with training data.
@@ -257,19 +257,23 @@ template< class Alphabet_T,
 inline void Clustering<Alphabet_T, Subject_T>::expectation_step(const data_vector& block, float epsilon)
 {
     const int num_profiles = lib_.num_profiles();
-    std::valarray<float> p_zn(0.0f, lib_.num_profiles());
+    std::valarray<double> p_zn(0.0f, lib_.num_profiles());
 
     // Given each training window compute posterior probabilities p_zn[k] of profile k
     for (typename data_vector::const_iterator bi = block.begin(); bi != block.end(); ++bi) {
-        float sum = 0.0f;
+        double sum = 0.0f;
         for (int k = 0; k < num_profiles; ++k) {
             p_zn[k] = lib_[k].prior() * profile_matcher_(lib_[k], **bi, lib_[k].center());
             sum += p_zn[k];
+
+            LOG(DEBUG2) << strprintf("alpha(%i)=%-8.5g   P(c_n|p_%i)=%-8.5g   P(z_n=%-4i)=%-8.5g",
+                                     k, lib_[k].prior(), k, profile_matcher_(lib_[k], **bi, lib_[k].center()), k, p_zn[k]);
         }
         p_zn /= sum;
         add_contribution_to_priors(p_zn);
         add_contribution_to_emissions(p_zn, **bi);
         log_likelihood_ += log(sum) / num_eff_cols_;
+        LOG(DEBUG1) << strprintf("log(L)=%-8.5g", log_likelihood_);
 
         if (progress_table_) progress_table_->print_progress(lib_.num_profiles());
     }
@@ -292,6 +296,7 @@ void Clustering<Alphabet_T, Subject_T>::maximization_step()
     // Assign new priors and emission probabilities
     for (int k = 0; k < num_profiles; ++k) {
         ContextProfile<Alphabet_T>& p_k = *profile_stats_[k];
+        LOG(DEBUG1) << p_k;
 
         lib_[k].set_prior(p_k.prior() * fac);
         ContextProfile<Alphabet_T> tmp(p_k);
@@ -309,7 +314,7 @@ void Clustering<Alphabet_T, Subject_T>::maximization_step()
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-inline void Clustering<Alphabet_T, Subject_T>::add_contribution_to_priors(const std::valarray<float>& p_zn)
+inline void Clustering<Alphabet_T, Subject_T>::add_contribution_to_priors(const std::valarray<double>& p_zn)
 {
     const int num_profiles = lib_.num_profiles();
     for (int k = 0; k < num_profiles; ++k)
@@ -318,7 +323,7 @@ inline void Clustering<Alphabet_T, Subject_T>::add_contribution_to_priors(const 
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-inline void Clustering<Alphabet_T, Subject_T>::add_contribution_to_emissions(const std::valarray<float>& p_zn,
+inline void Clustering<Alphabet_T, Subject_T>::add_contribution_to_emissions(const std::valarray<double>& p_zn,
                                                                              const CountsProfile<Alphabet_T>& c)
 {
     const int num_profiles  = lib_.num_profiles();
@@ -338,7 +343,7 @@ inline void Clustering<Alphabet_T, Subject_T>::add_contribution_to_emissions(con
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-inline void Clustering<Alphabet_T, Subject_T>::add_contribution_to_emissions(const std::valarray<float>& p_zn,
+inline void Clustering<Alphabet_T, Subject_T>::add_contribution_to_emissions(const std::valarray<double>& p_zn,
                                                                              const Sequence<Alphabet_T>& s)
 {
     const int num_profiles  = lib_.num_profiles();
@@ -371,7 +376,7 @@ inline void Clustering<Alphabet_T, Subject_T>::update_sufficient_statistics(floa
         p.set_prior(p.prior() * gamma + p_block.prior());
         for (int j = 0; j < num_cols; ++j) {
             for (int a = 0; a < alphabet_size; ++a) {
-                p[j][a] = gamma * p[j][a]  + p_block[j][a];
+                p[j][a] = gamma * p[j][a] + p_block[j][a];
             }
         }
         reset(p_block);
