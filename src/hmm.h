@@ -89,6 +89,8 @@ class HMM
     bool full() const { return static_cast<int>(states_.size()) == num_states_; }
     // Returns the number of states in the HMM
     int num_states() const { return num_states_; }
+    // Returns the number of states in the HMM
+    int size() const { return num_states_; }
     // Returns the number of columns in each context state.
     int num_cols() const { return num_cols_; }
     // Returns the size of the alphabet of the HMM.

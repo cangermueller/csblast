@@ -61,9 +61,9 @@ class ProfileLibrary
     virtual ~ProfileLibrary() {}
 
     bool full() const { return static_cast<int>(profiles_.size()) == num_profiles_; }
-    // Returns the number of states in the profile library
+    // Returns the number of profiles in the profile library
     int num_profiles() const { return num_profiles_; }
-    // Returns the number of states in the profile library
+    // Returns the number of profiles in the profile library
     int size() const { return num_profiles_; }
     // Returns the number of columns in each context profile.
     int num_cols() const { return num_cols_; }
@@ -71,14 +71,14 @@ class ProfileLibrary
     int alphabet_size() const { return Alphabet_T::instance().size();  }
     // Returns the number of clustering iterations.
     int iterations() const { return iterations_; }
-    // Accessor methods for state i, where i is from interval [0,num_states].
+    // Accessor methods for state i, where i is from interval [0,num_profiles].
     ContextProfile<Alphabet_T>& operator[](int i) { return *profiles_[i]; }
     const ContextProfile<Alphabet_T>& operator[](int i) const { return *profiles_[i]; }
     // Clears the library.
     void clear();
     // Adds the given profile to the library and returns its profile index. Note that number of profile columns must be odd!
     int add_profile(const Profile<Alphabet_T>& profile);
-    // Returns an iterator to a list of pointers of states.
+    // Returns an iterator to a list of pointers to context profiles.
     profile_iterator begin() { return profiles_.begin(); }
     // Returns an iterator pointing past the end of a list of pointers of states.
     profile_iterator end() { return profiles_.end(); }

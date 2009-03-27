@@ -1,12 +1,12 @@
-#ifndef CS_BAUM_WELCH_TRAINING_H
-#define CS_BAUM_WELCH_TRAINING_H
+#ifndef CS_CLUSTERING_H
+#define CS_CLUSTERING_H
 /***************************************************************************
  *   Copyright (C) 2008 by Andreas Biegert                                 *
  *   andreas.biegert@googlemail.com                                        *
  ***************************************************************************/
 
 // DESCRIPTION:
-// Encapsulation of Baum-Welch training for HMMs.
+// Encapsulation of expectation-maximization clustering.
 
 #include <cmath>
 
@@ -14,9 +14,8 @@
 #include <valarray>
 #include <vector>
 
-#include "forward_backward_algorithm.h"  // FIXME: remove dependence on ForwardBackward params!
-#include "log.h"
 #include "context_profile.h"
+#include "log.h"
 #include "profile_matcher.h"
 #include "profile_library.h"
 #include "progress_bar.h"
@@ -73,10 +72,10 @@ class ClusteringProgressTable : public ProgressBar
 
 
 
-struct ClusteringParams : public ForwardBackwardParams
+struct ClusteringParams : public ProfileMatcherParams
 {
     ClusteringParams()
-            : ForwardBackwardParams(),
+            : ProfileMatcherParams(),
               min_scans(10),
               max_scans(500),
               log_likelihood_change(2e-4f),
@@ -87,7 +86,7 @@ struct ClusteringParams : public ForwardBackwardParams
     { }
 
     ClusteringParams(const ClusteringParams& params)
-            : ForwardBackwardParams(params),
+            : ProfileMatcherParams(params),
               min_scans(params.min_scans),
               max_scans(params.max_scans),
               log_likelihood_change(params.log_likelihood_change),
@@ -166,6 +165,8 @@ class Clustering
     blocks_vector blocks_;
     // Profile library to be optimized.
     ProfileLibrary<Alphabet_T>& lib_;
+    // Profile matcher for calculation of emission probabilities.
+    ProfileMatcher<Alphabet_T> profile_matcher_;
     // Global expected sufficient statistics for emissions and state priors.
     profiles_vector profile_stats_;
     // Expeted sufficient statistics for emissions and state priors based on current block.
@@ -180,8 +181,6 @@ class Clustering
     int scan_;
     // Effective number of training columns.
     int num_eff_cols_;
-    // Profile matcher for calculation of emission probabilities.
-    ProfileMatcher<Alphabet_T> profile_matcher_;
     // Progress info object for output of progress table.
     ClusteringProgressTable* progress_table_;
 };
@@ -198,14 +197,14 @@ inline Clustering<Alphabet_T, Subject_T>::Clustering(const ClusteringParams& par
           data_(data),
           blocks_(),
           lib_(lib),
+          profile_matcher_(lib.num_cols(), params),
           profile_stats_(),
           profile_stats_block_(),
           log_likelihood_(0.0f),
           log_likelihood_prev_(0.0f),
           iterations_(0),
           scan_(1),
-          num_eff_cols_(0),
-          profile_matcher_(),
+          num_eff_cols_(profile_matcher_.num_eff_cols() * data_.size()),
           progress_table_(progress_table)
 {
     init();
@@ -395,11 +394,6 @@ void Clustering<Alphabet_T, Subject_T>::init()
 
     // Initialize total amount of work per scan
     if (progress_table_) progress_table_->init(lib_.num_profiles() * data_.size());
-
-    // Set number of effective columns for log-likelihood calculation
-    if (!params_.ignore_context && lib_.num_cols() > 1)
-        profile_matcher_.set_weights(lib_.num_cols(), params_.weight_center, params_.weight_decay);
-    num_eff_cols_ = profile_matcher_.num_eff_cols() * data_.size();
 }
 
 template< class Alphabet_T,

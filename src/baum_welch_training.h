@@ -72,10 +72,10 @@ class TrainingProgressTable : public ProgressBar
 
 
 
-struct BaumWelchParams : public ForwardBackwardParams
+struct BaumWelchParams : public ProfileMatcherParams
 {
     BaumWelchParams()
-            : ForwardBackwardParams(),
+            : ProfileMatcherParams(),
               min_scans(10),
               max_scans(500),
               max_connectivity(0),
@@ -88,7 +88,7 @@ struct BaumWelchParams : public ForwardBackwardParams
     { }
 
     BaumWelchParams(const BaumWelchParams& params)
-            : ForwardBackwardParams(params),
+            : ProfileMatcherParams(params),
               min_scans(params.min_scans),
               max_scans(params.max_scans),
               max_connectivity(params.max_connectivity),
@@ -176,6 +176,8 @@ class BaumWelchTraining
     blocks_vector blocks_;
     // HMM to be trained
     HMM<Alphabet_T>& hmm_;
+    // Profile matcher for calculation of emission probabilities.
+    ProfileMatcher<Alphabet_T> profile_matcher_;
     // Global expected sufficient statistics for transitions
     sparse_matrix<float> transition_stats_;
     // Global expeted sufficient statistics for emissions and state priors
@@ -210,6 +212,7 @@ inline BaumWelchTraining<Alphabet_T, Subject_T>::BaumWelchTraining(const BaumWel
           data_(data),
           blocks_(),
           hmm_(hmm),
+          profile_matcher_(hmm.num_cols(), params),
           transition_stats_(hmm.num_states(), hmm.num_states()),
           profile_stats_(),
           transition_stats_block_(hmm.num_states(), hmm.num_states()),
@@ -272,7 +275,7 @@ inline void BaumWelchTraining<Alphabet_T, Subject_T>::expectation_step(const dat
     // Run forward and backward algorithm on each subject in current block
     for (typename data_vector::const_iterator bi = block.begin(); bi != block.end(); ++bi) {
         ForwardBackwardMatrices fbm((*bi)->length(), hmm_.num_states());
-        forward_backward_algorithm(hmm_, **bi, params_, fbm);
+        forward_backward_algorithm(hmm_, **bi, profile_matcher_, fbm);
 
         if (progress_table_) progress_table_->print_progress(hmm_.num_states() * (**bi).length());
         add_contribution_to_priors(fbm);
@@ -472,10 +475,7 @@ void BaumWelchTraining<Alphabet_T, Subject_T>::init()
     if (progress_table_) progress_table_->init(hmm_.num_states() * num_cols);
 
     // Set number of effective columsn for log-likelihood calculation
-    ProfileMatcher<Alphabet_T> matcher;
-    if (!params_.ignore_context && hmm_.num_cols() > 1)
-        matcher.set_weights(hmm_.num_cols(), params_.weight_center, params_.weight_decay);
-    num_eff_cols_ = matcher.num_eff_cols() * num_cols;
+    num_eff_cols_ = profile_matcher_.num_eff_cols() * num_cols;
 }
 
 template< class Alphabet_T,

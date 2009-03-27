@@ -89,42 +89,18 @@ struct ForwardBackwardMatrices
 
 
 
-struct ForwardBackwardParams
-{
-    ForwardBackwardParams()
-            : ignore_context(false),
-              weight_center(1.6f),
-              weight_decay(0.85f)
-    { }
-
-    ForwardBackwardParams(const ForwardBackwardParams& p)
-            : ignore_context(p.ignore_context),
-              weight_center(p.weight_center),
-              weight_decay(p.weight_decay)
-    { }
-
-    virtual ~ForwardBackwardParams()
-    { }
-
-    bool ignore_context;
-    float weight_center;
-    float weight_decay;
-};
-
-
-
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
 void forward_backward_algorithm(const HMM<Alphabet_T>& hmm,
                                 const Subject_T<Alphabet_T>& subject,
-                                const ForwardBackwardParams& params,
+                                const ProfileMatcher<Alphabet_T>& matcher,
                                 ForwardBackwardMatrices& m)
 {
     LOG(DEBUG) << "Running forward-backward algorithm ...";
     LOG(DEBUG1) << hmm;
     LOG(DEBUG1) << subject;
 
-    forward_algorithm(hmm, subject, params, m);
+    forward_algorithm(hmm, subject, matcher, m);
     backward_algorithm(hmm, subject, m);
 }
 
@@ -132,21 +108,16 @@ template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
 void forward_algorithm(const HMM<Alphabet_T>& hmm,
                        const Subject_T<Alphabet_T>& subject,
-                       const ForwardBackwardParams& params,
+                       const ProfileMatcher<Alphabet_T>& matcher,
                        ForwardBackwardMatrices& m)
 {
     typedef typename ForwardBackwardMatrices::value_type value_type;
     typedef typename HMM<Alphabet_T>::const_state_iterator const_state_iterator;
     typedef typename State<Alphabet_T>::const_transition_iterator const_transition_iterator;
 
-    LOG(DEBUG1) << "Forward pass ...";
+    LOG(DEBUG1) << "Forward algorithm ...";
     const int length     = subject.length();
     const int num_states = hmm.num_states();
-
-    // Setup profile matcher
-    ProfileMatcher<Alphabet_T> matcher;
-    if (!params.ignore_context && hmm.num_cols() > 1)
-        matcher.set_weights(hmm.num_cols(), params.weight_center, params.weight_decay);
 
     // Initialization
     LOG(DEBUG1) << strprintf("i=%i", 0);
@@ -202,7 +173,7 @@ void backward_algorithm(const HMM<Alphabet_T>& hmm,
     typedef typename HMM<Alphabet_T>::const_state_iterator const_state_iterator;
     typedef typename State<Alphabet_T>::const_transition_iterator const_transition_iterator;
 
-    LOG(DEBUG1) << "Backward pass ...";
+    LOG(DEBUG1) << "Backward algorithm ...";
     const int length     = subject.length();
     const int num_states = hmm.num_states();
 
