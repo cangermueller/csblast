@@ -26,7 +26,7 @@ class ProgressBar
     { }
 
     // Sets the total amount of work to be done in each iteration.
-    void init(int total)
+    void set_total_work(int total)
     {
         work_total_ = total;
     }

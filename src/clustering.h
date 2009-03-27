@@ -15,6 +15,7 @@
 #include <vector>
 
 #include "context_profile.h"
+#include "expectation_maximization.h"
 #include "log.h"
 #include "profile_matcher.h"
 #include "profile_library.h"
@@ -32,14 +33,17 @@ class Clustering;
 
 
 
-class ClusteringProgressTable : public ProgressBar
+template< class Alphabet_T,
+          template<class Alphabet_U> class Subject_T >
+class ClusteringProgressTable : public ProgressTable< Alphabet_T, Subject_T<Alphabet_T> >
 {
   public:
-    ClusteringProgressTable(std::ostream& out = std::cout)
-            : ProgressBar(out, 30)
+    ClusteringProgressTable(const Clustering< Alphabet_T, Subject_T<Alphabet_T> >* em_clust,
+                            std::ostream& out = std::cout,
+                            int width = 30)
+            : ProgressTable(em_clust, out, width)
     { }
 
-    // Prints header information.
     void print_header()
     {
         out_ << strprintf("%-4s %4s %4s %7s  %-30s  %9s  %8s\n",
@@ -47,99 +51,59 @@ class ClusteringProgressTable : public ProgressBar
         out_ << std::string(75, '-') << std::endl;
     }
 
-    // Starts a new row and prints statistics to outstream.
-    void print_row_begin(int scan, int iter, int blocks, float epsilon)
+    void print_row_begin()
     {
         reset();
-        out_ << strprintf("%-4i %4i %4i %7.4f  ", scan, iter, blocks, epsilon);
-        out_.flush();
+        // out_ << strprintf("%-4i %4i %4i %7.4f  ", scan, iter, blocks, epsilon);
+        // out_.flush();
     }
 
-    // Ends the current row and prints likelihood.
-    void print_row_end(float log_likelihood)
+    void print_row_end()
     {
-        out_ << strprintf("  %9.5f\n", log_likelihood);
-        out_.flush();
-    }
-
-    // Ends the current row and prints likelihood with change from previous scan.
-    void print_row_end(float log_likelihood, float delta)
-    {
-        out_ << strprintf("  %9.5f  %+8.5f\n", log_likelihood, delta);
-        out_.flush();
+        // out_ << strprintf("  %9.5f\n", log_likelihood);
+        // out_.flush();
     }
 };
 
 
 
-struct ClusteringParams : public ProfileMatcherParams
+struct ClusteringParams : public ProfileMatcherParams, public ExpectationMaximizationParams
 {
     ClusteringParams()
             : ProfileMatcherParams(),
-              min_scans(10),
-              max_scans(500),
-              log_likelihood_change(2e-4f),
-              num_blocks(0),
-              epsilon_null(0.5f),
-              beta(0.2f),
-              epsilon_batch(0.05f)
+              ExpectationMaximizationParams()
     { }
 
     ClusteringParams(const ClusteringParams& params)
             : ProfileMatcherParams(params),
-              min_scans(params.min_scans),
-              max_scans(params.max_scans),
-              log_likelihood_change(params.log_likelihood_change),
-              num_blocks(params.num_blocks),
-              epsilon_null(params.epsilon_null),
-              beta(params.beta),
-              epsilon_batch(params.epsilon_batch)
+              ExpectationMaximizationParams(params)
     { }
-
-    // Minimal number of data scans.
-    int min_scans;
-    // Maximum number of data scans.
-    int max_scans;
-    // Log-likelihood change per column for convergence.
-    float log_likelihood_change;
-    // Number of blocks into which the training data are divided (default:  B=N^(3/8)).
-    int num_blocks;
-    // Initial value for learning rate epsilon (1-epsilon is preserved fraction of sufficient statistics).
-    float epsilon_null;
-    // Paramter governing exponential decay of epsilon per scan.
-    float beta;
-    // Learning rate epsilon below which training is switched to batch mode.
-    float epsilon_batch;
 };
 
 
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-class Clustering
+class Clustering : public ExpectationMaximization< Alphabet_T, Subject_T<Alphabet_T> >
 {
   public:
-    typedef typename std::vector< shared_ptr< Subject_T<Alphabet_T> > > data_vector;
-    typedef typename std::vector<data_vector> blocks_vector;
     typedef typename std::vector< shared_ptr< ContextProfile<Alphabet_T> > > profiles_vector;
 
     // Initializes a new clustering object.
     Clustering(const ClusteringParams& params,
                const data_vector& data,
                ProfileLibrary<Alphabet_T>& lib,
-               ClusteringProgressTable* progress_table = NULL);
+               std::ostream& out == std::cout);
 
-    virtual ~Clustering()
-    { }
+    virtual ~Clustering();
 
-    // Optimize the profile library by EM clustering.
-    void run();
-
-  private:
+  protected:
     // Evaluates the responsibilities using the current parameter values.
-    void expectation_step(const data_vector& block, float epsilon);
+    virtual void expectation_step(const data_vector& block, float epsilon);
     // Reestimate teh parameters using the current responsibilities.
-    void maximization_step();
+    virtual void maximization_step();
+    // Prepares all members for clustering.
+    virtual void init();
     // Adds the contribution of the responsibilities for a subject to sufficient statistics for priors.
     void add_contribution_to_priors(const std::valarray<double>& p_zn);
     // Adds the contribution of the responsibilities for a counts profile to sufficient statistics for emissions.
@@ -148,41 +112,15 @@ class Clustering
     void add_contribution_to_emissions(const std::valarray<double>& p_zn, const Sequence<Alphabet_T>& s);
     // Updates global sufficient statistics with sufficient statistics calculated on current block.
     void update_sufficient_statistics(float epsilon);
-    // Fills the blocks vector with training data.
-    void setup_blocks(bool batch_mode = false);
-    // Prepares all members for clustering.
-    void init();
-    // Calculates the change between current log-likelihood and the log-likelihood in previous scan.
-    float log_likelihood_change();
-    // Returns true if any termination condition is fullfilled.
-    bool terminate();
 
-    // Parameter wrapper for clustering.
-    const ClusteringParams& params_;
-    // Training data (either sequences or counts profiles)
-    const data_vector& data_;
-    // Blocks of training data.
-    blocks_vector blocks_;
-    // Profile library to be optimized.
-    ProfileLibrary<Alphabet_T>& lib_;
+    // Profile library with context profiles
+    ProfileLibrary<Alphabet_T> lib_;
     // Profile matcher for calculation of emission probabilities.
     ProfileMatcher<Alphabet_T> profile_matcher_;
     // Global expected sufficient statistics for emissions and state priors.
     profiles_vector profile_stats_;
     // Expeted sufficient statistics for emissions and state priors based on current block.
     profiles_vector profile_stats_block_;
-    // Incremental likelihood in current iteration
-    float log_likelihood_;
-    // Complete likelihood after last complete scan of training data
-    float log_likelihood_prev_;
-    // Number of traning iterations performed so far.
-    int iterations_;
-    // Number of current data scan.
-    int scan_;
-    // Effective number of training columns.
-    int num_eff_cols_;
-    // Progress info object for output of progress table.
-    ClusteringProgressTable* progress_table_;
 };
 
 
@@ -394,6 +332,8 @@ void Clustering<Alphabet_T, Subject_T>::init()
 
     // Initialize total amount of work per scan
     if (progress_table_) progress_table_->init(lib_.num_profiles() * data_.size());
+
+    // TODO: num_eff_cols = matcher.num_eff_cols * data.size
 }
 
 template< class Alphabet_T,
