@@ -78,8 +78,7 @@ TEST_F(ClusteringTest, ZincFingerAlisClustering)
     p.epsilon_null = 1.0f;
     p.beta         = 0.0f;
     p.min_scans    = 5;
-    ClusteringProgressTable prg_table(std::cout);
-    Clustering<AminoAcid, CountsProfile> em_clust(p, counts_, lib_, &prg_table);
+    Clustering<AminoAcid, CountsProfile> em_clust(p, counts_, lib_, std::cout);
     em_clust.run();
 
     lib_.transform_to_linspace();
@@ -94,8 +93,7 @@ TEST_F(ClusteringTest, ZincFingerAlisOnlineClustering)
     p.epsilon_null = 0.05f;
     p.beta         = 0.5f;
     p.min_scans    = 5;
-    ClusteringProgressTable prg_table(std::cout);
-    Clustering<AminoAcid, CountsProfile> em_clust(p, counts_, lib_, &prg_table);
+    Clustering<AminoAcid, CountsProfile> em_clust(p, counts_, lib_, std::cout);
     em_clust.run();
 
     lib_.transform_to_linspace();

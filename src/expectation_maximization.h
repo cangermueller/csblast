@@ -13,6 +13,7 @@
 
 #include "progress_table.h"
 #include "shared_ptr.h"
+#include "utils.h"
 
 namespace cs
 {
@@ -63,16 +64,26 @@ class ExpectationMaximization
   public:
     typedef typename std::vector< shared_ptr< Subject_T<Alphabet_T> > > data_vector;
     typedef typename std::vector<data_vector> blocks_vector;
-    typedef ProgressTable< Alphabet_T, Subject_T<Alphabet_T> > prg_table_type;
 
-    // Runs the expectation maximization algorithm until termination criterion is met.
+    // Runs EM algorithm until termination criterion is met.
     void run();
+    // Returns number of current scan.
+    int scan() const { return scan_; }
+    // Returns number of completed EM iterations.
+    int iterations() const { return iterations_; }
+    // Returns number of training blocks in current scan.
+    int num_blocks() const { return blocks_.size(); }
+    // Returns learning rate epsilon in current scan.
+    float epsilon() const { return epsilon_; }
+    // Returns most recent log-likelihood.
+    float log_likelihood() const { return log_likelihood_; }
+    // Calculates the change between current log-likelihood and the log-likelihood in previous scan.
+    float log_likelihood_change() const;
 
   protected:
     // Constructs a new EM object.
     ExpectationMaximization(const ExpectationMaximizationParams& params,
-                            const data_vector& data,
-                            const prg_table_type* progress_table);
+                            const data_vector& data);
 
     virtual ~ExpectationMaximization()
     { }
@@ -84,18 +95,16 @@ class ExpectationMaximization
     // Initializes members for running the EM algorithm.
     virtual void init() = 0;
     // Returns true if any termination condition is fullfilled.
-    virtual bool terminate();
+    virtual bool terminate() const;
     // Fills the blocks vector with training data.
-    void setup_blocks(bool batch_mode = false);
-    // Calculates the change between current log-likelihood and the log-likelihood in previous scan.
-    float log_likelihood_change();
+    void setup_blocks(bool force_batch = false);
 
     // Parameter wrapper for clustering.
     const ExpectationMaximizationParams& params_;
     // Training data (either sequences or counts profiles)
     const data_vector& data_;
     // Progress table object for output.
-    prg_table_type* progress_table_;
+    ProgressTable<Alphabet_T, Subject_T>* progress_table_;
     // Effective number of training columns.
     int num_eff_cols_;
     // Blocks of training data.
@@ -110,8 +119,6 @@ class ExpectationMaximization
     int scan_;
     // Current learning rate epsilon.
     float epsilon_;
-
-    friend class prg_table_type;
 };
 
 
@@ -119,50 +126,50 @@ class ExpectationMaximization
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
 inline ExpectationMaximization<Alphabet_T, Subject_T>::ExpectationMaximization(const ExpectationMaximizationParams& params,
-                                                                               const data_vector& data,
-                                                                               const prg_table_type* progress_table)
+                                                                               const data_vector& data)
         : params_(params),
           data_(data),
-          progress_table_(progress_table),
+          progress_table_(NULL),
           num_eff_cols_(0),
           log_likelihood_(0.0f),
           log_likelihood_prev_(0.0f),
           iterations_(0),
           scan_(1),
-          epsilon(1.0f)
+          epsilon_(1.0f)
 { }
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
 void ExpectationMaximization<Alphabet_T, Subject_T>::run()
 {
-    progress_table_->print_header();
+    setup_blocks(true);
+    if (progress_table_) progress_table_->print_header();
 
     // Calculate log-likelihood baseline by batch EM without blocks
-    progress_table_->print_row_begin();
-    expectation_step(data_);
+    if (progress_table_) progress_table_->print_row_begin();
+    expectation_step(blocks_.front());
     maximization_step();
     ++iterations_;
-    progress_table_->print_row_end;
+    if (progress_table_) progress_table_->print_row_end();
 
     // Perform E-step and M-step on each training block until convergence
     setup_blocks();
     while (!terminate()) {
-        if (static_cast<int>(blocks_.size()) > 1) epsilon = params_.epsilon_null * exp(-params_.beta * (scan_ - 1));
+        if (static_cast<int>(blocks_.size()) > 1) epsilon_ = params_.epsilon_null * exp(-params_.beta * (scan_ - 1));
         log_likelihood_prev_ = log_likelihood_;
         log_likelihood_      = 0.0;
         ++scan_;
 
-        progress_table_->print_row_begin();
+        if (progress_table_) progress_table_->print_row_begin();
         for (int b = 0; b < static_cast<int>(blocks_.size()); ++b) {
             expectation_step(blocks_[b]);
             maximization_step();
             ++iterations_;
         }
-        progress_table_->print_row_end();
-        if (epsilon < params_.epsilon_batch && static_cast<int>(blocks_.size()) > 1) {
+        if (progress_table_) progress_table_->print_row_end();
+        if (epsilon_ < params_.epsilon_batch && static_cast<int>(blocks_.size()) > 1) {
             setup_blocks(true);
-            epsilon = 1.0f;
+            epsilon_ = 1.0f;
         }
     }
 }
@@ -171,8 +178,7 @@ template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
 inline void ExpectationMaximization<Alphabet_T, Subject_T>::setup_blocks(bool force_batch)
 {
-    if (force_batch) {
-        if (static_cast<int>(blocks_.size()) == 1) return;  // already in batch mode
+    if (force_batch && static_cast<int>(blocks_.size()) != 1) {
         blocks_.clear();
         blocks_.push_back(data_);
 
@@ -180,6 +186,7 @@ inline void ExpectationMaximization<Alphabet_T, Subject_T>::setup_blocks(bool fo
         const int num_blocks = params_.num_blocks == 0 ? iround(pow(data_.size(), 3.0/8.0)) : params_.num_blocks;
         const int block_size = iround(data_.size() / num_blocks);
 
+        blocks_.clear();
         for (int b = 0; b < num_blocks; ++b) {
             data_vector block;
             if (b == num_blocks - 1)  // last block may differ in block size
@@ -195,14 +202,14 @@ inline void ExpectationMaximization<Alphabet_T, Subject_T>::setup_blocks(bool fo
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-inline float ExpectationMaximization<Alphabet_T, Subject_T>::log_likelihood_change()
+inline float ExpectationMaximization<Alphabet_T, Subject_T>::log_likelihood_change() const
 {
     return log_likelihood_ - log_likelihood_prev_;
 }
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-inline bool ExpectationMaximization<Alphabet_T, Subject_T>::terminate()
+inline bool ExpectationMaximization<Alphabet_T, Subject_T>::terminate() const
 {
     if (scan_ < params_.min_scans)
         return false;

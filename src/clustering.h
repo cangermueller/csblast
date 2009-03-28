@@ -19,7 +19,7 @@
 #include "log.h"
 #include "profile_matcher.h"
 #include "profile_library.h"
-#include "progress_bar.h"
+#include "progress_table.h"
 #include "shared_ptr.h"
 #include "utils.h"
 
@@ -29,42 +29,7 @@ namespace cs
 // Forward declaration;
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-class Clustering;
-
-
-
-template< class Alphabet_T,
-          template<class Alphabet_U> class Subject_T >
-class ClusteringProgressTable : public ProgressTable< Alphabet_T, Subject_T<Alphabet_T> >
-{
-  public:
-    ClusteringProgressTable(const Clustering< Alphabet_T, Subject_T<Alphabet_T> >* em_clust,
-                            std::ostream& out = std::cout,
-                            int width = 30)
-            : ProgressTable(em_clust, out, width)
-    { }
-
-    void print_header()
-    {
-        out_ << strprintf("%-4s %4s %4s %7s  %-30s  %9s  %8s\n",
-                          "Scan", "Itrs", "Blks", "Epsilon", "E-Step", "log(L)", "+/-");
-        out_ << std::string(75, '-') << std::endl;
-    }
-
-    void print_row_begin()
-    {
-        reset();
-        // out_ << strprintf("%-4i %4i %4i %7.4f  ", scan, iter, blocks, epsilon);
-        // out_.flush();
-    }
-
-    void print_row_end()
-    {
-        // out_ << strprintf("  %9.5f\n", log_likelihood);
-        // out_.flush();
-    }
-};
-
+class ClusteringProgressTable;
 
 
 struct ClusteringParams : public ProfileMatcherParams, public ExpectationMaximizationParams
@@ -81,25 +46,36 @@ struct ClusteringParams : public ProfileMatcherParams, public ExpectationMaximiz
 };
 
 
-
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-class Clustering : public ExpectationMaximization< Alphabet_T, Subject_T<Alphabet_T> >
+class Clustering : public ExpectationMaximization<Alphabet_T, Subject_T>
 {
   public:
+    typedef typename std::vector< shared_ptr< Subject_T<Alphabet_T> > > data_vector;
     typedef typename std::vector< shared_ptr< ContextProfile<Alphabet_T> > > profiles_vector;
 
-    // Initializes a new clustering object.
+    // Initializes a new clustering object without output.
+    Clustering(const ClusteringParams& params,
+               const data_vector& data,
+               ProfileLibrary<Alphabet_T>& lib);
+    // Initializes a new clustering object with output.
     Clustering(const ClusteringParams& params,
                const data_vector& data,
                ProfileLibrary<Alphabet_T>& lib,
-               std::ostream& out == std::cout);
+               std::ostream& out);
 
     virtual ~Clustering();
 
   protected:
+    // Needed to access names in templatized base class
+    using ExpectationMaximization<Alphabet_T, Subject_T>::progress_table_;
+    using ExpectationMaximization<Alphabet_T, Subject_T>::log_likelihood_;
+    using ExpectationMaximization<Alphabet_T, Subject_T>::num_eff_cols_;
+    using ExpectationMaximization<Alphabet_T, Subject_T>::epsilon_;
+    using ExpectationMaximization<Alphabet_T, Subject_T>::data_;
+
     // Evaluates the responsibilities using the current parameter values.
-    virtual void expectation_step(const data_vector& block, float epsilon);
+    virtual void expectation_step(const data_vector& block);
     // Reestimate teh parameters using the current responsibilities.
     virtual void maximization_step();
     // Prepares all members for clustering.
@@ -111,7 +87,7 @@ class Clustering : public ExpectationMaximization< Alphabet_T, Subject_T<Alphabe
     // Adds the contribution of the responsibilities for a sequence to sufficient statistics for emissions.
     void add_contribution_to_emissions(const std::valarray<double>& p_zn, const Sequence<Alphabet_T>& s);
     // Updates global sufficient statistics with sufficient statistics calculated on current block.
-    void update_sufficient_statistics(float epsilon);
+    void update_sufficient_statistics();
 
     // Profile library with context profiles
     ProfileLibrary<Alphabet_T> lib_;
@@ -124,74 +100,70 @@ class Clustering : public ExpectationMaximization< Alphabet_T, Subject_T<Alphabe
 };
 
 
+template< class Alphabet_T,
+          template<class Alphabet_U> class Subject_T >
+class ClusteringProgressTable : public ProgressTable<Alphabet_T, Subject_T>
+{
+  public:
+    // Needed to access names in templatized base class
+    using ProgressTable<Alphabet_T, Subject_T>::reset;
+
+    ClusteringProgressTable(const Clustering<Alphabet_T, Subject_T>* em_clust,
+                            std::ostream& out = std::cout,
+                            int width = 30);
+
+    virtual void print_header();
+    virtual void print_row_begin();
+    virtual void print_row_end();
+
+  protected:
+    // Needed to access names in templatized base class
+    using ProgressTable<Alphabet_T, Subject_T>::em_;
+    using ProgressTable<Alphabet_T, Subject_T>::out_;
+};
+
+
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
 inline Clustering<Alphabet_T, Subject_T>::Clustering(const ClusteringParams& params,
                                                      const data_vector& data,
-                                                     ProfileLibrary<Alphabet_T>& lib,
-                                                     ClusteringProgressTable* progress_table)
-        : params_(params),
-          data_(data),
-          blocks_(),
+                                                     ProfileLibrary<Alphabet_T>& lib)
+        : ExpectationMaximization<Alphabet_T, Subject_T>(params, data),
           lib_(lib),
           profile_matcher_(lib.num_cols(), params),
           profile_stats_(),
-          profile_stats_block_(),
-          log_likelihood_(0.0f),
-          log_likelihood_prev_(0.0f),
-          iterations_(0),
-          scan_(1),
-          num_eff_cols_(profile_matcher_.num_eff_cols() * data_.size()),
-          progress_table_(progress_table)
+          profile_stats_block_()
 {
     init();
 }
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-void Clustering<Alphabet_T, Subject_T>::run()
+inline Clustering<Alphabet_T, Subject_T>::Clustering(const ClusteringParams& params,
+                                                     const data_vector& data,
+                                                     ProfileLibrary<Alphabet_T>& lib,
+                                                     std::ostream& out)
+        : ExpectationMaximization<Alphabet_T, Subject_T>(params, data),
+          lib_(lib),
+          profile_matcher_(lib.num_cols(), params),
+          profile_stats_(),
+          profile_stats_block_()
 {
-    LOG(DEBUG) << "Running expecation-maximization clustering on ...";
-    LOG(DEBUG) << lib_;
-
-    if (progress_table_) progress_table_->print_header();
-
-    // Calculate log-likelihood baseline by batch EM without blocks
-    float epsilon = 1.0f;
-    if (progress_table_) progress_table_->print_row_begin(scan_, lib_.iterations(), 1, epsilon);
-    expectation_step(data_, epsilon);
-    maximization_step();
-    ++iterations_;
-    if (progress_table_) progress_table_->print_row_end(log_likelihood_);
-
-    // Perform E-step and M-step on each training block until convergence
-    setup_blocks();
-    while (!terminate()) {
-        if (static_cast<int>(blocks_.size()) > 1) epsilon = params_.epsilon_null * exp(-params_.beta * (scan_ - 1));
-        log_likelihood_prev_ = log_likelihood_;
-        log_likelihood_      = 0.0;
-        ++scan_;
-
-        if (progress_table_) progress_table_->print_row_begin(scan_, lib_.iterations(), blocks_.size(), epsilon);
-        for (int b = 0; b < static_cast<int>(blocks_.size()); ++b) {
-            expectation_step(blocks_[b], epsilon);
-            maximization_step();
-            ++iterations_;
-        }
-        if (progress_table_) progress_table_->print_row_end(log_likelihood_, log_likelihood_change());
-        if (epsilon < params_.epsilon_batch && static_cast<int>(blocks_.size()) > 1) {
-            setup_blocks(true);
-            epsilon = 1.0f;
-        }
-    }
-
-    LOG(DEBUG) << lib_;
+    progress_table_ = new ClusteringProgressTable<Alphabet_T, Subject_T>(this, out);
+    init();
 }
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-inline void Clustering<Alphabet_T, Subject_T>::expectation_step(const data_vector& block, float epsilon)
+inline Clustering<Alphabet_T, Subject_T>::~Clustering()
+{
+    if (progress_table_) delete progress_table_;
+}
+
+template< class Alphabet_T,
+          template<class Alphabet_U> class Subject_T >
+inline void Clustering<Alphabet_T, Subject_T>::expectation_step(const data_vector& block)
 {
     const int num_profiles = lib_.num_profiles();
     std::valarray<double> p_zn(0.0f, lib_.num_profiles());
@@ -215,7 +187,7 @@ inline void Clustering<Alphabet_T, Subject_T>::expectation_step(const data_vecto
         if (progress_table_) progress_table_->print_progress(lib_.num_profiles());
     }
 
-    update_sufficient_statistics(epsilon);
+    update_sufficient_statistics();
 }
 
 template< class Alphabet_T,
@@ -245,8 +217,7 @@ void Clustering<Alphabet_T, Subject_T>::maximization_step()
         }
     }
 
-    // Increment iteration counter in HMM
-    ++lib_;
+    ++lib_;  // Increment iteration counter
 }
 
 template< class Alphabet_T,
@@ -298,9 +269,9 @@ inline void Clustering<Alphabet_T, Subject_T>::add_contribution_to_emissions(con
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-inline void Clustering<Alphabet_T, Subject_T>::update_sufficient_statistics(float epsilon)
+inline void Clustering<Alphabet_T, Subject_T>::update_sufficient_statistics()
 {
-    const float gamma       = 1.0f - epsilon;
+    const float gamma       = 1.0f - epsilon_;
     const int num_profiles  = lib_.num_profiles();
     const int num_cols      = lib_.num_cols();
     const int alphabet_size = lib_.alphabet_size();
@@ -331,54 +302,49 @@ void Clustering<Alphabet_T, Subject_T>::init()
     }
 
     // Initialize total amount of work per scan
-    if (progress_table_) progress_table_->init(lib_.num_profiles() * data_.size());
+    if (progress_table_) progress_table_->set_total_work(lib_.num_profiles() * data_.size());
 
-    // TODO: num_eff_cols = matcher.num_eff_cols * data.size
+    // Compute effective number of training data columns
+    num_eff_cols_ = profile_matcher_.num_eff_cols() * data_.size();
+}
+
+
+
+template< class Alphabet_T,
+          template<class Alphabet_U> class Subject_T >
+ClusteringProgressTable<Alphabet_T, Subject_T>::ClusteringProgressTable(const Clustering<Alphabet_T, Subject_T>* em_clust,
+                        std::ostream& out,
+                        int width)
+        : ProgressTable<Alphabet_T, Subject_T>(em_clust, out, width)
+{ }
+
+template< class Alphabet_T,
+          template<class Alphabet_U> class Subject_T >
+void ClusteringProgressTable<Alphabet_T, Subject_T>::print_header()
+{
+    out_ << strprintf("%-4s %4s %4s %7s  %-30s  %9s  %8s\n",
+                      "Scan", "Itrs", "Blks", "Epsilon", "E-Step", "log(L)", "+/-");
+    out_ << std::string(75, '-') << std::endl;
 }
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-inline void Clustering<Alphabet_T, Subject_T>::setup_blocks(bool batch_mode)
+void ClusteringProgressTable<Alphabet_T, Subject_T>::print_row_begin()
 {
-    if (batch_mode) {
-        if (static_cast<int>(blocks_.size()) == 1) return;  // already in batch mode
-        blocks_.clear();
-        blocks_.push_back(data_);
-
-    } else {
-        const int num_blocks = params_.num_blocks == 0 ? iround(pow(data_.size(), 3.0/8.0)) : params_.num_blocks;
-        const int block_size = iround(data_.size() / num_blocks);
-
-        for (int b = 0; b < num_blocks; ++b) {
-            data_vector block;
-            if (b == num_blocks - 1)  // last block may differ in block size
-                for (int n = b * block_size; n < static_cast<int>(data_.size()); ++n)
-                    block.push_back(data_[n]);
-            else
-                for (int n = b * block_size; n < (b+1) * block_size; ++n)
-                    block.push_back(data_[n]);
-            blocks_.push_back(block);
-        }
-    }
+    reset();
+    out_ << strprintf("%-4i %4i %4i %7.4f  ", em_->scan(), em_->iterations(), em_->num_blocks(), em_->epsilon());
+    out_.flush();
 }
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-inline float Clustering<Alphabet_T, Subject_T>::log_likelihood_change()
+void ClusteringProgressTable<Alphabet_T, Subject_T>::print_row_end()
 {
-    return log_likelihood_ - log_likelihood_prev_;
-}
-
-template< class Alphabet_T,
-          template<class Alphabet_U> class Subject_T >
-inline bool Clustering<Alphabet_T, Subject_T>::terminate()
-{
-    if (scan_ < params_.min_scans)
-        return false;
-    else if (scan_ >= params_.max_scans)
-        return true;
+    if (em_->scan() == 1)
+        out_ << strprintf("  %9.5f\n", em_->log_likelihood());
     else
-        return fabs(log_likelihood_change()) <= params_.log_likelihood_change;
+        out_ << strprintf("  %9.5f  %+8.5f\n", em_->log_likelihood(), em_->log_likelihood_change());
+    out_.flush();
 }
 
 }  // cs

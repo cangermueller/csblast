@@ -20,13 +20,12 @@ template< class Alphabet_T,
 class ExpectationMaximization;
 
 
-
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
 class ProgressTable
 {
   public:
-    typedef ExpectationMaximization< Alphabet_T, Subject_T<Alphabet_T> > em_type;
+    typedef ExpectationMaximization<Alphabet_T, Subject_T> em_type;
 
     // Prints header information.
     virtual void print_header() = 0;
@@ -41,7 +40,7 @@ class ProgressTable
     // Advances the progress bar proportional to the amount of work done.
     void print_progress(int work);
     // Returns reference to output stream.
-    std::ostream& outstream() { return out_; } const;
+    std::ostream& outstream() const { return out_; }
 
   protected:
     // To be used by derived classes.
@@ -68,8 +67,8 @@ class ProgressTable
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
 ProgressTable<Alphabet_T, Subject_T>::ProgressTable(const em_type* em,
-                                                             std::ostream& out = std::cout,
-                                                             int width = 30)
+                                                    std::ostream& out,
+                                                    int width)
         : em_(em),
           out_(out),
           width_(width),
