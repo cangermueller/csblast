@@ -77,7 +77,6 @@ void Params::check()
 {
     if (infile.empty()) throw Exception("No input file provided!");
     if (outfile.empty()) throw Exception("No output file provided!");
-    if (sample_size == std::numeric_limits<int>::max()) throw Exception("No sample size provided!");
 }
 
 
@@ -87,12 +86,12 @@ std::ostream& usage(const Params& params, std::ostream& out = std::cout)
     out << "Sample (context) profiles from a large profile database.\n";
     out << "(C) Andreas Biegert, Johannes Soding, and Ludwig-Maximillians University Munich\n\n";
 
-    out << "Usage: cssample -i <infile> -o <outfile> -N <sample_size> [options]\n\n";
+    out << "Usage: cssample -i <infile> -o <outfile> [options]\n\n";
 
     out << "Options:\n";
     out << strprintf("  %-30s %s\n",             "-i, --infile <filename>", "Path to input file with profile database");
     out << strprintf("  %-30s %s\n",             "-o, --outfile <filename>", "Path for output file with sampled profiles");
-    out << strprintf("  %-30s %s\n",             "-N, --num-profiles [0,inf[", "Number of profiles to sample");
+    out << strprintf("  %-30s %s\n",             "-N, --num-profiles [0,inf[", "Maximal number of profiles to sample (def=inf)");
     out << strprintf("  %-30s %s\n",             "-W, --window-length [0,inf[", "Sample context profiles of length W instead of full-length profiles");
     out << strprintf("  %-30s %s (def=%3.1f)\n", "-s, --sample-rate [0,1]", "Fraction of context profiles sampled per full-length profile",
                      params.sample_rate);
