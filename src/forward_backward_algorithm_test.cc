@@ -51,7 +51,9 @@ class ForwardBackwardAlgorithmTest : public testing::Test
 TEST_F(ForwardBackwardAlgorithmTest, ZincFingerMotif)
 {
     Sequence<AminoAcid> seq("zinc finger motif", "GQKPFQCRICMRN\n");
-    ProfileMatcher<AminoAcid> matcher;
+    ProfileMatcherParams params;
+    params.weight_center = 1.0f;
+    ProfileMatcher<AminoAcid> matcher(1, params);
     ForwardBackwardMatrices m(seq.length(), hmm_.num_states());
     forward_backward_algorithm(hmm_, seq, matcher, m);
 
@@ -81,7 +83,9 @@ TEST_F(ForwardBackwardAlgorithmTest, 1Q7L)
     hmm.transform_states_to_logspace();
 
     profile.convert_to_counts();
-    ProfileMatcher<AminoAcid> matcher;
+    ProfileMatcherParams params;
+    params.weight_center = 1.0f;
+    ProfileMatcher<AminoAcid> matcher(1, params);
     ForwardBackwardMatrices mat(profile.length(), hmm.num_states());
     forward_backward_algorithm(hmm, profile, matcher, mat);
 }

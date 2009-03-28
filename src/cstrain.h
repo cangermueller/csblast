@@ -289,8 +289,7 @@ void cstrain(const Params& params, std::ostream& out)
     LOG(INFO) << strprintf("Running Baum-Welch training on HMM (K=%i, W=%i, N=%i) ...",
                            hmm_ptr->num_states(), hmm_ptr->num_cols(), num_data_cols);
     out << std::endl << std::endl;
-    TrainingProgressTable prg_table(out);
-    BaumWelchTraining<Alphabet_T, CountsProfile> training(params, data, *hmm_ptr, &prg_table);
+    BaumWelchTraining<Alphabet_T, CountsProfile> training(params, data, *hmm_ptr, out);
     training.run();
 
     // write HMM to outfile

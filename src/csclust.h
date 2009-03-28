@@ -257,8 +257,7 @@ void csclust(const Params& params, std::ostream& out)
     LOG(INFO) << strprintf("Clustering training data by expectation maximization (K=%i, W=%i, N=%i) ...",
                            lib_ptr->num_profiles(), lib_ptr->num_cols(), data.size());
     out << std::endl << std::endl;
-    ClusteringProgressTable prg_table(out);
-    Clustering<Alphabet_T, CountsProfile> em_clust(params, data, *lib_ptr, &prg_table);
+    Clustering<Alphabet_T, CountsProfile> em_clust(params, data, *lib_ptr, out);
     em_clust.run();
 
     // write profile library to outfile

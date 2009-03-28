@@ -19,8 +19,10 @@ using google::sparsetable;
 namespace cs
 {
 
+// Forward declarations
 template<class Alphabet_T>
 class HMM;
+
 
 template<class Alphabet_T>
 class State : public ContextProfile<Alphabet_T>

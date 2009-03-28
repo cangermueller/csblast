@@ -82,8 +82,7 @@ class ExpectationMaximization
 
   protected:
     // Constructs a new EM object.
-    ExpectationMaximization(const ExpectationMaximizationParams& params,
-                            const data_vector& data);
+    ExpectationMaximization(const data_vector& data);
 
     virtual ~ExpectationMaximization()
     { }
@@ -94,17 +93,18 @@ class ExpectationMaximization
     virtual void maximization_step() = 0;
     // Initializes members for running the EM algorithm.
     virtual void init() = 0;
+    // Returns parameter wrapper
+    virtual const ExpectationMaximizationParams& params() const = 0;
     // Returns true if any termination condition is fullfilled.
     virtual bool terminate() const;
     // Fills the blocks vector with training data.
     void setup_blocks(bool force_batch = false);
 
-    // Parameter wrapper for clustering.
-    const ExpectationMaximizationParams& params_;
+
     // Training data (either sequences or counts profiles)
     const data_vector& data_;
     // Progress table object for output.
-    ProgressTable<Alphabet_T, Subject_T>* progress_table_;
+    ProgressTable* progress_table_;
     // Effective number of training columns.
     int num_eff_cols_;
     // Blocks of training data.
@@ -125,10 +125,8 @@ class ExpectationMaximization
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-inline ExpectationMaximization<Alphabet_T, Subject_T>::ExpectationMaximization(const ExpectationMaximizationParams& params,
-                                                                               const data_vector& data)
-        : params_(params),
-          data_(data),
+ExpectationMaximization<Alphabet_T, Subject_T>::ExpectationMaximization(const data_vector& data)
+        : data_(data),
           progress_table_(NULL),
           num_eff_cols_(0),
           log_likelihood_(0.0f),
@@ -155,7 +153,7 @@ void ExpectationMaximization<Alphabet_T, Subject_T>::run()
     // Perform E-step and M-step on each training block until convergence
     setup_blocks();
     while (!terminate()) {
-        if (static_cast<int>(blocks_.size()) > 1) epsilon_ = params_.epsilon_null * exp(-params_.beta * (scan_ - 1));
+        if (static_cast<int>(blocks_.size()) > 1) epsilon_ = params().epsilon_null * exp(-params().beta * (scan_ - 1));
         log_likelihood_prev_ = log_likelihood_;
         log_likelihood_      = 0.0;
         ++scan_;
@@ -167,7 +165,7 @@ void ExpectationMaximization<Alphabet_T, Subject_T>::run()
             ++iterations_;
         }
         if (progress_table_) progress_table_->print_row_end();
-        if (epsilon_ < params_.epsilon_batch && static_cast<int>(blocks_.size()) > 1) {
+        if (epsilon_ < params().epsilon_batch && static_cast<int>(blocks_.size()) > 1) {
             setup_blocks(true);
             epsilon_ = 1.0f;
         }
@@ -176,14 +174,14 @@ void ExpectationMaximization<Alphabet_T, Subject_T>::run()
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-inline void ExpectationMaximization<Alphabet_T, Subject_T>::setup_blocks(bool force_batch)
+void ExpectationMaximization<Alphabet_T, Subject_T>::setup_blocks(bool force_batch)
 {
     if (force_batch && static_cast<int>(blocks_.size()) != 1) {
         blocks_.clear();
         blocks_.push_back(data_);
 
     } else {
-        const int num_blocks = params_.num_blocks == 0 ? iround(pow(data_.size(), 3.0/8.0)) : params_.num_blocks;
+        const int num_blocks = params().num_blocks == 0 ? iround(pow(data_.size(), 3.0/8.0)) : params().num_blocks;
         const int block_size = iround(data_.size() / num_blocks);
 
         blocks_.clear();
@@ -211,12 +209,12 @@ template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
 inline bool ExpectationMaximization<Alphabet_T, Subject_T>::terminate() const
 {
-    if (scan_ < params_.min_scans)
+    if (scan_ < params().min_scans)
         return false;
-    else if (scan_ >= params_.max_scans)
+    else if (scan_ >= params().max_scans)
         return true;
     else
-        return fabs(log_likelihood_change()) <= params_.log_likelihood_change;
+        return fabs(log_likelihood_change()) <= params().log_likelihood_change;
 }
 
 }  // cs

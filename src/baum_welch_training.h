@@ -13,142 +13,91 @@
 #include <iostream>
 #include <vector>
 
+#include "context_profile.h"
+#include "expectation_maximization.h"
 #include "forward_backward_algorithm.h"
 #include "hmm.h"
 #include "log.h"
-#include "context_profile.h"
 #include "profile_matcher.h"
-#include "progress_bar.h"
+#include "progress_table.h"
 #include "shared_ptr.h"
 #include "utils.h"
 
 namespace cs
 {
 
-// Forward declaration;
+// Forwrad declarations
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-class BaumWelchTraining;
+class BaumWelchProgressTable;
 
 
-
-class TrainingProgressTable : public ProgressBar
-{
-  public:
-    TrainingProgressTable(std::ostream& out = std::cout)
-            : ProgressBar(out, 30)
-    { }
-
-    // Prints header information.
-    void print_header()
-    {
-        out_ << strprintf("%-4s %4s %6s %4s %7s  %-30s  %9s  %8s\n",
-                          "Scan", "Itrs", "Conn", "Blks", "Epsilon", "E-Step", "log(L)", "+/-");
-        out_ << std::string(82, '-') << std::endl;
-    }
-
-    // Starts a new row and prints statistics to outstream.
-    void print_row_begin(int scan, int iter, float conn, int blocks, float epsilon)
-    {
-        reset();
-        out_ << strprintf("%-4i %4i %6.1f %4i %7.4f  ", scan, iter, conn, blocks, epsilon);
-        out_.flush();
-    }
-
-    // Ends the current row and prints likelihood.
-    void print_row_end(float log_likelihood)
-    {
-        out_ << strprintf("  %9.5f\n", log_likelihood);
-        out_.flush();
-    }
-
-    // Ends the current row and prints likelihood with change from previous scan.
-    void print_row_end(float log_likelihood, float delta)
-    {
-        out_ << strprintf("  %9.5f  %+8.5f\n", log_likelihood, delta);
-        out_.flush();
-    }
-};
-
-
-
-struct BaumWelchParams : public ProfileMatcherParams
+struct BaumWelchParams : public ProfileMatcherParams, public ExpectationMaximizationParams
 {
     BaumWelchParams()
             : ProfileMatcherParams(),
-              min_scans(10),
-              max_scans(500),
-              max_connectivity(0),
-              log_likelihood_change(2e-4f),
+              ExpectationMaximizationParams(),
               transition_pseudocounts(1.0f),
-              num_blocks(0),
-              epsilon_null(0.5f),
-              beta(0.2f),
-              epsilon_batch(0.05f)
+              max_connectivity(0)
     { }
 
     BaumWelchParams(const BaumWelchParams& params)
             : ProfileMatcherParams(params),
-              min_scans(params.min_scans),
-              max_scans(params.max_scans),
-              max_connectivity(params.max_connectivity),
-              log_likelihood_change(params.log_likelihood_change),
+              ExpectationMaximizationParams(params),
               transition_pseudocounts(params.transition_pseudocounts),
-              num_blocks(params.num_blocks),
-              epsilon_null(params.epsilon_null),
-              beta(params.beta),
-              epsilon_batch(params.epsilon_batch)
+              max_connectivity(params.max_connectivity)
     { }
 
-    // Minimal number of data scans.
-    int min_scans;
-    // Maximum number of data scans.
-    int max_scans;
-    // Maximum average connectivity for convergence.
-    int max_connectivity;
-    // Log-likelihood change per column for convergence.
-    float log_likelihood_change;
     // Pseudocounts added to transitions (values below 1 enforce sparsity).
     float transition_pseudocounts;
-    // Number of blocks into which the training data are divided (default:  B=N^(3/8)).
-    int num_blocks;
-    // Initial value for learning rate epsilon (1-epsilon is preserved fraction of sufficient statistics).
-    float epsilon_null;
-    // Paramter governing exponential decay of epsilon per scan.
-    float beta;
-    // Learning rate epsilon below which training is switched to batch mode.
-    float epsilon_batch;
+    // Maximum average connectivity for convergence.
+    int max_connectivity;
 };
-
 
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-class BaumWelchTraining
+class BaumWelchTraining : public ExpectationMaximization<Alphabet_T, Subject_T>
 {
   public:
     typedef typename std::vector< shared_ptr< Subject_T<Alphabet_T> > > data_vector;
-    typedef typename std::vector<data_vector> blocks_vector;
     typedef typename std::vector< shared_ptr< ContextProfile<Alphabet_T> > > profiles_vector;
     typedef typename HMM<Alphabet_T>::const_transition_iterator const_transition_iterator;
 
-    // Initializes a new training object.
+    // Needed to access names in templatized base class
+    using ExpectationMaximization<Alphabet_T, Subject_T>::log_likelihood_change;
+
+    // Initializes a new training object without output.
+    BaumWelchTraining(const BaumWelchParams& params,
+                      const data_vector& data,
+                      HMM<Alphabet_T>& hmm);
+    // Initializes a new training object with output.
     BaumWelchTraining(const BaumWelchParams& params,
                       const data_vector& data,
                       HMM<Alphabet_T>& hmm,
-                      TrainingProgressTable* progress_table = NULL);
+                      std::ostream& out);
 
-    virtual ~BaumWelchTraining()
-    { }
+    virtual ~BaumWelchTraining();
 
-    // Trains the HMM with the data provided until one of the termination criterions is fullfilled.
-    void run();
+  protected:
+    // Needed to access names in templatized base class
+    using ExpectationMaximization<Alphabet_T, Subject_T>::progress_table_;
+    using ExpectationMaximization<Alphabet_T, Subject_T>::log_likelihood_;
+    using ExpectationMaximization<Alphabet_T, Subject_T>::num_eff_cols_;
+    using ExpectationMaximization<Alphabet_T, Subject_T>::epsilon_;
+    using ExpectationMaximization<Alphabet_T, Subject_T>::data_;
+    using ExpectationMaximization<Alphabet_T, Subject_T>::scan_;
 
-  private:
     // Runs forward backward algorithm on provided data.
-    void expectation_step(const data_vector& block, float epsilon);
+    virtual void expectation_step(const data_vector& block);
     // Calculates and assigns new HMM parameters by Maxmimum-Likelihood estimation.
-    void maximization_step();
+    virtual void maximization_step();
+    // Prepares all members for HMM training.
+    virtual void init();
+    // Returns true if any termination condition is fullfilled.
+    virtual bool terminate() const;
+    // Returns parameter wrapper
+    virtual const BaumWelchParams& params() const { return params_; }
     // Adds the contribution of a subject's forward-backward matrices to prio probabilities of states.
     void add_contribution_to_priors(const ForwardBackwardMatrices& m);
     // Adds the contribution of a subject's forward-backward matrices to transition counts.
@@ -158,22 +107,10 @@ class BaumWelchTraining
     // Adds the contribution of a sequence's forward-backward matrices to emission counts.
     void add_contribution_to_emissions(const ForwardBackwardMatrices& m, const Sequence<Alphabet_T>& s);
     // Updates global sufficient statistics with sufficient statistics calculated on current block.
-    void update_sufficient_statistics(float epsilon);
-    // Fills the blocks vector with training data.
-    void setup_blocks(bool batch_mode = false);
-    // Prepares all members for HMM training.
-    void init();
-    // Calculates change between current log-likelihood and log-likelihood from previous scan.
-    float log_likelihood_change();
-    // Returns true if any termination conditions is fullfilled.
-    bool terminate();
+    void update_sufficient_statistics();
 
-    // Parameter wrapper for Baum-Welch training.
+    // Parameter wrapper for clustering.
     const BaumWelchParams& params_;
-    // Training data (either sequences or counts profiles)
-    const data_vector& data_;
-    // Blocks of training data
-    blocks_vector blocks_;
     // HMM to be trained
     HMM<Alphabet_T>& hmm_;
     // Profile matcher for calculation of emission probabilities.
@@ -186,106 +123,92 @@ class BaumWelchTraining
     sparse_matrix<float> transition_stats_block_;
     // Expeted sufficient statistics for emissions and state priors based on current block
     profiles_vector profile_stats_block_;
-    // Incremental likelihood in current iteration
-    float log_likelihood_;
-    // Complete likelihood after last complete scan of training data
-    float log_likelihood_prev_;
-    // Number of traning iterations performed so far.
-    int iterations_;
-    // Number of current data scan.
-    int scan_;
-    // Effective number of training columns.
-    int num_eff_cols_;
-    // Progress info object for output of progress table
-    TrainingProgressTable* progress_table_;
+
+    friend class BaumWelchProgressTable<Alphabet_T, Subject_T>;
+};
+
+
+template< class Alphabet_T,
+          template<class Alphabet_U> class Subject_T >
+class BaumWelchProgressTable : public ProgressTable
+{
+  public:
+    BaumWelchProgressTable(const BaumWelchTraining<Alphabet_T, Subject_T>* training,
+                           std::ostream& out = std::cout,
+                           int width = 30);
+
+    virtual ~BaumWelchProgressTable() { }
+
+    virtual void print_header();
+    virtual void print_row_begin();
+    virtual void print_row_end();
+
+  protected:
+    const BaumWelchTraining<Alphabet_T, Subject_T>* training_;
 };
 
 
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-inline BaumWelchTraining<Alphabet_T, Subject_T>::BaumWelchTraining(const BaumWelchParams& params,
-                                                                   const data_vector& data,
-                                                                   HMM<Alphabet_T>& hmm,
-                                                                   TrainingProgressTable* progress_table)
-        : params_(params),
-          data_(data),
-          blocks_(),
+BaumWelchTraining<Alphabet_T, Subject_T>::BaumWelchTraining(const BaumWelchParams& params,
+                                                            const data_vector& data,
+                                                            HMM<Alphabet_T>& hmm)
+        : ExpectationMaximization<Alphabet_T, Subject_T>(params, data),
+          params_(params),
           hmm_(hmm),
           profile_matcher_(hmm.num_cols(), params),
           transition_stats_(hmm.num_states(), hmm.num_states()),
           profile_stats_(),
           transition_stats_block_(hmm.num_states(), hmm.num_states()),
-          profile_stats_block_(),
-          log_likelihood_(0.0f),
-          log_likelihood_prev_(0.0f),
-          iterations_(0),
-          scan_(1),
-          num_eff_cols_(0),
-          progress_table_(progress_table)
+          profile_stats_block_()
 {
     init();
 }
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-void BaumWelchTraining<Alphabet_T, Subject_T>::run()
+BaumWelchTraining<Alphabet_T, Subject_T>::BaumWelchTraining(const BaumWelchParams& params,
+                                                            const data_vector& data,
+                                                            HMM<Alphabet_T>& hmm,
+                                                            std::ostream& out)
+        : ExpectationMaximization<Alphabet_T, Subject_T>(data),
+          params_(params),
+          hmm_(hmm),
+          profile_matcher_(hmm.num_cols(), params),
+          transition_stats_(hmm.num_states(), hmm.num_states()),
+          profile_stats_(),
+          transition_stats_block_(hmm.num_states(), hmm.num_states()),
+          profile_stats_block_()
 {
-    LOG(DEBUG) << "Running Baum-Welch training on ...";
-    LOG(DEBUG) << hmm_;
-
-    if (progress_table_) progress_table_->print_header();
-
-    // Calculate log-likelihood baseline by batch EM without blocks
-    float epsilon = 1.0f;
-    if (progress_table_) progress_table_->print_row_begin(scan_, hmm_.iterations(), hmm_.connectivity(), 1, epsilon);
-    expectation_step(data_, epsilon);
-    maximization_step();
-    ++iterations_;
-    if (progress_table_) progress_table_->print_row_end(log_likelihood_);
-
-    // Perform E-step and M-step on each training block until convergence
-    setup_blocks();
-    while (!terminate()) {
-        if (static_cast<int>(blocks_.size()) > 1) epsilon = params_.epsilon_null * exp(-params_.beta * (scan_ - 1));
-        log_likelihood_prev_ = log_likelihood_;
-        log_likelihood_      = 0.0;
-        ++scan_;
-
-        if (progress_table_) progress_table_->print_row_begin(scan_, hmm_.iterations(), hmm_.connectivity(), blocks_.size(), epsilon);
-        for (int b = 0; b < static_cast<int>(blocks_.size()); ++b) {
-            expectation_step(blocks_[b], epsilon);
-            maximization_step();
-            ++iterations_;
-        }
-        if (progress_table_) progress_table_->print_row_end(log_likelihood_, log_likelihood_change());
-        if (epsilon < params_.epsilon_batch && static_cast<int>(blocks_.size()) > 1) {
-            setup_blocks(true);
-            epsilon = 1.0f;
-        }
-    }
-
-    LOG(DEBUG) << hmm_;
+    progress_table_ = new BaumWelchProgressTable<Alphabet_T, Subject_T>(this, out);
+    init();
 }
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-inline void BaumWelchTraining<Alphabet_T, Subject_T>::expectation_step(const data_vector& block, float epsilon)
+BaumWelchTraining<Alphabet_T, Subject_T>::~BaumWelchTraining()
+{
+    if (progress_table_) delete progress_table_;
+}
+
+template< class Alphabet_T,
+          template<class Alphabet_U> class Subject_T >
+void BaumWelchTraining<Alphabet_T, Subject_T>::expectation_step(const data_vector& block)
 {
     // Run forward and backward algorithm on each subject in current block
     for (typename data_vector::const_iterator bi = block.begin(); bi != block.end(); ++bi) {
         ForwardBackwardMatrices fbm((*bi)->length(), hmm_.num_states());
         forward_backward_algorithm(hmm_, **bi, profile_matcher_, fbm);
-
-        if (progress_table_) progress_table_->print_progress(hmm_.num_states() * (**bi).length());
         add_contribution_to_priors(fbm);
         add_contribution_to_transitions(fbm);
         add_contribution_to_emissions(fbm, **bi);
-
         log_likelihood_ += fbm.log_likelihood / num_eff_cols_;
+
+        if (progress_table_) progress_table_->print_progress(hmm_.num_states() * (**bi).length());
     }
 
-    update_sufficient_statistics(epsilon);
+    update_sufficient_statistics();
 }
 
 template< class Alphabet_T,
@@ -350,6 +273,7 @@ template< class Alphabet_T,
 inline void BaumWelchTraining<Alphabet_T, Subject_T>::add_contribution_to_priors(const ForwardBackwardMatrices& m)
 {
     const int num_states = hmm_.num_states();
+
     for (int k = 0; k < num_states; ++k)
         profile_stats_block_[k]->set_prior(profile_stats_block_[k]->prior() + m.f[0][k] * m.b[0][k]);
 }
@@ -426,11 +350,12 @@ inline void BaumWelchTraining<Alphabet_T, Subject_T>::add_contribution_to_emissi
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-inline void BaumWelchTraining<Alphabet_T, Subject_T>::update_sufficient_statistics(float epsilon)
+inline void BaumWelchTraining<Alphabet_T, Subject_T>::update_sufficient_statistics()
 {
-    const float gamma    = 1.0f - epsilon;
-    const int num_states = hmm_.num_states();
-    const int num_cols   = hmm_.num_cols();
+    const float gamma       = 1.0f - epsilon_;
+    const int num_states    = hmm_.num_states();
+    const int num_cols      = hmm_.num_cols();
+    const int alphabet_size = hmm_.alphabet_size();
 
     // Update transition statistics
     for (const_transition_iterator ti = hmm_.transitions_begin(); ti != hmm_.transitions_end(); ++ti) {
@@ -446,7 +371,6 @@ inline void BaumWelchTraining<Alphabet_T, Subject_T>::update_sufficient_statisti
     for (int k = 0; k < num_states; ++k) {
         ContextProfile<Alphabet_T>& p_block = *profile_stats_block_[k];
         ContextProfile<Alphabet_T>& p       = *profile_stats_[k];
-        const int alphabet_size = p.alphabet_size();
 
         p.set_prior(p.prior() * gamma + p_block.prior());
         for (int j = 0; j < num_cols; ++j) {
@@ -468,11 +392,11 @@ void BaumWelchTraining<Alphabet_T, Subject_T>::init()
         profile_stats_block_.push_back(shared_ptr< ContextProfile<Alphabet_T> >(new ContextProfile<Alphabet_T>(k, hmm_.num_cols())));
     }
 
-    // Compute total number of data columns for progress bar
+    // Compute total number of data columns
     int num_cols = 0;
     for (typename data_vector::const_iterator di = data_.begin(); di != data_.end(); ++di)
         num_cols += (**di).length();
-    if (progress_table_) progress_table_->init(hmm_.num_states() * num_cols);
+    if (progress_table_) progress_table_->set_total_work(hmm_.num_states() * num_cols);
 
     // Set number of effective columsn for log-likelihood calculation
     num_eff_cols_ = profile_matcher_.num_eff_cols() * num_cols;
@@ -480,40 +404,7 @@ void BaumWelchTraining<Alphabet_T, Subject_T>::init()
 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
-inline void BaumWelchTraining<Alphabet_T, Subject_T>::setup_blocks(bool batch_mode)
-{
-    if (batch_mode) {
-        if (static_cast<int>(blocks_.size()) == 1) return;  // already in batch mode
-        blocks_.clear();
-        blocks_.push_back(data_);
-
-    } else {
-        const int num_blocks = params_.num_blocks == 0 ? iround(pow(data_.size(), 3.0/8.0)) : params_.num_blocks;
-        const int block_size = iround(data_.size() / num_blocks);
-
-        for (int b = 0; b < num_blocks; ++b) {
-            data_vector block;
-            if (b == num_blocks - 1)  // last block may differ in block size
-                for (int n = b * block_size; n < static_cast<int>(data_.size()); ++n)
-                    block.push_back(data_[n]);
-            else
-                for (int n = b * block_size; n < (b+1) * block_size; ++n)
-                    block.push_back(data_[n]);
-            blocks_.push_back(block);
-        }
-    }
-}
-
-template< class Alphabet_T,
-          template<class Alphabet_U> class Subject_T >
-inline float BaumWelchTraining<Alphabet_T, Subject_T>::log_likelihood_change()
-{
-    return log_likelihood_ - log_likelihood_prev_;
-}
-
-template< class Alphabet_T,
-          template<class Alphabet_U> class Subject_T >
-inline bool BaumWelchTraining<Alphabet_T, Subject_T>::terminate()
+inline bool BaumWelchTraining<Alphabet_T, Subject_T>::terminate() const
 {
     if (scan_ < params_.min_scans)
         return false;
@@ -523,6 +414,47 @@ inline bool BaumWelchTraining<Alphabet_T, Subject_T>::terminate()
         return fabs(log_likelihood_change()) <= params_.log_likelihood_change;
     else
         return fabs(log_likelihood_change()) <= params_.log_likelihood_change && hmm_.connectivity() <= params_.max_connectivity;
+}
+
+
+
+template< class Alphabet_T,
+          template<class Alphabet_U> class Subject_T >
+BaumWelchProgressTable<Alphabet_T, Subject_T>::BaumWelchProgressTable(const BaumWelchTraining<Alphabet_T, Subject_T>* training,
+                                                                      std::ostream& out,
+                                                                      int width)
+        : ProgressTable(out, width),
+          training_(training)
+{ }
+
+template< class Alphabet_T,
+          template<class Alphabet_U> class Subject_T >
+void BaumWelchProgressTable<Alphabet_T, Subject_T>::print_header()
+{
+    out_ << strprintf("%-4s %4s %6s %4s %7s  %-30s  %9s  %8s\n",
+                      "Scan", "Itrs", "Conn", "Blks", "Epsilon", "E-Step", "log(L)", "+/-");
+    out_ << std::string(82, '-') << std::endl;
+}
+
+template< class Alphabet_T,
+          template<class Alphabet_U> class Subject_T >
+void BaumWelchProgressTable<Alphabet_T, Subject_T>::print_row_begin()
+{
+    reset();
+    out_ << strprintf("%-4i %4i %6.1f %4i %7.4f  ", training_->scan(), training_->iterations(),
+                      training_->hmm_.connectivity(), training_->num_blocks(), training_->epsilon());
+    out_.flush();
+}
+
+template< class Alphabet_T,
+          template<class Alphabet_U> class Subject_T >
+void BaumWelchProgressTable<Alphabet_T, Subject_T>::print_row_end()
+{
+    if (training_->scan() == 1)
+        out_ << strprintf("  %9.5f\n", training_->log_likelihood());
+    else
+        out_ << strprintf("  %9.5f  %+8.5f\n", training_->log_likelihood(), training_->log_likelihood_change());
+    out_.flush();
 }
 
 }  // cs

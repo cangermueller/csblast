@@ -14,18 +14,14 @@
 namespace cs
 {
 
-// Forward declaration;
-template< class Alphabet_T,
-          template<class Alphabet_U> class Subject_T >
-class ExpectationMaximization;
-
-
-template< class Alphabet_T,
-          template<class Alphabet_U> class Subject_T >
 class ProgressTable
 {
   public:
-    typedef ExpectationMaximization<Alphabet_T, Subject_T> em_type;
+     // To be used by derived classes.
+    ProgressTable(std::ostream& out = std::cout,
+                  int width = 30);
+
+    virtual ~ProgressTable() { }
 
     // Prints header information.
     virtual void print_header() = 0;
@@ -43,13 +39,7 @@ class ProgressTable
     std::ostream& outstream() const { return out_; }
 
   protected:
-    // To be used by derived classes.
-    ProgressTable(const em_type* em,
-                  std::ostream& out = std::cout,
-                  int width = 30);
 
-    // Pointer to EM object.
-    const em_type* em_;
     // Output stream.
     std::ostream& out_;
     // Width of prograess bar.
@@ -61,46 +51,6 @@ class ProgressTable
     // Total work to do.
     int work_total_;
 };
-
-
-
-template< class Alphabet_T,
-          template<class Alphabet_U> class Subject_T >
-ProgressTable<Alphabet_T, Subject_T>::ProgressTable(const em_type* em,
-                                                    std::ostream& out,
-                                                    int width)
-        : em_(em),
-          out_(out),
-          width_(width),
-          bar_(0),
-          work_done_(0),
-          work_total_(0)
-{ }
-
-template< class Alphabet_T,
-          template<class Alphabet_U> class Subject_T >
-void ProgressTable<Alphabet_T, Subject_T>::reset()
-{
-    work_done_ = 0;
-    bar_       = 0;
-}
-
-template< class Alphabet_T,
-          template<class Alphabet_U> class Subject_T >
-void ProgressTable<Alphabet_T, Subject_T>::print_progress(int work)
-{
-    if (work_total_ == 0) return;
-
-    const int incr = round(static_cast<float>(work_done_ + work) /
-                           work_total_ * (width_ - 2)) - bar_;
-    if (work_done_ == 0) out_ << "[";
-    out_ << std::string(incr, '=');
-    if (work_done_ + work == work_total_) out_ << "]";
-    out_.flush();
-
-    bar_       += incr;
-    work_done_ += work;
-}
 
 }  // cs
 

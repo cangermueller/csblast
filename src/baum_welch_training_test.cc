@@ -75,13 +75,13 @@ class BaumWelchTrainingTest : public testing::Test
 TEST_F(BaumWelchTrainingTest, ZincFingerSeqsTraining)
 {
     BaumWelchParams p;
-    p.num_blocks    = 1;
-    p.epsilon_null  = 1.0;
-    p.beta          = 0.0;
-    p.epsilon_batch = 0.0f;
-    p.min_scans     = 3;
-    TrainingProgressTable prg_table(std::cout);
-    BaumWelchTraining<AminoAcid, Sequence> bwt(p, seqs_, hmm_, &prg_table);
+    p.num_blocks         = 1;
+    p.epsilon_null       = 1.0;
+    p.beta               = 0.0;
+    p.epsilon_batch      = 0.0f;
+    p.min_scans          = 3;
+    p.weight_center      = 1.0f;
+    BaumWelchTraining<AminoAcid, Sequence> bwt(p, seqs_, hmm_, std::cout);
     bwt.run();
 
     hmm_.transform_states_to_linspace();
@@ -99,8 +99,8 @@ TEST_F(BaumWelchTrainingTest, ZincFingerAlisTraining)
     p.epsilon_null             = 1.0f;
     p.beta                     = 0.0f;
     p.min_scans                = 3;
-    TrainingProgressTable prg_table(std::cout);
-    BaumWelchTraining<AminoAcid, CountsProfile> bwt(p, counts_, hmm_, &prg_table);
+    p.weight_center            = 1.0f;
+    BaumWelchTraining<AminoAcid, CountsProfile> bwt(p, counts_, hmm_, std::cout);
     bwt.run();
 
     hmm_.transform_states_to_linspace();
@@ -118,8 +118,8 @@ TEST_F(BaumWelchTrainingTest, ZincFingerAlisOnlineTraining)
     p.epsilon_null             = 0.05f;
     p.beta                     = 0.5f;
     p.min_scans                = 3;
-    TrainingProgressTable prg_table(std::cout);
-    BaumWelchTraining<AminoAcid, CountsProfile> bwt(p, counts_, hmm_, &prg_table);
+    p.weight_center            = 1.0f;
+    BaumWelchTraining<AminoAcid, CountsProfile> bwt(p, counts_, hmm_, std::cout);
     bwt.run();
 
     hmm_.transform_states_to_linspace();

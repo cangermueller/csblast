@@ -64,7 +64,7 @@ class ProfileMatcher
     // Calculates the effective number of columns for matching, that is the sum of weights.
     float num_eff_cols() const;
     // Initializes positional window weights.
-    void init_weights(const ProfileMatcherParams& params);
+    void init_weights();
 
     // TODO: Implement matching methods against counts profiles or sequences of fixed length W.
 
@@ -73,6 +73,8 @@ class ProfileMatcher
     ProfileMatcher(const ProfileMatcher&);
     void operator=(const ProfileMatcher&);
 
+    // Paramter wrapper
+    const ProfileMatcherParams& params_;
     // Number of columns in context profiles.
     int num_cols_;
     // Index of central column in context profiles.
@@ -85,22 +87,23 @@ class ProfileMatcher
 
 template< class Alphabet_T>
 inline ProfileMatcher<Alphabet_T>::ProfileMatcher(int num_cols, const ProfileMatcherParams& params)
-        : num_cols_(num_cols),
+        : params_(params),
+          num_cols_(num_cols),
           center_((num_cols - 1) / 2),
           weights_(1.0f, num_cols)
 {
     if (num_cols_ % 2 != 1)
         throw Exception("Number of columns for profile matching should be odd but is %i!", num_cols_);
-    init_weights(params);
+    init_weights();
 }
 
 template< class Alphabet_T>
-double ProfileMatcher<Alphabet_T>::operator() (const ContextProfile<Alphabet_T>& profile,
+inline double ProfileMatcher<Alphabet_T>::operator() (const ContextProfile<Alphabet_T>& profile,
                                                const CountsProfile<Alphabet_T>& counts,
                                                int index) const
 {
     double rv = 0.0f;
-    if (weights_.size() > 1) {
+    if (!params_.ignore_context) {
         const int beg = std::max(0, index - center_);
         const int end = std::min(counts.num_cols() - 1, index + center_);
         for(int i = beg; i <= end; ++i) {
@@ -113,17 +116,18 @@ double ProfileMatcher<Alphabet_T>::operator() (const ContextProfile<Alphabet_T>&
     } else {
         for (int a = 0; a < profile.alphabet_size(); ++a)
             rv += counts[index][a] * profile[center_][a];
-        }
+        rv *= weights_[center_];
+    }
     return pow(2.0, rv);
 }
 
 template< class Alphabet_T>
-double ProfileMatcher<Alphabet_T>::operator() (const ContextProfile<Alphabet_T>& profile,
+inline double ProfileMatcher<Alphabet_T>::operator() (const ContextProfile<Alphabet_T>& profile,
                                                const Sequence<Alphabet_T>& seq,
                                                int index) const
 {
     double rv = 0.0f;
-    if (weights_.size() > 1) {
+    if (!params_.ignore_context) {
         const int beg = std::max(0, index - center_);
         const int end = std::min(seq.length() - 1, index + center_);
         for(int i = beg; i <= end; ++i) {
@@ -131,28 +135,26 @@ double ProfileMatcher<Alphabet_T>::operator() (const ContextProfile<Alphabet_T>&
             rv += weights_[j] * profile[j][seq[i]];
         }
     } else {
-        rv = profile[center_][seq[index]];
+        rv = weights_[center_] * profile[center_][seq[index]];
     }
     return pow(2.0, rv);
 }
 
 template< class Alphabet_T>
-void ProfileMatcher<Alphabet_T>::init_weights(const ProfileMatcherParams& params)
+void ProfileMatcher<Alphabet_T>::init_weights()
 {
-    weights_[center_] = params.weight_center;
+    weights_[center_] = params_.weight_center;
     for (int i = 1; i <= center_; ++i) {
-        float weight = params.weight_center * pow(params.weight_decay, i);
+        float weight = params_.weight_center * pow(params_.weight_decay, i);
         weights_[center_ - i] = weight;
         weights_[center_ + i] = weight;
     }
 }
 
 template< class Alphabet_T>
-float ProfileMatcher<Alphabet_T>::num_eff_cols() const
+inline float ProfileMatcher<Alphabet_T>::num_eff_cols() const
 {
-    float sum = 0.0f;
-    for (int i = 0; i < num_cols_; ++i) sum += weights_[i];
-    return sum;
+    return params_.ignore_context ? weights_[center_] : weights_.sum();
 }
 
 }  // cs
