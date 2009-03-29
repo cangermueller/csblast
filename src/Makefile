@@ -23,7 +23,7 @@ GTEST_DIR = ../../../lib/gtest
 USER_DIR = .
 
 # Compiler to use
-CXX = g++
+CXX = ccache g++
 
 # Maximal log-level
 LOG_MAX_LEVEL = 0
@@ -32,7 +32,7 @@ LOG_MAX_LEVEL = 0
 CPPFLAGS += -I$(GTEST_DIR) -I$(GTEST_DIR)/include -I$(USER_DIR) -DLOG_MAX_LEVEL=$(LOG_MAX_LEVEL)
 
 # Flags passed to the C++ compiler. 
-CXXFLAGS += -O3 -W -Wall -Wno-char-subscripts -fno-strict-aliasing 
+CXXFLAGS += -O3 -march=athlon64 --param large-function-growth=10000 --param inline-unit-growth=10000 --param max-inline-insns-single=10000 -W -Wall -Wno-char-subscripts -fno-strict-aliasing 
 ifdef STATIC
 	CXXFLAGS += -static-libgcc -static
 endif

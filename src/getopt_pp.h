@@ -91,10 +91,8 @@ template <class T> inline _Option::Result convert(const std::string& s, T& resul
         return _Option::OK;
 }
 
-template <> inline _Option::Result convert<std::string>(const std::string& s, std::string& result, std::ios::fmtflags flags)
+template <> inline _Option::Result convert<std::string>(const std::string& s, std::string& result, std::ios::fmtflags)
 {
-    std::ios::fmtflags hack;
-    hack = flags;
     result = s;
     return _Option::OK;
 }
@@ -303,11 +301,8 @@ class OptionPresent : public _Option
     {}
 
   protected:
-    virtual Result operator() (ShortOptions& short_ops, LongOptions& long_ops, std::ios::fmtflags flags) const
+    virtual Result operator() (ShortOptions& short_ops, LongOptions& long_ops, std::ios::fmtflags) const
     {
-        std::ios::fmtflags hack;
-        hack = flags;
-
         bool found;
         ShortOptions::iterator it = short_ops.find(short_opt);
 
