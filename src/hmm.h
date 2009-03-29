@@ -119,7 +119,7 @@ class HMM
     void clear();
     // Clears all transitions but leaves profile of states untouched.
     void clear_transitions();
-    // Adds the given profile as state to the HMM and returns its state index. Note that number of profile columns must be odd!
+    // Adds the given profile as state to the HMM and returns its state index.
     int add_profile(const Profile<Alphabet_T>& profile);
     // Returns an iterator to a list of pointers of states.
     state_iterator states_begin() { return states_.begin(); }

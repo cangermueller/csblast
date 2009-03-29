@@ -153,7 +153,8 @@ void ExpectationMaximization<Alphabet_T, Subject_T>::run()
     // Perform E-step and M-step on each training block until convergence
     setup_blocks();
     while (!terminate()) {
-        if (static_cast<int>(blocks_.size()) > 1) epsilon_ = params().epsilon_null * exp(-params().beta * (scan_ - 1));
+        if (static_cast<int>(blocks_.size()) > 1)
+            epsilon_ = params().epsilon_null * exp(-params().beta * (scan_ - 1));
         log_likelihood_prev_ = log_likelihood_;
         log_likelihood_      = 0.0;
         ++scan_;

@@ -1,5 +1,5 @@
-#ifndef CS_UTIL_H
-#define CS_UTIL_H
+#ifndef CS_UTILS_H
+#define CS_UTILS_H
 /***************************************************************************
  *   Copyright (C) 2006 by Andreas Biegert                                 *
  *   andreas.biegert@googlemail.com                                        *
