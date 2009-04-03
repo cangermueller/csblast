@@ -245,7 +245,7 @@ void csclust(const Params& params, std::ostream& out)
     out.flush();
     LOG(INFO) << strprintf("Adding pseudocounts to training profiles (admixture=%.2f) ...", params.data_pseudocounts);
     for (counts_iterator ci = data.begin(); ci != data.end(); ++ci) {
-        sm_pc.add_to_profile(**ci, ConstantAdmixture(params.data_pseudocounts));
+        sm_pc.add_to_profile(ConstantAdmixture(params.data_pseudocounts), ci->get());
         (*ci)->convert_to_counts();
     }
     out << std::endl;

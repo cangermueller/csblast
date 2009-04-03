@@ -14,11 +14,11 @@
 #include <vector>
 
 #include "context_profile.h"
+#include "emitter.h"
 #include "expectation_maximization.h"
 #include "forward_backward_algorithm.h"
 #include "hmm.h"
 #include "log.h"
-#include "profile_matcher.h"
 #include "progress_table.h"
 #include "shared_ptr.h"
 #include "utils.h"
@@ -32,17 +32,17 @@ template< class Alphabet_T,
 class BaumWelchProgressTable;
 
 
-struct BaumWelchParams : public ProfileMatcherParams, public ExpectationMaximizationParams
+struct BaumWelchParams : public EmitterParams, public ExpectationMaximizationParams
 {
     BaumWelchParams()
-            : ProfileMatcherParams(),
+            : EmitterParams(),
               ExpectationMaximizationParams(),
               transition_pseudocounts(1.0f),
               max_connectivity(0)
     { }
 
     BaumWelchParams(const BaumWelchParams& params)
-            : ProfileMatcherParams(params),
+            : EmitterParams(params),
               ExpectationMaximizationParams(params),
               transition_pseudocounts(params.transition_pseudocounts),
               max_connectivity(params.max_connectivity)
@@ -114,7 +114,7 @@ class BaumWelchTraining : public ExpectationMaximization<Alphabet_T, Subject_T>
     // HMM to be trained
     HMM<Alphabet_T>& hmm_;
     // Profile matcher for calculation of emission probabilities.
-    ProfileMatcher<Alphabet_T> profile_matcher_;
+    Emitter<Alphabet_T> emitter_;
     // Global expected sufficient statistics for transitions
     sparse_matrix<float> transition_stats_;
     // Global expeted sufficient statistics for emissions and state priors
@@ -157,7 +157,7 @@ BaumWelchTraining<Alphabet_T, Subject_T>::BaumWelchTraining(const BaumWelchParam
         : ExpectationMaximization<Alphabet_T, Subject_T>(params, data),
           params_(params),
           hmm_(hmm),
-          profile_matcher_(hmm.num_cols(), params),
+          emitter_(hmm.num_cols(), params),
           transition_stats_(hmm.num_states(), hmm.num_states()),
           profile_stats_(),
           transition_stats_block_(hmm.num_states(), hmm.num_states()),
@@ -175,7 +175,7 @@ BaumWelchTraining<Alphabet_T, Subject_T>::BaumWelchTraining(const BaumWelchParam
         : ExpectationMaximization<Alphabet_T, Subject_T>(data),
           params_(params),
           hmm_(hmm),
-          profile_matcher_(hmm.num_cols(), params),
+          emitter_(hmm.num_cols(), params),
           transition_stats_(hmm.num_states(), hmm.num_states()),
           profile_stats_(),
           transition_stats_block_(hmm.num_states(), hmm.num_states()),
@@ -199,7 +199,7 @@ void BaumWelchTraining<Alphabet_T, Subject_T>::expectation_step(const data_vecto
     // Run forward and backward algorithm on each subject in current block
     for (typename data_vector::const_iterator bi = block.begin(); bi != block.end(); ++bi) {
         ForwardBackwardMatrices fbm((*bi)->length(), hmm_.num_states());
-        forward_backward_algorithm(hmm_, **bi, profile_matcher_, fbm);
+        forward_backward_algorithm(hmm_, **bi, emitter_, fbm);
         add_contribution_to_priors(fbm);
         add_contribution_to_transitions(fbm);
         add_contribution_to_emissions(fbm, **bi);
@@ -399,7 +399,7 @@ void BaumWelchTraining<Alphabet_T, Subject_T>::init()
     if (progress_table_) progress_table_->set_total_work(hmm_.num_states() * num_cols);
 
     // Set number of effective columsn for log-likelihood calculation
-    num_eff_cols_ = profile_matcher_.num_eff_cols() * num_cols;
+    num_eff_cols_ = emitter_.sum_weights() * num_cols;
 }
 
 template< class Alphabet_T,

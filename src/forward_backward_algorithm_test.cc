@@ -6,12 +6,12 @@
 
 #include "amino_acid.h"
 #include "blosum_matrix.h"
+#include "emitter.h"
 #include "forward_backward_algorithm.h"
 #include "hmm.h"
 #include "log.h"
 #include "matrix_pseudocounts.h"
 #include "profile.h"
-#include "profile_matcher.h"
 #include "sequence.h"
 #include "shared_ptr.h"
 #include "utils.h"
@@ -35,7 +35,7 @@ class ForwardBackwardAlgorithmTest : public testing::Test
 
         BlosumMatrix m;
         MatrixPseudocounts<AminoAcid> mpc(&m);
-        mpc.add_to_sequence(seq, profile, ConstantAdmixture(0.1f));
+        mpc.add_to_sequence(seq, ConstantAdmixture(0.1f), &profile);
 
         for (int i = 0; i < seq.length(); ++i) {
             Profile<AminoAcid> p(profile, i, 1);
@@ -51,11 +51,11 @@ class ForwardBackwardAlgorithmTest : public testing::Test
 TEST_F(ForwardBackwardAlgorithmTest, ZincFingerMotif)
 {
     Sequence<AminoAcid> seq("zinc finger motif", "GQKPFQCRICMRN\n");
-    ProfileMatcherParams params;
+    EmitterParams params;
     params.weight_center = 1.0f;
-    ProfileMatcher<AminoAcid> matcher(1, params);
+    Emitter<AminoAcid> emitter(1, params);
     ForwardBackwardMatrices m(seq.length(), hmm_.num_states());
-    forward_backward_algorithm(hmm_, seq, matcher, m);
+    forward_backward_algorithm(hmm_, seq, emitter, m);
 
     EXPECT_NEAR(0.9566, m.f[0][0] * m.b[0][0], DELTA);
     EXPECT_NEAR(0.4920, m.f[1][1] * m.b[1][1], DELTA);
@@ -72,7 +72,7 @@ TEST_F(ForwardBackwardAlgorithmTest, 1Q7L)
 
     BlosumMatrix m;
     MatrixPseudocounts<AminoAcid> mpc(&m);
-    mpc.add_to_profile(profile, ConstantAdmixture(0.01f));
+    mpc.add_to_profile(ConstantAdmixture(0.01f), &profile);
 
     HMM<AminoAcid> hmm(profile.length(), 1);
     for (int i = 0; i < profile.length(); ++i) {
@@ -83,11 +83,11 @@ TEST_F(ForwardBackwardAlgorithmTest, 1Q7L)
     hmm.transform_states_to_logspace();
 
     profile.convert_to_counts();
-    ProfileMatcherParams params;
+    EmitterParams params;
     params.weight_center = 1.0f;
-    ProfileMatcher<AminoAcid> matcher(1, params);
+    Emitter<AminoAcid> emitter(1, params);
     ForwardBackwardMatrices mat(profile.length(), hmm.num_states());
-    forward_backward_algorithm(hmm, profile, matcher, mat);
+    forward_backward_algorithm(hmm, profile, emitter, mat);
 }
 
 }  // cs

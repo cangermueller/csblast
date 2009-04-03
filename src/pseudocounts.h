@@ -40,10 +40,10 @@ class Pseudocounts
 
     // Adds pseudocounts to sequence and stores resulting frequencies in given profile.
     virtual void add_to_sequence(const Sequence<Alphabet_T>& seq,
-                                 Profile<Alphabet_T>& p,
-                                 const Admixture& pca) const = 0;
+                                 const Admixture& pca,
+                                 Profile<Alphabet_T>* profile) const = 0;
     // Adds pseudocounts to alignment derived profile.
-    virtual void add_to_profile(CountsProfile<Alphabet_T>& p, const Admixture& pca) const = 0;
+    virtual void add_to_profile(const Admixture& pca, CountsProfile<Alphabet_T>* profile) const = 0;
 
   private:
     // Disallow copy and assign

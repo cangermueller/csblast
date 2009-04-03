@@ -131,7 +131,7 @@ TEST(CountsProfileTest, AddMatrixPseudocountsToProfile)
 
     NucleotideMatrix m(1,-1);
     MatrixPseudocounts<Nucleotide> mpc(&m);
-    mpc.add_to_profile(profile, DivergenceDependentAdmixture(1.0f, 10.0f));
+    mpc.add_to_profile(DivergenceDependentAdmixture(1.0f, 10.0f), &profile);
 
     EXPECT_NEAR(0.25f, profile[0][Nucleotide::instance().ctoi('T')], DELTA);
 }
@@ -148,7 +148,7 @@ TEST(CountsProfileTest, AddMatrixPseudocountsToLogProfile)
 
     NucleotideMatrix m(1,-1);
     MatrixPseudocounts<Nucleotide> mpc(&m);
-    mpc.add_to_profile(profile, DivergenceDependentAdmixture(1.0f, 10.0f));
+    mpc.add_to_profile(DivergenceDependentAdmixture(1.0f, 10.0f), &profile);
 
     profile.transform_to_linspace();
     EXPECT_NEAR(0.25f, profile[0][Nucleotide::instance().ctoi('T')], DELTA);

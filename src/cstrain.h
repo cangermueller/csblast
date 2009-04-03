@@ -276,7 +276,7 @@ void cstrain(const Params& params, std::ostream& out)
     LOG(INFO) << strprintf("Adding pseudocounts to training profiles (admixture=%.2f) ...", params.data_pseudocounts);
     int num_data_cols = 0;
     for (counts_iterator ci = data.begin(); ci != data.end(); ++ci) {
-        sm_pc.add_to_profile(**ci, ConstantAdmixture(params.data_pseudocounts));
+        sm_pc.add_to_profile(ConstantAdmixture(params.data_pseudocounts), ci->get());
         (*ci)->convert_to_counts();
         num_data_cols += (*ci)->num_cols();
     }

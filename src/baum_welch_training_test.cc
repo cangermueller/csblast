@@ -38,7 +38,7 @@ class BaumWelchTrainingTest : public testing::Test
 
         BlosumMatrix m;
         MatrixPseudocounts<AminoAcid> mpc(&m);
-        mpc.add_to_sequence(seq, profile, ConstantAdmixture(1.0f));
+        mpc.add_to_sequence(seq, ConstantAdmixture(1.0f), &profile);
 
         for (int i = 0; i < seq.length(); ++i) {
             Profile<AminoAcid> p(profile, i, 1);
@@ -61,7 +61,7 @@ class BaumWelchTrainingTest : public testing::Test
         // Convert alignments to counts and add pseudocounts
         for (std::vector< shared_ptr< Alignment<AminoAcid> > >::iterator ai = alis.begin(); ai != alis.end(); ++ai) {
             shared_ptr< CountsProfile<AminoAcid> > p_ptr(new CountsProfile<AminoAcid>(**ai, true));
-            mpc.add_to_profile(*p_ptr, ConstantAdmixture(0.01f));
+            mpc.add_to_profile(ConstantAdmixture(0.01f), p_ptr.get());
             p_ptr->convert_to_counts();
             counts_.push_back(p_ptr);
         }

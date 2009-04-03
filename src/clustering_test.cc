@@ -40,7 +40,7 @@ class ClusteringTest : public testing::Test
 
         BlosumMatrix m;
         MatrixPseudocounts<AminoAcid> mpc(&m);
-        mpc.add_to_sequence(seq, profile, ConstantAdmixture(1.0f));
+        mpc.add_to_sequence(seq, ConstantAdmixture(1.0f), &profile);
 
         // Initialize profile library
         for (int i = 0; i < NUM_STATES; ++i) {
@@ -60,7 +60,7 @@ class ClusteringTest : public testing::Test
             CountsProfile<AminoAcid> p_full(**ai, true);
             for (int i = 0; i < p_full.num_cols() - WINDOW_LENGTH + 1; ++i) {
                 shared_ptr< CountsProfile<AminoAcid> > p_ptr(new CountsProfile<AminoAcid>(p_full, i, WINDOW_LENGTH));
-                mpc.add_to_profile(*p_ptr, ConstantAdmixture(0.01f));
+                mpc.add_to_profile(ConstantAdmixture(0.01f), p_ptr.get());
                 p_ptr->convert_to_counts();
                 counts_.push_back(p_ptr);
             }

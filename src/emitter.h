@@ -1,13 +1,12 @@
-#ifndef CS_PROFILE_MATCHER_H
-#define CS_PROFILE_MATCHER_H
+#ifndef CS_EMITTER_H
+#define CS_EMITTER_H
 /***************************************************************************
  *   Copyright (C) 2008 by Andreas Biegert                                 *
  *   andreas.biegert@googlemail.com                                        *
  ***************************************************************************/
 
 // DESCRIPTION:
-// Encapsulation for matching a context profile with a counts profile or a
-// sequence using multinomial distributions of alphabet probabilities.
+// Encapsulation for computation of emitter probabilities for profiles.
 
 #include <cmath>
 #include <valarray>
@@ -20,21 +19,21 @@
 namespace cs
 {
 
-struct ProfileMatcherParams
+struct EmitterParams
 {
-    ProfileMatcherParams()
+    EmitterParams()
             : ignore_context(false),
               weight_center(1.6f),
               weight_decay(0.85f)
     { }
 
-    ProfileMatcherParams(const ProfileMatcherParams& p)
+    EmitterParams(const EmitterParams& p)
             : ignore_context(p.ignore_context),
               weight_center(p.weight_center),
               weight_decay(p.weight_decay)
     { }
 
-    virtual ~ProfileMatcherParams()
+    virtual ~EmitterParams()
     { }
 
     bool ignore_context;
@@ -45,24 +44,24 @@ struct ProfileMatcherParams
 
 
 template< class Alphabet_T>
-class ProfileMatcher
+class Emitter
 {
   public:
     // Constructs a profile matcher with positional window weights.
-    ProfileMatcher(int num_cols, const ProfileMatcherParams& params);
+    Emitter(int num_cols, const EmitterParams& params);
 
-    ~ProfileMatcher() { }
+    ~Emitter() { }
 
-    // Matches a context profile with a profile window centered at given index.
+    // Calculates the log emission probability of profile window centered at given index.
     double operator() (const ContextProfile<Alphabet_T>& profile,
                        const CountsProfile<Alphabet_T>& counts,
                        int index) const;
-    // Matches a context profile with a sequence window centered at given index.
+    // Calculates the log emission probability of sequence window centered at given index.
     double operator() (const ContextProfile<Alphabet_T>& profile,
                        const Sequence<Alphabet_T>& seq,
                        int index) const;
-    // Calculates the effective number of columns for matching, that is the sum of weights.
-    float num_eff_cols() const;
+    // Calculates the sum of positional weights.
+    float sum_weights() const;
     // Initializes positional window weights.
     void init_weights();
 
@@ -70,11 +69,11 @@ class ProfileMatcher
 
   private:
     // Disallow copy and assign
-    ProfileMatcher(const ProfileMatcher&);
-    void operator=(const ProfileMatcher&);
+    Emitter(const Emitter&);
+    void operator=(const Emitter&);
 
     // Paramter wrapper
-    const ProfileMatcherParams& params_;
+    const EmitterParams& params_;
     // Number of columns in context profiles.
     int num_cols_;
     // Index of central column in context profiles.
@@ -86,7 +85,7 @@ class ProfileMatcher
 
 
 template< class Alphabet_T>
-inline ProfileMatcher<Alphabet_T>::ProfileMatcher(int num_cols, const ProfileMatcherParams& params)
+inline Emitter<Alphabet_T>::Emitter(int num_cols, const EmitterParams& params)
         : params_(params),
           num_cols_(num_cols),
           center_((num_cols - 1) / 2),
@@ -98,11 +97,11 @@ inline ProfileMatcher<Alphabet_T>::ProfileMatcher(int num_cols, const ProfileMat
 }
 
 template< class Alphabet_T>
-inline double ProfileMatcher<Alphabet_T>::operator() (const ContextProfile<Alphabet_T>& profile,
+inline double Emitter<Alphabet_T>::operator() (const ContextProfile<Alphabet_T>& profile,
                                                const CountsProfile<Alphabet_T>& counts,
                                                int index) const
 {
-    double rv = 0.0f;
+    double rv = 0.0;
     if (!params_.ignore_context) {
         const int beg = std::max(0, index - center_);
         const int end = std::min(counts.num_cols() - 1, index + center_);
@@ -118,15 +117,15 @@ inline double ProfileMatcher<Alphabet_T>::operator() (const ContextProfile<Alpha
             rv += counts[index][a] * profile[center_][a];
         rv *= weights_[center_];
     }
-    return pow(2.0, rv);
+    return rv;
 }
 
 template< class Alphabet_T>
-inline double ProfileMatcher<Alphabet_T>::operator() (const ContextProfile<Alphabet_T>& profile,
+inline double Emitter<Alphabet_T>::operator() (const ContextProfile<Alphabet_T>& profile,
                                                const Sequence<Alphabet_T>& seq,
                                                int index) const
 {
-    double rv = 0.0f;
+    double rv = 0.0;
     if (!params_.ignore_context) {
         const int beg = std::max(0, index - center_);
         const int end = std::min(seq.length() - 1, index + center_);
@@ -137,11 +136,11 @@ inline double ProfileMatcher<Alphabet_T>::operator() (const ContextProfile<Alpha
     } else {
         rv = weights_[center_] * profile[center_][seq[index]];
     }
-    return pow(2.0, rv);
+    return rv;
 }
 
 template< class Alphabet_T>
-void ProfileMatcher<Alphabet_T>::init_weights()
+void Emitter<Alphabet_T>::init_weights()
 {
     weights_[center_] = params_.weight_center;
     for (int i = 1; i <= center_; ++i) {
@@ -152,7 +151,7 @@ void ProfileMatcher<Alphabet_T>::init_weights()
 }
 
 template< class Alphabet_T>
-inline float ProfileMatcher<Alphabet_T>::num_eff_cols() const
+inline float Emitter<Alphabet_T>::sum_weights() const
 {
     return params_.ignore_context ? weights_[center_] : weights_.sum();
 }

@@ -65,7 +65,7 @@ TEST(SequenceTest, AddMatrixPseudocountsToSequence)
 
     BlosumMatrix m;
     MatrixPseudocounts<AminoAcid> mpc(&m);
-    mpc.add_to_sequence(sequence, profile, DivergenceDependentAdmixture(1.0f, 10.0f));
+    mpc.add_to_sequence(sequence, DivergenceDependentAdmixture(1.0f, 10.0f), &profile);
 
     EXPECT_NEAR(0.06f, profile[0][AminoAcid::instance().ctoi('V')], DELTA);
 }

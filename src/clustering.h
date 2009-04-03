@@ -15,9 +15,9 @@
 #include <vector>
 
 #include "context_profile.h"
+#include "emitter.h"
 #include "expectation_maximization.h"
 #include "log.h"
-#include "profile_matcher.h"
 #include "profile_library.h"
 #include "progress_table.h"
 #include "shared_ptr.h"
@@ -32,15 +32,15 @@ template< class Alphabet_T,
 class ClusteringProgressTable;
 
 
-struct ClusteringParams : public ProfileMatcherParams, public ExpectationMaximizationParams
+struct ClusteringParams : public EmitterParams, public ExpectationMaximizationParams
 {
     ClusteringParams()
-            : ProfileMatcherParams(),
+            : EmitterParams(),
               ExpectationMaximizationParams()
     { }
 
     ClusteringParams(const ClusteringParams& params)
-            : ProfileMatcherParams(params),
+            : EmitterParams(params),
               ExpectationMaximizationParams(params)
     { }
 };
@@ -95,8 +95,8 @@ class Clustering : public ExpectationMaximization<Alphabet_T, Subject_T>
     const ClusteringParams& params_;
     // Profile library with context profiles
     ProfileLibrary<Alphabet_T> lib_;
-    // Profile matcher for calculation of emission probabilities.
-    ProfileMatcher<Alphabet_T> profile_matcher_;
+    // Calculation of emission probabilities.
+    Emitter<Alphabet_T> emitter_;
     // Global expected sufficient statistics for emissions and state priors.
     profiles_vector profile_stats_;
     // Expeted sufficient statistics for emissions and state priors based on current block.
@@ -133,7 +133,7 @@ Clustering<Alphabet_T, Subject_T>::Clustering(const ClusteringParams& params,
         : ExpectationMaximization<Alphabet_T, Subject_T>(data),
           params_(params),
           lib_(lib),
-          profile_matcher_(lib.num_cols(), params),
+          emitter_(lib.num_cols(), params),
           profile_stats_(),
           profile_stats_block_()
 {
@@ -149,7 +149,7 @@ Clustering<Alphabet_T, Subject_T>::Clustering(const ClusteringParams& params,
         : ExpectationMaximization<Alphabet_T, Subject_T>(data),
           params_(params),
           lib_(lib),
-          profile_matcher_(lib.num_cols(), params),
+          emitter_(lib.num_cols(), params),
           profile_stats_(),
           profile_stats_block_()
 {
@@ -175,16 +175,16 @@ void Clustering<Alphabet_T, Subject_T>::expectation_step(const data_vector& bloc
     for (typename data_vector::const_iterator bi = block.begin(); bi != block.end(); ++bi) {
         double sum = 0.0f;
         for (int k = 0; k < num_profiles; ++k) {
-            p_zn[k] = lib_[k].prior() * profile_matcher_(lib_[k], **bi, lib_[k].center());
+            p_zn[k] = lib_[k].prior() * pow(2.0, emitter_(lib_[k], **bi, lib_[k].center()));
             sum += p_zn[k];
 
             LOG(DEBUG2) << strprintf("alpha(%i)=%-8.5g   P(c_n|p_%i)=%-8.5g   P(z_n=%-4i)=%-8.5g",
-                                     k, lib_[k].prior(), k, profile_matcher_(lib_[k], **bi, lib_[k].center()), k, p_zn[k]);
+                                     k, lib_[k].prior(), k, emitter_(lib_[k], **bi, lib_[k].center()), k, p_zn[k]);
         }
         p_zn /= sum;
         add_contribution_to_priors(p_zn);
         add_contribution_to_emissions(p_zn, **bi);
-        log_likelihood_ += log(sum) / num_eff_cols_;
+        log_likelihood_ += log2(sum) / num_eff_cols_;
         LOG(DEBUG1) << strprintf("log(L)=%-8.5g", log_likelihood_);
 
         if (progress_table_) progress_table_->print_progress(lib_.num_profiles());
@@ -309,7 +309,7 @@ void Clustering<Alphabet_T, Subject_T>::init()
     if (progress_table_) progress_table_->set_total_work(lib_.num_profiles() * data_.size());
 
     // Compute effective number of training data columns
-    num_eff_cols_ = profile_matcher_.num_eff_cols() * data_.size();
+    num_eff_cols_ = emitter_.sum_weights() * data_.size();
 }
 
 

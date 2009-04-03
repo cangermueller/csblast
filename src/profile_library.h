@@ -305,7 +305,7 @@ class SamplingProfileInitializer : public ProfileInitializer<Alphabet_T>
 
             CountsProfile<Alphabet_T> p(**pi);
             p.convert_to_frequencies(); // make sure that profile contains frequencies not counts
-            if (pc_) pc_->add_to_profile(p, ConstantAdmixture(pc_admixture_));
+            if (pc_) pc_->add_to_profile(ConstantAdmixture(pc_admixture_), &p);
             lib.add_profile(p);
         }
         if (!lib.full())

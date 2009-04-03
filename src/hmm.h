@@ -601,7 +601,7 @@ class SamplingStateInitializer : public StateInitializer<Alphabet_T>
                 CountsProfile<Alphabet_T> p(**pi, *i, hmm.num_cols());
                 LOG(DEBUG1) << "Extracted profile window at position " << *i << ":";
                 p.convert_to_frequencies(); // make sure that profile contains frequencies not counts
-                if (pc_) pc_->add_to_profile(p, ConstantAdmixture(pc_admixture_));
+                if (pc_) pc_->add_to_profile(ConstantAdmixture(pc_admixture_), &p);
                 hmm.add_profile(p);
             }
         }
