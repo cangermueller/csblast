@@ -6,8 +6,13 @@
  ***************************************************************************/
 
 // DESCRIPTION:
-// Encapsulation of context-specific pseudocounts calculated from a profile
-// library.
+// Encapsulation of context-specific pseudocounts calculated from a library
+// of context profiles.
+
+#include <cassert>
+#include <cmath>
+
+#include <valarray>
 
 #include "counts_profile.h"
 #include "emitter.h"
@@ -26,7 +31,7 @@ template<class Alphabet_T>
 class LibraryPseudocounts : public Pseudocounts<Alphabet_T>
 {
   public:
-    LibraryPseudocounts(const ProfileLibrary<Alphabet_T>* lib);
+    LibraryPseudocounts(const ProfileLibrary<Alphabet_T>* lib, const Emitter<Alphabet_T>* emitter);
     ~LibraryPseudocounts() { }
 
     // Adds context-specific pseudocounts to sequence and stores resulting frequencies in given profile.
@@ -35,8 +40,6 @@ class LibraryPseudocounts : public Pseudocounts<Alphabet_T>
                                  Profile<Alphabet_T>* profile) const;
     // Adds context-specific pseudocounts to alignment derived profile.
     virtual void add_to_profile(const Admixture& pca, CountsProfile<Alphabet_T>* p) const;
-    // Sets substiution matrix to be used for conditional probabilities.
-    void set_matrix(const ProfileLibrary<Alphabet_T>* lib) { lib_ = lib; }
 
   private:
     // Disallow copy and assign
@@ -44,15 +47,21 @@ class LibraryPseudocounts : public Pseudocounts<Alphabet_T>
     void operator=(const LibraryPseudocounts&);
 
     // Profile library with context profiles.
-    const ProfileLibrary<Alphabet_T>* lib_;
+    const ProfileLibrary<Alphabet_T>& lib_;
+    // Needed to compute emission probabilities of context profiles.
+    const Emitter<Alphabet_T>& emitter_;
 };  // LibraryPseudocounts
 
 
 
 template<class Alphabet_T>
-LibraryPseudocounts<Alphabet_T>::LibraryPseudocounts(const ProfileLibrary<Alphabet_T>* lib)
-        : lib_(lib)
-{ }
+LibraryPseudocounts<Alphabet_T>::LibraryPseudocounts(const ProfileLibrary<Alphabet_T>* lib,
+                                                     const Emitter<Alphabet_T>* emitter)
+        : lib_(*lib),
+          emitter_(*emitter)
+{
+    assert(lib_.logspace());
+}
 
 template<class Alphabet_T>
 void LibraryPseudocounts<Alphabet_T>::add_to_sequence(const Sequence<Alphabet_T>& seq,
@@ -64,14 +73,39 @@ void LibraryPseudocounts<Alphabet_T>::add_to_sequence(const Sequence<Alphabet_T>
     if (seq.length() != profile->num_cols())
         throw Exception("Cannot add context-specific pseudocounts: sequence and profile have different length!");
 
-    float tau = pca(1.0f);
-    CountsProfile<Alphabet_T>& p = *profile;
-    for(int i = 0; i < p.num_cols(); ++i) {
-        for(int a = 0; a < p.alphabet_size(); ++a) {
-            float pa = (1.0f - tau) * (static_cast<int>(seq[i]) == a ? 1.0f : 0.0f) + tau * m_->r(a, seq[i]);
+    const int length        = seq.length();
+    const int num_profiles  = lib_.num_profiles();
+    const int alphabet_size = Alphabet_T::instance().size();
+    const int center        = lib_.center();
+    const float tau         = pca(1.0f);  // number of effective seqs is one
+
+    std::valarray<float> prob(0.0f, num_profiles);  // profile probabilities P(p_k|X_i) at position i
+    std::valarray<float> pc(0.0f, alphabet_size);   // pseudocount vector P(a|X_i) at position i
+    Profile<Alphabet_T>& p = *profile;              // output profile with pseudocounts
+
+    for (int i = 0; i < length; ++i) {
+        // calculate profile probabilities P(p_k|X_i)
+        for (int k = 0; k < num_profiles; ++k) {
+            prob[k] = lib_[k].prior() * pow(2.0, emitter_(lib_[k], seq, i));
+        }
+        prob /= prob.sum();  // normalization
+
+        // calculate pseudocount vector P(a|X_i)
+        for(int a = 0; a < alphabet_size; ++a) {
+            pc[a] = 0.0f;
+            for (int k = 0; k < num_profiles; ++k) {
+                pc[a] += prob[k] * pow(2.0, lib_[k][center][a]);
+            }
+        }
+        pc /= pc.sum();  // normalization
+
+        // add pseudocounts to sequence by storing probabilities in output profile
+        for(int a = 0; a < alphabet_size; ++a) {
+            float pa = (1.0f - tau) * (static_cast<int>(seq[i]) == a ? 1.0f : 0.0f) + tau * pc[a];
             p[i][a] = p.logspace() ? log2(pa) : pa;
         }
     }
+
     normalize(p);
     LOG(DEBUG2) << p;
 }
@@ -79,29 +113,44 @@ void LibraryPseudocounts<Alphabet_T>::add_to_sequence(const Sequence<Alphabet_T>
 template<class Alphabet_T>
 void LibraryPseudocounts<Alphabet_T>::add_to_profile(const Admixture& pca, CountsProfile<Alphabet_T>* profile) const
 {
-    LOG(DEBUG2) << "Adding substitution matrix pseudocounts to profile ...";
-    LOG(DEBUG2) << p;
-    const bool logspace = p.logspace();
-    if (logspace) p.transform_to_linspace();
+    assert(!profile->has_counts());
+    assert(!profile->logspace());
 
-    // copy original frequencies to matrix f
-    matrix<float> f(p.num_cols(), p.alphabet_size(), 0.0f);
-    for (int i = 0; i < p.num_cols(); ++i)
-        for(int a = 0; a < p.alphabet_size(); ++a)
-            f[i][a] = p[i][a];
+    LOG(DEBUG2) << "Adding context-specific, library derived pseudocounts to profile ...";
+    LOG(DEBUG2) << *profile;
 
-    // add substitution matrix pseudocounts
-    for(int i = 0; i < p.num_cols(); ++i) {
+    const int length        = profile->num_cols();
+    const int num_profiles  = lib_.num_profiles();
+    const int center        = lib_.center();
+    const int alphabet_size = Alphabet_T::instance().size();
+
+    std::valarray<float> prob(0.0f, num_profiles);  // profile probabilities P(p_k|X_i) at position i
+    std::valarray<float> pc(0.0f, alphabet_size);   // pseudocount vector P(a|X_i) at position i
+    CountsProfile<Alphabet_T>& p = *profile;        // output profile with pseudocounts
+
+    for (int i = 0; i < length; ++i) {
+        // calculate profile probabilities P(p_k|X_i)
+        for (int k = 0; k < num_profiles; ++k) {
+            prob[k] = lib_[k].prior() * pow(2.0, emitter_(lib_[k], p, i));
+        }
+        prob /= prob.sum();  // normalization
+
+        // calculate pseudocount vector P(a|X_i)
+        for(int a = 0; a < alphabet_size; ++a) {
+            pc[a] = 0.0f;
+            for (int k = 0; k < num_profiles; ++k) {
+                pc[a] += prob[k] * pow(2.0, lib_[k][center][a]);
+            }
+        }
+        pc /= pc.sum();  // normalization
+
+        // add pseudocounts to sequence by storing probabilities in output profile
         float tau = pca(p.neff(i));
-        for(int a = 0; a < p.alphabet_size(); ++a) {
-            float sum = 0.0f;
-            for(int b = 0; b < p.alphabet_size(); ++b)
-                sum += m_->r(a,b) * f[i][b];
-            p[i][a] = (1.0f - tau) * f[i][a] + tau * sum;
+        for(int a = 0; a < alphabet_size; ++a) {
+            p[i][a] = (1.0f - tau) * p[i][a] + tau * pc[a];
         }
     }
 
-    if (logspace) p.transform_to_logspace();
     normalize(p);
     LOG(DEBUG2) << p;
 }

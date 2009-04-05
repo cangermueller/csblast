@@ -93,6 +93,8 @@ class HMM
     int size() const { return num_states_; }
     // Returns the number of columns in each context state.
     int num_cols() const { return num_cols_; }
+    // Returns index of central profile column in states.
+    int center() const { return (num_cols() - 1) / 2; }
     // Returns the size of the alphabet of the HMM.
     int alphabet_size() const { return Alphabet_T::instance().size();  }
     // Returns the number of training iterations.

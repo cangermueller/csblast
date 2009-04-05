@@ -67,8 +67,10 @@ class ProfileLibrary
     int size() const { return num_profiles_; }
     // Returns the number of columns in each context profile.
     int num_cols() const { return num_cols_; }
+    // Returns index of central profile column.
+    int center() const { return (num_cols() - 1) / 2; }
     // Returns the size of the alphabet of the profile library.
-    int alphabet_size() const { return Alphabet_T::instance().size();  }
+    int alphabet_size() const { return Alphabet_T::instance().size(); }
     // Returns the number of clustering iterations.
     int iterations() const { return iterations_; }
     // Accessor methods for state i, where i is from interval [0,num_profiles].

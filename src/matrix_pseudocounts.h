@@ -73,7 +73,8 @@ void MatrixPseudocounts<Alphabet_T>::add_to_sequence(const Sequence<Alphabet_T>&
 }
 
 template<class Alphabet_T>
-void MatrixPseudocounts<Alphabet_T>::add_to_profile(const Admixture& pca, CountsProfile<Alphabet_T>* profile) const
+void MatrixPseudocounts<Alphabet_T>::add_to_profile(const Admixture& pca,
+                                                    CountsProfile<Alphabet_T>* profile) const
 {
     LOG(DEBUG2) << "Adding substitution matrix pseudocounts to profile ...";
 

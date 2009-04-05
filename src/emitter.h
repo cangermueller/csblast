@@ -8,6 +8,7 @@
 // DESCRIPTION:
 // Encapsulation for computation of emitter probabilities for profiles.
 
+#include <cassert>
 #include <cmath>
 #include <valarray>
 
@@ -101,6 +102,10 @@ inline double Emitter<Alphabet_T>::operator() (const ContextProfile<Alphabet_T>&
                                                const CountsProfile<Alphabet_T>& counts,
                                                int index) const
 {
+    assert(profile.logspace());
+    assert(!counts.logspace());
+
+    const bool has_counts = counts.has_counts();
     double rv = 0.0;
     if (!params_.ignore_context) {
         const int beg = std::max(0, index - center_);
@@ -109,7 +114,7 @@ inline double Emitter<Alphabet_T>::operator() (const ContextProfile<Alphabet_T>&
             int j = i - index + center_;
             double sum = 0.0f;
             for (int a = 0; a < profile.alphabet_size(); ++a)
-                sum += counts[i][a] * profile[j][a];
+                sum += (has_counts ? counts[i][a] : counts[i][a] * counts.neff(i)) * profile[j][a];
             rv += weights_[j] * sum;
         }
     } else {
@@ -125,6 +130,8 @@ inline double Emitter<Alphabet_T>::operator() (const ContextProfile<Alphabet_T>&
                                                const Sequence<Alphabet_T>& seq,
                                                int index) const
 {
+    assert(profile.logspace());
+
     double rv = 0.0;
     if (!params_.ignore_context) {
         const int beg = std::max(0, index - center_);

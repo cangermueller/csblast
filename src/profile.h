@@ -27,10 +27,6 @@
 namespace cs
 {
 
-// Forward declarations
-template<class T>
-class Sequence;
-
 template<class Alphabet_T>
 class Profile
 {
