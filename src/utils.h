@@ -11,11 +11,11 @@
 #include <cctype>
 #include <cstdlib>
 #include <cstdio>
+#include <climits>
 #include <cmath>
 #include <cstdarg>
 
 #include <iostream>
-#include <limits>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -178,13 +178,30 @@ inline int chomp(char* str)
 
 // Emulates the ifstream::getline method; similar to fgets(str,maxlen,FILE*),
 // but removes the newline at the end and returns NULL if at end of file or read error
-inline char* fgetline(char* str, int maxlen, std::FILE* file)
+inline char* fgetline(char* str, int maxlen, FILE* file)
 {
     if (!fgets(str, maxlen, file)) return NULL;
     if (chomp(str) + 1 >= maxlen)  // if line is cut after maxlen characters...
         while (fgetc(file) != '\n')  // ... read in rest of line
             /* do nothing */;
     return(str);
+}
+
+// Returns leftmost integer in ptr and sets the pointer to first char after
+// the integer. If no integer is found, returns INT_MIN and sets ptr to NULL
+inline int strtoi(const char*& ptr)
+{
+    int i;
+    const char* ptr0 = ptr;
+    if (!ptr) return INT_MIN;
+    while (*ptr != '\0' && !(*ptr >= '0' && *ptr <= '9')) ++ptr;
+    if (*ptr == '\0') {
+        ptr = 0;
+        return INT_MIN;
+    }
+    if (ptr > ptr0 && *(ptr-1) == '-') i = -atoi(ptr); else i = atoi(ptr);
+    while (*ptr >= '0' && *ptr <= '9') ++ptr;
+    return i;
 }
 
 

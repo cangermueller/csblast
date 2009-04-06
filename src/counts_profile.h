@@ -59,6 +59,8 @@ class CountsProfile : public Profile<Alphabet_T>
     // Returns true if the profile contains counts.
     bool has_counts() const { return has_counts_; }
 
+    virtual const char* class_id() const { return CLASS_ID; }
+
   protected:
     // Needed to access names in templatized Profile base class
     using Profile<Alphabet_T>::data_;
@@ -76,6 +78,9 @@ class CountsProfile : public Profile<Alphabet_T>
     virtual void print(std::ostream& out) const;
 
   private:
+    // Class identifier
+    static const char* CLASS_ID;
+
     // Return serialization class identity.
     virtual const std::string class_identity() const { static std::string id("CountsProfile"); return id; }
 
@@ -86,6 +91,10 @@ class CountsProfile : public Profile<Alphabet_T>
 };  // CountsProfile
 
 
+
+
+template<class Alphabet_T>
+const char* CountsProfile<Alphabet_T>::CLASS_ID = "CountsProfile";
 
 template<class Alphabet_T>
 inline CountsProfile<Alphabet_T>::CountsProfile(std::istream& in)

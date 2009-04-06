@@ -24,11 +24,6 @@
 #include "shared_ptr.h"
 #include "utils.h"
 
-namespace
-{
-static const int BUFFER_SIZE = 16384;
-}
-
 namespace cs
 {
 
@@ -44,7 +39,7 @@ class Sequence
     // Constructs sequence from serialized sequence in FASTA format read from input stream.
     explicit Sequence(std::istream& in);
     // Constructs sequence from serialized sequence in FASTA format read from file stream.
-    explicit Sequence(std::FILE* in);
+    explicit Sequence(FILE* in);
     // Constructs sequence with given header and sequence string of characters.
     Sequence(const std::string& header, const std::string& sequence);
 
@@ -52,6 +47,8 @@ class Sequence
 
     // Reads all available sequences from the input stream and returns them in a vector.
     static void readall(std::istream& in, std::vector< shared_ptr<Sequence> >& v);
+    // Reads all available sequences from the input stream and returns them in a vector.
+    static void readall(FILE* in, std::vector< shared_ptr<Sequence> >* v);
 
     // Accessors for integer at position i of the sequence.
     char& operator[](int i) { return seq_[i]; }
@@ -75,7 +72,7 @@ class Sequence
     // Initializes the sequence object with a sequence in FASTA format read from given stream.
     void read(std::istream& in);
     // Initializes the sequence object with a sequence in FASTA format read from file stream.
-    void read(std::FILE* in);
+    void read(FILE* in);
     // Prints the sequence in FASTA format to output stream.
     void write(std::ostream& out, int width = 100) const;
 
@@ -87,6 +84,8 @@ class Sequence
     }
 
   private:
+    static const int BUFFER_SIZE = 16384;
+
     // Disallow copy and assign
     Sequence(const Sequence&);
     void operator=(const Sequence&);
@@ -111,7 +110,7 @@ inline Sequence<Alphabet_T>::Sequence(std::istream& in)
 { read(in); }
 
 template<class Alphabet_T>
-inline Sequence<Alphabet_T>::Sequence(std::FILE* in)
+inline Sequence<Alphabet_T>::Sequence(FILE* in)
 { read(in); }
 
 template<class Alphabet_T>
@@ -125,6 +124,15 @@ inline void Sequence<Alphabet_T>::readall(std::istream& in, std::vector< shared_
     while (in.peek() && in.good()) {
         shared_ptr<Sequence> p(new Sequence(in));
         v.push_back(p);
+    }
+}
+
+template<class Alphabet_T>
+inline void Sequence<Alphabet_T>::readall(FILE* in, std::vector< shared_ptr<Sequence> >* v)
+{
+    while (!feof(in)) {
+        shared_ptr<Sequence> p(new Sequence(in));
+        v->push_back(p);
     }
 }
 
@@ -176,29 +184,29 @@ void Sequence<Alphabet_T>::read(std::istream& in)
 }
 
 template<class Alphabet_T>
-void Sequence<Alphabet_T>::read(std::FILE* in)
+void Sequence<Alphabet_T>::read(FILE* in)
 {
     LOG(DEBUG1) << "Reading sequence from stream ...";
-    std::vector<char> buffer_vec(BUFFER_SIZE, '\0');
-    char* const buffer = &buffer_vec[0];
+    char buffer[BUFFER_SIZE];
+    char c = '\0';
     std::string header;
     std::string sequence;
 
-    //read header
-    if (fgets(buffer, BUFFER_SIZE, in)) {
+    // read header
+    if (fgetline(buffer, BUFFER_SIZE, in)) {
         if (buffer[0] != '>')
             throw Exception("Bad format: first line of FASTA sequence does not start with '>' character!");
         header.append(buffer + 1);
     } else {
         throw Exception("Failed to read from FASTA formatted input stream!");
     }
-    //read sequence
-    while (fgets(buffer, BUFFER_SIZE, in)) {
+    // read sequence
+    while (fgetline(buffer, BUFFER_SIZE, in)) {
         sequence.append(buffer);
-        if (getc(in) == '>') {
-            ungetc('>', in);
-            break;
-        }
+
+        c = getc(in);
+        ungetc(c, in);
+        if (c == '>' || c == EOF) break;
     }
 
     init(header, sequence);

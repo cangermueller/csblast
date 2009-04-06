@@ -24,7 +24,7 @@ const float DELTA = 0.01f;
 
 TEST(SequenceTest, ConstructionFromAlphabetVector)
 {
-    const Sequence<AminoAcid> sequence("header", "A RNDCQEGHILKMFPSTWYV\n");
+    Sequence<AminoAcid> sequence("header", "A RNDCQEGHILKMFPSTWYV\n");
 
     EXPECT_EQ(AminoAcid::instance().size(), sequence.length());
     EXPECT_EQ(AminoAcid::instance().ctoi('R'), sequence[1]);
@@ -32,8 +32,9 @@ TEST(SequenceTest, ConstructionFromAlphabetVector)
 
 TEST(SequenceTest, ConstructionFromInputStream)
 {
-    std::istringstream ss(">dummy header\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTAC");
-    const Sequence<Nucleotide> sequence(ss);
+    FILE* fin = fopen("../data/nt_seqs.fas", "r");
+    Sequence<Nucleotide> sequence(fin);
+    fclose(fin);
 
     EXPECT_EQ(80, sequence.length());
     EXPECT_EQ(Nucleotide::instance().ctoi('C'), sequence[1]);
@@ -42,12 +43,10 @@ TEST(SequenceTest, ConstructionFromInputStream)
 
 TEST(SequenceTest, ConstructionOfMultipleSequencesFromInputStream)
 {
-    std::string data;
-    data.append(">seq1\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
-    data.append(">seq2\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
-    std::istringstream ss(data);
+    FILE* fin = fopen("../data/nt_seqs.fas", "r");
     std::vector< shared_ptr<Sequence<Nucleotide> > > seqs;
-    Sequence<Nucleotide>::readall(ss, seqs);
+    Sequence<Nucleotide>::readall(fin, &seqs);
+    fclose(fin);
 
     EXPECT_EQ(2, static_cast<int>(seqs.size()));
     EXPECT_EQ(Nucleotide::instance().ctoi('C'), (*seqs[0])[1]);
@@ -72,9 +71,9 @@ TEST(SequenceTest, AddMatrixPseudocountsToSequence)
     EXPECT_NEAR(0.06f, profile[0][AminoAcid::instance().ctoi('V')], DELTA);
 }
 
-TEST(SequenceTest, ReadSwissprotDatabaseCppStyle)
+TEST(DISABLED_SequenceTest, ReadSwissprotDatabaseCppStyle)
 {
-    std::ifstream seq_in("/home/andreas/databases/uniprot_sprot.fasta");
+    std::ifstream seq_in("../../../databases/uniprot_sprot.fasta");
     for (int i = 0; i < 200000; ++i) {
         const Sequence<AminoAcid> sequence(seq_in);
         EXPECT_LT(0, sequence.length());
@@ -82,16 +81,14 @@ TEST(SequenceTest, ReadSwissprotDatabaseCppStyle)
     seq_in.close();
 }
 
-TEST(SequenceTest, ReadSwissprotDatabaseCStyle)
+TEST(DISABLED_SequenceTest, ReadSwissprotDatabaseCStyle)
 {
-    std::FILE* fin = std::fopen("/home/andreas/databases/uniprot_sprot.fasta", "r");
-    if (fin == NULL) puts("Unable to open file!\n");
+    FILE* fin = fopen("../../../databases/uniprot_sprot.fasta", "r");
     for (int i = 0; i < 200000; ++i) {
         const Sequence<AminoAcid> sequence(fin);
         EXPECT_LT(0, sequence.length());
-        //        std::cerr << i << "\t" << sequence.length() << std::endl;
     }
-    std::fclose(fin);
+    fclose(fin);
 }
 
 }  // cs
