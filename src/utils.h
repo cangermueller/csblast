@@ -8,8 +8,9 @@
 // DESCRIPTION:
 // Collection of commonly used inline utility functions.
 
-#include <cstdlib>
 #include <cctype>
+#include <cstdlib>
+#include <cstdio>
 #include <cmath>
 #include <cstdarg>
 
@@ -161,6 +162,29 @@ inline std::string get_file_dirname(const std::string& s)
     }
 
     return "";
+}
+
+// Removes the newline and other control characters at the end of a string (if present)
+// and returns the new length of the string (-1 if str is NULL)
+inline int chomp(char* str)
+{
+    if (!str) return -1;
+    int l = 0;
+    for (l = strlen(str) - 1; l >= 0 && str[l] < 32; --l)
+        /* do nothing */;
+    str[++l] = '\0';
+    return l;
+}
+
+// Emulates the ifstream::getline method; similar to fgets(str,maxlen,FILE*),
+// but removes the newline at the end and returns NULL if at end of file or read error
+inline char* fgetline(char* str, int maxlen, std::FILE* file)
+{
+    if (!fgets(str, maxlen, file)) return NULL;
+    if (chomp(str) + 1 >= maxlen)  // if line is cut after maxlen characters...
+        while (fgetc(file) != '\n')  // ... read in rest of line
+            /* do nothing */;
+    return(str);
 }
 
 

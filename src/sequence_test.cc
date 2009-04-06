@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 
+#include <cstdio>
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -70,5 +72,26 @@ TEST(SequenceTest, AddMatrixPseudocountsToSequence)
     EXPECT_NEAR(0.06f, profile[0][AminoAcid::instance().ctoi('V')], DELTA);
 }
 
-}  // cs
+TEST(SequenceTest, ReadSwissprotDatabaseCppStyle)
+{
+    std::ifstream seq_in("/home/andreas/databases/uniprot_sprot.fasta");
+    for (int i = 0; i < 200000; ++i) {
+        const Sequence<AminoAcid> sequence(seq_in);
+        EXPECT_LT(0, sequence.length());
+    }
+    seq_in.close();
+}
 
+TEST(SequenceTest, ReadSwissprotDatabaseCStyle)
+{
+    std::FILE* fin = std::fopen("/home/andreas/databases/uniprot_sprot.fasta", "r");
+    if (fin == NULL) puts("Unable to open file!\n");
+    for (int i = 0; i < 200000; ++i) {
+        const Sequence<AminoAcid> sequence(fin);
+        EXPECT_LT(0, sequence.length());
+        //        std::cerr << i << "\t" << sequence.length() << std::endl;
+    }
+    std::fclose(fin);
+}
+
+}  // cs

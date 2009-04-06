@@ -10,6 +10,8 @@
 // sequence alphabet.
 
 #include <cctype>
+#include <cstdio>
+#include <cstdlib>
 
 #include <algorithm>
 #include <iostream>
@@ -20,6 +22,12 @@
 #include "exception.h"
 #include "log.h"
 #include "shared_ptr.h"
+#include "utils.h"
+
+namespace
+{
+static const int BUFFER_SIZE = 16384;
+}
 
 namespace cs
 {
@@ -35,6 +43,8 @@ class Sequence
     explicit Sequence(int length);
     // Constructs sequence from serialized sequence in FASTA format read from input stream.
     explicit Sequence(std::istream& in);
+    // Constructs sequence from serialized sequence in FASTA format read from file stream.
+    explicit Sequence(std::FILE* in);
     // Constructs sequence with given header and sequence string of characters.
     Sequence(const std::string& header, const std::string& sequence);
 
@@ -64,6 +74,8 @@ class Sequence
     iterator end() { return begin() + length(); }
     // Initializes the sequence object with a sequence in FASTA format read from given stream.
     void read(std::istream& in);
+    // Initializes the sequence object with a sequence in FASTA format read from file stream.
+    void read(std::FILE* in);
     // Prints the sequence in FASTA format to output stream.
     void write(std::ostream& out, int width = 100) const;
 
@@ -96,6 +108,10 @@ inline Sequence<Alphabet_T>::Sequence(int length)
 
 template<class Alphabet_T>
 inline Sequence<Alphabet_T>::Sequence(std::istream& in)
+{ read(in); }
+
+template<class Alphabet_T>
+inline Sequence<Alphabet_T>::Sequence(std::FILE* in)
 { read(in); }
 
 template<class Alphabet_T>
@@ -154,6 +170,36 @@ void Sequence<Alphabet_T>::read(std::istream& in)
     //read sequence
     while (in.peek() != '>' && getline(in, tmp))
         sequence.append(tmp.begin(), tmp.end());
+
+    init(header, sequence);
+    LOG(DEBUG1) << *this;
+}
+
+template<class Alphabet_T>
+void Sequence<Alphabet_T>::read(std::FILE* in)
+{
+    LOG(DEBUG1) << "Reading sequence from stream ...";
+    std::vector<char> buffer_vec(BUFFER_SIZE, '\0');
+    char* const buffer = &buffer_vec[0];
+    std::string header;
+    std::string sequence;
+
+    //read header
+    if (fgets(buffer, BUFFER_SIZE, in)) {
+        if (buffer[0] != '>')
+            throw Exception("Bad format: first line of FASTA sequence does not start with '>' character!");
+        header.append(buffer + 1);
+    } else {
+        throw Exception("Failed to read from FASTA formatted input stream!");
+    }
+    //read sequence
+    while (fgets(buffer, BUFFER_SIZE, in)) {
+        sequence.append(buffer);
+        if (getc(in) == '>') {
+            ungetc('>', in);
+            break;
+        }
+    }
 
     init(header, sequence);
     LOG(DEBUG1) << *this;
