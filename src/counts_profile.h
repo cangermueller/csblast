@@ -11,6 +11,7 @@
 #include <cmath>
 #include <iomanip>
 #include <iostream>
+#include <string>
 #include <vector>
 
 #include "alignment.h"
@@ -45,7 +46,7 @@ class CountsProfile : public Profile<Alphabet_T>
     // Creates a profile from subprofile in other, starting at column index and length columns long.
     CountsProfile(const CountsProfile& other, int index, int length);
 
-    virtual ~CountsProfile() {}
+    virtual ~CountsProfile() { }
 
     // Reads all available profiles from the input stream and returns them in a vector.
     static void readall(std::istream& in, std::vector< shared_ptr<CountsProfile> >& v);
@@ -76,7 +77,7 @@ class CountsProfile : public Profile<Alphabet_T>
 
   private:
     // Return serialization class identity.
-    virtual const std::string class_identity() const { static std::string id("CountsProfile"); return id;}
+    virtual const std::string class_identity() const { static std::string id("CountsProfile"); return id; }
 
     // Number of effective sequences in each alignment column.
     std::vector<float> neff_;

@@ -138,13 +138,13 @@ template<class Alphabet_T>
 Profile<Alphabet_T>::Profile()
         : data_(),
           logspace_(false)
-{}
+{ }
 
 template<class Alphabet_T>
 Profile<Alphabet_T>::Profile(int num_cols)
         : data_(num_cols, Alphabet_T::instance().size(), 0.0f),
           logspace_(false)
-{}
+{ }
 
 template<class Alphabet_T>
 Profile<Alphabet_T>::Profile(std::istream& in)

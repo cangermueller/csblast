@@ -9,6 +9,7 @@
 // A container class for profiles derived from alignments.
 
 #include <iostream>
+#include <string>
 #include <vector>
 
 #include "alignment.h"
@@ -39,11 +40,10 @@ class ContextProfile : public Profile<Alphabet_T>
     // Constructs a context profile from simple profile and checks if length is valid.
     ContextProfile(int index, const Profile<Alphabet_T>& profile);
 
-    virtual ~ContextProfile() {}
+    virtual ~ContextProfile() { }
 
     // Reads all available profiles from the input stream and returns them in a vector.
     static void readall(std::istream& in, std::vector< shared_ptr<ContextProfile> >& v);
-
     // Returns the index of this context profile.
     int index() const { return index_; }
     // Sets the index of this context profile.
@@ -58,7 +58,6 @@ class ContextProfile : public Profile<Alphabet_T>
   protected:
     // Needed to access names in templatized Profile base class
     using Profile<Alphabet_T>::data_;
-    using Profile<Alphabet_T>::logspace_;
 
     // Reads and initializes serialized scalar data members from stream.
     virtual void read_header(std::istream& in);
@@ -73,11 +72,10 @@ class ContextProfile : public Profile<Alphabet_T>
     float prior_;
 
   private:
+    // Return serialization class identity.
+    virtual const std::string class_identity() const { static std::string id("ContextProfile"); return id; }
     // Checks if profile has odd number of columns.
     void check();
-
-    // Return serialization class identity.
-    virtual const std::string class_identity() { static std::string id("ContextProfile"); return id; }
 };  // ContextProfile
 
 

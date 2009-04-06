@@ -31,8 +31,6 @@ class State : public ContextProfile<Alphabet_T>
     typedef typename sparsetable<AnchoredTransition>::const_nonempty_iterator const_transition_iterator;
 
     // Needed to access names in templatized Profile base class
-    using ContextProfile<Alphabet_T>::read;
-    using ContextProfile<Alphabet_T>::write;
     using ContextProfile<Alphabet_T>::num_cols;
     using ContextProfile<Alphabet_T>::alphabet_size;
     using ContextProfile<Alphabet_T>::logspace;
@@ -40,6 +38,7 @@ class State : public ContextProfile<Alphabet_T>
     using ContextProfile<Alphabet_T>::set_prior;
     using ContextProfile<Alphabet_T>::index;
     using ContextProfile<Alphabet_T>::set_index;
+    using ContextProfile<Alphabet_T>::read;
 
     // Constructs HMM state from serialized state read from input stream.
     explicit State(std::istream& in);

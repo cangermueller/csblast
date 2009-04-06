@@ -76,9 +76,6 @@ TEST_F(ProfileLibraryTest, SimpleConstruction)
     lib[2][0][1] = 1.0f;
     EXPECT_FLOAT_EQ(0.0f, lib[2][0][0]);
     EXPECT_FLOAT_EQ(1.0f, lib[2][0][1]);
-
-    lib.write(std::cout);
-    std::cout << lib;
 }
 
 TEST_F(ProfileLibraryTest, ConstructionFromSerializedLibrary)
