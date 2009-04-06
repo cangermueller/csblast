@@ -68,8 +68,8 @@ void MatrixPseudocounts<Alphabet_T>::add_to_sequence(const Sequence<Alphabet_T>&
             p[i][a] = p.logspace() ? log2(pa) : pa;
         }
     }
-    normalize(p);
-    LOG(DEBUG2) << p;
+    normalize(profile);
+    LOG(DEBUG2) << *profile;
 }
 
 template<class Alphabet_T>
@@ -100,8 +100,8 @@ void MatrixPseudocounts<Alphabet_T>::add_to_profile(const Admixture& pca,
     }
 
     if (logspace) p.transform_to_logspace();
-    normalize(p);
-    LOG(DEBUG2) << p;
+    normalize(profile);
+    LOG(DEBUG2) << *profile;
 }
 
 }  // cs

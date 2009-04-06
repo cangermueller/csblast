@@ -94,14 +94,14 @@ template< class Alphabet_T,
 void forward_backward_algorithm(const HMM<Alphabet_T>& hmm,
                                 const Subject_T<Alphabet_T>& subject,
                                 const Emitter<Alphabet_T>& emitter,
-                                ForwardBackwardMatrices& m)
+                                ForwardBackwardMatrices* fbm)
 {
     LOG(DEBUG) << "Running forward-backward algorithm ...";
     LOG(DEBUG1) << hmm;
     LOG(DEBUG1) << subject;
 
-    forward_algorithm(hmm, subject, emitter, m);
-    backward_algorithm(hmm, subject, m);
+    forward_algorithm(hmm, subject, emitter, fbm);
+    backward_algorithm(hmm, subject, fbm);
 }
 
 template< class Alphabet_T,
@@ -109,7 +109,7 @@ template< class Alphabet_T,
 void forward_algorithm(const HMM<Alphabet_T>& hmm,
                        const Subject_T<Alphabet_T>& subject,
                        const Emitter<Alphabet_T>& emitter,
-                       ForwardBackwardMatrices& m)
+                       ForwardBackwardMatrices* fbm)
 {
     typedef typename ForwardBackwardMatrices::value_type value_type;
     typedef typename HMM<Alphabet_T>::const_state_iterator const_state_iterator;
@@ -118,6 +118,7 @@ void forward_algorithm(const HMM<Alphabet_T>& hmm,
     LOG(DEBUG1) << "Forward algorithm ...";
     const int length     = subject.length();
     const int num_states = hmm.num_states();
+    ForwardBackwardMatrices& m = *fbm;
 
     // Initialization
     LOG(DEBUG1) << strprintf("i=%i", 0);
@@ -167,7 +168,7 @@ template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
 void backward_algorithm(const HMM<Alphabet_T>& hmm,
                         const Subject_T<Alphabet_T>& subject,
-                        ForwardBackwardMatrices& m)
+                        ForwardBackwardMatrices* fbm)
 {
     typedef typename ForwardBackwardMatrices::value_type value_type;
     typedef typename HMM<Alphabet_T>::const_state_iterator const_state_iterator;
@@ -176,6 +177,7 @@ void backward_algorithm(const HMM<Alphabet_T>& hmm,
     LOG(DEBUG1) << "Backward algorithm ...";
     const int length     = subject.length();
     const int num_states = hmm.num_states();
+    ForwardBackwardMatrices& m = *fbm;
 
     // Initialization
     LOG(DEBUG1) << strprintf("i=%i", length-1);

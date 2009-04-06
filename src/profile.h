@@ -126,11 +126,11 @@ class Profile
 
 // Resets all entries in given profile to the given value or zero if none is given.
 template<class Alphabet_T>
-void reset(Profile<Alphabet_T>& profile, float value = 0.0f);
+void reset(Profile<Alphabet_T>* p, float value = 0.0f);
 
 // Normalize profile columns to value or to one if none provided.
 template<class Alphabet_T>
-bool normalize(Profile<Alphabet_T>& profile, float value = 1.0f);
+bool normalize(Profile<Alphabet_T>* p, float value = 1.0f);
 
 
 
@@ -331,8 +331,9 @@ void Profile<Alphabet_T>::resize(int num_cols, int alphabet_size)
 
 
 template<class Alphabet_T>
-void reset(Profile<Alphabet_T>& profile)
+inline void reset(Profile<Alphabet_T>* p)
 {
+    Profile<Alphabet_T>& profile = *p;
     const int num_cols = profile.num_cols();
     const int alphabet_size = profile.alphabet_size();
     for(int i = 0; i < num_cols; ++i)
@@ -341,8 +342,9 @@ void reset(Profile<Alphabet_T>& profile)
 }
 
 template<class Alphabet_T>
-bool normalize(Profile<Alphabet_T>& profile, float value)
+bool normalize(Profile<Alphabet_T>* p, float value)
 {
+    Profile<Alphabet_T>& profile = *p;
     const bool logspace = profile.logspace();
     if (logspace) profile.transform_to_linspace();
 

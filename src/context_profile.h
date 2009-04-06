@@ -164,8 +164,9 @@ void ContextProfile<Alphabet_T>::print(std::ostream& out) const
 
 
 template<class Alphabet_T>
-void reset(ContextProfile<Alphabet_T>& profile)
+void reset(ContextProfile<Alphabet_T>* p)
 {
+    ContextProfile<Alphabet_T>& profile = *p;
     const int num_cols = profile.num_cols();
     const int alphabet_size = profile.alphabet_size();
 

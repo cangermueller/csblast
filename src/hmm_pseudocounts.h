@@ -1,13 +1,12 @@
-#ifndef CS_LIBRARY_PSEUDOCOUNTS_H
-#define CS_LIBRARY_PSEUDOCOUNTS_H
+#ifndef CS_HMM_PSEUDOCOUNTS_H
+#define CS_HMM_PSEUDOCOUNTS_H
 /***************************************************************************
  *   Copyright (C) 2008 by Andreas Biegert                                 *
  *   andreas.biegert@googlemail.com                                        *
  ***************************************************************************/
 
 // DESCRIPTION:
-// Encapsulation of context-specific pseudocounts calculated from a library
-// of context profiles.
+// Encapsulation of context-specific pseudocounts calculated from context HMM.
 
 #include <cassert>
 #include <cmath>
@@ -16,10 +15,11 @@
 
 #include "counts_profile.h"
 #include "emitter.h"
+#include "forward_backward_algorithm.h"
+#include "hmm.h"
 #include "log.h"
 #include "matrix.h"
 #include "profile.h"
-#include "profile_library.h"
 #include "pseudocounts.h"
 #include "sequence.h"
 #include "utils.h"
@@ -28,11 +28,11 @@ namespace cs
 {
 
 template<class Alphabet_T>
-class LibraryPseudocounts : public Pseudocounts<Alphabet_T>
+class HMMPseudocounts : public Pseudocounts<Alphabet_T>
 {
   public:
-    LibraryPseudocounts(const ProfileLibrary<Alphabet_T>* lib, const EmissionParams& params);
-    ~LibraryPseudocounts() { }
+    HMMPseudocounts(const HMM<Alphabet_T>* hmm, const EmissionParams& params);
+    ~HMMPseudocounts() { }
 
     // Adds context-specific pseudocounts to sequence and stores resulting frequencies in given profile.
     virtual void add_to_sequence(const Sequence<Alphabet_T>& seq,
@@ -43,58 +43,56 @@ class LibraryPseudocounts : public Pseudocounts<Alphabet_T>
 
   private:
     // Disallow copy and assign
-    LibraryPseudocounts(const LibraryPseudocounts&);
-    void operator=(const LibraryPseudocounts&);
+    HMMPseudocounts(const HMMPseudocounts&);
+    void operator=(const HMMPseudocounts&);
 
     // Profile library with context profiles.
-    const ProfileLibrary<Alphabet_T>& lib_;
-    // Needed to compute emission probabilities of context profiles.
+    const HMM<Alphabet_T>& hmm_;
+    // Needed to compute emission probabi
     const Emitter<Alphabet_T> emitter_;
-};  // LibraryPseudocounts
+};  // HMMPseudocounts
 
 
 
 template<class Alphabet_T>
-inline LibraryPseudocounts<Alphabet_T>::LibraryPseudocounts(const ProfileLibrary<Alphabet_T>* lib,
-                                                            const EmissionParams& params)
-        : lib_(*lib),
-          emitter_(lib->num_cols(), params)
+inline HMMPseudocounts<Alphabet_T>::HMMPseudocounts(const HMM<Alphabet_T>* hmm,
+                                                    const EmissionParams& params)
+        : hmm_(*hmm),
+          emitter_(hmm->num_cols(), params)
 {
-    assert(lib_.logspace());
+    assert(hmm_.states_logspace());
+    assert(!hmm_.transitions_logspace());
 }
 
 template<class Alphabet_T>
-void LibraryPseudocounts<Alphabet_T>::add_to_sequence(const Sequence<Alphabet_T>& seq,
-                                                      const Admixture& pca,
-                                                      Profile<Alphabet_T>* profile) const
+void HMMPseudocounts<Alphabet_T>::add_to_sequence(const Sequence<Alphabet_T>& seq,
+                                                  const Admixture& pca,
+                                                  Profile<Alphabet_T>* profile) const
 {
-    LOG(DEBUG2) << "Adding context-specific, library-derived pseudocounts to sequence ...";
+    LOG(DEBUG2) << "Adding context-specific, HMM-derived pseudocounts to sequence ...";
     LOG(DEBUG2) << *profile;
     if (seq.length() != profile->num_cols())
         throw Exception("Cannot add context-specific pseudocounts: sequence and profile have different length!");
 
     const int length        = seq.length();
-    const int num_profiles  = lib_.num_profiles();
+    const int num_states    = hmm_.num_states();
     const int alphabet_size = Alphabet_T::instance().size();
-    const int center        = lib_.center();
+    const int center        = hmm_.center();
     const float tau         = pca(1.0f);  // number of effective seqs is one
 
-    std::valarray<float> prob(0.0f, num_profiles);  // profile probabilities P(p_k|X_i) at position i
     std::valarray<float> pc(0.0f, alphabet_size);   // pseudocount vector P(a|X_i) at position i
     Profile<Alphabet_T>& p = *profile;              // output profile with pseudocounts
 
-    for (int i = 0; i < length; ++i) {
-        // calculate profile probabilities P(p_k|X_i)
-        for (int k = 0; k < num_profiles; ++k) {
-            prob[k] = lib_[k].prior() * pow(2.0, emitter_(lib_[k], seq, i));
-        }
-        prob /= prob.sum();  // normalization
+    // calculate posterior state probabilities with forward-backward algorithm
+    ForwardBackwardMatrices fbm(length, hmm_.num_states());
+    forward_backward_algorithm(hmm_, seq, emitter_, &fbm);
 
+    for (int i = 0; i < length; ++i) {
         // calculate pseudocount vector P(a|X_i)
         for(int a = 0; a < alphabet_size; ++a) {
             pc[a] = 0.0f;
-            for (int k = 0; k < num_profiles; ++k) {
-                pc[a] += prob[k] * pow(2.0, lib_[k][center][a]);
+            for (int k = 0; k < num_states; ++k) {
+                pc[a] += fbm.f[i][k] * fbm.b[i][k] * pow(2.0, hmm_[k][center][a]);
             }
         }
         pc /= pc.sum();  // normalization
@@ -111,35 +109,32 @@ void LibraryPseudocounts<Alphabet_T>::add_to_sequence(const Sequence<Alphabet_T>
 }
 
 template<class Alphabet_T>
-void LibraryPseudocounts<Alphabet_T>::add_to_profile(const Admixture& pca, CountsProfile<Alphabet_T>* profile) const
+void HMMPseudocounts<Alphabet_T>::add_to_profile(const Admixture& pca, CountsProfile<Alphabet_T>* profile) const
 {
     assert(!profile->has_counts());
     assert(!profile->logspace());
 
-    LOG(DEBUG2) << "Adding context-specific, library-derived pseudocounts to profile ...";
+    LOG(DEBUG2) << "Adding context-specific, HMM-derived pseudocounts to profile ...";
     LOG(DEBUG2) << *profile;
 
     const int length        = profile->num_cols();
-    const int num_profiles  = lib_.num_profiles();
-    const int center        = lib_.center();
+    const int num_states    = hmm_.num_states();
+    const int center        = hmm_.center();
     const int alphabet_size = Alphabet_T::instance().size();
 
-    std::valarray<float> prob(0.0f, num_profiles);  // profile probabilities P(p_k|X_i) at position i
     std::valarray<float> pc(0.0f, alphabet_size);   // pseudocount vector P(a|X_i) at position i
     CountsProfile<Alphabet_T>& p = *profile;        // output profile with pseudocounts
 
-    for (int i = 0; i < length; ++i) {
-        // calculate profile probabilities P(p_k|X_i)
-        for (int k = 0; k < num_profiles; ++k) {
-            prob[k] = lib_[k].prior() * pow(2.0, emitter_(lib_[k], p, i));
-        }
-        prob /= prob.sum();  // normalization
+    // calculate posterior state probabilities with forward-backward algorithm
+    ForwardBackwardMatrices fbm(length, hmm_.num_states());
+    forward_backward_algorithm(hmm_, p, emitter_, &fbm);
 
+    for (int i = 0; i < length; ++i) {
         // calculate pseudocount vector P(a|X_i)
         for(int a = 0; a < alphabet_size; ++a) {
             pc[a] = 0.0f;
-            for (int k = 0; k < num_profiles; ++k) {
-                pc[a] += prob[k] * pow(2.0, lib_[k][center][a]);
+            for (int k = 0; k < num_states; ++k) {
+                pc[a] += fbm.f[i][k] * fbm.b[i][k] * pow(2.0, hmm_[k][center][a]);
             }
         }
         pc /= pc.sum();  // normalization

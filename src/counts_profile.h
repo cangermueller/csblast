@@ -131,7 +131,7 @@ inline CountsProfile<Alphabet_T>::CountsProfile(const Alignment<Alphabet_T>& ali
                     data_[i][alignment[i][k]] += wg[k];
     }
 
-    normalize(*this);
+    normalize(this);
 }
 
 template<class Alphabet_T>
@@ -173,7 +173,7 @@ template<class Alphabet_T>
 void CountsProfile<Alphabet_T>::convert_to_frequencies()
 {
     if (has_counts_) {
-        normalize(*this);
+        normalize(this);
         has_counts_ = false;
     }
 }

@@ -20,21 +20,21 @@
 namespace cs
 {
 
-struct EmitterParams
+struct EmissionParams
 {
-    EmitterParams()
+    EmissionParams()
             : ignore_context(false),
               weight_center(1.6f),
               weight_decay(0.85f)
     { }
 
-    EmitterParams(const EmitterParams& p)
+    EmissionParams(const EmissionParams& p)
             : ignore_context(p.ignore_context),
               weight_center(p.weight_center),
               weight_decay(p.weight_decay)
     { }
 
-    virtual ~EmitterParams()
+    virtual ~EmissionParams()
     { }
 
     bool ignore_context;
@@ -49,7 +49,7 @@ class Emitter
 {
   public:
     // Constructs a profile matcher with positional window weights.
-    Emitter(int num_cols, const EmitterParams& params);
+    Emitter(int num_cols, const EmissionParams& params);
 
     ~Emitter() { }
 
@@ -74,7 +74,7 @@ class Emitter
     void operator=(const Emitter&);
 
     // Paramter wrapper
-    const EmitterParams& params_;
+    const EmissionParams& params_;
     // Number of columns in context profiles.
     int num_cols_;
     // Index of central column in context profiles.
@@ -86,7 +86,7 @@ class Emitter
 
 
 template< class Alphabet_T>
-inline Emitter<Alphabet_T>::Emitter(int num_cols, const EmitterParams& params)
+inline Emitter<Alphabet_T>::Emitter(int num_cols, const EmissionParams& params)
         : params_(params),
           num_cols_(num_cols),
           center_((num_cols - 1) / 2),

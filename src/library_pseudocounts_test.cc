@@ -30,10 +30,8 @@ TEST(LibraryPseudocountsTest, AddToSequence)
     ProfileLibrary<AminoAcid> lib(in);
     ASSERT_EQ(50, lib.num_profiles());
 
-    EmitterParams params;
-    Emitter<AminoAcid> emitter(lib.num_cols(), params);
-
-    LibraryPseudocounts<AminoAcid> pc(&lib, &emitter);
+    EmissionParams params;
+    LibraryPseudocounts<AminoAcid> pc(&lib, params);
     pc.add_to_sequence(seq, DivergenceDependentAdmixture(1.0f, 10.0f), &profile);
 
     EXPECT_NEAR(0.0736f, profile[0][AminoAcid::instance().ctoi('V')], DELTA);
@@ -54,10 +52,8 @@ TEST(LibraryPseudocountsTest, AddProfileSequence)
     ProfileLibrary<AminoAcid> lib(in);
     ASSERT_EQ(50, lib.num_profiles());
 
-    EmitterParams params;
-    Emitter<AminoAcid> emitter(lib.num_cols(), params);
-
-    LibraryPseudocounts<AminoAcid> pc(&lib, &emitter);
+    EmissionParams params;
+    LibraryPseudocounts<AminoAcid> pc(&lib, params);
     pc.add_to_profile(DivergenceDependentAdmixture(1.0f, 10.0f), &profile);
 
     EXPECT_NEAR(0.80f, profile[0][AminoAcid::instance().ctoi('C')], DELTA);

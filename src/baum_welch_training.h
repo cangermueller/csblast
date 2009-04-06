@@ -32,17 +32,17 @@ template< class Alphabet_T,
 class BaumWelchProgressTable;
 
 
-struct BaumWelchParams : public EmitterParams, public ExpectationMaximizationParams
+struct BaumWelchParams : public EmissionParams, public ExpectationMaximizationParams
 {
     BaumWelchParams()
-            : EmitterParams(),
+            : EmissionParams(),
               ExpectationMaximizationParams(),
               transition_pseudocounts(1.0f),
               max_connectivity(0)
     { }
 
     BaumWelchParams(const BaumWelchParams& params)
-            : EmitterParams(params),
+            : EmissionParams(params),
               ExpectationMaximizationParams(params),
               transition_pseudocounts(params.transition_pseudocounts),
               max_connectivity(params.max_connectivity)
@@ -199,7 +199,7 @@ void BaumWelchTraining<Alphabet_T, Subject_T>::expectation_step(const data_vecto
     // Run forward and backward algorithm on each subject in current block
     for (typename data_vector::const_iterator bi = block.begin(); bi != block.end(); ++bi) {
         ForwardBackwardMatrices fbm((*bi)->length(), hmm_.num_states());
-        forward_backward_algorithm(hmm_, **bi, emitter_, fbm);
+        forward_backward_algorithm(hmm_, **bi, emitter_, &fbm);
         add_contribution_to_priors(fbm);
         add_contribution_to_transitions(fbm);
         add_contribution_to_emissions(fbm, **bi);
@@ -230,7 +230,7 @@ void BaumWelchTraining<Alphabet_T, Subject_T>::maximization_step()
 
         hmm_[k].set_prior(p_k.prior() * fac);
         ContextProfile<Alphabet_T> tmp(p_k);
-        if (normalize(tmp)) {  // don't update profiles that did'n get any evidence
+        if (normalize(&tmp)) {  // don't update profiles that did'n get any evidence
             tmp.transform_to_logspace();
             for (int i = 0; i < num_cols; ++i)
                 for (int a = 0; a < alphabet_size; ++a)
@@ -378,7 +378,7 @@ inline void BaumWelchTraining<Alphabet_T, Subject_T>::update_sufficient_statisti
                 p[j][a] = gamma * p[j][a]  + p_block[j][a];
             }
         }
-        reset(p_block);
+        reset(&p_block);
     }
 }
 
