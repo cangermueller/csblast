@@ -90,7 +90,7 @@ class State : public ContextProfile<Alphabet_T>
 
   private:
     // Returns serialization class identity.
-    virtual const std::string class_identity() const { static std::string id("State"); return id;}
+    virtual const std::string class_identity() const { static std::string id("State"); return id; }
 
     // Size of HMM to which the state belongs.
     int num_states_;

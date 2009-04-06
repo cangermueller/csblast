@@ -77,7 +77,7 @@ class ContextProfile : public Profile<Alphabet_T>
     void check();
 
     // Return serialization class identity.
-    virtual const std::string class_identity() { static std::string id("ContextProfile"); return id;}
+    virtual const std::string class_identity() { static std::string id("ContextProfile"); return id; }
 };  // ContextProfile
 
 
