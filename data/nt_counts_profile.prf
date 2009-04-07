@@ -1,0 +1,11 @@
+CountsProfile
+num_cols	4
+alphabet_size	4
+logspace	0
+has_counts	0
+	A	C	G	T	Neff
+1	0	*	*	*	1000
+2	*	0	*	*	1000
+3	*	*	0	*	1000
+4	*	*	*	0	1000
+//

@@ -9,6 +9,7 @@
 // Collection of commonly used inline utility functions.
 
 #include <cctype>
+#include <cfloat>
 #include <cstdlib>
 #include <cstdio>
 #include <climits>
@@ -204,6 +205,34 @@ inline int strtoi(const char*& ptr)
     return i;
 }
 
+// Same as strtoi, but interpretes '*' as default
+inline int strtoi_ast(const char*& ptr, int deflt = INT_MAX)
+{
+    int i;
+    const char* ptr0 = ptr;
+    if (!ptr) return INT_MIN;
+    while (*ptr != '\0' && !(*ptr >= '0' && *ptr <= '9') && *ptr != '*') ++ptr;
+    if (*ptr == '\0') {
+        ptr = 0;
+        return INT_MIN;
+    }
+    if (*ptr == '*') {
+        ++ptr;
+        return deflt;
+    }
+    if (ptr > ptr0 &&  *(ptr-1) == '-') i = -atoi(ptr); else i = atoi(ptr);
+    while (*ptr >= '0' && *ptr <= '9') ++ptr;
+    return i;
+}
+
+// Returns pointer to first non-white-space character in str OR to NULL if none found
+inline const char* strscn(const char* str)
+{
+    if (!str) return NULL;
+    const char* ptr = str;
+    while (*ptr != '\0' && isspace(*ptr)) ++ptr;
+    return (*ptr == '\0') ? NULL : ptr;
+}
 
 }  // cs
 

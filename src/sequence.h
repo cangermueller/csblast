@@ -39,7 +39,7 @@ class Sequence
     // Constructs sequence from serialized sequence in FASTA format read from input stream.
     explicit Sequence(std::istream& in);
     // Constructs sequence from serialized sequence in FASTA format read from file stream.
-    explicit Sequence(FILE* in);
+    explicit Sequence(FILE* fin);
     // Constructs sequence with given header and sequence string of characters.
     Sequence(const std::string& header, const std::string& sequence);
 
@@ -48,7 +48,7 @@ class Sequence
     // Reads all available sequences from the input stream and returns them in a vector.
     static void readall(std::istream& in, std::vector< shared_ptr<Sequence> >& v);
     // Reads all available sequences from the input stream and returns them in a vector.
-    static void readall(FILE* in, std::vector< shared_ptr<Sequence> >* v);
+    static void readall(FILE* fin, std::vector< shared_ptr<Sequence> >* v);
 
     // Accessors for integer at position i of the sequence.
     char& operator[](int i) { return seq_[i]; }
@@ -84,6 +84,7 @@ class Sequence
     }
 
   private:
+    // Buffer size for reading
     static const int BUFFER_SIZE = 16384;
 
     // Disallow copy and assign
@@ -119,7 +120,8 @@ Sequence<Alphabet_T>::Sequence(const std::string& header,
 { init(header, sequence); }
 
 template<class Alphabet_T>
-inline void Sequence<Alphabet_T>::readall(std::istream& in, std::vector< shared_ptr<Sequence> >& v)
+inline void Sequence<Alphabet_T>::readall(std::istream& in,
+                                          std::vector< shared_ptr<Sequence> >& v)
 {
     while (in.peek() && in.good()) {
         shared_ptr<Sequence> p(new Sequence(in));
@@ -128,10 +130,11 @@ inline void Sequence<Alphabet_T>::readall(std::istream& in, std::vector< shared_
 }
 
 template<class Alphabet_T>
-inline void Sequence<Alphabet_T>::readall(FILE* in, std::vector< shared_ptr<Sequence> >* v)
+inline void Sequence<Alphabet_T>::readall(FILE* fin,
+                                          std::vector< shared_ptr<Sequence> >* v)
 {
-    while (!feof(in)) {
-        shared_ptr<Sequence> p(new Sequence(in));
+    while (!feof(fin)) {
+        shared_ptr<Sequence> p(new Sequence(fin));
         v->push_back(p);
     }
 }
@@ -154,7 +157,8 @@ void Sequence<Alphabet_T>::init(std::string header, std::string sequence)
         if (alphabet.valid(c)) {
             seq_[i] = alphabet.ctoi(c);
         } else {
-            throw Exception("Invalid character %c at position %i of sequence '%s'", c, i, header_.c_str());
+            throw Exception("Invalid character %c at position %i of sequence '%s'",
+                            c, i, header_.c_str());
         }
     }
 }
@@ -170,10 +174,10 @@ void Sequence<Alphabet_T>::read(std::istream& in)
     //read header
     if (getline(in, tmp)) {
         if (tmp.empty() ||  tmp[0] != '>')
-            throw Exception("Bad format: first line of FASTA sequence does not start with '>' character!");
+            throw Exception("Sequence header does not start with '>' character!");
         header.append(tmp.begin() + 1, tmp.end());
     } else {
-        throw Exception("Failed to read from FASTA formatted input stream!");
+        throw Exception("Failed to read sequence from stream!");
     }
     //read sequence
     while (in.peek() != '>' && getline(in, tmp))
@@ -184,32 +188,37 @@ void Sequence<Alphabet_T>::read(std::istream& in)
 }
 
 template<class Alphabet_T>
-void Sequence<Alphabet_T>::read(FILE* in)
+void Sequence<Alphabet_T>::read(FILE* fin)
 {
     LOG(DEBUG1) << "Reading sequence from stream ...";
+
     char buffer[BUFFER_SIZE];
-    char c = '\0';
+    int c = '\0';
     std::string header;
     std::string sequence;
 
-    // read header
-    if (fgetline(buffer, BUFFER_SIZE, in)) {
-        if (buffer[0] != '>')
-            throw Exception("Bad format: first line of FASTA sequence does not start with '>' character!");
-        header.append(buffer + 1);
-    } else {
-        throw Exception("Failed to read from FASTA formatted input stream!");
+    // Read header
+    while (fgetline(buffer, BUFFER_SIZE, fin)) {
+        if (!strscn(buffer)) continue;
+        if (buffer[0] == '>') {
+            header.append(buffer + 1);
+            break;
+        } else {
+            throw Exception("Sequence header does not start with '>'!");
+        }
     }
-    // read sequence
-    while (fgetline(buffer, BUFFER_SIZE, in)) {
+    // Read sequence
+    while (fgetline(buffer, BUFFER_SIZE, fin)) {
+        if (!strscn(buffer)) continue;
         sequence.append(buffer);
 
-        c = getc(in);
-        ungetc(c, in);
-        if (c == '>' || c == EOF) break;
+        c = getc(fin);
+        if (c == EOF) break;
+        ungetc(c, fin);
+        if (static_cast<char>(c) == '>') break;
     }
-
     init(header, sequence);
+
     LOG(DEBUG1) << *this;
 }
 

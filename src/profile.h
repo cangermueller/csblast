@@ -8,6 +8,7 @@
 // DESCRIPTION:
 // A profile class representing columns of frequencies over a sequence alphabet.
 
+#include <climits>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -45,8 +46,8 @@ class Profile
     // Constructs profile from serialized profile read from input stream.
     explicit Profile(std::istream& in);
     // Constructs profile from serialized profile read from input stream.
-    explicit Profile(FILE* in);
-    // Creates a profile from subprofile in other, starting at column index and length columns long.
+    explicit Profile(FILE* fin);
+    // Creates a profile from subprofile starting at column index and length columns long.
     Profile(const Profile& other, int index, int length);
 
     virtual ~Profile() {}
@@ -92,7 +93,7 @@ class Profile
     // Initializes the profile object with a serialized profile read from stream.
     void read(std::istream& in);
     // Initializes the profile object with a serialized profile read from stream.
-    void read(FILE* in);
+    void read(FILE* fin);
     // Writes the profile in serialization format to output stream.
     void write(std::ostream& out) const;
 
@@ -103,20 +104,21 @@ class Profile
         return out;
     }
 
-    virtual const char* class_id() const { return CLASS_ID; }
-
   protected:
     // Scaling factor for serialization of profile log values
     static const int SCALE_FACTOR = 1000;
+    static const int LOG_SCALE = 1000;
     // Buffer size for reading
     static const int BUFFER_SIZE = 1024;
 
     // Reads and initializes serialized scalar data members from stream.
     virtual void read_header(std::istream& in);
     // Reads and initializes serialized scalar data members from stream.
-    virtual void read_header(FILE* in);
+    virtual void read_header(FILE* fin);
     // Reads and initializes array data members from stream.
     virtual void read_body(std::istream& in);
+    // Reads and initializes array data members from stream.
+    virtual void read_body(FILE* fin);
     // Writes serialized scalar data members to stream.
     virtual void write_header(std::ostream& out) const;
     // Writes serialized array data members to stream.
@@ -136,7 +138,10 @@ class Profile
     static const char* CLASS_ID;
 
     // Returns serialization class identity.
-    virtual const std::string class_identity() const { static std::string id("Profile"); return id; }
+    virtual const std::string class_identity() const
+    { static std::string id("Profile"); return id; }
+    virtual const char* class_id() const { return CLASS_ID; }
+
 };  // Profile
 
 
@@ -175,29 +180,31 @@ inline Profile<Alphabet_T>::Profile(std::istream& in)
 }
 
 template<class Alphabet_T>
-inline Profile<Alphabet_T>::Profile(FILE* in)
+inline Profile<Alphabet_T>::Profile(FILE* fin)
         : data_(),
           logspace_(false)
 {
-    read(in);
+    read(fin);
 }
 
 template<class Alphabet_T>
 inline Profile<Alphabet_T>::Profile(const Profile& other,
-                             int index,
-                             int length)
+                                    int index,
+                                    int length)
         : data_(length, other.alphabet_size(), 0.0f),
           logspace_(other.logspace_)
 {
     if (index + length > other.num_cols())
-        throw Exception("Arguments index=%i and length=%i of sub-profile are out of bounds!", index, length);
+        throw Exception("Arguments index=%i and length=%i of sub-profile are out of bounds!",
+                        index, length);
     for (int i = 0; i < num_cols(); ++i)
         for (int a = 0; a < alphabet_size(); ++a)
             data_[i][a] = other[i+index][a];
 }
 
 template<class Alphabet_T>
-inline void Profile<Alphabet_T>::readall(std::istream& in, std::vector< shared_ptr<Profile> >& v)
+inline void Profile<Alphabet_T>::readall(std::istream& in,
+                                         std::vector< shared_ptr<Profile> >& v)
 {
     while (in.peek() && in.good()) { //peek first to make sure that we don't read beyond '//'
         shared_ptr<Profile> p(new Profile(in));
@@ -206,11 +213,15 @@ inline void Profile<Alphabet_T>::readall(std::istream& in, std::vector< shared_p
 }
 
 template<class Alphabet_T>
-inline void Profile<Alphabet_T>::readall(FILE* in, std::vector< shared_ptr<Profile> >* v)
+inline void Profile<Alphabet_T>::readall(FILE* fin, std::vector< shared_ptr<Profile> >* v)
 {
-    while (!feof(in)) {
-        shared_ptr<Profile> p(new Profile(in));
+    while (!feof(fin)) {
+        shared_ptr<Profile> p(new Profile(fin));
         v->push_back(p);
+
+        int c = getc(fin);
+        if (c == EOF) break;
+        ungetc(c, fin);
     }
 }
 
@@ -245,7 +256,7 @@ void Profile<Alphabet_T>::read(std::istream& in)
     std::string tmp;
     while (getline(in, tmp) && tmp.empty()) continue;
     if (tmp.find(class_identity()) == std::string::npos)
-        throw Exception("Bad format: serialized profile does not start with '%s'!", class_identity().c_str());
+        throw Exception("Bad format: profile does not start with '%s'!", class_id());
 
     read_header(in);
     read_body(in);
@@ -254,19 +265,19 @@ void Profile<Alphabet_T>::read(std::istream& in)
 }
 
 template<class Alphabet_T>
-void Profile<Alphabet_T>::read(FILE* in)
+void Profile<Alphabet_T>::read(FILE* fin)
 {
     LOG(DEBUG1) << "Reading profile from stream ...";
 
     // Check if stream actually contains a serialized profile
     char buffer[BUFFER_SIZE];
-    while (fgetline(buffer, BUFFER_SIZE, in))
+    while (fgetline(buffer, BUFFER_SIZE, fin))
         if (strlen(buffer) > 0) break;
     if (!strstr(buffer, class_id()))
-        throw Exception("Bad format: serialized profile does not start with '%s'!", class_identity().c_str());
+        throw Exception("Bad format: profile does not start with '%s'!", class_id());
 
-    read_header(in);
-    //read_body(in);
+    read_header(fin);
+    read_body(fin);
 
     LOG(DEBUG1) << *this;
 }
@@ -290,7 +301,8 @@ void Profile<Alphabet_T>::read_header(std::istream& in)
     else
         throw Exception("Bad format: serialized profile does not contain 'alphabet_size' record!");
     if (alphabet_size != Alphabet_T::instance().size())
-        throw Exception("Bad format: alphabet_size=%i does not fit with alphabet size %i!", alphabet_size, Alphabet_T::instance().size());
+        throw Exception("Bad format: alphabet_size=%i does not fit with alphabet size %i!",
+                        alphabet_size, Alphabet_T::instance().size());
 
     // Read logspace
     if (getline(in, tmp) && tmp.find("logspace") != std::string::npos)
@@ -300,35 +312,39 @@ void Profile<Alphabet_T>::read_header(std::istream& in)
 }
 
 template<class Alphabet_T>
-void Profile<Alphabet_T>::read_header(FILE* in)
+void Profile<Alphabet_T>::read_header(FILE* fin)
 {
     char buffer[BUFFER_SIZE];
     const char* ptr = buffer;
 
     // Read num_cols
     int num_cols = 0;
-    if (fgetline(buffer, BUFFER_SIZE, in) && strstr(buffer, "num_cols")) {
+    if (fgetline(buffer, BUFFER_SIZE, fin) && strstr(buffer, "num_cols")) {
         ptr = buffer;
         num_cols = strtoi(ptr);
     } else {
-        throw Exception("Bad format: serialized profile does not contain 'num_cols' record!");
+        throw Exception("Bad format: profile does not contain 'num_cols' record!");
+    }
+    // Read alphabet_size
+    int alphabet_size = 0;
+    if (fgetline(buffer, BUFFER_SIZE, fin) && strstr(buffer, "alphabet_size")) {
+        ptr = buffer;
+        alphabet_size = strtoi(ptr);
+    } else {
+        throw Exception("Bad format: profile does not contain 'alphabet_size' record!");
+    }
+    if (alphabet_size != Alphabet_T::instance().size())
+        throw Exception("Bad format: profile alphabet_size should be %i but is %i!",
+                        Alphabet_T::instance().size(), alphabet_size);
+    // Read logspace
+    if (fgetline(buffer, BUFFER_SIZE, fin) && strstr(buffer, "logspace")) {
+        ptr = buffer;
+        logspace_ = strtoi(ptr) == 1;
+    } else {
+        throw Exception("Bad format: profile does not contain 'logspace' record!");
     }
 
-
-    // // Read alphabet_size
-    // int alphabet_size = 0;
-    // if (getline(in, tmp) && tmp.find("alphabet_size") != std::string::npos)
-    //     alphabet_size = atoi(tmp.c_str() + 13);
-    // else
-    //     throw Exception("Bad format: serialized profile does not contain 'alphabet_size' record!");
-    // if (alphabet_size != Alphabet_T::instance().size())
-    //     throw Exception("Bad format: alphabet_size=%i does not fit with alphabet size %i!", alphabet_size, Alphabet_T::instance().size());
-
-    // // Read logspace
-    // if (getline(in, tmp) && tmp.find("logspace") != std::string::npos)
-    //     logspace_ = atoi(tmp.c_str() + 8) == 1;
-
-    // resize(num_cols, alphabet_size);
+    resize(num_cols, alphabet_size);
 }
 
 template<class Alphabet_T>
@@ -345,13 +361,39 @@ void Profile<Alphabet_T>::read_body(std::istream& in)
         split(tmp, '\t', tokens);
         i = atoi(tokens[0].c_str()) - 1;
         for (int a = 0; a < alphabet_size(); ++a) {
-            float log_p = tokens[a+1][0] == '*' ? std::numeric_limits<int>::max() : atoi(tokens[a+1].c_str());
+            float log_p =
+                tokens[a+1][0] == '*' ? INT_MAX : atoi(tokens[a+1].c_str());
             data_[i][a] = logspace_ ? -log_p / SCALE_FACTOR : pow(2.0, -log_p / SCALE_FACTOR);
         }
         tokens.clear();
     }
     if (i != num_cols() - 1)
-        throw Exception("Bad format: profile has %i column records but should have %i!", i+1, num_cols());
+        throw Exception("Bad format: profile has %i column records but should have %i!",
+                        i+1, num_cols());
+}
+
+template<class Alphabet_T>
+void Profile<Alphabet_T>::read_body(FILE* fin)
+{
+    const int alph_size = alphabet_size();
+    char buffer[BUFFER_SIZE];
+    const char* ptr = buffer;
+    int i = 0;
+
+    fgetline(buffer, BUFFER_SIZE, fin);  // skip alphabet description line
+    while (fgetline(buffer, BUFFER_SIZE, fin) && buffer[0] != '/' && buffer[1] != '/') {
+        ptr = buffer;
+        i = strtoi(ptr) - 1;
+        for (int a = 0; a < alph_size; ++a) {
+            if (logspace_)
+                data_[i][a] = static_cast<float>(-strtoi_ast(ptr)) / LOG_SCALE;
+            else
+                data_[i][a] = pow(2.0, static_cast<float>(-strtoi_ast(ptr)) / LOG_SCALE);
+        }
+    }
+    if (i != num_cols() - 1)
+        throw Exception("Bad format: profile has %i columns but should have %i!",
+                        i+1, num_cols());
 }
 
 template<class Alphabet_T>

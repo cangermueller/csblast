@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 
+#include <cstdio>
+
 #include <fstream>
 #include <string>
 #include <sstream>
@@ -15,11 +17,9 @@ namespace cs
 
 TEST(AlignmentTest, ConstructionFromInputStream)
 {
-    std::string data;
-    data.append(">seq1\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACA---ACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
-    data.append(">seq2\nACGT--GTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTA---GTACGT--\n");
-    std::istringstream ss(data);
-    Alignment<Nucleotide> alignment(ss, Alignment<Nucleotide>::FASTA);
+    FILE* fin = fopen("../data/nt_alignment1.fas", "r");
+    Alignment<Nucleotide> alignment(fin, Alignment<Nucleotide>::FASTA);
+    fclose(fin);
 
     EXPECT_EQ(2, alignment.num_seqs());
     EXPECT_EQ(80, alignment.num_cols());
@@ -31,13 +31,9 @@ TEST(AlignmentTest, ConstructionFromInputStream)
 
 TEST(AlignmentTest, CalculationOfGlobalWeights)
 {
-    std::string data;
-    data.append(">seq1\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
-    data.append(">seq2\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
-    data.append(">seq3\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
-    data.append(">seq4\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
-    std::istringstream ss(data);
-    Alignment<Nucleotide> alignment(ss, Alignment<Nucleotide>::FASTA);
+    FILE* fin = fopen("../data/nt_alignment2.fas", "r");
+    Alignment<Nucleotide> alignment(fin, Alignment<Nucleotide>::FASTA);
+    fclose(fin);
 
     EXPECT_EQ(4, alignment.num_seqs());
     EXPECT_EQ(80, alignment.num_cols());
@@ -52,13 +48,9 @@ TEST(AlignmentTest, CalculationOfGlobalWeights)
 
 TEST(AlignmentTest, CalculationOfPositionSpecificWeights)
 {
-    std::string data;
-    data.append(">seq1\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
-    data.append(">seq2\nACGTTACGTACACGTACGTACACGTACGTA\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
-    data.append(">seq3\n----GTACGTACACGTACGTACACGTACGT\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
-    data.append(">seq4\n----CGTACGTACACGTACGTACACGTACG\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
-    std::istringstream ss(data);
-    Alignment<Nucleotide> alignment(ss, Alignment<Nucleotide>::FASTA);
+    FILE* fin = fopen("../data/nt_alignment3.fas", "r");
+    Alignment<Nucleotide> alignment(fin, Alignment<Nucleotide>::FASTA);
+    fclose(fin);
 
     EXPECT_EQ(4, alignment.num_seqs());
     EXPECT_EQ(80, alignment.num_cols());
@@ -71,20 +63,18 @@ TEST(AlignmentTest, CalculationOfPositionSpecificWeights)
 
 TEST(AlignmentTest, ConstructionFromCelegansRefGene)
 {
-    std::ifstream fin("../data/ce_refgene.fas");
+    FILE* fin = fopen("../data/ce_refgene.fas", "r");
     Alignment<Nucleotide> alignment(fin, Alignment<Nucleotide>::FASTA);
-    fin.close();
+    fclose(fin);
 
     EXPECT_EQ(Nucleotide::instance().ctoi('C'), alignment[0][0]);
 }
 
 TEST(AlignmentTest, RemoveColumnsWithGapInFirst)
 {
-    std::string data;
-    data.append(">seq1\nA-GTACGTACACGTACGTACACGTACGTAC\nACGTACGTACA---ACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
-    data.append(">seq2\nACGT--GTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTA---GTACGT--\n");
-    std::istringstream ss(data);
-    Alignment<Nucleotide> alignment(ss, Alignment<Nucleotide>::FASTA);
+    FILE* fin = fopen("../data/nt_alignment4.fas", "r");
+    Alignment<Nucleotide> alignment(fin, Alignment<Nucleotide>::FASTA);
+    fclose(fin);
 
     ASSERT_EQ(2, alignment.num_seqs());
     ASSERT_EQ(80, alignment.num_cols());
@@ -98,12 +88,9 @@ TEST(AlignmentTest, RemoveColumnsWithGapInFirst)
 
 TEST(AlignmentTest, RemoveColumnsByGapRule)
 {
-    std::string data;
-    data.append(">seq1\nA-GTACGTACACGTACGTACACGTACGTAC\nACGTACGTACA---ACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
-    data.append(">seq2\nACGT--GTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTA---GTACGT--\n");
-    data.append(">seq3\nACGT--GTACGTACGTACACGTACGTACAC\nACGTACCACGTACGTACACGGTATACGTAC\nACGTACGTAGTACGT-----\n");
-    std::istringstream ss(data);
-    Alignment<Nucleotide> alignment(ss, Alignment<Nucleotide>::FASTA);
+    FILE* fin = fopen("../data/nt_alignment5.fas", "r");
+    Alignment<Nucleotide> alignment(fin, Alignment<Nucleotide>::FASTA);
+    fclose(fin);
 
     ASSERT_EQ(3, alignment.num_seqs());
     ASSERT_EQ(80, alignment.num_cols());
@@ -116,30 +103,27 @@ TEST(AlignmentTest, RemoveColumnsByGapRule)
 
 TEST(AlignmentTest, ConstructionFromA2M)
 {
-    std::ifstream fin("../data/d1alx.a2m");
+    FILE* fin = fopen("../data/d1alx.a2m", "r");
     Alignment<AminoAcid> alignment(fin, Alignment<AminoAcid>::A2M);
-    fin.close();
+    fclose(fin);
 
     EXPECT_EQ(AminoAcid::instance().gap(), alignment.seq(0,27));
 }
 
 TEST(AlignmentTest, ConstructionFromA3M)
 {
-    std::ifstream fin("../data/d1alx.a3m");
+    FILE* fin = fopen("../data/d1alx.a3m", "r");
     Alignment<AminoAcid> alignment(fin, Alignment<AminoAcid>::A3M);
-    fin.close();
+    fclose(fin);
 
     EXPECT_EQ(AminoAcid::instance().gap(), alignment.seq(0,27));
 }
 
 TEST(AlignmentTest, RemoveInsertColumns)
 {
-    std::string data;
-    data.append(">seq1\nA-GTacGTACACGTACGTACACGTACGTAC\nACGTACGTACA---ACGTACACGTACGTAC\nACGTACGTACACGTACGTAC\n");
-    data.append(">seq2\nACGT..GTACACGTACGTACACGTACGTAC\nACGTACGTACACGTACGTACACGTACGTAC\nACGTACGTA---GTACGT--\n");
-    data.append(">seq3\nACGT..GTACGTACGTACACGTACGTACAC\nACGTACCACGTACGTACACGGTATACGTAC\nACGTACGTAGTACGT-----\n");
-    std::istringstream ss(data);
-    Alignment<Nucleotide> alignment(ss, Alignment<Nucleotide>::A2M);
+    FILE* fin = fopen("../data/nt_alignment6.a2m", "r");
+    Alignment<Nucleotide> alignment(fin, Alignment<Nucleotide>::A2M);
+    fclose(fin);
 
     ASSERT_EQ(3, alignment.num_seqs());
     ASSERT_EQ(80, alignment.num_cols());

@@ -9,6 +9,9 @@
 // A container class for profiles derived from alignments.
 
 #include <cmath>
+#include <cstdio>
+#include <cstring>
+
 #include <iomanip>
 #include <iostream>
 #include <string>
@@ -39,17 +42,22 @@ class CountsProfile : public Profile<Alphabet_T>
 
     // Constructs profile from serialized profile read from input stream.
     explicit CountsProfile(std::istream& in);
+    // Constructs profile from serialized profile read from input stream.
+    explicit CountsProfile(FILE* fin);
     // Constructs a profile of the given sequence.
     explicit CountsProfile(const Sequence<Alphabet_T>& sequence);
     // Constructs a profile of the given alignment with specified sequence weighting method.
-    explicit CountsProfile(const Alignment<Alphabet_T>& alignment, bool position_specific_weights = true);
-    // Creates a profile from subprofile in other, starting at column index and length columns long.
+    explicit CountsProfile(const Alignment<Alphabet_T>& alignment,
+                           bool position_specific_weights = true);
+    // Creates a profile from subprofile starting at column index and length columns long.
     CountsProfile(const CountsProfile& other, int index, int length);
 
     virtual ~CountsProfile() { }
 
     // Reads all available profiles from the input stream and returns them in a vector.
     static void readall(std::istream& in, std::vector< shared_ptr<CountsProfile> >& v);
+    // Reads all available profiles from the input stream and returns them in a vector.
+    static void readall(FILE* in, std::vector< shared_ptr<CountsProfile> >* v);
     // Returns the number of effective sequences in alignment column i
     float neff(int i) const { return neff_[i]; }
     // Converts the profile to counts of alphabet letters.
@@ -59,17 +67,22 @@ class CountsProfile : public Profile<Alphabet_T>
     // Returns true if the profile contains counts.
     bool has_counts() const { return has_counts_; }
 
-    virtual const char* class_id() const { return CLASS_ID; }
-
   protected:
     // Needed to access names in templatized Profile base class
     using Profile<Alphabet_T>::data_;
     using Profile<Alphabet_T>::SCALE_FACTOR;
 
+    using Profile<Alphabet_T>::LOG_SCALE;
+    using Profile<Alphabet_T>::BUFFER_SIZE;
+
     // Reads and initializes serialized scalar data members from stream.
     virtual void read_header(std::istream& in);
+    // Reads and initializes serialized scalar data members from stream.
+    virtual void read_header(FILE* fin);
     // Reads and initializes array data members from stream.
     virtual void read_body(std::istream& in);
+    // Reads and initializes array data members from stream.
+    virtual void read_body(FILE* fin);
     // Writes serialized scalar data members to stream.
     virtual void write_header(std::ostream& out) const;
     // Writes serialized array data members to stream.
@@ -82,7 +95,9 @@ class CountsProfile : public Profile<Alphabet_T>
     static const char* CLASS_ID;
 
     // Return serialization class identity.
-    virtual const std::string class_identity() const { static std::string id("CountsProfile"); return id; }
+    virtual const std::string class_identity() const
+    { static std::string id("CountsProfile"); return id; }
+    virtual const char* class_id() const { return CLASS_ID; }
 
     // Number of effective sequences in each alignment column.
     std::vector<float> neff_;
@@ -105,6 +120,14 @@ inline CountsProfile<Alphabet_T>::CountsProfile(std::istream& in)
 }
 
 template<class Alphabet_T>
+inline CountsProfile<Alphabet_T>::CountsProfile(FILE* fin)
+        : neff_(),
+          has_counts_(false)
+{
+    read(fin);
+}
+
+template<class Alphabet_T>
 inline CountsProfile<Alphabet_T>::CountsProfile(const Sequence<Alphabet_T>& sequence)
         : Profile<Alphabet_T>(sequence.length()),
           neff_(sequence.length(), 1.0f),
@@ -115,7 +138,8 @@ inline CountsProfile<Alphabet_T>::CountsProfile(const Sequence<Alphabet_T>& sequ
 }
 
 template<class Alphabet_T>
-inline CountsProfile<Alphabet_T>::CountsProfile(const Alignment<Alphabet_T>& alignment, bool position_specific_weights)
+inline CountsProfile<Alphabet_T>::CountsProfile(const Alignment<Alphabet_T>& alignment,
+                                                bool position_specific_weights)
         : Profile<Alphabet_T>(alignment.num_match_cols()),
           neff_(alignment.num_match_cols()),
           has_counts_(false)
@@ -149,16 +173,32 @@ inline CountsProfile<Alphabet_T>::CountsProfile(const CountsProfile& other,
                                                 int length)
         : Profile<Alphabet_T>(other, index, length)
 {
-    neff_.insert(neff_.begin(), other.neff_.begin() + index, other.neff_.begin() + index + length);
+    neff_.insert(neff_.begin(), other.neff_.begin() + index,
+                 other.neff_.begin() + index + length);
     has_counts_ = other.has_counts_;
 }
 
 template<class Alphabet_T>
-inline void CountsProfile<Alphabet_T>::readall(std::istream& in, std::vector< shared_ptr<CountsProfile> >& v)
+inline void CountsProfile<Alphabet_T>::readall(std::istream& in,
+                                               std::vector< shared_ptr<CountsProfile> >& v)
 {
     while (in.peek() && in.good()) { //peek first to make sure that we don't read beyond '//'
         shared_ptr<CountsProfile> p(new CountsProfile(in));
         v.push_back(p);
+    }
+}
+
+template<class Alphabet_T>
+inline void CountsProfile<Alphabet_T>::readall(FILE* fin,
+                                               std::vector< shared_ptr<CountsProfile> >* v)
+{
+    while (!feof(fin)) {
+        shared_ptr<CountsProfile> p(new CountsProfile(fin));
+        v->push_back(p);
+
+        int c = getc(fin);
+        if (c == EOF) break;
+        ungetc(c, fin);
     }
 }
 
@@ -200,6 +240,23 @@ void CountsProfile<Alphabet_T>::read_header(std::istream& in)
 }
 
 template<class Alphabet_T>
+void CountsProfile<Alphabet_T>::read_header(FILE* fin)
+{
+    Profile<Alphabet_T>::read_header(fin);
+    neff_.resize(num_cols());
+
+    // Read has_counts
+    char buffer[BUFFER_SIZE];
+    const char* ptr = buffer;
+    if (fgetline(buffer, BUFFER_SIZE, fin) && strstr(buffer, "has_counts")) {
+        ptr = buffer;
+        has_counts_ = strtoi(ptr) == 1;
+    } else {
+        throw Exception("Bad format: profile does not contain 'has_counts' record!");
+    }
+}
+
+template<class Alphabet_T>
 void CountsProfile<Alphabet_T>::read_body(std::istream& in)
 {
     std::string tmp;
@@ -221,6 +278,31 @@ void CountsProfile<Alphabet_T>::read_body(std::istream& in)
     }
     if (i != num_cols() - 1)
         throw Exception("Bad format: profile has %i column records but should have %i!", i+1, num_cols());
+}
+
+template<class Alphabet_T>
+void CountsProfile<Alphabet_T>::read_body(FILE* fin)
+{
+    const int alph_size = alphabet_size();
+    char buffer[BUFFER_SIZE];
+    const char* ptr = buffer;
+    int i = 0;
+
+    fgetline(buffer, BUFFER_SIZE, fin);  // skip alphabet description line
+    while (fgetline(buffer, BUFFER_SIZE, fin) && buffer[0] != '/' && buffer[1] != '/') {
+        ptr = buffer;
+        i = strtoi(ptr) - 1;
+        for (int a = 0; a < alph_size; ++a) {
+            if (logspace())
+                data_[i][a] = static_cast<float>(-strtoi_ast(ptr)) / LOG_SCALE;
+            else
+                data_[i][a] = pow(2.0, static_cast<float>(-strtoi_ast(ptr)) / LOG_SCALE);
+        }
+        neff_[i] = static_cast<float>(strtoi(ptr)) / LOG_SCALE;
+    }
+    if (i != num_cols() - 1)
+        throw Exception("Bad format: profile has %i columns but should have %i!",
+                        i+1, num_cols());
 }
 
 template<class Alphabet_T>

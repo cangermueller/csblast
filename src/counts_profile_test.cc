@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 
+#include <cstdio>
+
 #include <algorithm>
 #include <iostream>
 #include <fstream>
@@ -20,21 +22,9 @@ const float DELTA = 0.01f;
 
 TEST(CountsProfileTest, ConstructionFromInputStream)
 {
-    std::string data;
-    data.append("CountsProfile\n");
-    data.append("num_cols\t\t4\n");
-    data.append("alphabet_size\t4\n");
-    data.append("logspace\t0\n");
-    data.append("has_counts\t0\n");
-    data.append(" \tA\tC\tG\tT\tneff\n");
-    data.append("1\t0\t*\t*\t*\t1000\n");
-    data.append("2\t*\t0\t*\t*\t1000\n");
-    data.append("3\t*\t*\t0\t*\t1000\n");
-    data.append("4\t*\t*\t*\t0\t1000\n");
-    data.append("//\n");
-    std::istringstream ss(data);
-
-    CountsProfile<Nucleotide> profile(ss);
+    FILE* fin = fopen("../data/nt_counts_profile.prf", "r");
+    CountsProfile<Nucleotide> profile(fin);
+    fclose(fin);
 
     EXPECT_EQ(4, profile.num_cols());
     EXPECT_EQ(4, profile.alphabet_size());
@@ -46,15 +36,11 @@ TEST(CountsProfileTest, ConstructionFromInputStream)
 
 TEST(CountsProfileTest, ConstructionFromAlignment)
 {
-    std::string data;
-    data.append(">seq1\nACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTAC\n");
-    data.append(">seq2\nACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTAC\n");
-    data.append(">seq3\nACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTAC\n");
-    data.append(">seq4\nACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTAC\n");
-    std::istringstream ss(data);
-    Alignment<Nucleotide> alignment(ss, Alignment<Nucleotide>::FASTA);
+    FILE* fin = fopen("../data/nt_alignment7.fas", "r");
+    Alignment<Nucleotide> alignment(fin, Alignment<Nucleotide>::FASTA);
+    fclose(fin);
 
-    CountsProfile<Nucleotide> profile(alignment, true); // use position-dependent weights
+    CountsProfile<Nucleotide> profile(alignment, true);
 
     EXPECT_FLOAT_EQ(1.0f, profile.neff(3));
     EXPECT_FLOAT_EQ(0.0f, profile[3][Nucleotide::instance().ctoi('A')]);
@@ -65,13 +51,9 @@ TEST(CountsProfileTest, ConstructionFromAlignment)
 
 TEST(CountsProfileTest, ConversionToCounts)
 {
-    std::string data;
-    data.append(">seq1\nACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTAC\n");
-    data.append(">seq2\nTACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTA\n");
-    data.append(">seq3\nGTACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGT\n");
-    data.append(">seq4\nCGTACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACG\n");
-    std::istringstream ss(data);
-    Alignment<Nucleotide> alignment(ss, Alignment<Nucleotide>::FASTA);
+    FILE* fin = fopen("../data/nt_alignment8.fas", "r");
+    Alignment<Nucleotide> alignment(fin, Alignment<Nucleotide>::FASTA);
+    fclose(fin);
 
     CountsProfile<Nucleotide> profile(alignment, true);
     ASSERT_EQ(0.25f, profile[3][Nucleotide::instance().ctoi('A')]);
@@ -80,14 +62,16 @@ TEST(CountsProfileTest, ConversionToCounts)
 
     EXPECT_TRUE(profile.has_counts());
     EXPECT_FLOAT_EQ(0.25*profile.neff(3), profile[3][Nucleotide::instance().ctoi('A')]);
-    EXPECT_FLOAT_EQ(profile.neff(3), std::accumulate(profile.col_begin(3), profile.col_end(3), 0.0f));
+    EXPECT_FLOAT_EQ(profile.neff(3), std::accumulate(profile.col_begin(3),
+                                                     profile.col_end(3), 0.0f));
 }
 
 TEST(CountsProfileTest, AlignmentBpdS)
 {
-    std::ifstream fin("../data/BpdS.fas");
+    FILE* fin = fopen("../data/BpdS.fas", "r");
     Alignment<AminoAcid> alignment(fin, Alignment<AminoAcid>::FASTA);
-    fin.close();
+    fclose(fin);
+
     alignment.assign_match_columns_by_gap_rule();
     CountsProfile<AminoAcid> profile(alignment, true);
 
@@ -97,9 +81,10 @@ TEST(CountsProfileTest, AlignmentBpdS)
 
 TEST(CountsProfileTest, Alignment1Q7L)
 {
-    std::ifstream fin("../data/1Q7L.fas");
+    FILE* fin = fopen("../data/1Q7L.fas", "r");
     Alignment<AminoAcid> alignment(fin, Alignment<AminoAcid>::FASTA);
-    fin.close();
+    fclose(fin);
+
     alignment.assign_match_columns_by_gap_rule();
     CountsProfile<AminoAcid> profile(alignment, true);
 
@@ -108,9 +93,10 @@ TEST(CountsProfileTest, Alignment1Q7L)
 
 TEST(CountsProfileTest, AlignmentCelegansRefGene)
 {
-    std::ifstream fin("../data/ce_refgene.fas");
+    FILE* fin = fopen("../data/ce_refgene.fas", "r");
     Alignment<Nucleotide> alignment(fin, Alignment<Nucleotide>::FASTA);
-    fin.close();
+    fclose(fin);
+
     CountsProfile<Nucleotide> profile(alignment, false);
 
     EXPECT_FLOAT_EQ(1.0f, profile[1][Nucleotide::instance().ctoi('T')]);
@@ -122,9 +108,10 @@ TEST(CountsProfileTest, AlignmentCelegansRefGene)
 
 TEST(CountsProfileTest, AddMatrixPseudocountsToProfile)
 {
-    std::ifstream fin("../data/ce_refgene.fas");
+    FILE* fin = fopen("../data/ce_refgene.fas", "r");
     Alignment<Nucleotide> alignment(fin, Alignment<Nucleotide>::FASTA);
-    fin.close();
+    fclose(fin);
+
     CountsProfile<Nucleotide> profile(alignment, false);
 
     ASSERT_FLOAT_EQ(1.0f, profile[1][Nucleotide::instance().ctoi('T')]);
@@ -138,9 +125,10 @@ TEST(CountsProfileTest, AddMatrixPseudocountsToProfile)
 
 TEST(CountsProfileTest, AddMatrixPseudocountsToLogProfile)
 {
-    std::ifstream fin("../data/ce_refgene.fas");
+    FILE* fin = fopen("../data/ce_refgene.fas", "r");
     Alignment<Nucleotide> alignment(fin, Alignment<Nucleotide>::FASTA);
-    fin.close();
+    fclose(fin);
+
     CountsProfile<Nucleotide> profile(alignment, false);
     profile.transform_to_logspace();
 
