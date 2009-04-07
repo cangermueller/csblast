@@ -270,14 +270,17 @@ void CountsProfile<Alphabet_T>::read_body(std::istream& in)
         split(tmp, '\t', tokens);
         i = atoi(tokens[0].c_str()) - 1;
         for (int a = 0; a < alphabet_size(); ++a) {
-            float log_p = tokens[a+1][0] == '*' ? std::numeric_limits<int>::max() : atoi(tokens[a+1].c_str());
-            data_[i][a] = (logspace() ? -log_p / SCALE_FACTOR : pow(2.0, -log_p / SCALE_FACTOR)) ;
+            float log_p = tokens[a+1][0] == '*' ?
+                std::numeric_limits<int>::max() : atoi(tokens[a+1].c_str());
+            data_[i][a] = (logspace() ?
+                           -log_p / SCALE_FACTOR : pow(2.0, -log_p / SCALE_FACTOR)) ;
         }
         neff_[i] = atof(tokens[alphabet_size()+1].c_str()) / SCALE_FACTOR;
         tokens.clear();
     }
     if (i != num_cols() - 1)
-        throw Exception("Bad format: profile has %i column records but should have %i!", i+1, num_cols());
+        throw Exception("Bad format: profile has %i column records but should have %i!",
+                        i+1, num_cols());
 }
 
 template<class Alphabet_T>

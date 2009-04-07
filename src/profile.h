@@ -121,6 +121,8 @@ class Profile
     virtual void read_body(FILE* fin);
     // Writes serialized scalar data members to stream.
     virtual void write_header(std::ostream& out) const;
+    // Writes serialized scalar data members to stream.
+    virtual void write_header(FILE* fout) const;
     // Writes serialized array data members to stream.
     virtual void write_body(std::ostream& out) const;
     // Prints the profile in human-readable format to output stream.
@@ -272,7 +274,7 @@ void Profile<Alphabet_T>::read(FILE* fin)
     // Check if stream actually contains a serialized profile
     char buffer[BUFFER_SIZE];
     while (fgetline(buffer, BUFFER_SIZE, fin))
-        if (strlen(buffer) > 0) break;
+        if (strscn(buffer)) break;
     if (!strstr(buffer, class_id()))
         throw Exception("Bad format: profile does not start with '%s'!", class_id());
 
@@ -407,10 +409,17 @@ void Profile<Alphabet_T>::write(std::ostream& out) const
 template<class Alphabet_T>
 void Profile<Alphabet_T>::write_header(std::ostream& out) const
 {
-    // print dimensions
     out << "num_cols\t" << num_cols() << std::endl;
     out << "alphabet_size\t" << alphabet_size() << std::endl;
     out << "logspace\t" << (logspace() ? 1 : 0) << std::endl;
+}
+
+template<class Alphabet_T>
+void Profile<Alphabet_T>::write_header(FILE* fout) const
+{
+    fprintf(fout, "num_cols\t%i\n", num_cols());
+    fprintf(fout, "alphabet_size\t%i\n", alphabet_size());
+    fprintf(fout, "logspace\t%i\n", logspace() ? 1 : 0);
 }
 
 template<class Alphabet_T>
@@ -442,7 +451,6 @@ void Profile<Alphabet_T>::print(std::ostream& out) const
         for (int a = 0; a < alphabet_size(); ++a)
             out << '\t' << std::fixed << std::setprecision(4)
                 << (logspace_ ? pow(2.0, data_[i][a]) : data_[i][a]);
-        // print neff
         out << std::endl;
     }
 

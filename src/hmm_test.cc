@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 
+#include <cstdio>
+
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -25,24 +27,13 @@ class HMMTest : public testing::Test
 
     virtual void SetUp()
     {
-        std::string data;
-        data.append("Profile\n");
-        data.append("num_cols\t\t5\n");
-        data.append("alphabet_size\t4\n");
-        data.append("logspace\t0\n");
-        data.append(" \tA\tC\tG\tT\n");
-        data.append("1\t0\t*\t*\t*\n");
-        data.append("2\t*\t0\t*\t*\n");
-        data.append("3\t*\t*\t0\t*\n");
-        data.append("4\t*\t*\t*\t0\n");
-        data.append("5\t0\t*\t*\t*\n");
-
-        std::istringstream ss1(data);
-        p1_.read(ss1);
-        std::istringstream ss2(data);
-        p2_.read(ss2);
-        std::istringstream ss3(data);
-        p3_.read(ss3);
+        FILE* fin = fopen("../data/hmm_profile.prf", "r");
+        p1_.read(fin);
+        rewind(fin);
+        p2_.read(fin);
+        rewind(fin);
+        p3_.read(fin);
+        fclose(fin);
     }
 
     Profile<Nucleotide> p1_;
@@ -97,31 +88,31 @@ TEST_F(HMMTest, SimpleConstruction)
 
 TEST_F(HMMTest, ConstructionFromSerializedHMM)
 {
-    HMM<Nucleotide> hmm1(3, 5);
-    hmm1.add_profile(p1_);
-    hmm1.add_profile(p2_);
-    hmm1.add_profile(p3_);
-    hmm1(0,1) = 0.5f;
-    hmm1(0,2) = 0.5f;
-    hmm1(1,2) = 1.0f;
+    FILE* fin = fopen("../data/scop20_K100.hmm", "r");
+    HMM<AminoAcid> hmm(fin);
+    fclose(fin);
 
-    std::ostringstream out;
-    hmm1.write(out);
-    std::istringstream in(out.str());
+    EXPECT_EQ(869, hmm.num_transitions());
+    EXPECT_EQ(100, hmm.num_states());
+    EXPECT_EQ(13, hmm.num_cols());
+    EXPECT_EQ(34, hmm.iterations());
+    EXPECT_TRUE(hmm.states_logspace());
+    EXPECT_FALSE(hmm.transitions_logspace());
+    EXPECT_TRUE(hmm[0].logspace());
+}
 
-    HMM<Nucleotide> hmm2(in);
+TEST_F(HMMTest, DISABLED_ConstructionFromSerializedHMM2)
+{
+    std::ifstream fin("../data/scop20_K100.hmm");
+    HMM<AminoAcid> hmm(fin);
+    fin.close();
 
-    EXPECT_EQ(hmm1.num_transitions(), hmm2.num_transitions());
-    EXPECT_EQ(hmm1.num_states(), hmm2.num_states());
-    EXPECT_FLOAT_EQ(hmm1[0][0][0], hmm2[0][0][0]);
-    EXPECT_FLOAT_EQ(hmm1[0][1][0], hmm2[0][1][0]);
-    EXPECT_FLOAT_EQ(hmm1[1][0][0], hmm2[1][0][0]);
-    EXPECT_FLOAT_EQ(hmm1[1][1][0], hmm2[1][1][0]);
-    EXPECT_FLOAT_EQ(hmm1[2][0][0], hmm2[2][0][0]);
-    EXPECT_FLOAT_EQ(hmm1[2][1][0], hmm2[2][1][0]);
-    EXPECT_EQ(hmm1[1].num_out_transitions(), hmm2[1].num_out_transitions());
-    EXPECT_EQ(hmm1[2].num_in_transitions(), hmm2[2].num_in_transitions());
-    EXPECT_FLOAT_EQ(hmm1(1,2), hmm2(1,2));
+    EXPECT_EQ(869, hmm.num_transitions());
+    EXPECT_EQ(100, hmm.num_states());
+    EXPECT_EQ(13, hmm.num_cols());
+    EXPECT_EQ(34, hmm.iterations());
+    EXPECT_TRUE(hmm.states_logspace());
+    EXPECT_FALSE(hmm.transitions_logspace());
 }
 
 TEST_F(HMMTest, NormalizeTransitions)
@@ -177,9 +168,9 @@ TEST_F(HMMTest, LinLogTransformation)
 
 TEST(HMMTestInitialization, RandomSampleInitializer)
 {
-    std::ifstream fin("../data/1Q7L.fas");
+    FILE* fin = fopen("../data/1Q7L.fas", "r");
     Alignment<AminoAcid> ali(fin, Alignment<AminoAcid>::FASTA);
-    fin.close();
+    fclose(fin);
     ali.assign_match_columns_by_gap_rule();
 
     typedef shared_ptr< CountsProfile<AminoAcid> > profile_ptr;

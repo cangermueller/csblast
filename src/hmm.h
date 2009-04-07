@@ -9,8 +9,10 @@
 // A hidden Markov model that stores context information in the form of
 // state-specific context profiles and state transition probabilities.
 
+#include <climits>
 #include <cstdlib>
-#include <ctime>
+#include <cstdio>
+#include <cstring>
 
 #include <algorithm>
 #include <iostream>
@@ -73,6 +75,8 @@ class HMM
     HMM(int num_states, int num_cols);
     // Constructs context HMM from serialized HMM read from input stream.
     HMM(std::istream& in);
+    // Constructs context HMM from serialized HMM read from input stream.
+    HMM(FILE* fin);
     // Constructs context HMM with the help of a state- and a transition-initializer.
     HMM(int num_states,
         int num_cols,
@@ -166,11 +170,16 @@ class HMM
   private:
     // Scaling factor for serialization of profile log values
     static const int SCALE_FACTOR = 1000;
+    static const int LOG_SCALE = 1000;
+    // Buffer size for reading
+    static const int BUFFER_SIZE = 1024;
 
     // Prints the HMM in human-readable format to output stream.
     void print(std::ostream& out) const;
     // Initializes the HMM from a serialized HMM read from stream.
     void read(std::istream& in);
+    // Initializes the HMM from a serialized HMM read from stream.
+    void read(FILE* fin);
     // Initializes the HMM.
     void init();
 
@@ -216,6 +225,19 @@ HMM<Alphabet_T>::HMM(std::istream& in)
           states_logspace_(false)
 {
     read(in);
+}
+
+template<class Alphabet_T>
+HMM<Alphabet_T>::HMM(FILE* fin)
+        : num_states_(0),
+          num_cols_(0),
+          iterations_(0),
+          states_(),
+          transitions_(),
+          transitions_logspace_(false),
+          states_logspace_(false)
+{
+    read(fin);
 }
 
 template<class Alphabet_T>
@@ -304,12 +326,15 @@ template<class Alphabet_T>
 inline int HMM<Alphabet_T>::add_profile(const Profile<Alphabet_T>& profile)
 {
     if (full())
-        throw Exception("Unable to add state: the HMM contains already %i states!", num_states());
+        throw Exception("Unable to add state: the HMM contains already %i states!",
+                        num_states());
     if (profile.num_cols() != num_cols())
-        throw Exception("Unable to add state: provided profile has %i columns but should have %i!",
+        throw Exception("Unable to add state: profile has %i columns but should have %i!",
                         profile.num_cols(), num_cols());
 
-    shared_ptr< State<Alphabet_T> > state_ptr(new State<Alphabet_T>(states_.size(), profile, num_states()));
+    shared_ptr< State<Alphabet_T> > state_ptr(new State<Alphabet_T>(states_.size(),
+                                                                    profile,
+                                                                    num_states()));
     state_ptr->set_prior(1.0f / num_states());  // start with unbiased prior probabilities
     states_.push_back(state_ptr);
 
@@ -365,28 +390,28 @@ void HMM<Alphabet_T>::read(std::istream& in)
     std::string tmp;
     while (getline(in, tmp) && tmp.empty()) continue;
     if (tmp.find("HMM") == std::string::npos)
-        throw Exception("Bad format: serialized HMM does not start with 'HMM' keyword!");
+        throw Exception("Bad format: HMM does not start with 'HMM' keyword!");
     // Read number of states
     if (getline(in, tmp) && tmp.find("num_states") != std::string::npos)
         num_states_ = atoi(tmp.c_str() + 10);
     else
-        throw Exception("Bad format: serialized HMM does not contain 'num_states' record!");
+        throw Exception("Bad format: HMM does not contain 'num_states' record!");
     // Read number of transitions
     int ntr = 0;
     if (getline(in, tmp) && tmp.find("num_transitions") != std::string::npos)
         ntr = atoi(tmp.c_str() + 15);
     else
-        throw Exception("Bad format: serialized HMM does not contain 'num_transitions' record!");
+        throw Exception("Bad format: HMM does not contain 'num_transitions' record!");
     // Read number of columns
     if (getline(in, tmp) && tmp.find("num_cols") != std::string::npos)
         num_cols_= atoi(tmp.c_str() + 8);
     else
-        throw Exception("Bad format: serialized HMM does not contain 'num_cols' record!");
+        throw Exception("Bad format: HMM does not contain 'num_cols' record!");
     // Read number of iterations
     if (getline(in, tmp) && tmp.find("iterations") != std::string::npos)
         iterations_= atoi(tmp.c_str() + 10);
     else
-        throw Exception("Bad format: serialized HMM does not contain 'num_cols' record!");
+        throw Exception("Bad format: HMM does not contain 'num_cols' record!");
     // Read transitions_logspace
     if (getline(in, tmp) && tmp.find("transitions_logspace") != std::string::npos)
         transitions_logspace_ = atoi(tmp.c_str() + 20) == 1;
@@ -395,12 +420,12 @@ void HMM<Alphabet_T>::read(std::istream& in)
         states_logspace_ = atoi(tmp.c_str() + 15) == 1;
     // Read state records
     init();
-    while (!full() && in.good()) {  // peek first to make sure that we don't read beyond '//'
+    while (!full() && in.good()) {
         shared_ptr< State<Alphabet_T> > state_ptr(new State<Alphabet_T>(in));
         states_.push_back(state_ptr);
     }
     if (!full())
-        throw Exception("Error while reading HMM: number of state records is %i but should be %i!",
+        throw Exception("Error reading HMM: number of state records is %i but should be %i!",
                         states_.size(), num_states());
 
     // Read all transitions
@@ -411,14 +436,106 @@ void HMM<Alphabet_T>::read(std::istream& in)
         if (tmp.length() > 1 && tmp[0] == '/' && tmp[1] == '/') break;
 
         split(tmp, '\t', tokens);
-        float log_p = *tokens.back().begin() == '*' ? std::numeric_limits<int>::max() : atoi(tokens.back().c_str());
+        float log_p = *tokens.back().begin() == '*' ? INT_MAX : atoi(tokens.back().c_str());
         set_transition( atoi(tokens[0].c_str()),
                         atoi(tokens[1].c_str()),
-                        transitions_logspace() ? -log_p / SCALE_FACTOR : pow(2.0, -log_p / SCALE_FACTOR) );
+                        transitions_logspace() ?
+                        -log_p / SCALE_FACTOR : pow(2.0, -log_p / SCALE_FACTOR) );
         tokens.clear();
     }
     if (num_transitions() != ntr)
-        throw Exception("Serialized HMM has %i transition records but should have %i!", num_transitions(), ntr);
+        throw Exception("Serialized HMM has %i transition records but should have %i!",
+                        num_transitions(), ntr);
+    LOG(DEBUG1) << *this;
+}
+
+template<class Alphabet_T>
+void HMM<Alphabet_T>::read(FILE* fin)
+{
+    LOG(DEBUG1) << "Reading HMM from stream ...";
+
+    char buffer[BUFFER_SIZE];
+    const char* ptr = buffer;
+
+    // Check if stream actually contains a serialized HMM
+    while (fgetline(buffer, BUFFER_SIZE, fin))
+        if (strscn(buffer)) break;
+    if (!strstr(buffer, "HMM"))
+        throw Exception("Bad format: HMM does not start with 'HMM' keyword!");
+
+    // Read number of states
+    if (fgetline(buffer, BUFFER_SIZE, fin) && strstr(buffer, "num_states")) {
+        ptr = buffer;
+        num_states_ = strtoi(ptr);
+    } else {
+        throw Exception("Bad format: HMM does not contain 'num_states' record!");
+    }
+    // Read number of transitions
+    int ntr = 0;
+    if (fgetline(buffer, BUFFER_SIZE, fin) && strstr(buffer, "num_transitions")) {
+        ptr = buffer;
+        ntr = strtoi(ptr);
+    } else {
+        throw Exception("Bad format: HMM does not contain 'num_transitions' record!");
+    }
+    // Read number of columns
+    if (fgetline(buffer, BUFFER_SIZE, fin) && strstr(buffer, "num_cols")) {
+        ptr = buffer;
+        num_cols_ = strtoi(ptr);
+    } else {
+        throw Exception("Bad format: HMM does not contain 'num_cols' record!");
+    }
+    // Read number of iterations
+    if (fgetline(buffer, BUFFER_SIZE, fin) && strstr(buffer, "iterations")) {
+        ptr = buffer;
+        iterations_ = strtoi(ptr);
+    } else {
+        throw Exception("Bad format: HMM does not contain 'num_cols' record!");
+    }
+    // Read transitions logspace
+    if (fgetline(buffer, BUFFER_SIZE, fin) && strstr(buffer, "transitions_logspace")) {
+        ptr = buffer;
+        transitions_logspace_ = strtoi(ptr) == 1;
+    } else {
+        throw Exception("Bad format: HMM does not contain 'transitions_logspace' record!");
+    }
+    // Read states logspace
+    if (fgetline(buffer, BUFFER_SIZE, fin) && strstr(buffer, "states_logspace")) {
+        ptr = buffer;
+        states_logspace_ = strtoi(ptr) == 1;
+    } else {
+        throw Exception("Bad format: HMM does not contain 'states_logspace' record!");
+    }
+
+    init();
+
+    // Read HMM states
+    while (!full() && !feof(fin)) {
+        shared_ptr< State<Alphabet_T> > state_ptr(new State<Alphabet_T>(fin));
+        states_.push_back(state_ptr);
+    }
+    if (!full())
+        throw Exception("Error reading HMM: number of state records is %i but should be %i!",
+                        states_.size(), num_states());
+
+    // Read HMM transitions
+    int k, l;
+    float tr_prob;
+    fgetline(buffer, BUFFER_SIZE, fin);  // skip description line
+    while (fgetline(buffer, BUFFER_SIZE, fin) && buffer[0] != '/' && buffer[1] != '/') {
+        ptr = buffer;
+        k = strtoi(ptr);
+        l = strtoi(ptr);
+        if (transitions_logspace())
+            tr_prob = static_cast<float>(-strtoi_ast(ptr)) / LOG_SCALE;
+        else
+            tr_prob = pow(2.0, static_cast<float>(-strtoi_ast(ptr)) / LOG_SCALE);
+        set_transition(k, l, tr_prob);
+    }
+    if (num_transitions() != ntr)
+        throw Exception("Serialized HMM has %i transition records but should have %i!",
+                        num_transitions(), ntr);
+
     LOG(DEBUG1) << *this;
 }
 
@@ -472,11 +589,14 @@ void HMM<Alphabet_T>::print(std::ostream& out) const
     for (int k = 0; k < num_states(); ++k) {
         out << strprintf("%-4i", k);
         for (int l = 0; l < num_states(); ++l) {
-            if (test_transition(k,l))
-                out << strprintf("%6.2f  ", 100.0f * ( transitions_logspace() ?
-                                                       pow(2.0, transition_probability(k,l)) : transition_probability(k,l) ));
-            else
+            if (test_transition(k,l)) {
+                if (transitions_logspace())
+                    out << strprintf("%6.2f  ", 100.0f * pow(2.0, transition_probability(k,l)));
+                else
+                    out << strprintf("%6.2f  ", 100.0f * transition_probability(k,l));
+            } else {
                 out << "     *  ";
+            }
         }
         out << std::endl;
     }
@@ -501,7 +621,7 @@ void normalize_transitions(HMM<Alphabet_T>& hmm)
             for (int l = 0; l < hmm.num_states(); ++l)
                 if (hmm.test_transition(k,l)) hmm(k,l) = hmm(k,l) * fac;
         } else {
-            throw Exception("Unable to normalize HMM transitions: state %i has no out-transitions!", k);
+            throw Exception("Unable to normalize: state %i has no out-transitions!", k);
         }
     }
 
@@ -540,7 +660,7 @@ class TransitionAdaptor {
         return *this;
     }
 
-    operator float() { return hmm_->transition_probability(k_, l_); }   // we look like a value
+    operator float() { return hmm_->transition_probability(k_, l_); }
 
  private:
     HMM<Alphabet_T>* hmm_;
@@ -573,11 +693,14 @@ class SamplingStateInitializer : public StateInitializer<Alphabet_T>
 
     virtual void init(HMM<Alphabet_T>& hmm) const
     {
-        LOG(DEBUG) << "Initializing HMM with " << hmm.num_states() << " profile windows randomly sampled from "
-                  << profiles_.size() << " training profiles ...";
+        LOG(DEBUG) << "Initializing HMM with " << hmm.num_states()
+                   << " profile windows randomly sampled from "
+                   << profiles_.size() << " training profiles ...";
 
-        // Iterate over randomly shuffled profiles; from each profile we sample a fraction of profile windows.
-        for (profile_iterator pi = profiles_.begin(); pi != profiles_.end() && !hmm.full(); ++pi) {
+        // Iterate over randomly shuffled profiles; from each profile we sample a
+        // fraction of profile windows.
+        for (profile_iterator pi = profiles_.begin();
+             pi != profiles_.end() && !hmm.full(); ++pi) {
             if ((*pi)->num_cols() < hmm.num_cols()) continue;
 
             LOG(DEBUG1) << "Processing next training profile ...";
@@ -594,21 +717,25 @@ class SamplingStateInitializer : public StateInitializer<Alphabet_T>
             LOG(DEBUG2) << stringify_container(idx);
 
             const int sample_size = iround(sample_rate_ * idx.size());
-            idx.erase(idx.begin() + sample_size, idx.end());  // sample only a fraction of the profile indices.
+            // sample only a fraction of the profile indices.
+            idx.erase(idx.begin() + sample_size, idx.end());
             LOG(DEBUG2) << "Sampled column indicices to be actually used::";
             LOG(DEBUG2) << stringify_container(idx);
 
             // Add sub-profiles at sampled indices to HMM
-            for (std::vector<int>::const_iterator i = idx.begin(); i != idx.end() && !hmm.full(); ++i) {
+            for (std::vector<int>::const_iterator i = idx.begin();
+                 i != idx.end() && !hmm.full(); ++i) {
                 CountsProfile<Alphabet_T> p(**pi, *i, hmm.num_cols());
                 LOG(DEBUG1) << "Extracted profile window at position " << *i << ":";
-                p.convert_to_frequencies(); // make sure that profile contains frequencies not counts
+                // make sure that profile contains frequencies not counts
+                p.convert_to_frequencies();
                 if (pc_) pc_->add_to_profile(ConstantAdmixture(pc_admixture_), &p);
                 hmm.add_profile(p);
             }
         }
         if (!hmm.full())
-            throw Exception("Could not fully initialize all %i HMM states. Maybe too few training profiles provided?",
+            throw Exception("Could not fully initialize all %i HMM states. "
+                            "Maybe too few training profiles provided?",
                             hmm.num_states());
         LOG(DEBUG) << "HMM after state initialization:";
         LOG(DEBUG) << hmm;
