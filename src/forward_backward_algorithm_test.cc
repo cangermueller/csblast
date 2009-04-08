@@ -8,7 +8,7 @@
 #include "blosum_matrix.h"
 #include "emitter.h"
 #include "forward_backward_algorithm.h"
-#include "hmm.h"
+#include "hmm-inl.h"
 #include "log.h"
 #include "matrix_pseudocounts.h"
 #include "profile-inl.h"

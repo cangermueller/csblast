@@ -17,7 +17,7 @@
 #include "emitter.h"
 #include "expectation_maximization.h"
 #include "forward_backward_algorithm.h"
-#include "hmm.h"
+#include "hmm-inl.h"
 #include "log.h"
 #include "progress_table.h"
 #include "shared_ptr.h"

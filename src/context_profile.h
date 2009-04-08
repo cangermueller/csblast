@@ -10,7 +10,7 @@
 #include <string>
 #include <vector>
 
-#include "alignment.h"
+#include "alignment-inl.h"
 #include "exception.h"
 #include "profile-inl.h"
 #include "shared_ptr.h"

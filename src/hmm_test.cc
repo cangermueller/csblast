@@ -8,10 +8,10 @@
 #include <string>
 #include <vector>
 
-#include "alignment.h"
+#include "alignment-inl.h"
 #include "amino_acid.h"
 #include "blosum_matrix.h"
-#include "hmm.h"
+#include "hmm-inl.h"
 #include "log.h"
 #include "matrix_pseudocounts.h"
 #include "nucleotide.h"

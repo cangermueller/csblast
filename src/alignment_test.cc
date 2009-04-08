@@ -7,7 +7,7 @@
 #include <sstream>
 #include <vector>
 
-#include "alignment.h"
+#include "alignment-inl.h"
 #include "amino_acid.h"
 #include "matrix.h"
 #include "nucleotide.h"

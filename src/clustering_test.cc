@@ -5,7 +5,7 @@
 #include <sstream>
 #include <vector>
 
-#include "alignment.h"
+#include "alignment-inl.h"
 #include "amino_acid.h"
 #include "clustering.h"
 #include "blosum_matrix.h"

@@ -12,7 +12,7 @@
 #include <string>
 #include <vector>
 
-#include "alignment.h"
+#include "alignment-inl.h"
 #include "exception.h"
 #include "matrix.h"
 #include "profile-inl.h"

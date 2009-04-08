@@ -12,7 +12,7 @@
 
 #include "context_profile-inl.h"
 #include "emitter.h"
-#include "hmm.h"
+#include "hmm-inl.h"
 #include "log.h"
 #include "shared_ptr.h"
 #include "utils.h"

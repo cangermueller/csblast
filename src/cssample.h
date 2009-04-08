@@ -15,7 +15,7 @@
 #include <string>
 #include <vector>
 
-#include "alignment.h"
+#include "alignment-inl.h"
 #include "count_profile-inl.h"
 #include "exception.h"
 #include "getopt_pp.h"

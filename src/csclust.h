@@ -13,7 +13,7 @@
 #include <string>
 #include <vector>
 
-#include "alignment.h"
+#include "alignment-inl.h"
 #include "blosum_matrix.h"
 #include "clustering.h"
 #include "count_profile-inl.h"

@@ -13,12 +13,12 @@
 #include <string>
 #include <vector>
 
-#include "alignment.h"
+#include "alignment-inl.h"
 #include "baum_welch_training.h"
 #include "blosum_matrix.h"
 #include "nucleotide_matrix.h"
 #include "count_profile-inl.h"
-#include "hmm.h"
+#include "hmm-inl.h"
 #include "exception.h"
 #include "forward_backward_algorithm.h"
 #include "getopt_pp.h"

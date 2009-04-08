@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-#include "alignment.h"
+#include "alignment-inl.h"
 #include "amino_acid.h"
 #include "blosum_matrix.h"
 #include "profile_library.h"
