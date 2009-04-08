@@ -11,8 +11,8 @@
 #include "hmm.h"
 #include "log.h"
 #include "matrix_pseudocounts.h"
-#include "profile.h"
-#include "sequence.h"
+#include "profile-inl.h"
+#include "sequence-inl.h"
 #include "shared_ptr.h"
 #include "utils.h"
 
@@ -68,7 +68,7 @@ TEST_F(ForwardBackwardAlgorithmTest, 1Q7L)
     Alignment<AminoAcid> alignment(fin, Alignment<AminoAcid>::FASTA);
     fin.close();
     alignment.assign_match_columns_by_gap_rule();
-    CountsProfile<AminoAcid> profile(alignment, true);
+    CountProfile<AminoAcid> profile(alignment, true);
 
     BlosumMatrix m;
     MatrixPseudocounts<AminoAcid> mpc(&m);

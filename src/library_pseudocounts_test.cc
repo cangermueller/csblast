@@ -5,7 +5,7 @@
 
 #include "amino_acid.h"
 #include "blosum_matrix.h"
-#include "counts_profile.h"
+#include "count_profile-inl.h"
 #include "emitter.h"
 #include "log.h"
 #include "matrix_pseudocounts.h"
@@ -42,7 +42,7 @@ TEST(LibraryPseudocountsTest, AddProfileSequence)
     std::ifstream ali_in("../data/zinc_finger_alignments.fas");
     Alignment<AminoAcid> ali(ali_in, Alignment<AminoAcid>::FASTA);
     ali_in.close();
-    CountsProfile<AminoAcid> profile(ali, false);
+    CountProfile<AminoAcid> profile(ali, false);
 
     BlosumMatrix m;
     MatrixPseudocounts<AminoAcid> mpc(&m);

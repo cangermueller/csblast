@@ -19,7 +19,7 @@ class Sequence;
 template<class Alphabet_T>
 class Profile;
 template<class Alphabet_T>
-class CountsProfile;
+class CountProfile;
 
 // Calculates pseudocount admixture for profile column.
 class Admixture
@@ -43,7 +43,7 @@ class Pseudocounts
                                  const Admixture& pca,
                                  Profile<Alphabet_T>* profile) const = 0;
     // Adds pseudocounts to alignment derived profile.
-    virtual void add_to_profile(const Admixture& pca, CountsProfile<Alphabet_T>* profile) const = 0;
+    virtual void add_to_profile(const Admixture& pca, CountProfile<Alphabet_T>* profile) const = 0;
 
   private:
     // Disallow copy and assign

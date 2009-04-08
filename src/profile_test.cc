@@ -7,7 +7,7 @@
 
 #include "amino_acid.h"
 #include "nucleotide.h"
-#include "profile.h"
+#include "profile-inl.h"
 #include "shared_ptr.h"
 
 namespace cs

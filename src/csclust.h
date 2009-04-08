@@ -16,7 +16,7 @@
 #include "alignment.h"
 #include "blosum_matrix.h"
 #include "clustering.h"
-#include "counts_profile.h"
+#include "count_profile-inl.h"
 #include "exception.h"
 #include "getopt_pp.h"
 #include "matrix_pseudocounts.h"
@@ -201,7 +201,7 @@ shared_ptr< SubstitutionMatrix<AminoAcid> > get_substitution_matrix<AminoAcid>(c
 template<class Alphabet_T>
 void csclust(const Params& params, std::ostream& out)
 {
-    typedef std::vector< shared_ptr< CountsProfile<Alphabet_T> > > counts_vector;
+    typedef std::vector< shared_ptr< CountProfile<Alphabet_T> > > counts_vector;
     typedef typename counts_vector::iterator counts_iterator;
 
     shared_ptr< ProfileLibrary<Alphabet_T> > lib_ptr;
@@ -215,7 +215,7 @@ void csclust(const Params& params, std::ostream& out)
     out << strprintf("Reading training profiles from %s ...", get_file_basename(params.infile).c_str());
     out.flush();
     LOG(INFO) << strprintf("Reading training profiles from %s ...", get_file_basename(params.infile).c_str());
-    CountsProfile<Alphabet_T>::readall(fin, data);
+    CountProfile<Alphabet_T>::readall(fin, data);
     out << strprintf(" %i profiles read", data.size()) << std::endl;
     LOG(INFO) << strprintf("%i profiles read", data.size());
     fin.close();
@@ -257,7 +257,7 @@ void csclust(const Params& params, std::ostream& out)
     LOG(INFO) << strprintf("Clustering training data by expectation maximization (K=%i, W=%i, N=%i) ...",
                            lib_ptr->num_profiles(), lib_ptr->num_cols(), data.size());
     out << std::endl << std::endl;
-    Clustering<Alphabet_T, CountsProfile> em_clust(params, data, *lib_ptr, out);
+    Clustering<Alphabet_T, CountProfile> em_clust(params, data, *lib_ptr, out);
     em_clust.run();
 
     // write profile library to outfile

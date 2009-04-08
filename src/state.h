@@ -13,8 +13,8 @@
 
 #include <google/sparsetable>
 
-#include "context_profile.h"
-#include "profile.h"
+#include "context_profile-inl.h"
+#include "profile-inl.h"
 #include "transition.h"
 
 using google::sparsetable;

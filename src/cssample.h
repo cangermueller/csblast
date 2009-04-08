@@ -16,7 +16,7 @@
 #include <vector>
 
 #include "alignment.h"
-#include "counts_profile.h"
+#include "count_profile-inl.h"
 #include "exception.h"
 #include "getopt_pp.h"
 #include "shared_ptr.h"
@@ -109,18 +109,18 @@ void cssample(const Params& params, std::ostream& out = std::cout);
 template< class Alphabet_T,
           template<class Alphabet_U> class Input_T >
 void sample_profiles(const Params& params,
-                    const std::vector< shared_ptr< CountsProfile<Alphabet_T> > >& profiles,
-                    std::vector< shared_ptr< CountsProfile<Alphabet_T> > >& samples,
+                    const std::vector< shared_ptr< CountProfile<Alphabet_T> > >& profiles,
+                    std::vector< shared_ptr< CountProfile<Alphabet_T> > >& samples,
                     std::ostream& out);
 
 template<class Alphabet_T>
 void cssample(const Params& params, std::ostream& out)
 {
-    typedef std::vector< shared_ptr< CountsProfile<Alphabet_T> > > profiles_vector;
+    typedef std::vector< shared_ptr< CountProfile<Alphabet_T> > > profiles_vector;
     typedef typename profiles_vector::const_iterator profile_iterator;
 
-    std::vector< shared_ptr< CountsProfile<Alphabet_T> > > profiles;  // large pool of profiles to sample from
-    std::vector< shared_ptr< CountsProfile<Alphabet_T> > > samples;   // sampled profiles
+    std::vector< shared_ptr< CountProfile<Alphabet_T> > > profiles;  // large pool of profiles to sample from
+    std::vector< shared_ptr< CountProfile<Alphabet_T> > > samples;   // sampled profiles
 
     // read database of profiles
     std::ifstream fin(params.infile.c_str());
@@ -128,7 +128,7 @@ void cssample(const Params& params, std::ostream& out)
     out << strprintf("Reading profiles from %s ...", get_file_basename(params.infile).c_str());
     out.flush();
     LOG(INFO) << strprintf("Reading profiles from %s ...", get_file_basename(params.infile).c_str());
-    CountsProfile<Alphabet_T>::readall(fin, profiles);
+    CountProfile<Alphabet_T>::readall(fin, profiles);
     out << strprintf(" %i profiles read", profiles.size()) << std::endl;
     LOG(INFO) << strprintf("%i profiles read", profiles.size());
     fin.close();
@@ -154,11 +154,11 @@ void cssample(const Params& params, std::ostream& out)
 
 template<class Alphabet_T>
 void sample_profiles(const Params& params,
-                     const std::vector< shared_ptr< CountsProfile<Alphabet_T> > >& profiles,
-                     std::vector< shared_ptr< CountsProfile<Alphabet_T> > >& samples,
+                     const std::vector< shared_ptr< CountProfile<Alphabet_T> > >& profiles,
+                     std::vector< shared_ptr< CountProfile<Alphabet_T> > >& samples,
                      std::ostream& out)
 {
-    typedef typename std::vector< shared_ptr< CountsProfile<Alphabet_T> > >::const_iterator profile_iterator;
+    typedef typename std::vector< shared_ptr< CountProfile<Alphabet_T> > >::const_iterator profile_iterator;
     typedef typename std::vector<int>::const_iterator index_iterator;
 
     out << strprintf("Sampling %i profiles from pool of %i profiles ...\n", params.sample_size, profiles.size());
@@ -179,7 +179,7 @@ void sample_profiles(const Params& params,
 
             // Add sub-profiles at sampled indices to HMM
             for (index_iterator ii = idx.begin(); ii != idx.end() && static_cast<int>(samples.size()) < params.sample_size; ++ii) {
-                shared_ptr< CountsProfile<Alphabet_T> > p(new CountsProfile<Alphabet_T>(**it, *ii, params.window_length));
+                shared_ptr< CountProfile<Alphabet_T> > p(new CountProfile<Alphabet_T>(**it, *ii, params.window_length));
                 samples.push_back(p);
             }
         }

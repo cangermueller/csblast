@@ -16,7 +16,7 @@
 #include <vector>
 
 #include "alignment.h"
-#include "counts_profile.h"
+#include "count_profile-inl.h"
 #include "exception.h"
 #include "getopt_pp.h"
 #include "shared_ptr.h"
@@ -114,7 +114,7 @@ void csbuild(const Params& params, std::ostream& out = std::cout)
 
     if (params.format == "seq") {
         Sequence<Alphabet_T> seq(fin);
-        CountsProfile<Alphabet_T> profile(seq);
+        CountProfile<Alphabet_T> profile(seq);
         profile.write(fout);
         out << strprintf("Wrote profile with %i columns to %s\n", profile.num_cols(), params.outfile.c_str());
         LOG(INFO) << strprintf("Wrote profile with %i columns to %s\n", profile.num_cols(), params.outfile.c_str());
@@ -128,7 +128,7 @@ void csbuild(const Params& params, std::ostream& out = std::cout)
             else
                 ali.assign_match_columns_by_gap_rule(params.matchcol_assignment);
         }
-        CountsProfile<Alphabet_T> profile(ali, !params.global_weights);
+        CountProfile<Alphabet_T> profile(ali, !params.global_weights);
         profile.write(fout);
         out << strprintf("Wrote profile with %i columns to %s\n", profile.num_cols(), params.outfile.c_str());
         LOG(INFO) << strprintf("Wrote profile with %i columns to %s\n", profile.num_cols(), params.outfile.c_str());

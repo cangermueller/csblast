@@ -9,10 +9,10 @@
 #include "amino_acid.h"
 #include "clustering.h"
 #include "blosum_matrix.h"
-#include "counts_profile.h"
+#include "count_profile-inl.h"
 #include "log.h"
 #include "matrix_pseudocounts.h"
-#include "profile.h"
+#include "profile-inl.h"
 #include "profile_library.h"
 #include "shared_ptr.h"
 #include "utils.h"
@@ -57,9 +57,9 @@ class ClusteringTest : public testing::Test
 
         // Convert alignments to counts and add pseudocounts
         for (std::vector< shared_ptr< Alignment<AminoAcid> > >::iterator ai = alis.begin(); ai != alis.end(); ++ai) {
-            CountsProfile<AminoAcid> p_full(**ai, true);
+            CountProfile<AminoAcid> p_full(**ai, true);
             for (int i = 0; i < p_full.num_cols() - WINDOW_LENGTH + 1; ++i) {
-                shared_ptr< CountsProfile<AminoAcid> > p_ptr(new CountsProfile<AminoAcid>(p_full, i, WINDOW_LENGTH));
+                shared_ptr< CountProfile<AminoAcid> > p_ptr(new CountProfile<AminoAcid>(p_full, i, WINDOW_LENGTH));
                 mpc.add_to_profile(ConstantAdmixture(0.01f), p_ptr.get());
                 p_ptr->convert_to_counts();
                 counts_.push_back(p_ptr);
@@ -68,7 +68,7 @@ class ClusteringTest : public testing::Test
     }
 
     ProfileLibrary<AminoAcid> lib_;
-    std::vector< shared_ptr< CountsProfile<AminoAcid> > > counts_;
+    std::vector< shared_ptr< CountProfile<AminoAcid> > > counts_;
 };
 
 TEST_F(ClusteringTest, ZincFingerAlisClustering)
@@ -78,7 +78,7 @@ TEST_F(ClusteringTest, ZincFingerAlisClustering)
     p.epsilon_null = 1.0f;
     p.beta         = 0.0f;
     p.min_scans    = 5;
-    Clustering<AminoAcid, CountsProfile> em_clust(p, counts_, lib_, std::cout);
+    Clustering<AminoAcid, CountProfile> em_clust(p, counts_, lib_, std::cout);
     em_clust.run();
 
     lib_.transform_to_linspace();
@@ -93,7 +93,7 @@ TEST_F(ClusteringTest, ZincFingerAlisOnlineClustering)
     p.epsilon_null = 0.05f;
     p.beta         = 0.5f;
     p.min_scans    = 5;
-    Clustering<AminoAcid, CountsProfile> em_clust(p, counts_, lib_, std::cout);
+    Clustering<AminoAcid, CountProfile> em_clust(p, counts_, lib_, std::cout);
     em_clust.run();
 
     lib_.transform_to_linspace();

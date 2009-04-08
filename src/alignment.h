@@ -21,7 +21,7 @@
 #include "log.h"
 #include "matrix.h"
 #include "exception.h"
-#include "sequence.h"
+#include "sequence-inl.h"
 #include "shared_ptr.h"
 #include "utils.h"
 

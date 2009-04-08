@@ -13,15 +13,15 @@
 
 #include <valarray>
 
-#include "counts_profile.h"
+#include "count_profile-inl.h"
 #include "emitter.h"
 #include "forward_backward_algorithm.h"
 #include "hmm.h"
 #include "log.h"
 #include "matrix.h"
-#include "profile.h"
+#include "profile-inl.h"
 #include "pseudocounts.h"
-#include "sequence.h"
+#include "sequence-inl.h"
 #include "utils.h"
 
 namespace cs
@@ -39,7 +39,7 @@ class HMMPseudocounts : public Pseudocounts<Alphabet_T>
                                  const Admixture& pca,
                                  Profile<Alphabet_T>* profile) const;
     // Adds context-specific pseudocounts to alignment derived profile.
-    virtual void add_to_profile(const Admixture& pca, CountsProfile<Alphabet_T>* p) const;
+    virtual void add_to_profile(const Admixture& pca, CountProfile<Alphabet_T>* p) const;
 
   private:
     // Disallow copy and assign
@@ -109,7 +109,7 @@ void HMMPseudocounts<Alphabet_T>::add_to_sequence(const Sequence<Alphabet_T>& se
 }
 
 template<class Alphabet_T>
-void HMMPseudocounts<Alphabet_T>::add_to_profile(const Admixture& pca, CountsProfile<Alphabet_T>* profile) const
+void HMMPseudocounts<Alphabet_T>::add_to_profile(const Admixture& pca, CountProfile<Alphabet_T>* profile) const
 {
     assert(!profile->has_counts());
     assert(!profile->logspace());
@@ -123,7 +123,7 @@ void HMMPseudocounts<Alphabet_T>::add_to_profile(const Admixture& pca, CountsPro
     const int alphabet_size = Alphabet_T::instance().size();
 
     std::valarray<float> pc(0.0f, alphabet_size);   // pseudocount vector P(a|X_i) at position i
-    CountsProfile<Alphabet_T>& p = *profile;        // output profile with pseudocounts
+    CountProfile<Alphabet_T>& p = *profile;        // output profile with pseudocounts
 
     // calculate posterior state probabilities with forward-backward algorithm
     ForwardBackwardMatrices fbm(length, hmm_.num_states());

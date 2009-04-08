@@ -13,9 +13,9 @@
 #include <valarray>
 
 #include "exception.h"
-#include "context_profile.h"
-#include "counts_profile.h"
-#include "sequence.h"
+#include "context_profile-inl.h"
+#include "count_profile-inl.h"
+#include "sequence-inl.h"
 
 namespace cs
 {
@@ -55,7 +55,7 @@ class Emitter
 
     // Calculates the log emission probability of profile window centered at given index.
     double operator() (const ContextProfile<Alphabet_T>& profile,
-                       const CountsProfile<Alphabet_T>& counts,
+                       const CountProfile<Alphabet_T>& counts,
                        int index) const;
     // Calculates the log emission probability of sequence window centered at given index.
     double operator() (const ContextProfile<Alphabet_T>& profile,
@@ -99,7 +99,7 @@ inline Emitter<Alphabet_T>::Emitter(int num_cols, const EmissionParams& params)
 
 template< class Alphabet_T>
 inline double Emitter<Alphabet_T>::operator() (const ContextProfile<Alphabet_T>& profile,
-                                               const CountsProfile<Alphabet_T>& counts,
+                                               const CountProfile<Alphabet_T>& counts,
                                                int index) const
 {
     assert(profile.logspace());

@@ -8,12 +8,12 @@
 // DESCRIPTION:
 // Encapsulation of substitution matrix pseudocounts.
 
-#include "counts_profile.h"
+#include "count_profile-inl.h"
 #include "log.h"
 #include "matrix.h"
-#include "profile.h"
+#include "profile-inl.h"
 #include "pseudocounts.h"
-#include "sequence.h"
+#include "sequence-inl.h"
 #include "substitution_matrix.h"
 #include "utils.h"
 
@@ -32,7 +32,7 @@ class MatrixPseudocounts : public Pseudocounts<Alphabet_T>
                                  const Admixture& pca,
                                  Profile<Alphabet_T>* profile) const;
     // Adds substitution matrix pseudocounts to alignment derived profile.
-    virtual void add_to_profile(const Admixture& pca, CountsProfile<Alphabet_T>* profile) const;
+    virtual void add_to_profile(const Admixture& pca, CountProfile<Alphabet_T>* profile) const;
 
   private:
     // Disallow copy and assign
@@ -74,11 +74,11 @@ void MatrixPseudocounts<Alphabet_T>::add_to_sequence(const Sequence<Alphabet_T>&
 
 template<class Alphabet_T>
 void MatrixPseudocounts<Alphabet_T>::add_to_profile(const Admixture& pca,
-                                                    CountsProfile<Alphabet_T>* profile) const
+                                                    CountProfile<Alphabet_T>* profile) const
 {
     LOG(DEBUG2) << "Adding substitution matrix pseudocounts to profile ...";
 
-    CountsProfile<Alphabet_T>& p = *profile;
+    CountProfile<Alphabet_T>& p = *profile;
     const bool logspace = p.logspace();
     if (logspace) p.transform_to_linspace();
 

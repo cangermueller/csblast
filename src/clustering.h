@@ -14,7 +14,7 @@
 #include <valarray>
 #include <vector>
 
-#include "context_profile.h"
+#include "context_profile-inl.h"
 #include "emitter.h"
 #include "expectation_maximization.h"
 #include "log.h"
@@ -85,7 +85,7 @@ class Clustering : public ExpectationMaximization<Alphabet_T, Subject_T>
     // Adds the contribution of the responsibilities for a subject to sufficient statistics for priors.
     void add_contribution_to_priors(const std::valarray<double>& p_zn);
     // Adds the contribution of the responsibilities for a counts profile to sufficient statistics for emissions.
-    void add_contribution_to_emissions(const std::valarray<double>& p_zn, const CountsProfile<Alphabet_T>& c);
+    void add_contribution_to_emissions(const std::valarray<double>& p_zn, const CountProfile<Alphabet_T>& c);
     // Adds the contribution of the responsibilities for a sequence to sufficient statistics for emissions.
     void add_contribution_to_emissions(const std::valarray<double>& p_zn, const Sequence<Alphabet_T>& s);
     // Updates global sufficient statistics with sufficient statistics calculated on current block.
@@ -236,7 +236,7 @@ inline void Clustering<Alphabet_T, Subject_T>::add_contribution_to_priors(const 
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
 inline void Clustering<Alphabet_T, Subject_T>::add_contribution_to_emissions(const std::valarray<double>& p_zn,
-                                                                             const CountsProfile<Alphabet_T>& c)
+                                                                             const CountProfile<Alphabet_T>& c)
 {
     const int num_profiles  = lib_.num_profiles();
     const int num_cols      = lib_.num_cols();

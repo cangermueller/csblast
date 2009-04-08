@@ -4,7 +4,7 @@
 #include <iostream>
 
 #include "amino_acid.h"
-#include "counts_profile.h"
+#include "count_profile-inl.h"
 #include "emitter.h"
 #include "hmm.h"
 #include "hmm_pseudocounts.h"
@@ -39,7 +39,7 @@ TEST(HMMPseudocountsTest, AddProfileSequence)
     std::ifstream ali_in("../data/zinc_finger.fas");
     Alignment<AminoAcid> ali(ali_in, Alignment<AminoAcid>::FASTA);
     ali_in.close();
-    CountsProfile<AminoAcid> profile(ali, false);
+    CountProfile<AminoAcid> profile(ali, false);
 
     std::ifstream in("../data/scop20_K100.hmm");
     HMM<AminoAcid> hmm(in);

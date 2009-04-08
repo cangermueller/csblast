@@ -13,7 +13,7 @@
 #include "log.h"
 #include "matrix_pseudocounts.h"
 #include "nucleotide.h"
-#include "profile.h"
+#include "profile-inl.h"
 #include "shared_ptr.h"
 
 namespace cs
@@ -130,9 +130,9 @@ TEST(ProfileLibraryTestInitialization, RandomSampleInitializer)
     fin.close();
     ali.assign_match_columns_by_gap_rule();
 
-    typedef shared_ptr< CountsProfile<AminoAcid> > profile_ptr;
-    CountsProfile<AminoAcid> p_full(ali, true);
-    profile_ptr p_window(new CountsProfile<AminoAcid>(p_full, 0, 13));
+    typedef shared_ptr< CountProfile<AminoAcid> > profile_ptr;
+    CountProfile<AminoAcid> p_full(ali, true);
+    profile_ptr p_window(new CountProfile<AminoAcid>(p_full, 0, 13));
     std::vector<profile_ptr> profiles(100, p_window);
 
     BlosumMatrix m;

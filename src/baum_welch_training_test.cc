@@ -9,12 +9,12 @@
 #include "amino_acid.h"
 #include "baum_welch_training.h"
 #include "blosum_matrix.h"
-#include "counts_profile.h"
+#include "count_profile-inl.h"
 #include "hmm.h"
 #include "log.h"
 #include "matrix_pseudocounts.h"
-#include "profile.h"
-#include "sequence.h"
+#include "profile-inl.h"
+#include "sequence-inl.h"
 #include "shared_ptr.h"
 #include "utils.h"
 
@@ -60,7 +60,7 @@ class BaumWelchTrainingTest : public testing::Test
 
         // Convert alignments to counts and add pseudocounts
         for (std::vector< shared_ptr< Alignment<AminoAcid> > >::iterator ai = alis.begin(); ai != alis.end(); ++ai) {
-            shared_ptr< CountsProfile<AminoAcid> > p_ptr(new CountsProfile<AminoAcid>(**ai, true));
+            shared_ptr< CountProfile<AminoAcid> > p_ptr(new CountProfile<AminoAcid>(**ai, true));
             mpc.add_to_profile(ConstantAdmixture(0.01f), p_ptr.get());
             p_ptr->convert_to_counts();
             counts_.push_back(p_ptr);
@@ -69,7 +69,7 @@ class BaumWelchTrainingTest : public testing::Test
 
     HMM<AminoAcid> hmm_;
     std::vector< shared_ptr< Sequence<AminoAcid> > > seqs_;
-    std::vector< shared_ptr< CountsProfile<AminoAcid> > > counts_;
+    std::vector< shared_ptr< CountProfile<AminoAcid> > > counts_;
 };
 
 TEST_F(BaumWelchTrainingTest, ZincFingerSeqsTraining)
@@ -100,7 +100,7 @@ TEST_F(BaumWelchTrainingTest, ZincFingerAlisTraining)
     p.beta                     = 0.0f;
     p.min_scans                = 3;
     p.weight_center            = 1.0f;
-    BaumWelchTraining<AminoAcid, CountsProfile> bwt(p, counts_, hmm_, std::cout);
+    BaumWelchTraining<AminoAcid, CountProfile> bwt(p, counts_, hmm_, std::cout);
     bwt.run();
 
     hmm_.transform_states_to_linspace();
@@ -119,7 +119,7 @@ TEST_F(BaumWelchTrainingTest, ZincFingerAlisOnlineTraining)
     p.beta                     = 0.5f;
     p.min_scans                = 3;
     p.weight_center            = 1.0f;
-    BaumWelchTraining<AminoAcid, CountsProfile> bwt(p, counts_, hmm_, std::cout);
+    BaumWelchTraining<AminoAcid, CountProfile> bwt(p, counts_, hmm_, std::cout);
     bwt.run();
 
     hmm_.transform_states_to_linspace();

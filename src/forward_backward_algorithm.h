@@ -10,7 +10,7 @@
 
 #include <valarray>
 
-#include "context_profile.h"
+#include "context_profile-inl.h"
 #include "emitter.h"
 #include "hmm.h"
 #include "log.h"

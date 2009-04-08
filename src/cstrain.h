@@ -17,7 +17,7 @@
 #include "baum_welch_training.h"
 #include "blosum_matrix.h"
 #include "nucleotide_matrix.h"
-#include "counts_profile.h"
+#include "count_profile-inl.h"
 #include "hmm.h"
 #include "exception.h"
 #include "forward_backward_algorithm.h"
@@ -230,7 +230,7 @@ template<class Alphabet_T>
 void cstrain(const Params& params, std::ostream& out = std::cout);
 
 template<class Alphabet_T>
-void read_training_data(const Params& params, std::vector< shared_ptr< CountsProfile<Alphabet_T> > >& v, std::ostream& out);
+void read_training_data(const Params& params, std::vector< shared_ptr< CountProfile<Alphabet_T> > >& v, std::ostream& out);
 
 template<class Alphabet_T>
 shared_ptr< SubstitutionMatrix<Alphabet_T> > get_substitution_matrix(const Params& params);
@@ -241,7 +241,7 @@ shared_ptr< SubstitutionMatrix<AminoAcid> > get_substitution_matrix<AminoAcid>(c
 template<class Alphabet_T>
 void cstrain(const Params& params, std::ostream& out)
 {
-    typedef std::vector< shared_ptr< CountsProfile<Alphabet_T> > > counts_vector;
+    typedef std::vector< shared_ptr< CountProfile<Alphabet_T> > > counts_vector;
     typedef typename counts_vector::iterator counts_iterator;
 
     shared_ptr< HMM<Alphabet_T> > hmm_ptr;
@@ -289,7 +289,7 @@ void cstrain(const Params& params, std::ostream& out)
     LOG(INFO) << strprintf("Running Baum-Welch training on HMM (K=%i, W=%i, N=%i) ...",
                            hmm_ptr->num_states(), hmm_ptr->num_cols(), num_data_cols);
     out << std::endl << std::endl;
-    BaumWelchTraining<Alphabet_T, CountsProfile> training(params, data, *hmm_ptr, out);
+    BaumWelchTraining<Alphabet_T, CountProfile> training(params, data, *hmm_ptr, out);
     training.run();
 
     // write HMM to outfile
@@ -302,7 +302,7 @@ void cstrain(const Params& params, std::ostream& out)
 }
 
 template<class Alphabet_T>
-void read_training_data(const Params& params, std::vector< shared_ptr< CountsProfile<Alphabet_T> > >& v, std::ostream& out)
+void read_training_data(const Params& params, std::vector< shared_ptr< CountProfile<Alphabet_T> > >& v, std::ostream& out)
 {
     std::ifstream fin(params.infile.c_str());
     if (!fin) throw Exception("Unable to read from input file '%s'!", params.infile.c_str());
@@ -312,7 +312,7 @@ void read_training_data(const Params& params, std::vector< shared_ptr< CountsPro
         out << strprintf("Reading training profiles from %s ...", get_file_basename(params.infile).c_str());
         out.flush();
         LOG(INFO) << strprintf("Reading training profiles from %s ...", get_file_basename(params.infile).c_str());
-        CountsProfile<Alphabet_T>::readall(fin, v);
+        CountProfile<Alphabet_T>::readall(fin, v);
         out << strprintf(" %i profiles read", v.size()) << std::endl;
         LOG(INFO) << strprintf("%i profiles read", v.size());
 
@@ -325,7 +325,7 @@ void read_training_data(const Params& params, std::vector< shared_ptr< CountsPro
         int i = 0;
         while (fin.peek() && fin.good()) {
             Sequence<Alphabet_T> seq(fin);
-            shared_ptr< CountsProfile<Alphabet_T> > cp_ptr(new CountsProfile<Alphabet_T>(seq));
+            shared_ptr< CountProfile<Alphabet_T> > cp_ptr(new CountProfile<Alphabet_T>(seq));
             v.push_back(cp_ptr);
 
             i += 1;
@@ -352,7 +352,7 @@ void read_training_data(const Params& params, std::vector< shared_ptr< CountsPro
                 else
                     ali.assign_match_columns_by_gap_rule(params.matchcol_assignment);
             }
-            shared_ptr< CountsProfile<Alphabet_T> > cp_ptr(new CountsProfile<Alphabet_T>(ali, !params.global_weights));
+            shared_ptr< CountProfile<Alphabet_T> > cp_ptr(new CountProfile<Alphabet_T>(ali, !params.global_weights));
             v.push_back(cp_ptr);
 
             i += 1;

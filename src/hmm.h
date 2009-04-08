@@ -20,9 +20,9 @@
 #include <vector>
 
 #include "exception.h"
-#include "profile.h"
-#include "context_profile.h"
-#include "counts_profile.h"
+#include "profile-inl.h"
+#include "context_profile-inl.h"
+#include "count_profile-inl.h"
 #include "log.h"
 #include "pseudocounts.h"
 #include "shared_ptr.h"
@@ -674,7 +674,7 @@ template<class Alphabet_T>
 class SamplingStateInitializer : public StateInitializer<Alphabet_T>
 {
   public:
-    typedef typename std::vector< shared_ptr< CountsProfile<Alphabet_T> > > profile_vector;
+    typedef typename std::vector< shared_ptr< CountProfile<Alphabet_T> > > profile_vector;
     typedef typename profile_vector::const_iterator profile_iterator;
 
     SamplingStateInitializer(profile_vector profiles,
@@ -725,7 +725,7 @@ class SamplingStateInitializer : public StateInitializer<Alphabet_T>
             // Add sub-profiles at sampled indices to HMM
             for (std::vector<int>::const_iterator i = idx.begin();
                  i != idx.end() && !hmm.full(); ++i) {
-                CountsProfile<Alphabet_T> p(**pi, *i, hmm.num_cols());
+                CountProfile<Alphabet_T> p(**pi, *i, hmm.num_cols());
                 LOG(DEBUG1) << "Extracted profile window at position " << *i << ":";
                 // make sure that profile contains frequencies not counts
                 p.convert_to_frequencies();

@@ -15,9 +15,9 @@
 #include <iostream>
 
 #include "exception.h"
-#include "profile.h"
-#include "context_profile.h"
-#include "counts_profile.h"
+#include "profile-inl.h"
+#include "context_profile-inl.h"
+#include "count_profile-inl.h"
 #include "log.h"
 #include "pseudocounts.h"
 #include "shared_ptr.h"
@@ -279,7 +279,7 @@ template<class Alphabet_T>
 class SamplingProfileInitializer : public ProfileInitializer<Alphabet_T>
 {
   public:
-    typedef typename std::vector< shared_ptr< CountsProfile<Alphabet_T> > > profile_vector;
+    typedef typename std::vector< shared_ptr< CountProfile<Alphabet_T> > > profile_vector;
     typedef typename profile_vector::const_iterator profile_iterator;
 
     SamplingProfileInitializer(profile_vector profiles,
@@ -305,7 +305,7 @@ class SamplingProfileInitializer : public ProfileInitializer<Alphabet_T>
                 throw Exception("Unable to initialize profiles: library profiles have length %i but found training profile with length %i!",
                                 lib.num_cols(), (*pi)->num_cols());
 
-            CountsProfile<Alphabet_T> p(**pi);
+            CountProfile<Alphabet_T> p(**pi);
             p.convert_to_frequencies(); // make sure that profile contains frequencies not counts
             if (pc_) pc_->add_to_profile(ConstantAdmixture(pc_admixture_), &p);
             lib.add_profile(p);

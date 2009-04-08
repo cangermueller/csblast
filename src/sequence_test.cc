@@ -13,8 +13,8 @@
 #include "log.h"
 #include "matrix_pseudocounts.h"
 #include "nucleotide.h"
-#include "profile.h"
-#include "sequence.h"
+#include "profile-inl.h"
+#include "sequence-inl.h"
 #include "shared_ptr.h"
 
 namespace cs

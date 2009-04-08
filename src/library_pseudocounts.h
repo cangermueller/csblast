@@ -14,14 +14,14 @@
 
 #include <valarray>
 
-#include "counts_profile.h"
+#include "count_profile-inl.h"
 #include "emitter.h"
 #include "log.h"
 #include "matrix.h"
-#include "profile.h"
+#include "profile-inl.h"
 #include "profile_library.h"
 #include "pseudocounts.h"
-#include "sequence.h"
+#include "sequence-inl.h"
 #include "utils.h"
 
 namespace cs
@@ -39,7 +39,7 @@ class LibraryPseudocounts : public Pseudocounts<Alphabet_T>
                                  const Admixture& pca,
                                  Profile<Alphabet_T>* profile) const;
     // Adds context-specific pseudocounts to alignment derived profile.
-    virtual void add_to_profile(const Admixture& pca, CountsProfile<Alphabet_T>* p) const;
+    virtual void add_to_profile(const Admixture& pca, CountProfile<Alphabet_T>* p) const;
 
   private:
     // Disallow copy and assign
@@ -111,7 +111,7 @@ void LibraryPseudocounts<Alphabet_T>::add_to_sequence(const Sequence<Alphabet_T>
 }
 
 template<class Alphabet_T>
-void LibraryPseudocounts<Alphabet_T>::add_to_profile(const Admixture& pca, CountsProfile<Alphabet_T>* profile) const
+void LibraryPseudocounts<Alphabet_T>::add_to_profile(const Admixture& pca, CountProfile<Alphabet_T>* profile) const
 {
     assert(!profile->has_counts());
     assert(!profile->logspace());
@@ -126,7 +126,7 @@ void LibraryPseudocounts<Alphabet_T>::add_to_profile(const Admixture& pca, Count
 
     std::valarray<float> prob(0.0f, num_profiles);  // profile probabilities P(p_k|X_i) at position i
     std::valarray<float> pc(0.0f, alphabet_size);   // pseudocount vector P(a|X_i) at position i
-    CountsProfile<Alphabet_T>& p = *profile;        // output profile with pseudocounts
+    CountProfile<Alphabet_T>& p = *profile;        // output profile with pseudocounts
 
     for (int i = 0; i < length; ++i) {
         // calculate profile probabilities P(p_k|X_i)

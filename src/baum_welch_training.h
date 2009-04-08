@@ -13,7 +13,7 @@
 #include <iostream>
 #include <vector>
 
-#include "context_profile.h"
+#include "context_profile-inl.h"
 #include "emitter.h"
 #include "expectation_maximization.h"
 #include "forward_backward_algorithm.h"
@@ -103,7 +103,7 @@ class BaumWelchTraining : public ExpectationMaximization<Alphabet_T, Subject_T>
     // Adds the contribution of a subject's forward-backward matrices to transition counts.
     void add_contribution_to_transitions(const ForwardBackwardMatrices& m);
     // Adds the contribution of a count profile's forward-backward matrices to emission counts.
-    void add_contribution_to_emissions(const ForwardBackwardMatrices& m, const CountsProfile<Alphabet_T>& c);
+    void add_contribution_to_emissions(const ForwardBackwardMatrices& m, const CountProfile<Alphabet_T>& c);
     // Adds the contribution of a sequence's forward-backward matrices to emission counts.
     void add_contribution_to_emissions(const ForwardBackwardMatrices& m, const Sequence<Alphabet_T>& s);
     // Updates global sufficient statistics with sufficient statistics calculated on current block.
@@ -300,7 +300,7 @@ inline void BaumWelchTraining<Alphabet_T, Subject_T>::add_contribution_to_transi
 template< class Alphabet_T,
           template<class Alphabet_U> class Subject_T >
 inline void BaumWelchTraining<Alphabet_T, Subject_T>::add_contribution_to_emissions(const ForwardBackwardMatrices& m,
-                                                                                    const CountsProfile<Alphabet_T>& c)
+                                                                                    const CountProfile<Alphabet_T>& c)
 {
     const int slen       = c.length();
     const int num_states = hmm_.num_states();

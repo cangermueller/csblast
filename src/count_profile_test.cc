@@ -11,7 +11,7 @@
 #include "amino_acid.h"
 #include "matrix_pseudocounts.h"
 #include "nucleotide.h"
-#include "counts_profile.h"
+#include "count_profile-inl.h"
 #include "shared_ptr.h"
 #include "nucleotide_matrix.h"
 
@@ -20,10 +20,10 @@ namespace cs
 
 const float DELTA = 0.01f;
 
-TEST(CountsProfileTest, ConstructionFromInputStream)
+TEST(CountProfileTest, ConstructionFromInputStream)
 {
     FILE* fin = fopen("../data/nt_counts_profile.prf", "r");
-    CountsProfile<Nucleotide> profile(fin);
+    CountProfile<Nucleotide> profile(fin);
     fclose(fin);
 
     EXPECT_EQ(4, profile.num_cols());
@@ -34,13 +34,13 @@ TEST(CountsProfileTest, ConstructionFromInputStream)
     EXPECT_FALSE(profile.has_counts());
 }
 
-TEST(CountsProfileTest, ConstructionFromAlignment)
+TEST(CountProfileTest, ConstructionFromAlignment)
 {
     FILE* fin = fopen("../data/nt_alignment7.fas", "r");
     Alignment<Nucleotide> alignment(fin, Alignment<Nucleotide>::FASTA);
     fclose(fin);
 
-    CountsProfile<Nucleotide> profile(alignment, true);
+    CountProfile<Nucleotide> profile(alignment, true);
 
     EXPECT_FLOAT_EQ(1.0f, profile.neff(3));
     EXPECT_FLOAT_EQ(0.0f, profile[3][Nucleotide::instance().ctoi('A')]);
@@ -49,13 +49,13 @@ TEST(CountsProfileTest, ConstructionFromAlignment)
     EXPECT_FLOAT_EQ(1.0f, profile[3][Nucleotide::instance().ctoi('T')]);
 }
 
-TEST(CountsProfileTest, ConversionToCounts)
+TEST(CountProfileTest, ConversionToCounts)
 {
     FILE* fin = fopen("../data/nt_alignment8.fas", "r");
     Alignment<Nucleotide> alignment(fin, Alignment<Nucleotide>::FASTA);
     fclose(fin);
 
-    CountsProfile<Nucleotide> profile(alignment, true);
+    CountProfile<Nucleotide> profile(alignment, true);
     ASSERT_EQ(0.25f, profile[3][Nucleotide::instance().ctoi('A')]);
 
     profile.convert_to_counts();
@@ -66,38 +66,38 @@ TEST(CountsProfileTest, ConversionToCounts)
                                                      profile.col_end(3), 0.0f));
 }
 
-TEST(CountsProfileTest, AlignmentBpdS)
+TEST(CountProfileTest, AlignmentBpdS)
 {
     FILE* fin = fopen("../data/BpdS.fas", "r");
     Alignment<AminoAcid> alignment(fin, Alignment<AminoAcid>::FASTA);
     fclose(fin);
 
     alignment.assign_match_columns_by_gap_rule();
-    CountsProfile<AminoAcid> profile(alignment, true);
+    CountProfile<AminoAcid> profile(alignment, true);
 
     EXPECT_NEAR(0.0f, profile[10][AminoAcid::instance().ctoi('H')], DELTA);
     EXPECT_FLOAT_EQ(1.0f, std::accumulate(profile.col_begin(122), profile.col_end(122), 0.0f));
 }
 
-TEST(CountsProfileTest, Alignment1Q7L)
+TEST(CountProfileTest, Alignment1Q7L)
 {
     FILE* fin = fopen("../data/1Q7L.fas", "r");
     Alignment<AminoAcid> alignment(fin, Alignment<AminoAcid>::FASTA);
     fclose(fin);
 
     alignment.assign_match_columns_by_gap_rule();
-    CountsProfile<AminoAcid> profile(alignment, true);
+    CountProfile<AminoAcid> profile(alignment, true);
 
     EXPECT_NEAR(0.05f, profile[10][AminoAcid::instance().ctoi('G')], DELTA);
 }
 
-TEST(CountsProfileTest, AlignmentCelegansRefGene)
+TEST(CountProfileTest, AlignmentCelegansRefGene)
 {
     FILE* fin = fopen("../data/ce_refgene.fas", "r");
     Alignment<Nucleotide> alignment(fin, Alignment<Nucleotide>::FASTA);
     fclose(fin);
 
-    CountsProfile<Nucleotide> profile(alignment, false);
+    CountProfile<Nucleotide> profile(alignment, false);
 
     EXPECT_FLOAT_EQ(1.0f, profile[1][Nucleotide::instance().ctoi('T')]);
 
@@ -106,13 +106,13 @@ TEST(CountsProfileTest, AlignmentCelegansRefGene)
     EXPECT_FLOAT_EQ(0.0f, profile[1][Nucleotide::instance().ctoi('T')]);
 }
 
-TEST(CountsProfileTest, AddMatrixPseudocountsToProfile)
+TEST(CountProfileTest, AddMatrixPseudocountsToProfile)
 {
     FILE* fin = fopen("../data/ce_refgene.fas", "r");
     Alignment<Nucleotide> alignment(fin, Alignment<Nucleotide>::FASTA);
     fclose(fin);
 
-    CountsProfile<Nucleotide> profile(alignment, false);
+    CountProfile<Nucleotide> profile(alignment, false);
 
     ASSERT_FLOAT_EQ(1.0f, profile[1][Nucleotide::instance().ctoi('T')]);
 
@@ -123,13 +123,13 @@ TEST(CountsProfileTest, AddMatrixPseudocountsToProfile)
     EXPECT_NEAR(0.25f, profile[0][Nucleotide::instance().ctoi('T')], DELTA);
 }
 
-TEST(CountsProfileTest, AddMatrixPseudocountsToLogProfile)
+TEST(CountProfileTest, AddMatrixPseudocountsToLogProfile)
 {
     FILE* fin = fopen("../data/ce_refgene.fas", "r");
     Alignment<Nucleotide> alignment(fin, Alignment<Nucleotide>::FASTA);
     fclose(fin);
 
-    CountsProfile<Nucleotide> profile(alignment, false);
+    CountProfile<Nucleotide> profile(alignment, false);
     profile.transform_to_logspace();
 
     ASSERT_FLOAT_EQ(0.0f, profile[1][Nucleotide::instance().ctoi('T')]);
