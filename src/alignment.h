@@ -49,7 +49,7 @@ class Alignment {
   // stream.
   Alignment(FILE* fin, Format format);
 
-  ~Alignment() {}
+  ~Alignment() { }
 
   // Reads all available alignments from the input stream and returns them in a
   // vector.
@@ -218,6 +218,8 @@ std::vector<float> position_specific_weights_and_diversity(
 template<class Alphabet>
 typename Alignment<Alphabet>::Format alignment_format_from_string(
     const std::string& s);
+
+
 
 // Converts a character to uppercase and '.' to '-'.
 inline char to_match_chr(char c) {

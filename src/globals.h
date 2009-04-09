@@ -26,6 +26,11 @@ const int kFloatSize    = sizeof(float);   // NOLINT
 const int kDoubleSize   = sizeof(double);  // NOLINT
 const int kPointerSize  = sizeof(void*);   // NOLINT
 
+#ifdef _WIN32
+const char kDirSep = '\\';
+#else
+const char kDirSep = '/';
+#endif
 
 // A macro to disallow the evil copy constructor and operator= functions
 // This should be used in the private: declarations for a class

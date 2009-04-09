@@ -7,8 +7,6 @@
 #include <string>
 #include <cstdarg>
 
-namespace cs {
-
 // This is a simple but useful class for construction of standard exceptions
 // The constructor is implemented to take variadic arguments
 // in the style of printf for simple message construction
@@ -46,7 +44,5 @@ class Exception : public std::exception {
   std::string msg;
   int c;
 };
-
-}  // namespace cs
 
 #endif  // SRC_EXCEPTION_H_

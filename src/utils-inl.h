@@ -17,6 +17,8 @@
 #include <string>
 #include <vector>
 
+#include "globals.h"
+
 namespace cs {
 
 // Returns the base 2 logarithm of x.
@@ -109,13 +111,7 @@ inline std::string get_file_ext(const std::string& s) {
 // Returns the last component of the filename. If ext is false
 // the file extension is removed.
 inline std::string get_file_basename(const std::string& s, bool ext = true) {
-  char sep = '/';
-
-#ifdef _WIN32
-  sep = '\\';
-#endif
-
-  size_t i = s.rfind(sep, s.length());
+  size_t i = s.rfind(kDirSep, s.length());
   if (i != std::string::npos) {
     if (ext) return(s.substr(i+1, s.length() - i));
 
@@ -136,13 +132,7 @@ inline std::string get_file_basename(const std::string& s, bool ext = true) {
 
 // Returns all components of the filename except the last one.
 inline std::string get_file_dirname(const std::string& s) {
-  char sep = '/';
-
-#ifdef _WIN32
-  sep = '\\';
-#endif
-
-  size_t i = s.rfind(sep, s.length( ));
+  size_t i = s.rfind(kDirSep, s.length( ));
   if (i != std::string::npos) {
     return(s.substr(0, i));
   }
