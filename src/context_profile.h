@@ -60,7 +60,7 @@ class ContextProfile : public Profile<Alphabet> {
  protected:
   // Needed to access names in templatized Profile base class
   using Profile<Alphabet>::data_;
-  using Profile<Alphabet>::BUFFER_SIZE;
+  using Profile<Alphabet>::kBufferSize;
 
   // Reads and initializes serialized scalar data members from stream.
   virtual void read_header(std::istream& in);
@@ -80,18 +80,18 @@ class ContextProfile : public Profile<Alphabet> {
 
  private:
   // Class identifier
-  static const char* CLASS_ID;
+  static const char* kClassID;
 
   // Return serialization class identity.
   virtual const std::string class_identity() const {
     static std::string id("ContextProfile");
     return id;
   }
-  virtual const char* class_id() const { return CLASS_ID; }
+  virtual const char* class_id() const { return kClassID; }
   // Checks if profile has odd number of columns.
   void check();
 };  // ContextProfile
 
-}  // cs
+}  // namespace cs
 
 #endif  // SRC_CONTEXT_PROFILE_H_

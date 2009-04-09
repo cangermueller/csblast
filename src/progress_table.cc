@@ -39,4 +39,4 @@ void ProgressTable::print_progress(int work)
     work_done_ += work;
 }
 
-};  // cs
+};  // namespace cs

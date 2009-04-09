@@ -52,6 +52,6 @@ class ProgressTable
     int work_total_;
 };
 
-}  // cs
+}  // namespace cs
 
 #endif

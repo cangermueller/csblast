@@ -1,39 +1,37 @@
-#ifndef CS_NUCLEOTIDE_H
-#define CS_NUCLEOTIDE_H
-/***************************************************************************
- *   Copyright (C) 2008 by Andreas Biegert                                 *
- *   andreas.biegert@googlemail.com                                        *
- ***************************************************************************/
+// Copyright 2009, Andreas Biegert
 
-// DESCRIPTION:
-// Singleton class that encapsulates meta information about nucleic acids
+#ifndef SRC_NUCLEOTIDE_H_
+#define SRC_NUCLEOTIDE_H_
 
 #include "alphabet.h"
+#include "globals.h"
 
-namespace cs
-{
+namespace cs {
 
-class Nucleotide : public Alphabet
-{
-  public:
-    static const Nucleotide& instance();
+// Singleton class that encapsulates meta information about nucleic acids.
+class Nucleotide : public Alphabet {
+ public:
 
-  protected:
-    // Gets ctoi conversion array from derived class.
-    virtual const char* get_itoc() const { return nucleotides_; }
+  // Returns an instance of the nucleotide alphabet singleton.
+  static const Nucleotide& instance() {
+    static Nucleotide inst;
+    return inst;
+  }
 
-  private:
-    // IUPAC nucleotide code
-    static const char nucleotides_[];
+ protected:
+  // Gets ctoi conversion array from derived class.
+  virtual const char* get_itoc() const { return nucleotides_; }
 
-    Nucleotide();
-    virtual ~Nucleotide() {}
+ private:
+  // IUPAC nucleotide code
+  static const char nucleotides_[];
 
-    // Disallow copy and assign
-    Nucleotide(const Nucleotide& );
-    Nucleotide& operator =(const Nucleotide& other);
+  Nucleotide() : Alphabet(4, 'N') { init(); }
+  virtual ~Nucleotide() { }
+
+  DISALLOW_COPY_AND_ASSIGN(Nucleotide);
 };
 
-}  // cs
+}  // namespace cs
 
-#endif
+#endif  // SRC_NUCLEOTIDE_H_

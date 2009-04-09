@@ -218,6 +218,6 @@ inline bool ExpectationMaximization<Alphabet_T, Subject_T>::terminate() const
         return fabs(log_likelihood_change()) <= params().log_likelihood_change;
 }
 
-}  // cs
+}  // namespace cs
 
 #endif

@@ -186,6 +186,6 @@ void sample_profiles(const Params& params,
     }
 }
 
-}  // cs
+}  // namespace cs
 
 #endif

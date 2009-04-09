@@ -8,7 +8,7 @@
 namespace cs {
 
 template<class Alphabet>
-const char* Profile<Alphabet>::CLASS_ID = "Profile";
+const char* Profile<Alphabet>::kClassID = "Profile";
 
 template<class Alphabet>
 inline Profile<Alphabet>::Profile()
@@ -112,8 +112,8 @@ void Profile<Alphabet>::read(FILE* fin) {
   LOG(DEBUG1) << "Reading profile from stream ...";
 
   // Check if stream actually contains a serialized profile
-  char buffer[BUFFER_SIZE];
-  while (fgetline(buffer, BUFFER_SIZE, fin))
+  char buffer[kBufferSize];
+  while (fgetline(buffer, kBufferSize, fin))
     if (strscn(buffer)) break;
   if (!strstr(buffer, class_id()))
     throw Exception("Bad format: profile does not start with '%s'!",
@@ -155,12 +155,12 @@ void Profile<Alphabet>::read_header(std::istream& in) {
 
 template<class Alphabet>
 void Profile<Alphabet>::read_header(FILE* fin) {
-  char buffer[BUFFER_SIZE];
+  char buffer[kBufferSize];
   const char* ptr = buffer;
 
   // Read num_cols
   int num_cols = 0;
-  if (fgetline(buffer, BUFFER_SIZE, fin) && strstr(buffer, "num_cols")) {
+  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "num_cols")) {
     ptr = buffer;
     num_cols = strtoi(ptr);
   } else {
@@ -168,7 +168,7 @@ void Profile<Alphabet>::read_header(FILE* fin) {
   }
   // Read alphabet_size
   int alphabet_size = 0;
-  if (fgetline(buffer, BUFFER_SIZE, fin) && strstr(buffer, "alphabet_size")) {
+  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "alphabet_size")) {
     ptr = buffer;
     alphabet_size = strtoi(ptr);
   } else {
@@ -178,7 +178,7 @@ void Profile<Alphabet>::read_header(FILE* fin) {
     throw Exception("Bad format: profile alphabet_size should be %i but is %i!",
                     Alphabet::instance().size(), alphabet_size);
   // Read logspace
-  if (fgetline(buffer, BUFFER_SIZE, fin) && strstr(buffer, "logspace")) {
+  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "logspace")) {
     ptr = buffer;
     logspace_ = strtoi(ptr) == 1;
   } else {
@@ -204,7 +204,7 @@ void Profile<Alphabet>::read_body(std::istream& in) {
       float log_p =
         tokens[a+1][0] == '*' ? INT_MAX : atoi(tokens[a+1].c_str());
       data_[i][a] =
-        logspace_ ? -log_p / SCALE_FACTOR : pow(2.0, -log_p / SCALE_FACTOR);
+        logspace_ ? -log_p / kScaleFactor : pow(2.0, -log_p / kScaleFactor);
     }
     tokens.clear();
   }
@@ -216,20 +216,20 @@ void Profile<Alphabet>::read_body(std::istream& in) {
 template<class Alphabet>
 void Profile<Alphabet>::read_body(FILE* fin) {
   const int alph_size = alphabet_size();
-  char buffer[BUFFER_SIZE];
+  char buffer[kBufferSize];
   const char* ptr = buffer;
   int i = 0;
 
-  fgetline(buffer, BUFFER_SIZE, fin);  // skip alphabet description line
-  while (fgetline(buffer, BUFFER_SIZE, fin)
+  fgetline(buffer, kBufferSize, fin);  // skip alphabet description line
+  while (fgetline(buffer, kBufferSize, fin)
          && buffer[0] != '/' && buffer[1] != '/') {
     ptr = buffer;
     i = strtoi(ptr) - 1;
     for (int a = 0; a < alph_size; ++a) {
       if (logspace_)
-        data_[i][a] = static_cast<float>(-strtoi_ast(ptr)) / LOG_SCALE;
+        data_[i][a] = static_cast<float>(-strtoi_ast(ptr)) / kLogScale;
       else
-        data_[i][a] = pow(2.0, static_cast<float>(-strtoi_ast(ptr)) / LOG_SCALE);
+        data_[i][a] = pow(2.0, static_cast<float>(-strtoi_ast(ptr)) / kLogScale);
     }
   }
   if (i != num_cols() - 1)
@@ -268,7 +268,7 @@ void Profile<Alphabet>::write_body(std::ostream& out) const {
       if (-logval == std::numeric_limits<float>::infinity())
         out << "\t*";
       else
-        out << "\t" << -iround(logval * SCALE_FACTOR);
+        out << "\t" << -iround(logval * kScaleFactor);
     }
     out << std::endl;
   }
@@ -336,6 +336,6 @@ bool normalize(Profile<Alphabet>* p, float value) {
   return rv;
 }
 
-}  // cs
+}  // namespace cs
 
 #endif  // SRC_PROFILE_INL_H_

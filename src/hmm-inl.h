@@ -245,7 +245,7 @@ void HMM<Alphabet>::read(std::istream& in) {
     set_transition( atoi(tokens[0].c_str()),
                     atoi(tokens[1].c_str()),
                     transitions_logspace() ?
-                    -log_p / SCALE_FACTOR : pow(2.0, -log_p / SCALE_FACTOR) );
+                    -log_p / kScaleFactor : pow(2.0, -log_p / kScaleFactor) );
     tokens.clear();
   }
   if (num_transitions() != ntr)
@@ -258,17 +258,17 @@ template<class Alphabet>
 void HMM<Alphabet>::read(FILE* fin) {
   LOG(DEBUG1) << "Reading HMM from stream ...";
 
-  char buffer[BUFFER_SIZE];
+  char buffer[kBufferSize];
   const char* ptr = buffer;
 
   // Check if stream actually contains a serialized HMM
-  while (fgetline(buffer, BUFFER_SIZE, fin))
+  while (fgetline(buffer, kBufferSize, fin))
     if (strscn(buffer)) break;
   if (!strstr(buffer, "HMM"))
     throw Exception("HMM does not start with 'HMM' keyword!");
 
   // Read number of states
-  if (fgetline(buffer, BUFFER_SIZE, fin) && strstr(buffer, "num_states")) {
+  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "num_states")) {
     ptr = buffer;
     num_states_ = strtoi(ptr);
   } else {
@@ -276,35 +276,35 @@ void HMM<Alphabet>::read(FILE* fin) {
   }
   // Read number of transitions
   int ntr = 0;
-  if (fgetline(buffer, BUFFER_SIZE, fin) && strstr(buffer, "num_transitions")) {
+  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "num_transitions")) {
     ptr = buffer;
     ntr = strtoi(ptr);
   } else {
     throw Exception("HMM does not contain 'num_transitions' record!");
   }
   // Read number of columns
-  if (fgetline(buffer, BUFFER_SIZE, fin) && strstr(buffer, "num_cols")) {
+  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "num_cols")) {
     ptr = buffer;
     num_cols_ = strtoi(ptr);
   } else {
     throw Exception("HMM does not contain 'num_cols' record!");
   }
   // Read number of iterations
-  if (fgetline(buffer, BUFFER_SIZE, fin) && strstr(buffer, "iterations")) {
+  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "iterations")) {
     ptr = buffer;
     iterations_ = strtoi(ptr);
   } else {
     throw Exception("HMM does not contain 'num_cols' record!");
   }
   // Read transitions logspace
-  if (fgetline(buffer, BUFFER_SIZE, fin) && strstr(buffer, "transitions_logspace")) {
+  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "transitions_logspace")) {
     ptr = buffer;
     transitions_logspace_ = strtoi(ptr) == 1;
   } else {
     throw Exception("hMM does not contain 'transitions_logspace' record!");
   }
   // Read states logspace
-  if (fgetline(buffer, BUFFER_SIZE, fin) && strstr(buffer, "states_logspace")) {
+  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "states_logspace")) {
     ptr = buffer;
     states_logspace_ = strtoi(ptr) == 1;
   } else {
@@ -325,16 +325,16 @@ void HMM<Alphabet>::read(FILE* fin) {
   // Read HMM transitions
   int k, l;
   float tr_prob;
-  fgetline(buffer, BUFFER_SIZE, fin);  // skip description line
-  while (fgetline(buffer, BUFFER_SIZE, fin)
+  fgetline(buffer, kBufferSize, fin);  // skip description line
+  while (fgetline(buffer, kBufferSize, fin)
          && buffer[0] != '/' && buffer[1] != '/') {
     ptr = buffer;
     k = strtoi(ptr);
     l = strtoi(ptr);
     if (transitions_logspace())
-      tr_prob = static_cast<float>(-strtoi_ast(ptr)) / LOG_SCALE;
+      tr_prob = static_cast<float>(-strtoi_ast(ptr)) / kLogScale;
     else
-      tr_prob = pow(2.0, static_cast<float>(-strtoi_ast(ptr)) / LOG_SCALE);
+      tr_prob = pow(2.0, static_cast<float>(-strtoi_ast(ptr)) / kLogScale);
     set_transition(k, l, tr_prob);
   }
   if (num_transitions() != ntr)
@@ -369,7 +369,7 @@ void HMM<Alphabet>::write(std::ostream& out) const {
     if (-logval == std::numeric_limits<float>::infinity())
       out << "*" << std::endl;
     else
-      out << -iround(logval * SCALE_FACTOR) << std::endl;
+      out << -iround(logval * kScaleFactor) << std::endl;
   }
   out << "//" << std::endl;
 }
@@ -448,6 +448,7 @@ void sparsify(HMM<Alphabet>& hmm, float threshold) {
   if (logspace) hmm.transform_transitions_to_logspace();
 }
 
+
 template<class Alphabet>
 void SamplingStateInitializer<Alphabet>::init(HMM<Alphabet>& hmm) const {
   LOG(DEBUG) << "Initializing HMM with " << hmm.num_states()
@@ -495,10 +496,11 @@ void SamplingStateInitializer<Alphabet>::init(HMM<Alphabet>& hmm) const {
     throw Exception("Could not fully initialize all %i HMM states. "
                     "Maybe too few training profiles provided?",
                     hmm.num_states());
+
   LOG(DEBUG) << "HMM after state initialization:";
   LOG(DEBUG) << hmm;
 }
 
-}  // cs
+}  // namespace cs
 
 #endif  // SRC_HMM_INL_H_

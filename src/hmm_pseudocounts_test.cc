@@ -53,6 +53,6 @@ TEST(HMMPseudocountsTest, AddProfileSequence)
     EXPECT_NEAR(0.7720f, profile[56][AminoAcid::instance().ctoi('C')], DELTA);
 }
 
-}  // cs
+}  // namespace cs
 
 

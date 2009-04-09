@@ -19,7 +19,7 @@
 #include "log.h"
 #include "matrix.h"
 #include "profile-inl.h"
-#include "profile_library.h"
+#include "profile_library-inl.h"
 #include "pseudocounts.h"
 #include "sequence-inl.h"
 #include "utils.h"
@@ -155,6 +155,6 @@ void LibraryPseudocounts<Alphabet_T>::add_to_profile(const Admixture& pca, Count
     LOG(DEBUG2) << *profile;
 }
 
-}  // cs
+}  // namespace cs
 
 #endif

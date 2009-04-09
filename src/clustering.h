@@ -18,7 +18,7 @@
 #include "emitter.h"
 #include "expectation_maximization.h"
 #include "log.h"
-#include "profile_library.h"
+#include "profile_library-inl.h"
 #include "progress_table.h"
 #include "shared_ptr.h"
 #include "utils.h"
@@ -353,6 +353,6 @@ void ClusteringProgressTable<Alphabet_T, Subject_T>::print_row_end()
     out_.flush();
 }
 
-}  // cs
+}  // namespace cs
 
 #endif

@@ -140,4 +140,4 @@ TEST(AlignmentTest, RemoveInsertColumns)
     ASSERT_EQ('G', alignment.chr(0,4));
 }
 
-}  // cs
+}  // namespace cs

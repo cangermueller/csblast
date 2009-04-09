@@ -91,4 +91,4 @@ TEST(DISABLED_SequenceTest, ReadSwissprotDatabaseCStyle)
     fclose(fin);
 }
 
-}  // cs
+}  // namespace cs

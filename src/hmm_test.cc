@@ -189,4 +189,4 @@ TEST(HMMTestInitialization, RandomSampleInitializer)
     EXPECT_EQ(5, hmm[0].num_cols());
 }
 
-}  // cs
+}  // namespace cs

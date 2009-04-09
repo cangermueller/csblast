@@ -138,6 +138,6 @@ void csbuild(const Params& params, std::ostream& out = std::cout)
     fin.close();
 }
 
-}  // cs
+}  // namespace cs
 
 #endif

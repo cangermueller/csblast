@@ -86,4 +86,4 @@ TEST(ProfileTest, Lin2LogSpace)
     EXPECT_FLOAT_EQ(0.0f, profile[0][0]);
 }
 
-}  // cs
+}  // namespace cs

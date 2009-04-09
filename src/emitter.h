@@ -163,6 +163,6 @@ inline float Emitter<Alphabet_T>::sum_weights() const
     return params_.ignore_context ? weights_[center_] : weights_.sum();
 }
 
-}  // cs
+}  // namespace cs
 
 #endif

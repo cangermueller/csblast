@@ -234,6 +234,6 @@ inline const char* strscn(const char* str)
     return (*ptr == '\0') ? NULL : ptr;
 }
 
-}  // cs
+}  // namespace cs
 
 #endif

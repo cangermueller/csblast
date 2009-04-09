@@ -33,7 +33,7 @@ template<class Alphabet>
 class StateInitializer {
  public:
   StateInitializer() {}
-  virtual ~StateInitializer() {};
+  virtual ~StateInitializer() { }
   virtual void init(HMM<Alphabet>& hmm) const = 0;
 };
 
@@ -41,7 +41,7 @@ template<class Alphabet>
 class TransitionInitializer {
  public:
   TransitionInitializer() {}
-  virtual ~TransitionInitializer() {};
+  virtual ~TransitionInitializer() { }
   virtual void init(HMM<Alphabet>& hmm) const = 0;
 };
 
@@ -164,7 +164,10 @@ class HMM {
   // Transforms state profiles to linspace.
   void transform_states_to_linspace();
   // Increments the training iteration counter.
-  HMM& operator++() { ++iterations_; return *this; }
+  HMM& operator++() {
+    ++iterations_;
+    return *this;
+  }
 
   // Prints HMM in human-readable format for debugging.
   friend std::ostream& operator<< (std::ostream& out, const HMM& hmm) {
@@ -174,10 +177,10 @@ class HMM {
 
  private:
   // Scaling factor for serialization of profile log values
-  static const int SCALE_FACTOR = 1000;
-  static const int LOG_SCALE = 1000;
+  static const int kScaleFactor = 1000;
+  static const int kLogScale = 1000;
   // Buffer size for reading
-  static const int BUFFER_SIZE = 1024;
+  static const int kBufferSize = 1024;
 
   // Prints the HMM in human-readable format to output stream.
   void print(std::ostream& out) const;
@@ -260,11 +263,10 @@ template<class Alphabet>
 class HomogeneousTransitionInitializer : public TransitionInitializer<Alphabet>
 {
  public:
-  HomogeneousTransitionInitializer() {}
-  virtual ~HomogeneousTransitionInitializer() {};
+  HomogeneousTransitionInitializer() { }
+  virtual ~HomogeneousTransitionInitializer() { }
 
-  virtual void init(HMM<Alphabet>& hmm) const
-  {
+  virtual void init(HMM<Alphabet>& hmm) const {
     float prob = 1.0f / hmm.num_states();
     for (int k = 0; k < hmm.num_states(); ++k) {
       for (int l = 0; l < hmm.num_states(); ++l) {
@@ -278,11 +280,10 @@ template<class Alphabet>
 class RandomTransitionInitializer : public TransitionInitializer<Alphabet>
 {
  public:
-  RandomTransitionInitializer() {}
-  virtual ~RandomTransitionInitializer() {};
+  RandomTransitionInitializer() { }
+  virtual ~RandomTransitionInitializer() { }
 
-  virtual void init(HMM<Alphabet>& hmm) const
-  {
+  virtual void init(HMM<Alphabet>& hmm) const {
     srand(static_cast<unsigned int>(clock()));
     for (int k = 0; k < hmm.num_states(); ++k)
       for (int l = 0; l < hmm.num_states(); ++l)
@@ -292,6 +293,6 @@ class RandomTransitionInitializer : public TransitionInitializer<Alphabet>
   }
 };
 
-}  // cs
+}  // namespace cs
 
 #endif  // SRC_HMM_H_

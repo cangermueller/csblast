@@ -90,4 +90,4 @@ TEST_F(ForwardBackwardAlgorithmTest, 1Q7L)
     forward_backward_algorithm(hmm, profile, emitter, &mat);
 }
 
-}  // cs
+}  // namespace cs

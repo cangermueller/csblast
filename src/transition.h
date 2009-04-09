@@ -36,6 +36,6 @@ struct AnchoredTransition {
   float probability;
 };  // AnchoredTransition
 
-}  // cs
+}  // namespace cs
 
 #endif  // SRC_TRANSITION_H_

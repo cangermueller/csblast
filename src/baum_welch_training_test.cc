@@ -127,4 +127,4 @@ TEST_F(BaumWelchTrainingTest, ZincFingerAlisOnlineTraining)
     EXPECT_NEAR(0.9948, hmm_[5][0][AminoAcid::instance().ctoi('C')], DELTA);
 }
 
-}  // cs
+}  // namespace cs

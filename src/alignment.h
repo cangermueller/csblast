@@ -11,6 +11,7 @@
 #include <valarray>
 #include <vector>
 
+#include "globals.h"
 #include "log.h"
 #include "matrix.h"
 #include "exception.h"
@@ -133,7 +134,7 @@ class Alignment {
 
  private:
   // Buffer size for reading
-  static const int BUFFER_SIZE = 32768;
+  static const int kBufferSize = 32 * KB;
 
   // Disallow copy and assign
   Alignment(const Alignment&);
@@ -238,6 +239,6 @@ inline char insert_chr(char c) {
   return (isalpha(c) && islower(c)) || c == '.';
 }
 
-}  // cs
+}  // namespace cs
 
 #endif  // SRC_ALIGNMENT_H_

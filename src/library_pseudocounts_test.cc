@@ -9,7 +9,7 @@
 #include "emitter.h"
 #include "log.h"
 #include "matrix_pseudocounts.h"
-#include "profile_library.h"
+#include "profile_library-inl.h"
 #include "library_pseudocounts.h"
 
 namespace cs
@@ -60,6 +60,6 @@ TEST(LibraryPseudocountsTest, AddProfileSequence)
     EXPECT_NEAR(0.81f, profile[5][AminoAcid::instance().ctoi('C')], DELTA);
 }
 
-}  // cs
+}  // namespace cs
 
 

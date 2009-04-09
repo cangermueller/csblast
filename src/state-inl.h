@@ -10,7 +10,7 @@
 namespace cs {
 
 template<class Alphabet>
-const char* State<Alphabet>::CLASS_ID = "State";
+const char* State<Alphabet>::kClassID = "State";
 
 template<class Alphabet>
 inline State<Alphabet>::State(std::istream& in)
@@ -80,9 +80,9 @@ void State<Alphabet>::read_header(FILE* fin) {
   ContextProfile<Alphabet>::read_header(fin);
 
   // Read HMM size
-  char buffer[BUFFER_SIZE];
+  char buffer[kBufferSize];
   const char* ptr = buffer;
-  if (fgetline(buffer, BUFFER_SIZE, fin) && strstr(buffer, "num_states")) {
+  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "num_states")) {
     ptr = buffer;
     num_states_ = strtoi(ptr);
   } else {
@@ -106,6 +106,6 @@ void State<Alphabet>::write_header(FILE* fout) const {
   fprintf(fout, "num_states\t%i\n", num_states_);
 }
 
-}  // cs
+}  // namespace cs
 
 #endif  // SRC_STATE_INL_H_

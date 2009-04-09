@@ -142,4 +142,4 @@ TEST(CountProfileTest, AddMatrixPseudocountsToLogProfile)
     EXPECT_NEAR(0.25f, profile[0][Nucleotide::instance().ctoi('T')], DELTA);
 }
 
-};  // cs
+};  // namespace cs

@@ -13,7 +13,7 @@
 #include "log.h"
 #include "matrix_pseudocounts.h"
 #include "profile-inl.h"
-#include "profile_library.h"
+#include "profile_library-inl.h"
 #include "shared_ptr.h"
 #include "utils.h"
 
@@ -101,4 +101,4 @@ TEST_F(ClusteringTest, ZincFingerAlisOnlineClustering)
     EXPECT_NEAR(0.4975, lib_[5][0][AminoAcid::instance().ctoi('C')], DELTA);
 }
 
-}  // cs
+}  // namespace cs

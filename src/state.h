@@ -86,7 +86,7 @@ class State : public ContextProfile<Alphabet> {
   friend class HMM<Alphabet>;
 
   // Needed to access names in templatized Profile base class
-  using ContextProfile<Alphabet>::BUFFER_SIZE;
+  using ContextProfile<Alphabet>::kBufferSize;
   using ContextProfile<Alphabet>::read_header;
   using ContextProfile<Alphabet>::read_body;
   using ContextProfile<Alphabet>::write_header;
@@ -103,14 +103,14 @@ class State : public ContextProfile<Alphabet> {
 
  private:
   // Class identifier
-  static const char* CLASS_ID;
+  static const char* kClassID;
 
   // Returns serialization class identity.
   virtual const std::string class_identity() const {
     static std::string id("State");
     return id;
   }
-  virtual const char* class_id() const { return CLASS_ID; }
+  virtual const char* class_id() const { return kClassID; }
 
   // Size of HMM to which the state belongs.
   int num_states_;
@@ -150,6 +150,6 @@ struct NumOutTransitionsCompare : public std::binary_function< State<Alphabet>,
   }
 };
 
-}  // cs
+}  // namespace cs
 
 #endif  // SRC_STATE_H_

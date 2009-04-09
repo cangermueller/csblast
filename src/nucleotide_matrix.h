@@ -1,30 +1,27 @@
-#ifndef CS_NUCLEOTIDE_MATRIX_H
-#define CS_NUCLEOTIDE_MATRIX_H
-/***************************************************************************
- *   Copyright (C) 2008 by Andreas Biegert                                 *
- *   andreas.biegert@googlemail.com                                        *
- ***************************************************************************/
+// Copyright 2009, Andreas Biegert
 
-// DESCRIPTION:
-// BLOSUM family of substitution matrices for  class for substitution matrix classes.
+#ifndef SRC_NUCLEOTIDE_MATRIX_H_
+#define SRC_NUCLEOTIDE_MATRIX_H_
 
 #include "nucleotide.h"
-#include "substitution_matrix.h"
+#include "substitution_matrix-inl.h"
 
-namespace cs
-{
+namespace cs {
 
-class NucleotideMatrix : public SubstitutionMatrix<Nucleotide>
-{
-  public:
-    NucleotideMatrix(float match, float mismatch);
-    virtual ~NucleotideMatrix() {}
+// BLOSUM family of substitution matrices for  class for substitution matrix
+// classes.
+class NucleotideMatrix : public SubstitutionMatrix<Nucleotide> {
+ public:
+  NucleotideMatrix(float match, float mismatch) {
+    init(match, mismatch);
+  }
+  virtual ~NucleotideMatrix() { }
 
-  private:
-    // Initializes all matrix data members.
-    virtual void init(float match, float mismatch);
+ private:
+  // Initializes all matrix data members.
+  virtual void init(float match, float mismatch);
 };
 
-}  // cs
+}  // namespace cs
 
-#endif
+#endif  // SRC_NUCLEOTIDE_MATRIX_H_

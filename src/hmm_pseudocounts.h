@@ -150,6 +150,6 @@ void HMMPseudocounts<Alphabet_T>::add_to_profile(const Admixture& pca, CountProf
     LOG(DEBUG2) << *profile;
 }
 
-}  // cs
+}  // namespace cs
 
 #endif

@@ -14,7 +14,7 @@
 #include "profile-inl.h"
 #include "pseudocounts.h"
 #include "sequence-inl.h"
-#include "substitution_matrix.h"
+#include "substitution_matrix-inl.h"
 #include "utils.h"
 
 namespace cs
@@ -104,6 +104,6 @@ void MatrixPseudocounts<Alphabet_T>::add_to_profile(const Admixture& pca,
     LOG(DEBUG2) << *profile;
 }
 
-}  // cs
+}  // namespace cs
 
 #endif

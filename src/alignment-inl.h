@@ -195,11 +195,11 @@ void Alignment<Alphabet>::read_fasta_flavors(
   headers->clear();
   seqs->clear();
 
-  char buffer[BUFFER_SIZE];
+  char buffer[kBufferSize];
   int c = '\0';
   while (!feof(fin) && static_cast<char>(c) != '#') {
     // Read header
-    while (fgetline(buffer, BUFFER_SIZE, fin)) {
+    while (fgetline(buffer, kBufferSize, fin)) {
       if (!strscn(buffer)) continue;
       if (buffer[0] == '>') {
         headers->push_back(std::string(buffer + 1));
@@ -212,7 +212,7 @@ void Alignment<Alphabet>::read_fasta_flavors(
 
     // Read sequence
     seqs->push_back("");
-    while (fgetline(buffer, BUFFER_SIZE, fin)) {
+    while (fgetline(buffer, kBufferSize, fin)) {
       if (!strscn(buffer)) continue;
       seqs->back().append(buffer);
 
@@ -779,6 +779,6 @@ typename Alignment<Alphabet>::Format alignment_format_from_string(
                     s.c_str());
 }
 
-}  // cs
+}  // namespace cs
 
 #endif  // SRC_ALIGNMENT_INL_H_

@@ -21,7 +21,7 @@
 #include "getopt_pp.h"
 #include "matrix_pseudocounts.h"
 #include "nucleotide_matrix.h"
-#include "profile_library.h"
+#include "profile_library-inl.h"
 #include "shared_ptr.h"
 #include "utils.h"
 
@@ -284,6 +284,6 @@ shared_ptr< SubstitutionMatrix<AminoAcid> > get_substitution_matrix<AminoAcid>(c
 }
 
 
-}  // cs
+}  // namespace cs
 
 #endif

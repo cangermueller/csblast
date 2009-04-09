@@ -11,7 +11,7 @@
 namespace cs {
 
 template<class Alphabet>
-const char* CountProfile<Alphabet>::CLASS_ID = "CountProfile";
+const char* CountProfile<Alphabet>::kClassID = "CountProfile";
 
 template<class Alphabet>
 inline CountProfile<Alphabet>::CountProfile(std::istream& in)
@@ -137,9 +137,9 @@ void CountProfile<Alphabet>::read_header(FILE* fin) {
   neff_.resize(num_cols());
 
   // Read has_counts
-  char buffer[BUFFER_SIZE];
+  char buffer[kBufferSize];
   const char* ptr = buffer;
-  if (fgetline(buffer, BUFFER_SIZE, fin) && strstr(buffer, "has_counts")) {
+  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "has_counts")) {
     ptr = buffer;
     has_counts_ = strtoi(ptr) == 1;
   } else {
@@ -163,9 +163,9 @@ void CountProfile<Alphabet>::read_body(std::istream& in) {
       float log_p = tokens[a+1][0] == '*' ?
         std::numeric_limits<int>::max() : atoi(tokens[a+1].c_str());
       data_[i][a] =
-        (logspace() ? -log_p / SCALE_FACTOR : pow(2.0, -log_p / SCALE_FACTOR));
+        (logspace() ? -log_p / kScaleFactor : pow(2.0, -log_p / kScaleFactor));
     }
-    neff_[i] = atof(tokens[alphabet_size()+1].c_str()) / SCALE_FACTOR;
+    neff_[i] = atof(tokens[alphabet_size()+1].c_str()) / kScaleFactor;
     tokens.clear();
   }
   if (i != num_cols() - 1)
@@ -176,22 +176,22 @@ void CountProfile<Alphabet>::read_body(std::istream& in) {
 template<class Alphabet>
 void CountProfile<Alphabet>::read_body(FILE* fin) {
   const int alph_size = alphabet_size();
-  char buffer[BUFFER_SIZE];
+  char buffer[kBufferSize];
   const char* ptr = buffer;
   int i = 0;
 
-  fgetline(buffer, BUFFER_SIZE, fin);  // skip alphabet description line
-  while (fgetline(buffer, BUFFER_SIZE, fin)
+  fgetline(buffer, kBufferSize, fin);  // skip alphabet description line
+  while (fgetline(buffer, kBufferSize, fin)
          && buffer[0] != '/' && buffer[1] != '/') {
     ptr = buffer;
     i = strtoi(ptr) - 1;
     for (int a = 0; a < alph_size; ++a) {
       if (logspace())
-        data_[i][a] = static_cast<float>(-strtoi_ast(ptr)) / LOG_SCALE;
+        data_[i][a] = static_cast<float>(-strtoi_ast(ptr)) / kLogScale;
       else
-        data_[i][a] = pow(2.0, static_cast<float>(-strtoi_ast(ptr)) / LOG_SCALE);
+        data_[i][a] = pow(2.0, static_cast<float>(-strtoi_ast(ptr)) / kLogScale);
     }
-    neff_[i] = static_cast<float>(strtoi(ptr)) / LOG_SCALE;
+    neff_[i] = static_cast<float>(strtoi(ptr)) / kLogScale;
   }
   if (i != num_cols() - 1)
     throw Exception("Bad format: profile has %i columns but should have %i!",
@@ -214,9 +214,9 @@ void CountProfile<Alphabet>::write_body(std::ostream& out) const {
       if (-log_p == std::numeric_limits<float>::infinity())
         out << "\t*";
       else
-        out << "\t" << -iround(log_p * SCALE_FACTOR);
+        out << "\t" << -iround(log_p * kScaleFactor);
     }
-    out << "\t" << iround(neff_[i] * SCALE_FACTOR) << std::endl;
+    out << "\t" << iround(neff_[i] * kScaleFactor) << std::endl;
   }
   out << "//" << std::endl;
 }
@@ -238,6 +238,6 @@ void CountProfile<Alphabet>::print(std::ostream& out) const {
   out.flags(flags);
 }
 
-}  // cs
+}  // namespace cs
 
 #endif  // SRC_COUNT_PROFILE_INL_H_

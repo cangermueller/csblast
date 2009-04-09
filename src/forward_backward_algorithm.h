@@ -206,6 +206,6 @@ void backward_algorithm(const HMM<Alphabet_T>& hmm,
     }
 }
 
-}  // cs
+}  // namespace cs
 
 #endif

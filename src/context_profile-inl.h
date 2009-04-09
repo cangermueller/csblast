@@ -11,7 +11,7 @@
 namespace cs {
 
 template<class Alphabet>
-const char* ContextProfile<Alphabet>::CLASS_ID = "ContextProfile";
+const char* ContextProfile<Alphabet>::kClassID = "ContextProfile";
 
 template<class Alphabet>
 inline ContextProfile<Alphabet>::ContextProfile()
@@ -85,18 +85,18 @@ void ContextProfile<Alphabet>::read_header(std::istream& in) {
 
 template<class Alphabet>
 void ContextProfile<Alphabet>::read_header(FILE* fin) {
-  char buffer[BUFFER_SIZE];
+  char buffer[kBufferSize];
   const char* ptr = buffer;
 
   // Read index
-  if (fgetline(buffer, BUFFER_SIZE, fin) && strstr(buffer, "index")) {
+  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "index")) {
     ptr = buffer;
     index_ = strtoi(ptr);
   } else {
     throw Exception("Bad format: profile does not contain 'index' record!");
   }
   // Read prior
-  if (fgetline(buffer, BUFFER_SIZE, fin) && strstr(buffer, "prior")) {
+  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "prior")) {
     prior_ = atof(buffer + 5);
   } else {
     throw Exception("Bad format: profile does not contain 'prior' record!");
@@ -141,6 +141,6 @@ inline void reset(ContextProfile<Alphabet>* p) {
       profile[i][a] = 0.0f;
 }
 
-}  // cs
+}  // namespace cs
 
 #endif  // SRC_CONTEXT_PROFILE_INL_H_

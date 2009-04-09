@@ -457,6 +457,6 @@ void BaumWelchProgressTable<Alphabet_T, Subject_T>::print_row_end()
     out_.flush();
 }
 
-}  // cs
+}  // namespace cs
 
 #endif

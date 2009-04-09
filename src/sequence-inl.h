@@ -99,13 +99,13 @@ template<class Alphabet>
 void Sequence<Alphabet>::read(FILE* fin) {
   LOG(DEBUG1) << "Reading sequence from stream ...";
 
-  char buffer[BUFFER_SIZE];
+  char buffer[kBufferSize];
   int c = '\0';
   std::string header;
   std::string sequence;
 
   // Read header
-  while (fgetline(buffer, BUFFER_SIZE, fin)) {
+  while (fgetline(buffer, kBufferSize, fin)) {
     if (!strscn(buffer)) continue;
     if (buffer[0] == '>') {
       header.append(buffer + 1);
@@ -115,7 +115,7 @@ void Sequence<Alphabet>::read(FILE* fin) {
     }
   }
   // Read sequence
-  while (fgetline(buffer, BUFFER_SIZE, fin)) {
+  while (fgetline(buffer, kBufferSize, fin)) {
     if (!strscn(buffer)) continue;
     sequence.append(buffer);
 
@@ -139,6 +139,6 @@ void Sequence<Alphabet>::write(std::ostream& out, int width) const {
   if (length() % width != 0) out << std::endl;
 }
 
-}  // cs
+}  // namespace cs
 
 #endif  // SRC_SEQUENCE_INL_H_

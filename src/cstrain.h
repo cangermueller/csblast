@@ -383,6 +383,6 @@ shared_ptr< SubstitutionMatrix<AminoAcid> > get_substitution_matrix<AminoAcid>(c
 }
 
 
-}  // cs
+}  // namespace cs
 
 #endif

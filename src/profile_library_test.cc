@@ -9,7 +9,7 @@
 #include "alignment-inl.h"
 #include "amino_acid.h"
 #include "blosum_matrix.h"
-#include "profile_library.h"
+#include "profile_library-inl.h"
 #include "log.h"
 #include "matrix_pseudocounts.h"
 #include "nucleotide.h"
@@ -145,4 +145,4 @@ TEST(ProfileLibraryTestInitialization, RandomSampleInitializer)
     EXPECT_EQ(13, lib[0].num_cols());
 }
 
-}  // cs
+}  // namespace cs

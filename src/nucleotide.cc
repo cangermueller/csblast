@@ -1,26 +1,9 @@
-/***************************************************************************
- *   Copyright (C) 2008 by Andreas Biegert                                 *
- *   andreas.biegert@googlemail.com                                        *
- ***************************************************************************/
+// Copyright 2009, Andreas Biegert
 
 #include "nucleotide.h"
 
-#include "alphabet.h"
-
-namespace cs
-{
+namespace cs {
 
 const char Nucleotide::nucleotides_[] = "ACGT";
 
-Nucleotide::Nucleotide() : Alphabet(4, 'N')
-{
-    init();
-}
-
-const Nucleotide& Nucleotide::instance()
-{
-    static Nucleotide inst;
-    return inst;
-}
-
-};  // cs
+}  // namespace cs

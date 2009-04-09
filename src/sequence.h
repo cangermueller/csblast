@@ -84,7 +84,7 @@ class Sequence {
 
  private:
   // Buffer size for reading
-  static const int BUFFER_SIZE = 16384;
+  static const int kBufferSize = 16384;
 
   // Disallow copy and assign
   Sequence(const Sequence&);
@@ -99,6 +99,6 @@ class Sequence {
   std::valarray<char> seq_;
 };  // Sequence
 
-}  // cs
+}  // namespace cs
 
 #endif  // SRC_SEQUENCE_H_

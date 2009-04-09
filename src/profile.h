@@ -16,6 +16,7 @@
 #include <vector>
 
 #include "exception.h"
+#include "globals.h"
 #include "log.h"
 #include "matrix.h"
 #include "shared_ptr.h"
@@ -101,10 +102,10 @@ class Profile {
 
  protected:
   // Scaling factor for serialization of profile log values
-  static const int SCALE_FACTOR = 1000;
-  static const int LOG_SCALE = 1000;
+  static const int kScaleFactor = 1000;
+  static const int kLogScale = 1000;
   // Buffer size for reading
-  static const int BUFFER_SIZE = 1024;
+  static const int kBufferSize = KB;
 
   // Reads and initializes serialized scalar data members from stream.
   virtual void read_header(std::istream& in);
@@ -132,14 +133,14 @@ class Profile {
 
  private:
   // Class identifier
-  static const char* CLASS_ID;
+  static const char* kClassID;
 
   // Returns serialization class identity.
   virtual const std::string class_identity() const {
     static std::string id("Profile");
     return id;
   }
-  virtual const char* class_id() const { return CLASS_ID; }
+  virtual const char* class_id() const { return kClassID; }
 
 };  // Profile
 
@@ -151,6 +152,6 @@ void reset(Profile<Alphabet>* p, float value = 0.0f);
 template<class Alphabet>
 bool normalize(Profile<Alphabet>* p, float value = 1.0f);
 
-}  // cs
+}  // namespace cs
 
 #endif  // SRC_PROFILE_H_

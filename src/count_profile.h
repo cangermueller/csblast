@@ -64,10 +64,10 @@ class CountProfile : public Profile<Alphabet> {
  protected:
   // Needed to access names in templatized Profile base class
   using Profile<Alphabet>::data_;
-  using Profile<Alphabet>::SCALE_FACTOR;
+  using Profile<Alphabet>::kScaleFactor;
 
-  using Profile<Alphabet>::LOG_SCALE;
-  using Profile<Alphabet>::BUFFER_SIZE;
+  using Profile<Alphabet>::kLogScale;
+  using Profile<Alphabet>::kBufferSize;
 
   // Reads and initializes serialized scalar data members from stream.
   virtual void read_header(std::istream& in);
@@ -86,14 +86,14 @@ class CountProfile : public Profile<Alphabet> {
 
  private:
   // Class identifier
-  static const char* CLASS_ID;
+  static const char* kClassID;
 
   // Return serialization class identity.
   virtual const std::string class_identity() const {
     static std::string id("CountProfile");
     return id;
   }
-  virtual const char* class_id() const { return CLASS_ID; }
+  virtual const char* class_id() const { return kClassID; }
 
   // Number of effective sequences in each alignment column.
   std::vector<float> neff_;
@@ -101,6 +101,6 @@ class CountProfile : public Profile<Alphabet> {
   bool has_counts_;
 };  // CountProfile
 
-}  // cs
+}  // namespace cs
 
 #endif  // SRC_COUNT_PROFILE_H_

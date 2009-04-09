@@ -23,7 +23,7 @@ GTEST_DIR = ../../../lib/gtest
 USER_DIR = .
 
 # Compiler to use
-CXX = ccache g++
+CXX = g++
 
 # Maximal log-level
 LOG_MAX_LEVEL = 0

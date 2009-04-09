@@ -22,4 +22,4 @@ TEST(AlphabetTest, NucleotideAlphabet)
     EXPECT_EQ('A', Nucleotide::instance().itoc(0));
 }
 
-}  // cs
+}  // namespace cs
