@@ -6,7 +6,7 @@
 #include <valarray>
 
 #include "count_profile-inl.h"
-#include "emitter.h"
+#include "emitter-inl.h"
 #include "matrix.h"
 #include "profile-inl.h"
 #include "profile_library-inl.h"

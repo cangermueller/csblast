@@ -7,7 +7,7 @@
 
 #include "alignment-inl.h"
 #include "amino_acid.h"
-#include "baum_welch_training.h"
+#include "baum_welch_training-inl.h"
 #include "blosum_matrix.h"
 #include "count_profile-inl.h"
 #include "hmm-inl.h"
@@ -16,7 +16,7 @@
 #include "profile-inl.h"
 #include "sequence-inl.h"
 #include "shared_ptr.h"
-#include "utils.h"
+#include "utils-inl.h"
 
 namespace cs
 {

@@ -12,7 +12,7 @@
 #include "log.h"
 #include "profile-inl.h"
 #include "sequence-inl.h"
-#include "utils.h"
+#include "utils-inl.h"
 
 namespace cs {
 

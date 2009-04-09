@@ -6,7 +6,7 @@
 
 #include "amino_acid.h"
 #include "blosum_matrix.h"
-#include "emitter.h"
+#include "emitter-inl.h"
 #include "forward_backward_algorithm.h"
 #include "hmm-inl.h"
 #include "log.h"
@@ -14,7 +14,7 @@
 #include "profile-inl.h"
 #include "sequence-inl.h"
 #include "shared_ptr.h"
-#include "utils.h"
+#include "utils-inl.h"
 
 namespace cs
 {

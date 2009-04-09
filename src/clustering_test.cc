@@ -7,7 +7,7 @@
 
 #include "alignment-inl.h"
 #include "amino_acid.h"
-#include "clustering.h"
+#include "clustering-inl.h"
 #include "blosum_matrix.h"
 #include "count_profile-inl.h"
 #include "log.h"
@@ -15,7 +15,7 @@
 #include "profile-inl.h"
 #include "profile_library-inl.h"
 #include "shared_ptr.h"
-#include "utils.h"
+#include "utils-inl.h"
 
 namespace cs
 {

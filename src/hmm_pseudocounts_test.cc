@@ -5,7 +5,7 @@
 
 #include "amino_acid.h"
 #include "count_profile-inl.h"
-#include "emitter.h"
+#include "emitter-inl.h"
 #include "hmm-inl.h"
 #include "hmm_pseudocounts-inl.h"
 #include "library_pseudocounts-inl.h"

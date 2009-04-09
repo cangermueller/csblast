@@ -16,7 +16,7 @@
 #include "exception.h"
 #include "log.h"
 #include "shared_ptr.h"
-#include "utils.h"
+#include "utils-inl.h"
 
 namespace cs {
 

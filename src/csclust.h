@@ -15,7 +15,7 @@
 
 #include "alignment-inl.h"
 #include "blosum_matrix.h"
-#include "clustering.h"
+#include "clustering-inl.h"
 #include "count_profile-inl.h"
 #include "exception.h"
 #include "getopt_pp.h"
@@ -23,7 +23,7 @@
 #include "nucleotide_matrix.h"
 #include "profile_library-inl.h"
 #include "shared_ptr.h"
-#include "utils.h"
+#include "utils-inl.h"
 
 using namespace GetOpt;
 

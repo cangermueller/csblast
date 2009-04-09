@@ -20,7 +20,7 @@
 #include "log.h"
 #include "matrix.h"
 #include "shared_ptr.h"
-#include "utils.h"
+#include "utils-inl.h"
 
 namespace cs {
 

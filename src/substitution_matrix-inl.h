@@ -9,7 +9,7 @@
 #include <iostream>
 
 #include "log.h"
-#include "utils.h"
+#include "utils-inl.h"
 
 namespace cs {
 

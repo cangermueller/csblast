@@ -14,7 +14,7 @@
 #include <vector>
 
 #include "alignment-inl.h"
-#include "baum_welch_training.h"
+#include "baum_welch_training-inl.h"
 #include "blosum_matrix.h"
 #include "nucleotide_matrix.h"
 #include "count_profile-inl.h"
@@ -24,7 +24,7 @@
 #include "getopt_pp.h"
 #include "matrix_pseudocounts-inl.h"
 #include "shared_ptr.h"
-#include "utils.h"
+#include "utils-inl.h"
 
 using namespace GetOpt;
 

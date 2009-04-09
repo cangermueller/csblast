@@ -20,7 +20,7 @@
 #include "exception.h"
 #include "getopt_pp.h"
 #include "shared_ptr.h"
-#include "utils.h"
+#include "utils-inl.h"
 
 using namespace GetOpt;
 

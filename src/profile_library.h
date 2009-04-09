@@ -16,7 +16,7 @@
 #include "log.h"
 #include "pseudocounts.h"
 #include "shared_ptr.h"
-#include "utils.h"
+#include "utils-inl.h"
 
 namespace cs {
 
