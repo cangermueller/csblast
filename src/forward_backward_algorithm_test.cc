@@ -10,7 +10,7 @@
 #include "forward_backward_algorithm.h"
 #include "hmm-inl.h"
 #include "log.h"
-#include "matrix_pseudocounts.h"
+#include "matrix_pseudocounts-inl.h"
 #include "profile-inl.h"
 #include "sequence-inl.h"
 #include "shared_ptr.h"
@@ -19,7 +19,7 @@
 namespace cs
 {
 
-const float DELTA = 0.0001;
+const float kFloatDelta = 0.0001;
 
 class ForwardBackwardAlgorithmTest : public testing::Test
 {
@@ -57,9 +57,9 @@ TEST_F(ForwardBackwardAlgorithmTest, ZincFingerMotif)
     ForwardBackwardMatrices m(seq.length(), hmm_.num_states());
     forward_backward_algorithm(hmm_, seq, emitter, &m);
 
-    EXPECT_NEAR(0.9566, m.f[0][0] * m.b[0][0], DELTA);
-    EXPECT_NEAR(0.4920, m.f[1][1] * m.b[1][1], DELTA);
-    EXPECT_NEAR(0.9326, m.f[2][2] * m.b[2][2], DELTA);
+    EXPECT_NEAR(0.9566, m.f[0][0] * m.b[0][0], kFloatDelta);
+    EXPECT_NEAR(0.4920, m.f[1][1] * m.b[1][1], kFloatDelta);
+    EXPECT_NEAR(0.9326, m.f[2][2] * m.b[2][2], kFloatDelta);
 }
 
 TEST_F(ForwardBackwardAlgorithmTest, 1Q7L)

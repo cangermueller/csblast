@@ -11,7 +11,7 @@
 #include "blosum_matrix.h"
 #include "count_profile-inl.h"
 #include "log.h"
-#include "matrix_pseudocounts.h"
+#include "matrix_pseudocounts-inl.h"
 #include "profile-inl.h"
 #include "profile_library-inl.h"
 #include "shared_ptr.h"
@@ -20,7 +20,7 @@
 namespace cs
 {
 
-const float DELTA = 0.01;
+const float kFloatDelta = 0.01;
 
 class ClusteringTest : public testing::Test
 {
@@ -82,8 +82,8 @@ TEST_F(ClusteringTest, ZincFingerAlisClustering)
     em_clust.run();
 
     lib_.transform_to_linspace();
-    EXPECT_NEAR(0.9948, lib_[0][0][AminoAcid::instance().ctoi('C')], DELTA);
-    EXPECT_NEAR(0.4975, lib_[5][0][AminoAcid::instance().ctoi('C')], DELTA);
+    EXPECT_NEAR(0.9948, lib_[0][0][AminoAcid::instance().ctoi('C')], kFloatDelta);
+    EXPECT_NEAR(0.4975, lib_[5][0][AminoAcid::instance().ctoi('C')], kFloatDelta);
 }
 
 TEST_F(ClusteringTest, ZincFingerAlisOnlineClustering)
@@ -97,8 +97,8 @@ TEST_F(ClusteringTest, ZincFingerAlisOnlineClustering)
     em_clust.run();
 
     lib_.transform_to_linspace();
-    EXPECT_NEAR(0.9948, lib_[0][0][AminoAcid::instance().ctoi('C')], DELTA);
-    EXPECT_NEAR(0.4975, lib_[5][0][AminoAcid::instance().ctoi('C')], DELTA);
+    EXPECT_NEAR(0.9948, lib_[0][0][AminoAcid::instance().ctoi('C')], kFloatDelta);
+    EXPECT_NEAR(0.4975, lib_[5][0][AminoAcid::instance().ctoi('C')], kFloatDelta);
 }
 
 }  // namespace cs

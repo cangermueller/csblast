@@ -9,7 +9,7 @@
 #include <sstream>
 
 #include "amino_acid.h"
-#include "matrix_pseudocounts.h"
+#include "matrix_pseudocounts-inl.h"
 #include "nucleotide.h"
 #include "count_profile-inl.h"
 #include "shared_ptr.h"
@@ -18,7 +18,7 @@
 namespace cs
 {
 
-const float DELTA = 0.01f;
+const float kFloatDelta = 0.01f;
 
 TEST(CountProfileTest, ConstructionFromInputStream)
 {
@@ -75,7 +75,7 @@ TEST(CountProfileTest, AlignmentBpdS)
     alignment.assign_match_columns_by_gap_rule();
     CountProfile<AminoAcid> profile(alignment, true);
 
-    EXPECT_NEAR(0.0f, profile[10][AminoAcid::instance().ctoi('H')], DELTA);
+    EXPECT_NEAR(0.0f, profile[10][AminoAcid::instance().ctoi('H')], kFloatDelta);
     EXPECT_FLOAT_EQ(1.0f, std::accumulate(profile.col_begin(122), profile.col_end(122), 0.0f));
 }
 
@@ -88,7 +88,7 @@ TEST(CountProfileTest, Alignment1Q7L)
     alignment.assign_match_columns_by_gap_rule();
     CountProfile<AminoAcid> profile(alignment, true);
 
-    EXPECT_NEAR(0.05f, profile[10][AminoAcid::instance().ctoi('G')], DELTA);
+    EXPECT_NEAR(0.05f, profile[10][AminoAcid::instance().ctoi('G')], kFloatDelta);
 }
 
 TEST(CountProfileTest, AlignmentCelegansRefGene)
@@ -120,7 +120,7 @@ TEST(CountProfileTest, AddMatrixPseudocountsToProfile)
     MatrixPseudocounts<Nucleotide> mpc(&m);
     mpc.add_to_profile(DivergenceDependentAdmixture(1.0f, 10.0f), &profile);
 
-    EXPECT_NEAR(0.25f, profile[0][Nucleotide::instance().ctoi('T')], DELTA);
+    EXPECT_NEAR(0.25f, profile[0][Nucleotide::instance().ctoi('T')], kFloatDelta);
 }
 
 TEST(CountProfileTest, AddMatrixPseudocountsToLogProfile)
@@ -139,7 +139,7 @@ TEST(CountProfileTest, AddMatrixPseudocountsToLogProfile)
     mpc.add_to_profile(DivergenceDependentAdmixture(1.0f, 10.0f), &profile);
 
     profile.transform_to_linspace();
-    EXPECT_NEAR(0.25f, profile[0][Nucleotide::instance().ctoi('T')], DELTA);
+    EXPECT_NEAR(0.25f, profile[0][Nucleotide::instance().ctoi('T')], kFloatDelta);
 }
 
 };  // namespace cs

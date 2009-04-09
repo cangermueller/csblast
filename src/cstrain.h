@@ -22,7 +22,7 @@
 #include "exception.h"
 #include "forward_backward_algorithm.h"
 #include "getopt_pp.h"
-#include "matrix_pseudocounts.h"
+#include "matrix_pseudocounts-inl.h"
 #include "shared_ptr.h"
 #include "utils.h"
 

@@ -8,14 +8,14 @@
 #include "count_profile-inl.h"
 #include "emitter.h"
 #include "log.h"
-#include "matrix_pseudocounts.h"
+#include "matrix_pseudocounts-inl.h"
 #include "profile_library-inl.h"
-#include "library_pseudocounts.h"
+#include "library_pseudocounts-inl.h"
 
 namespace cs
 {
 
-const float DELTA = 0.01f;
+const float kFloatDelta = 0.01f;
 
 TEST(LibraryPseudocountsTest, AddToSequence)
 {
@@ -34,7 +34,7 @@ TEST(LibraryPseudocountsTest, AddToSequence)
     LibraryPseudocounts<AminoAcid> pc(&lib, params);
     pc.add_to_sequence(seq, DivergenceDependentAdmixture(1.0f, 10.0f), &profile);
 
-    EXPECT_NEAR(0.0736f, profile[0][AminoAcid::instance().ctoi('V')], DELTA);
+    EXPECT_NEAR(0.0736f, profile[0][AminoAcid::instance().ctoi('V')], kFloatDelta);
 }
 
 TEST(LibraryPseudocountsTest, AddProfileSequence)
@@ -56,8 +56,8 @@ TEST(LibraryPseudocountsTest, AddProfileSequence)
     LibraryPseudocounts<AminoAcid> pc(&lib, params);
     pc.add_to_profile(DivergenceDependentAdmixture(1.0f, 10.0f), &profile);
 
-    EXPECT_NEAR(0.80f, profile[0][AminoAcid::instance().ctoi('C')], DELTA);
-    EXPECT_NEAR(0.81f, profile[5][AminoAcid::instance().ctoi('C')], DELTA);
+    EXPECT_NEAR(0.80f, profile[0][AminoAcid::instance().ctoi('C')], kFloatDelta);
+    EXPECT_NEAR(0.81f, profile[5][AminoAcid::instance().ctoi('C')], kFloatDelta);
 }
 
 }  // namespace cs

@@ -11,7 +11,7 @@
 #include "blosum_matrix.h"
 #include "profile_library-inl.h"
 #include "log.h"
-#include "matrix_pseudocounts.h"
+#include "matrix_pseudocounts-inl.h"
 #include "nucleotide.h"
 #include "profile-inl.h"
 #include "shared_ptr.h"

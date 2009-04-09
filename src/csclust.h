@@ -19,7 +19,7 @@
 #include "count_profile-inl.h"
 #include "exception.h"
 #include "getopt_pp.h"
-#include "matrix_pseudocounts.h"
+#include "matrix_pseudocounts-inl.h"
 #include "nucleotide_matrix.h"
 #include "profile_library-inl.h"
 #include "shared_ptr.h"

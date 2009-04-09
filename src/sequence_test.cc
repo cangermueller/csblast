@@ -11,7 +11,7 @@
 #include "amino_acid.h"
 #include "blosum_matrix.h"
 #include "log.h"
-#include "matrix_pseudocounts.h"
+#include "matrix_pseudocounts-inl.h"
 #include "nucleotide.h"
 #include "profile-inl.h"
 #include "sequence-inl.h"
@@ -20,7 +20,7 @@
 namespace cs
 {
 
-const float DELTA = 0.01f;
+const float kFloatDelta = 0.01f;
 
 TEST(SequenceTest, ConstructionFromAlphabetVector)
 {
@@ -68,7 +68,7 @@ TEST(SequenceTest, AddMatrixPseudocountsToSequence)
     MatrixPseudocounts<AminoAcid> mpc(&m);
     mpc.add_to_sequence(sequence, DivergenceDependentAdmixture(1.0f, 10.0f), &profile);
 
-    EXPECT_NEAR(0.06f, profile[0][AminoAcid::instance().ctoi('V')], DELTA);
+    EXPECT_NEAR(0.06f, profile[0][AminoAcid::instance().ctoi('V')], kFloatDelta);
 }
 
 TEST(DISABLED_SequenceTest, ReadSwissprotDatabaseCppStyle)

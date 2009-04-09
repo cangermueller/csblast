@@ -13,7 +13,7 @@
 #include "blosum_matrix.h"
 #include "hmm-inl.h"
 #include "log.h"
-#include "matrix_pseudocounts.h"
+#include "matrix_pseudocounts-inl.h"
 #include "nucleotide.h"
 #include "profile-inl.h"
 #include "shared_ptr.h"

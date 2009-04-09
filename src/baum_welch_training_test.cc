@@ -12,7 +12,7 @@
 #include "count_profile-inl.h"
 #include "hmm-inl.h"
 #include "log.h"
-#include "matrix_pseudocounts.h"
+#include "matrix_pseudocounts-inl.h"
 #include "profile-inl.h"
 #include "sequence-inl.h"
 #include "shared_ptr.h"
@@ -21,7 +21,7 @@
 namespace cs
 {
 
-const float DELTA = 0.01;
+const float kFloatDelta = 0.01;
 
 class BaumWelchTrainingTest : public testing::Test
 {
@@ -85,8 +85,8 @@ TEST_F(BaumWelchTrainingTest, ZincFingerSeqsTraining)
     bwt.run();
 
     hmm_.transform_states_to_linspace();
-    EXPECT_NEAR(0.8977, hmm_[0][0][AminoAcid::instance().ctoi('C')], DELTA);
-    EXPECT_NEAR(0.8977, hmm_[5][0][AminoAcid::instance().ctoi('C')], DELTA);
+    EXPECT_NEAR(0.8977, hmm_[0][0][AminoAcid::instance().ctoi('C')], kFloatDelta);
+    EXPECT_NEAR(0.8977, hmm_[5][0][AminoAcid::instance().ctoi('C')], kFloatDelta);
 }
 
 TEST_F(BaumWelchTrainingTest, ZincFingerAlisTraining)
@@ -104,8 +104,8 @@ TEST_F(BaumWelchTrainingTest, ZincFingerAlisTraining)
     bwt.run();
 
     hmm_.transform_states_to_linspace();
-    EXPECT_NEAR(0.9948, hmm_[0][0][AminoAcid::instance().ctoi('C')], DELTA);
-    EXPECT_NEAR(0.9948, hmm_[5][0][AminoAcid::instance().ctoi('C')], DELTA);
+    EXPECT_NEAR(0.9948, hmm_[0][0][AminoAcid::instance().ctoi('C')], kFloatDelta);
+    EXPECT_NEAR(0.9948, hmm_[5][0][AminoAcid::instance().ctoi('C')], kFloatDelta);
 }
 
 TEST_F(BaumWelchTrainingTest, ZincFingerAlisOnlineTraining)
@@ -123,8 +123,8 @@ TEST_F(BaumWelchTrainingTest, ZincFingerAlisOnlineTraining)
     bwt.run();
 
     hmm_.transform_states_to_linspace();
-    EXPECT_NEAR(0.9948, hmm_[0][0][AminoAcid::instance().ctoi('C')], DELTA);
-    EXPECT_NEAR(0.9948, hmm_[5][0][AminoAcid::instance().ctoi('C')], DELTA);
+    EXPECT_NEAR(0.9948, hmm_[0][0][AminoAcid::instance().ctoi('C')], kFloatDelta);
+    EXPECT_NEAR(0.9948, hmm_[5][0][AminoAcid::instance().ctoi('C')], kFloatDelta);
 }
 
 }  // namespace cs
