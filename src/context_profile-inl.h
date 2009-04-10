@@ -93,7 +93,7 @@ void ContextProfile<Alphabet>::print(std::ostream& out) const {
   out << "index: " << index() << std::endl;
   out << "prior probability: " << strprintf("%-10.8g", prior()) << std::endl;
 
-  ContextProfile<Alphabet>::print(out);
+  Profile<Alphabet>::print(out);
 }
 
 template<class Alphabet>

@@ -34,7 +34,7 @@ TEST(HMMPseudocountsTest, AddToSequence) {
   EXPECT_NEAR(0.8121f, profile[28][AminoAcid::instance().ctoi('C')], kFloatDelta);
 }
 
-TEST(HMMPseudocountsTest, AddProfileSequence) {
+TEST(HMMPseudocountsTest, AddToProfile) {
   FILE* ali_in = fopen("../data/zinc_finger.fas", "r");
   Alignment<AminoAcid> ali(ali_in, Alignment<AminoAcid>::FASTA);
   fclose(ali_in);

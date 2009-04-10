@@ -147,7 +147,7 @@ inline void HMM<Alphabet>::transform_transitions_to_logspace() {
   if (!transitions_logspace()) {
     for (transition_iterator ti = transitions_begin();
          ti != transitions_end(); ++ti)
-      ti->probability = log2(ti->probability);
+      ti->probability = fast_log2(ti->probability);
     transitions_logspace_ = true;
   }
 }
@@ -157,7 +157,7 @@ inline void HMM<Alphabet>::transform_transitions_to_linspace() {
   if (transitions_logspace()) {
     for (transition_iterator ti = transitions_begin();
          ti != transitions_end(); ++ti)
-      ti->probability = pow(2.0, ti->probability);
+      ti->probability = fast_pow2(ti->probability);
     transitions_logspace_ = false;
   }
 }
@@ -261,7 +261,7 @@ void HMM<Alphabet>::read(FILE* fin) {
     if (transitions_logspace())
       tr_prob = static_cast<float>(-strtoi_ast(ptr)) / kLogScale;
     else
-      tr_prob = pow(2.0, static_cast<float>(-strtoi_ast(ptr)) / kLogScale);
+      tr_prob = fast_pow2(static_cast<float>(-strtoi_ast(ptr)) / kLogScale);
     set_transition(k, l, tr_prob);
   }
   if (num_transitions() != ntr)
@@ -293,7 +293,7 @@ void HMM<Alphabet>::write(FILE* fout) const {
     fprintf(fout, "%i\t%i\t",
             static_cast<int>(ti->from), static_cast<int>(ti->to));
     float log_p =
-      transitions_logspace() ? ti->probability : log2(ti->probability);
+      transitions_logspace() ? ti->probability : fast_log2(ti->probability);
     if (log_p == -std::numeric_limits<float>::infinity())
       fputs("*\n", fout);
     else
@@ -326,7 +326,7 @@ void HMM<Alphabet>::print(std::ostream& out) const {
       if (test_transition(k,l)) {
         if (transitions_logspace())
           out << strprintf("%6.2f  ",
-                           100.0f * pow(2.0, transition_probability(k,l)));
+                           100.0f * fast_pow2(transition_probability(k,l)));
         else
           out << strprintf("%6.2f  ", 100.0f * transition_probability(k,l));
       } else {

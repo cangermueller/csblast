@@ -30,8 +30,8 @@ void LibraryPseudocounts<Alphabet>::add_to_sequence(
     const Sequence<Alphabet>& seq,
     const Admixture& pca,
     Profile<Alphabet>* profile) const {
-  LOG(DEBUG2) << "Adding context-specific library pseudocounts to sequence ...";
-  LOG(DEBUG2) << *profile;
+  LOG(DEBUG1) << "Adding context-specific library pseudocounts to sequence ...";
+  LOG(DEBUG1) << seq;
 
   if (seq.length() != profile->num_cols())
     throw Exception("Cannot add context-specific pseudocounts: "
@@ -53,7 +53,7 @@ void LibraryPseudocounts<Alphabet>::add_to_sequence(
   for (int i = 0; i < length; ++i) {
     // Calculate profile probabilities P(p_k|X_i)
     for (int k = 0; k < num_profiles; ++k) {
-      prob[k] = lib_[k].prior() * pow(2.0, emitter_(lib_[k], seq, i));
+      prob[k] = lib_[k].prior() * fast_pow2(emitter_(lib_[k], seq, i));
     }
     prob /= prob.sum();  // normalization
 
@@ -61,7 +61,7 @@ void LibraryPseudocounts<Alphabet>::add_to_sequence(
     for(int a = 0; a < alphabet_size; ++a) {
       pc[a] = 0.0f;
       for (int k = 0; k < num_profiles; ++k) {
-        pc[a] += prob[k] * pow(2.0, lib_[k][center][a]);
+        pc[a] += prob[k] * fast_pow2(lib_[k][center][a]);
       }
     }
     pc /= pc.sum();  // normalization
@@ -70,12 +70,12 @@ void LibraryPseudocounts<Alphabet>::add_to_sequence(
     for(int a = 0; a < alphabet_size; ++a) {
       float pa = (1.0f - tau) * (static_cast<int>(seq[i]) == a ?
                                  1.0f : 0.0f) + tau * pc[a];
-      p[i][a] = p.logspace() ? log2(pa) : pa;
+      p[i][a] = p.logspace() ? fast_log2(pa) : pa;
     }
   }
   normalize(profile);
 
-  LOG(DEBUG2) << *profile;
+  LOG(DEBUG1) << *profile;
 }
 
 template<class Alphabet>
@@ -103,7 +103,7 @@ void LibraryPseudocounts<Alphabet>::add_to_profile(
   for (int i = 0; i < length; ++i) {
     // Calculate profile probabilities P(p_k|X_i)
     for (int k = 0; k < num_profiles; ++k) {
-      prob[k] = lib_[k].prior() * pow(2.0, emitter_(lib_[k], p, i));
+      prob[k] = lib_[k].prior() * fast_pow2(emitter_(lib_[k], p, i));
     }
     prob /= prob.sum();  // normalization
 
@@ -111,7 +111,7 @@ void LibraryPseudocounts<Alphabet>::add_to_profile(
     for(int a = 0; a < alphabet_size; ++a) {
       pc[a] = 0.0f;
       for (int k = 0; k < num_profiles; ++k) {
-        pc[a] += prob[k] * pow(2.0, lib_[k][center][a]);
+        pc[a] += prob[k] * fast_pow2(lib_[k][center][a]);
       }
     }
     pc /= pc.sum();  // normalization

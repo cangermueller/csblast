@@ -142,7 +142,7 @@ void CountProfile<Alphabet>::read_body(FILE* fin) {
       if (logspace())
         data_[i][a] = static_cast<float>(-strtoi_ast(ptr)) / kLogScale;
       else
-        data_[i][a] = pow(2.0, static_cast<float>(-strtoi_ast(ptr)) / kLogScale);
+        data_[i][a] = fast_pow2(static_cast<float>(-strtoi_ast(ptr)) / kLogScale);
     }
     neff_[i] = static_cast<float>(strtoi(ptr)) / kLogScale;
   }
@@ -165,7 +165,7 @@ void CountProfile<Alphabet>::write_body(FILE* fout) const {
   for (int i = 0; i < num_cols(); ++i) {
     fprintf(fout, "%i", i+1);
     for (int a = 0; a < alphabet_size(); ++a) {
-      float log_p = logspace() ? data_[i][a] : log2(data_[i][a]);
+      float log_p = logspace() ? data_[i][a] : fast_log2(data_[i][a]);
       if (log_p == -std::numeric_limits<float>::infinity())
         fputs("\t*", fout);
       else
@@ -184,7 +184,7 @@ void CountProfile<Alphabet>::print(std::ostream& out) const {
     out << i+1;
     for (int a = 0; a < alphabet_size(); ++a)
       out << strprintf("\t%6.4f",
-                       logspace() ? pow(2.0, data_[i][a]) : data_[i][a]);
+                       logspace() ? fast_pow2(data_[i][a]) : data_[i][a]);
     out << strprintf("\t%5.2f\n", neff_[i]);
   }
 }

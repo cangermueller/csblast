@@ -73,7 +73,7 @@ void Profile<Alphabet>::transform_to_logspace() {
   if (!logspace_) {
     for (int i = 0; i < num_cols(); ++i)
       for (int a = 0; a < alphabet_size(); ++a)
-        data_[i][a] = log2(data_[i][a]);
+        data_[i][a] = fast_log2(data_[i][a]);
     logspace_ = true;
   }
 }
@@ -83,7 +83,7 @@ void Profile<Alphabet>::transform_to_linspace() {
   if (logspace_) {
     for (int i = 0; i < num_cols(); ++i)
       for (int a = 0; a < alphabet_size(); ++a)
-        data_[i][a] = pow(2.0, data_[i][a]);
+        data_[i][a] = fast_pow2(data_[i][a]);
     logspace_ = false;
   }
 }
@@ -157,7 +157,7 @@ void Profile<Alphabet>::read_body(FILE* fin) {
       if (logspace_)
         data_[i][a] = static_cast<float>(-strtoi_ast(ptr)) / kLogScale;
       else
-        data_[i][a] = pow(2.0, static_cast<float>(-strtoi_ast(ptr)) / kLogScale);
+        data_[i][a] = fast_pow2(static_cast<float>(-strtoi_ast(ptr)) / kLogScale);
     }
   }
   if (i != num_cols() - 1)
@@ -183,11 +183,12 @@ template<class Alphabet>
 void Profile<Alphabet>::write_body(FILE* fout) const {
   fputc('\t', fout);
   Alphabet::instance().write(fout);
+  fputc('\n', fout);
 
   for (int i = 0; i < num_cols(); ++i) {
     fprintf(fout, "%i", i+1);
     for (int a = 0; a < alphabet_size(); ++a) {
-      float log_p = logspace_ ? data_[i][a] : log2(data_[i][a]);
+      float log_p = logspace_ ? data_[i][a] : fast_log2(data_[i][a]);
       if (log_p == -std::numeric_limits<float>::infinity())
         fputs("\t*", fout);
       else
@@ -206,7 +207,7 @@ void Profile<Alphabet>::print(std::ostream& out) const {
     out << i+1;
     for (int a = 0; a < alphabet_size(); ++a)
       out << strprintf("\t%6.4f",
-                       logspace_ ? pow(2.0, data_[i][a]) : data_[i][a]);
+                       logspace_ ? fast_pow2(data_[i][a]) : data_[i][a]);
     out << std::endl;
   }
 }

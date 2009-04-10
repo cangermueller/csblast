@@ -7,7 +7,6 @@
 
 #include <algorithm>
 #include <iostream>
-#include <iomanip>
 #include <string>
 #include <vector>
 
@@ -441,7 +440,8 @@ std::ostream& operator<< (std::ostream& out, const Alignment<Alphabet>& ali) {
   out << "CLUSTAL\n\n";
   while (!seqs.front().empty()) {
     for (int k = 0; k < ali.num_seqs(); ++k) {
-      std::string header(ali.headers_[k].substr(0, ali.headers_[k].find_first_of(' ')));
+      std::string header =
+          ali.headers_[k].substr(0, ali.headers_[k].find_first_of(' '));
       if (static_cast<int>(header.length()) <= kHeaderWidth)
         out << header + std::string(kHeaderWidth - header.length(), ' ') << ' ';
       else
@@ -461,7 +461,7 @@ std::ostream& operator<< (std::ostream& out, const Alignment<Alphabet>& ali) {
 template<class Alphabet>
 float global_weights_and_diversity(const Alignment<Alphabet>& alignment,
                                    std::vector<float>& wg) {
-  const float ZERO = 1E-10;  // for calculation of entropy
+  const float kZero = 1E-10;  // for calculation of entropy
   const int num_seqs = alignment.num_seqs();
   const int num_cols = alignment.num_match_cols();
   const int alphabet_size = Alphabet::instance().size();
@@ -505,9 +505,9 @@ float global_weights_and_diversity(const Alignment<Alphabet>& alignment,
       if (alignment[i][k] < any) fj[alignment[i][k]] += wg[k];
     normalize_to_one(&fj[0], alphabet_size);
     for (int a = 0; a < alphabet_size; ++a)
-      if (fj[a] > ZERO) neff -= fj[a] * log2(fj[a]);
+      if (fj[a] > kZero) neff -= fj[a] * fast_log2(fj[a]);
   }
-  neff = pow(2.0, neff / num_cols);
+  neff = fast_pow2(neff / num_cols);
 
   LOG(DEBUG) << "neff=" << neff;
 
@@ -518,11 +518,11 @@ template<class Alphabet>
 std::vector<float> position_specific_weights_and_diversity(
     const Alignment<Alphabet>& alignment, matrix<float>& w) {
   // Maximal fraction of sequences with an endgap
-  const float MAX_ENDGAP_FRACTION = 0.1;
+  const float kMaxEndgapFraction = 0.1;
   // Minimum number of columns in subalignments
-  const int MIN_COLS = 10;
+  const int kMinCols = 10;
   // Zero value for calculation of entropy
-  const float ZERO = 1E-10;
+  const float kZero = 1E-10;
   const int num_seqs  = alignment.num_seqs();
   const int num_cols  = alignment.num_match_cols();
   const int alphabet_size  = Alphabet::instance().size();
@@ -577,7 +577,7 @@ std::vector<float> position_specific_weights_and_diversity(
       reset(&wi[0], num_seqs);
 
       for (int j = 0; j < num_cols; ++j) {
-        if (n[j][endgap] > MAX_ENDGAP_FRACTION * nseqi) continue;
+        if (n[j][endgap] > kMaxEndgapFraction * nseqi) continue;
         ndiff = 0;
         for (int a = 0; a < alphabet_size; ++a) if (n[j][a]) ++ndiff;
         if (ndiff == 0) continue;
@@ -594,7 +594,7 @@ std::vector<float> position_specific_weights_and_diversity(
       }  // for j over num_cols
       normalize_to_one(&wi[0], num_seqs);
 
-      if (ncoli < MIN_COLS)  // number of columns in subalignment insufficient?
+      if (ncoli < kMinCols)  // number of columns in subalignment insufficient?
         for (int k = 0; k < num_seqs; ++k)
           if (alignment[i][k] < any)
             wi[k] = wg[k];
@@ -603,7 +603,7 @@ std::vector<float> position_specific_weights_and_diversity(
 
       neff[i] = 0.0f;
       for (int j = 0; j < num_cols; ++j) {
-        if (n[j][endgap] > MAX_ENDGAP_FRACTION * nseqi) continue;
+        if (n[j][endgap] > kMaxEndgapFraction * nseqi) continue;
         reset(&fj[0], alphabet_size);
 
         for (int k = 0; k < num_seqs; ++k)
@@ -611,10 +611,10 @@ std::vector<float> position_specific_weights_and_diversity(
             fj[alignment[j][k]] += wi[k];
         normalize_to_one(&fj[0], alphabet_size);
         for (int a = 0; a < alphabet_size; ++a)
-          if (fj[a] > ZERO) neff[i] -= fj[a] * log2(fj[a]);
+          if (fj[a] > kZero) neff[i] -= fj[a] * fast_log2(fj[a]);
       }  // for j over num_cols
 
-      neff[i] = (ncoli > 0 ? pow(2.0, neff[i] / ncoli) : 1.0f);
+      neff[i] = (ncoli > 0 ? fast_pow2(neff[i] / ncoli) : 1.0f);
 
     } else {  // set of sequences in subalignment-inl.has NOT changed
       neff[i] = (i == 0 ? 0.0 : neff[i-1]);
@@ -623,11 +623,8 @@ std::vector<float> position_specific_weights_and_diversity(
     for (int k = 0; k < num_seqs; ++k) w[i][k] = wi[k];
     ncoli_debug[i] = ncoli;
 
-    LOG(DEBUG2) << std::left
-                << std::setw(7) << i
-                << std::setw(7) << ncoli_debug[i]
-                << std::setw(7) << nseqi_debug[i]
-                << std::setw(7) << neff[i];
+    LOG(DEBUG2) << strprintf("%7i%7i%7i%7.1f",
+                             i, ncoli_debug[i], nseqi_debug[i], neff[i]);
   }  // for i over num_cols
 
   return neff;

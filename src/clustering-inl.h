@@ -68,7 +68,7 @@ void Clustering<Alphabet, Subject>::expectation_step(const data_vector& block) {
     double sum = 0.0f;
     for (int k = 0; k < num_profiles; ++k) {
       p_zn[k] = lib_[k].prior() *
-        pow(2.0, emitter_(lib_[k], **bi, lib_[k].center()));
+        fast_pow2(emitter_(lib_[k], **bi, lib_[k].center()));
       sum += p_zn[k];
 
       LOG(DEBUG2) << strprintf("a(%i)=%-8.5g P(c_n|p_%i)=%-8.5g P(z_n=%-4i)=%-8.5g",
@@ -78,7 +78,7 @@ void Clustering<Alphabet, Subject>::expectation_step(const data_vector& block) {
     p_zn /= sum;
     add_contribution_to_priors(p_zn);
     add_contribution_to_emissions(p_zn, **bi);
-    log_likelihood_ += log2(sum) / num_eff_cols_;
+    log_likelihood_ += fast_log2(sum) / num_eff_cols_;
     LOG(DEBUG1) << strprintf("log(L)=%-8.5g", log_likelihood_);
 
     if (progress_table_)

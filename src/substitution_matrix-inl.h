@@ -59,7 +59,7 @@ void SubstitutionMatrix<Alphabet>::init_from_scores_and_background_frequencies()
   // Calculate target frequencies
   for (int a = 0; a < size_; ++a)
     for (int b = 0; b < size_; ++b)
-      p_[a][b] = pow(2.0, s_[a][b]) * f_[a] * f_[b];
+      p_[a][b] = fast_pow2(s_[a][b]) * f_[a] * f_[b];
 
   // Check transition probability matrix, renormalize P
   float sumab = 0.0f;

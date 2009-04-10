@@ -37,7 +37,7 @@ void MatrixPseudocounts<Alphabet>::add_to_sequence(
       float pa =
         (1.0f - tau) * (static_cast<int>(seq[i]) == a ? 1.0f : 0.0f)
         + tau * m_->r(a, seq[i]);
-      p[i][a] = p.logspace() ? log2(pa) : pa;
+      p[i][a] = p.logspace() ? fast_log2(pa) : pa;
     }
   }
   normalize(profile);

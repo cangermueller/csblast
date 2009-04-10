@@ -33,7 +33,7 @@ void HMMPseudocounts<Alphabet>::add_to_sequence(
     const Admixture& pca,
     Profile<Alphabet>* profile) const {
   LOG(DEBUG2) << "Adding context-specific HMM pseudocounts to sequence ...";
-  LOG(DEBUG2) << *profile;
+  LOG(DEBUG2) << seq;
 
   if (seq.length() != profile->num_cols())
     throw Exception("Cannot add context-specific pseudocounts: "
@@ -59,7 +59,7 @@ void HMMPseudocounts<Alphabet>::add_to_sequence(
     for(int a = 0; a < alphabet_size; ++a) {
       pc[a] = 0.0f;
       for (int k = 0; k < num_states; ++k) {
-        pc[a] += fbm.f[i][k] * fbm.b[i][k] * pow(2.0, hmm_[k][center][a]);
+        pc[a] += fbm.f[i][k] * fbm.b[i][k] * fast_pow2(hmm_[k][center][a]);
       }
     }
     pc /= pc.sum();  // normalization
@@ -68,7 +68,7 @@ void HMMPseudocounts<Alphabet>::add_to_sequence(
     for(int a = 0; a < alphabet_size; ++a) {
       float pa = (1.0f - tau) * (static_cast<int>(seq[i]) == a ?
                                  1.0f : 0.0f) + tau * pc[a];
-      p[i][a] = p.logspace() ? log2(pa) : pa;
+      p[i][a] = p.logspace() ? fast_log2(pa) : pa;
     }
   }
   normalize(profile);
@@ -105,7 +105,7 @@ void HMMPseudocounts<Alphabet>::add_to_profile(
     for(int a = 0; a < alphabet_size; ++a) {
       pc[a] = 0.0f;
       for (int k = 0; k < num_states; ++k) {
-        pc[a] += fbm.f[i][k] * fbm.b[i][k] * pow(2.0, hmm_[k][center][a]);
+        pc[a] += fbm.f[i][k] * fbm.b[i][k] * fast_pow2(hmm_[k][center][a]);
       }
     }
     pc /= pc.sum();  // normalization
