@@ -6,8 +6,9 @@
 #include "baum_welch_training.h"
 
 #include <cmath>
+#include <cstdio>
 
-#include <iostream>
+#include <string>
 
 #include "context_profile-inl.h"
 #include "forward_backward_algorithm.h"
@@ -42,7 +43,7 @@ BaumWelchTraining<Alphabet, Subject>::BaumWelchTraining(
     const BaumWelchParams& params,
     const data_vector& data,
     HMM<Alphabet>& hmm,
-    std::ostream& out)
+    FILE* fout)
     : ExpectationMaximization<Alphabet, Subject>(data),
       params_(params),
       hmm_(hmm),
@@ -51,7 +52,7 @@ BaumWelchTraining<Alphabet, Subject>::BaumWelchTraining(
       profile_stats_(),
       transition_stats_block_(hmm.num_states(), hmm.num_states()),
       profile_stats_block_() {
-  progress_table_ = new BaumWelchProgressTable<Alphabet, Subject>(this, out);
+  progress_table_ = new BaumWelchProgressTable<Alphabet, Subject>(this, fout);
   init();
 }
 
@@ -306,40 +307,39 @@ template< class Alphabet,
           template<class A> class Subject >
 BaumWelchProgressTable<Alphabet, Subject>::BaumWelchProgressTable(
     const BaumWelchTraining<Alphabet, Subject>* training,
-    std::ostream& out,
+    FILE* fout,
     int width)
-    : ProgressTable(out, width),
+    : ProgressTable(fout, width),
       training_(training) { }
 
 template< class Alphabet,
           template<class A> class Subject >
 void BaumWelchProgressTable<Alphabet, Subject>::print_header() {
-  out_ << strprintf("%-4s %4s %6s %4s %7s  %-30s  %9s  %8s\n",
-                    "Scan", "Itrs", "Conn", "Blks", "Epsilon",
-                    "E-Step", "log(L)", "+/-");
-  out_ << std::string(82, '-') << std::endl;
+  fprintf(fout_, "%-4s %4s %6s %4s %7s  %-30s  %9s  %8s\n",
+          "Scan", "Itrs", "Conn", "Blks", "Epsilon", "E-Step", "log(L)", "+/-");
+  fputs(std::string(82, '-').c_str(), fout_);
+  fputc('\n', fout_);
 }
 
 template< class Alphabet,
           template<class A> class Subject >
 void BaumWelchProgressTable<Alphabet, Subject>::print_row_begin() {
   reset();
-  out_ << strprintf("%-4i %4i %6.1f %4i %7.4f  ",
-                    training_->scan(), training_->iterations(),
-                    training_->hmm_.connectivity(), training_->num_blocks(),
-                    training_->epsilon());
-  out_.flush();
+  fprintf(fout_, "%-4i %4i %6.1f %4i %7.4f  ", training_->scan(),
+          training_->iterations(), training_->hmm_.connectivity(),
+          training_->num_blocks(), training_->epsilon());
+  fflush(fout_);
 }
 
 template< class Alphabet,
           template<class A> class Subject >
 void BaumWelchProgressTable<Alphabet, Subject>::print_row_end() {
   if (training_->scan() == 1)
-    out_ << strprintf("  %9.5f\n", training_->log_likelihood());
+    fprintf(fout_, "  %9.5f\n", training_->log_likelihood());
   else
-    out_ << strprintf("  %9.5f  %+8.5f\n", training_->log_likelihood(),
-                      training_->log_likelihood_change());
-  out_.flush();
+    fprintf(fout_, "  %9.5f  %+8.5f\n", training_->log_likelihood(),
+            training_->log_likelihood_change());
+  fflush(fout_);
 }
 
 }  // namespace cs

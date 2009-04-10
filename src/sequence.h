@@ -13,10 +13,8 @@
 #include <valarray>
 #include <vector>
 
-#include "exception.h"
-#include "log.h"
+#include "globals.h"
 #include "shared_ptr.h"
-#include "utils-inl.h"
 
 namespace cs {
 
@@ -31,9 +29,6 @@ class Sequence {
   // Constructs sequence with specified length.
   explicit Sequence(int length);
   // Constructs sequence from serialized sequence in FASTA format read from
-  // input stream.
-  explicit Sequence(std::istream& in);
-  // Constructs sequence from serialized sequence in FASTA format read from
   // file stream.
   explicit Sequence(FILE* fin);
   // Constructs sequence with given header and sequence string of characters.
@@ -41,9 +36,6 @@ class Sequence {
 
   ~Sequence() { }
 
-  // Reads all available sequences from the input stream and returns them in a
-  // vector.
-  static void readall(std::istream& in, std::vector< shared_ptr<Sequence> >& v);
   // Reads all available sequences from the input stream and returns them in a
   // vector.
   static void readall(FILE* fin, std::vector< shared_ptr<Sequence> >* v);
@@ -68,23 +60,26 @@ class Sequence {
   // Returns an iterator just past the end of the sequence.
   iterator end() { return begin() + length(); }
   // Initializes the sequence object with a sequence in FASTA format read from
-  // given stream.
-  void read(std::istream& in);
-  // Initializes the sequence object with a sequence in FASTA format read from
   // file stream.
   void read(FILE* in);
   // Prints the sequence in FASTA format to output stream.
-  void write(std::ostream& out, int width = 100) const;
+  void write(FILE* fout, int width = 100) const;
 
   // Prints the Alignment in A2M format for debugging.
-  friend std::ostream& operator<< (std::ostream& out, const Sequence& sequence) {
-    sequence.write(out);
+  friend std::ostream& operator<< (std::ostream& out, const Sequence& seq) {
+    const int kWidth = 100;
+    out << '>' << seq.header_ << std::endl;
+    for (int i = 0; i < seq.length(); ++i) {
+      out << seq.chr(i);
+      if ((i+1) % kWidth == 0) out << std::endl;
+    }
+    if (seq.length() % kWidth != 0) out << std::endl;
     return out;
   }
 
  private:
   // Buffer size for reading
-  static const int kBufferSize = 16384;
+  static const int kBufferSize = 16 * KB;
 
   // Disallow copy and assign
   Sequence(const Sequence&);

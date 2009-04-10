@@ -10,9 +10,9 @@
 #include <vector>
 
 #include "globals.h"
-#include "profile-inl.h"
-#include "context_profile-inl.h"
-#include "count_profile-inl.h"
+#include "profile.h"
+#include "context_profile.h"
+#include "count_profile.h"
 #include "pseudocounts.h"
 #include "shared_ptr.h"
 
@@ -43,8 +43,6 @@ class ProfileLibrary {
 
   // Constructs an empty profile library of given dimenions.
   ProfileLibrary(int num_profiles, int num_cols);
-  // Constructs a profile library from serialized data read from input stream.
-  explicit ProfileLibrary(std::istream& in);
   // Constructs a profile library from serialized data read from input stream.
   explicit ProfileLibrary(FILE* fin);
   // Constructs profile library with a specific init-strategy encapsulated by an
@@ -89,8 +87,6 @@ class ProfileLibrary {
   // states.
   const_profile_iterator end() const { return profiles_.end(); }
   // Writes the profile library in serialization format to output stream.
-  void write(std::ostream& out) const;
-  // Writes the profile library in serialization format to output stream.
   void write(FILE* fout) const;
   // Returns true if state profiles are in logspace.
   bool logspace() const { return logspace_; }
@@ -116,8 +112,6 @@ class ProfileLibrary {
 
   // Prints the library in human-readable format to output stream.
   void print(std::ostream& out) const;
-  // Initializes the library from serialized data read from stream.
-  void read(std::istream& in);
   // Initializes the library from serialized data read from stream.
   void read(FILE* fin);
 

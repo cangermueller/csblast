@@ -3,11 +3,14 @@
 #include "progress_table.h"
 
 #include <cmath>
+#include <cstdio>
+
+#include <string>
 
 namespace cs {
 
-ProgressTable::ProgressTable(std::ostream& out, int width)
-    : out_(out),
+ProgressTable::ProgressTable(FILE* fout, int width)
+    : fout_(fout),
       width_(width),
       bar_(0),
       work_done_(0),
@@ -23,10 +26,10 @@ void ProgressTable::print_progress(int work) {
 
   const int incr = round(static_cast<float>(work_done_ + work) /
                          work_total_ * (width_ - 2)) - bar_;
-  if (work_done_ == 0) out_ << "[";
-  out_ << std::string(incr, '=');
-  if (work_done_ + work == work_total_) out_ << "]";
-  out_.flush();
+  if (work_done_ == 0) fputc('[', fout_);
+  fputs(std::string(incr, '=').c_str(), fout_);
+  if (work_done_ + work == work_total_) fputc(']', fout_);
+  fflush(fout_);
 
   bar_       += incr;
   work_done_ += work;

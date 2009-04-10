@@ -3,17 +3,17 @@
 #ifndef SRC_PROGRESS_TABLE_H_
 #define SRC_PROGRESS_TABLE_H_
 
-// Abstract base class for progress table to be subclassed for HMM training
-// and EM clustering.
-
-#include <iostream>
+#include <cstdlib>
+#include <cstdio>
 
 namespace cs {
 
+// Abstract base class for progress table to be subclassed for HMM training
+// and EM clustering.
 class ProgressTable {
  public:
   // To be used by derived classes.
-  ProgressTable(std::ostream& out = std::cout, int width = 30);
+  ProgressTable(FILE* fout = stdout, int width = 30);
 
   virtual ~ProgressTable() { }
 
@@ -29,13 +29,11 @@ class ProgressTable {
   void reset();
   // Advances the progress bar proportional to the amount of work done.
   void print_progress(int work);
-  // Returns reference to output stream.
-  std::ostream& outstream() const { return out_; }
 
  protected:
 
   // Output stream.
-  std::ostream& out_;
+  FILE* fout_;
   // Width of prograess bar.
   const int width_;
   // Currnt width of bar.

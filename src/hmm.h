@@ -11,13 +11,13 @@
 #include <vector>
 
 #include "globals.h"
-#include "profile-inl.h"
-#include "context_profile-inl.h"
-#include "count_profile-inl.h"
+#include "profile.h"
+#include "context_profile.h"
+#include "count_profile.h"
 #include "pseudocounts.h"
 #include "shared_ptr.h"
 #include "sparse_matrix.h"
-#include "state-inl.h"
+#include "state.h"
 #include "transition.h"
 
 namespace cs {
@@ -61,8 +61,6 @@ class HMM {
 
   // Constructs an empty HMM of given size without any states or transitions.
   HMM(int num_states, int num_cols);
-  // Constructs context HMM from serialized HMM read from input stream.
-  explicit HMM(std::istream& in);
   // Constructs context HMM from serialized HMM read from input stream.
   explicit HMM(FILE* fin);
   // Constructs context HMM with the help of a state- and a
@@ -148,7 +146,7 @@ class HMM {
     return transitions_.nonempty_end();
   }
   // Writes the HMM in serialization format to output stream.
-  void write(std::ostream& out) const;
+  void write(FILE* fout) const;
   // Returns true if transitions are in logspace.
   bool transitions_logspace() const { return transitions_logspace_; }
   // Returns true if state profiles are in logspace.
@@ -181,8 +179,6 @@ class HMM {
 
   // Prints the HMM in human-readable format to output stream.
   void print(std::ostream& out) const;
-  // Initializes the HMM from a serialized HMM read from stream.
-  void read(std::istream& in);
   // Initializes the HMM from a serialized HMM read from stream.
   void read(FILE* fin);
   // Initializes the HMM.

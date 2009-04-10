@@ -9,10 +9,15 @@
 #include <cstdio>
 #include <cstring>
 
-#include <string>
+#include <iostream>
 
+#include "context_profile-inl.h"
+#include "count_profile-inl.h"
 #include "exception.h"
+#include "profile-inl.h"
+#include "pseudocounts.h"
 #include "log.h"
+#include "shared_ptr.h"
 #include "utils-inl.h"
 
 namespace cs {
@@ -25,16 +30,6 @@ ProfileLibrary<Alphabet>::ProfileLibrary(int num_profiles, int num_cols)
       profiles_(),
       logspace_(false) {
   profiles_.reserve(num_profiles);
-}
-
-template<class Alphabet>
-ProfileLibrary<Alphabet>::ProfileLibrary(std::istream& in)
-    : num_profiles_(0),
-      num_cols_(0),
-      iterations_(0),
-      profiles_(),
-      logspace_(false) {
-  read(in);
 }
 
 template<class Alphabet>
@@ -104,49 +99,6 @@ inline void ProfileLibrary<Alphabet>::transform_to_linspace() {
 }
 
 template<class Alphabet>
-void ProfileLibrary<Alphabet>::read(std::istream& in) {
-  LOG(DEBUG1) << "Reading profile library from stream ...";
-
-  // Check if stream actually contains a serialized profile library
-  std::string tmp;
-  while (getline(in, tmp) && tmp.empty()) continue;
-  if (tmp.find("ProfileLibrary") == std::string::npos)
-    throw Exception("Profile library does not start with 'ProfileLibrary' "
-                    "keyword!");
-  // Read number of profiles
-  if (getline(in, tmp) && tmp.find("num_profiles") != std::string::npos)
-    num_profiles_ = atoi(tmp.c_str() + 12);
-  else
-    throw Exception("Profile library does not contain 'num_profiles' record!");
-  // Read number of columns
-  if (getline(in, tmp) && tmp.find("num_cols") != std::string::npos)
-    num_cols_= atoi(tmp.c_str() + 8);
-  else
-    throw Exception("Profile library does not contain 'num_cols' record!");
-  // Read number of iterations
-  if (getline(in, tmp) && tmp.find("iterations") != std::string::npos)
-    iterations_= atoi(tmp.c_str() + 10);
-  else
-    throw Exception("Profile library does not contain 'iterations' record!");
-  // Read profiles_logspace
-  if (getline(in, tmp) && tmp.find("logspace") != std::string::npos)
-    logspace_ = atoi(tmp.c_str() + 8) == 1;
-
-  // Read profile records
-  profiles_.reserve(num_profiles());
-  while (!full() && in.good()) {
-    shared_ptr< ContextProfile<Alphabet> >
-      profile_ptr(new ContextProfile<Alphabet>(in));
-    profiles_.push_back(profile_ptr);
-  }
-  if (!full())
-    throw Exception("Profile library has %i profiles but should have %i!",
-                    profiles_.size(), num_profiles());
-
-  LOG(DEBUG1) << *this;
-}
-
-template<class Alphabet>
 void ProfileLibrary<Alphabet>::read(FILE* fin) {
   LOG(DEBUG1) << "Reading profile library from stream ...";
 
@@ -200,20 +152,6 @@ void ProfileLibrary<Alphabet>::read(FILE* fin) {
                     profiles_.size(), num_profiles());
 
   LOG(DEBUG1) << *this;
-}
-
-template<class Alphabet>
-void ProfileLibrary<Alphabet>::write(std::ostream& out) const {
-  // Write header
-  out << "ProfileLibrary"   << std::endl;
-  out << "num_profiles\t\t" << num_profiles() << std::endl;
-  out << "num_cols\t\t"     << num_cols() << std::endl;
-  out << "iterations\t\t"   << iterations() << std::endl;
-  out << "logspace\t\t"     << (logspace() ? 1 : 0) << std::endl;
-
-  // Serialize profiles
-  for (const_profile_iterator pi = profiles_.begin(); pi != profiles_.end(); ++pi)
-    (*pi)->write(out);
 }
 
 template<class Alphabet>

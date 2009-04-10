@@ -1,0 +1,6 @@
+#+STARTUP: overview
+#+SEQ_TODO: TODO BUG DONE
+#+STARTUP: hidestars
+
+* Remove has_counts from CountsProfile
+* Rename 'from' and 'to' members in Transition to 'source' and 'target'

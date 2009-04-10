@@ -3,24 +3,15 @@
 #ifndef SRC_PROFILE_H_
 #define SRC_PROFILE_H_
 
-#include <climits>
-#include <cmath>
 #include <cstdio>
-#include <cstring>
 #include <cstdlib>
 
 #include <iostream>
-#include <iomanip>
-#include <limits>
-#include <sstream>
 #include <vector>
 
-#include "exception.h"
 #include "globals.h"
-#include "log.h"
 #include "matrix.h"
 #include "shared_ptr.h"
-#include "utils-inl.h"
 
 namespace cs {
 
@@ -38,8 +29,6 @@ class Profile {
   // Constructs a profile with num_cols columns initialized to zero.
   explicit Profile(int num_cols);
   // Constructs profile from serialized profile read from input stream.
-  explicit Profile(std::istream& in);
-  // Constructs profile from serialized profile read from input stream.
   explicit Profile(FILE* fin);
   // Creates a profile from subprofile starting at column index and length
   // columns long.
@@ -47,9 +36,6 @@ class Profile {
 
   virtual ~Profile() { }
 
-  // Reads all available profiles from the input stream and returns them in a
-  // vector.
-  static void readall(std::istream& in, std::vector< shared_ptr<Profile> >& v);
   // Reads all available profiles from the input stream and returns them in a
   // vector.
   static void readall(FILE* in, std::vector< shared_ptr<Profile> >* v);
@@ -88,11 +74,9 @@ class Profile {
   // Returns a const iterator just past the end of the profile matrix.
   const_iterator end() const { return data_.end(); }
   // Initializes the profile object with a serialized profile read from stream.
-  void read(std::istream& in);
-  // Initializes the profile object with a serialized profile read from stream.
   void read(FILE* fin);
   // Writes the profile in serialization format to output stream.
-  void write(std::ostream& out) const;
+  void write(FILE*) const;
 
   // Prints profile in human-readable format for debugging.
   friend std::ostream& operator<< (std::ostream& out, const Profile& p) {
@@ -107,19 +91,13 @@ class Profile {
   static const int kBufferSize = KB;
 
   // Reads and initializes serialized scalar data members from stream.
-  virtual void read_header(std::istream& in);
-  // Reads and initializes serialized scalar data members from stream.
   virtual void read_header(FILE* fin);
-  // Reads and initializes array data members from stream.
-  virtual void read_body(std::istream& in);
   // Reads and initializes array data members from stream.
   virtual void read_body(FILE* fin);
   // Writes serialized scalar data members to stream.
-  virtual void write_header(std::ostream& out) const;
-  // Writes serialized scalar data members to stream.
   virtual void write_header(FILE* fout) const;
   // Writes serialized array data members to stream.
-  virtual void write_body(std::ostream& out) const;
+  virtual void write_body(FILE* fout) const;
   // Prints the profile in human-readable format to output stream.
   virtual void print(std::ostream& out) const;
   // Resize the profile matrix to given dimensions.
@@ -135,10 +113,6 @@ class Profile {
   static const char* kClassID;
 
   // Returns serialization class identity.
-  virtual const std::string class_identity() const {
-    static std::string id("Profile");
-    return id;
-  }
   virtual const char* class_id() const { return kClassID; }
 
 };  // Profile

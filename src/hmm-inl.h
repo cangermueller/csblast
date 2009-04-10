@@ -5,17 +5,23 @@
 
 #include "hmm.h"
 
-#include <climits>
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
 
+#include <iostream>
 #include <limits>
-#include <string>
 #include <vector>
 
 #include "exception.h"
+#include "context_profile-inl.h"
+#include "count_profile-inl.h"
+#include "profile-inl.h"
 #include "log.h"
+#include "pseudocounts.h"
+#include "shared_ptr.h"
+#include "state-inl.h"
+#include "transition.h"
 #include "utils-inl.h"
 
 namespace cs {
@@ -30,18 +36,6 @@ HMM<Alphabet>::HMM(int num_states, int num_cols)
       transitions_logspace_(false),
       states_logspace_(false)  {
   init();
-}
-
-template<class Alphabet>
-HMM<Alphabet>::HMM(std::istream& in)
-    : num_states_(0),
-      num_cols_(0),
-      iterations_(0),
-      states_(),
-      transitions_(),
-      transitions_logspace_(false),
-      states_logspace_(false) {
-  read(in);
 }
 
 template<class Alphabet>
@@ -187,74 +181,6 @@ inline void HMM<Alphabet>::transform_states_to_linspace() {
 }
 
 template<class Alphabet>
-void HMM<Alphabet>::read(std::istream& in) {
-  LOG(DEBUG1) << "Reading HMM from stream ...";
-
-  // Check if stream actually contains a serialized HMM
-  std::string tmp;
-  while (getline(in, tmp) && tmp.empty()) continue;
-  if (tmp.find("HMM") == std::string::npos)
-    throw Exception("HMM does not start with 'HMM' keyword!");
-  // Read number of states
-  if (getline(in, tmp) && tmp.find("num_states") != std::string::npos)
-    num_states_ = atoi(tmp.c_str() + 10);
-  else
-    throw Exception("HMM does not contain 'num_states' record!");
-  // Read number of transitions
-  int ntr = 0;
-  if (getline(in, tmp) && tmp.find("num_transitions") != std::string::npos)
-    ntr = atoi(tmp.c_str() + 15);
-  else
-    throw Exception("HMM does not contain 'num_transitions' record!");
-  // Read number of columns
-  if (getline(in, tmp) && tmp.find("num_cols") != std::string::npos)
-    num_cols_= atoi(tmp.c_str() + 8);
-  else
-    throw Exception("HMM does not contain 'num_cols' record!");
-  // Read number of iterations
-  if (getline(in, tmp) && tmp.find("iterations") != std::string::npos)
-    iterations_= atoi(tmp.c_str() + 10);
-  else
-    throw Exception("HMM does not contain 'iterations' record!");
-  // Read transitions_logspace
-  if (getline(in, tmp) && tmp.find("transitions_logspace") != std::string::npos)
-    transitions_logspace_ = atoi(tmp.c_str() + 20) == 1;
-  // Read states_logspace
-  if (getline(in, tmp) && tmp.find("states_logspace") != std::string::npos)
-    states_logspace_ = atoi(tmp.c_str() + 15) == 1;
-  // Read state records
-  init();
-  while (!full() && in.good()) {
-    shared_ptr< State<Alphabet> > state_ptr(new State<Alphabet>(in));
-    states_.push_back(state_ptr);
-  }
-  if (!full())
-    throw Exception("HMM has %i states but should have %i!",
-                    states_.size(), num_states());
-
-  // Read all transitions
-  std::vector<std::string> tokens;
-  getline(in, tmp);  // skip description line
-  while (getline(in, tmp)) {
-    if (tmp.empty()) continue;
-    if (tmp.length() > 1 && tmp[0] == '/' && tmp[1] == '/') break;
-
-    split(tmp, '\t', tokens);
-    float log_p =
-      *tokens.back().begin() == '*' ? INT_MAX : atoi(tokens.back().c_str());
-    set_transition( atoi(tokens[0].c_str()),
-                    atoi(tokens[1].c_str()),
-                    transitions_logspace() ?
-                    -log_p / kLogScale : pow(2.0, -log_p / kLogScale) );
-    tokens.clear();
-  }
-  if (num_transitions() != ntr)
-    throw Exception("HMM has %i transition records but should have %i!",
-                    num_transitions(), ntr);
-  LOG(DEBUG1) << *this;
-}
-
-template<class Alphabet>
 void HMM<Alphabet>::read(FILE* fin) {
   LOG(DEBUG1) << "Reading HMM from stream ...";
 
@@ -346,33 +272,34 @@ void HMM<Alphabet>::read(FILE* fin) {
 }
 
 template<class Alphabet>
-void HMM<Alphabet>::write(std::ostream& out) const {
+void HMM<Alphabet>::write(FILE* fout) const {
   // Write header
-  out << "HMM" << std::endl;
-  out << "num_states\t\t"         << num_states() << std::endl;
-  out << "num_transitions\t\t"    << num_transitions() << std::endl;
-  out << "num_cols\t\t"           << num_cols() << std::endl;
-  out << "iterations\t\t"         << iterations() << std::endl;
-  out << "transitions_logspace\t" << (transitions_logspace() ? 1 : 0) << std::endl;
-  out << "states_logspace\t\t"    << (states_logspace() ? 1 : 0) << std::endl;
+  fputs("HMM\n", fout);
+  fprintf(fout, "num_states\t\t%i\n", num_states());
+  fprintf(fout, "num_transitions\t\t%i\n", num_transitions());
+  fprintf(fout, "num_cols\t\t%i\n", num_cols());
+  fprintf(fout, "iterations\t\t%i\n", iterations());
+  fprintf(fout, "transitions_logspace\t%i\n", transitions_logspace() ? 1 : 0);
+  fprintf(fout, "states_logspace\t\t%i\n", states_logspace() ? 1 : 0);
 
   // Write states
   for (const_state_iterator si = states_begin(); si != states_end(); ++si)
-    (*si)->write(out);
+    (*si)->write(fout);
 
   // Write transitions
-  out << "transitions" << std::endl;
+  fputs("transitions\n", fout);
   for (const_transition_iterator ti = transitions_begin();
        ti != transitions_end(); ++ti) {
-    out << ti->from << "\t" << ti->to << "\t";
-    float logval =
+    fprintf(fout, "%i\t%i\t",
+            static_cast<int>(ti->from), static_cast<int>(ti->to));
+    float log_p =
       transitions_logspace() ? ti->probability : log2(ti->probability);
-    if (-logval == std::numeric_limits<float>::infinity())
-      out << "*" << std::endl;
+    if (log_p == -std::numeric_limits<float>::infinity())
+      fputs("*\n", fout);
     else
-      out << -iround(logval * kLogScale) << std::endl;
+      fprintf(fout, "%i\n", -iround(log_p * kLogScale));
   }
-  out << "//" << std::endl;
+  fputs("//\n", fout);
 }
 
 template<class Alphabet>

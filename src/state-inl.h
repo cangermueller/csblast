@@ -5,21 +5,17 @@
 
 #include "state.h"
 
-#include <string>
+#include <cstdio>
+#include <cstring>
+
+#include "context_profile-inl.h"
+#include "profile-inl.h"
+#include "transition.h"
 
 namespace cs {
 
 template<class Alphabet>
 const char* State<Alphabet>::kClassID = "State";
-
-template<class Alphabet>
-inline State<Alphabet>::State(std::istream& in)
-    : ContextProfile<Alphabet>(),
-      num_states_(0),
-      in_transitions_(0),
-      out_transitions_(0) {
-  read(in);
-}
 
 template<class Alphabet>
 inline State<Alphabet>::State(FILE* fin)
@@ -63,19 +59,6 @@ void State<Alphabet>::resize(int num_states) {
 }
 
 template<class Alphabet>
-void State<Alphabet>::read_header(std::istream& in) {
-  ContextProfile<Alphabet>::read_header(in);
-
-  // Read HMM size
-  std::string tmp;
-  if (getline(in, tmp) && tmp.find("num_states") != std::string::npos)
-    num_states_ = atoi(tmp.c_str() + 10);
-
-  in_transitions_.resize(num_states_);
-  out_transitions_.resize(num_states_);
-}
-
-template<class Alphabet>
 void State<Alphabet>::read_header(FILE* fin) {
   ContextProfile<Alphabet>::read_header(fin);
 
@@ -91,12 +74,6 @@ void State<Alphabet>::read_header(FILE* fin) {
 
   in_transitions_.resize(num_states_);
   out_transitions_.resize(num_states_);
-}
-
-template<class Alphabet>
-void State<Alphabet>::write_header(std::ostream& out) const {
-  ContextProfile<Alphabet>::write_header(out);
-  out << "num_states\t" << num_states_ << std::endl;
 }
 
 template<class Alphabet>

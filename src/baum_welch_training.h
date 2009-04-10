@@ -4,8 +4,9 @@
 #define SRC_BAUM_WELCH_TRAINING_H_
 
 #include <cmath>
+#include <cstdlib>
+#include <cstdio>
 
-#include <iostream>
 #include <vector>
 
 #include "context_profile-inl.h"
@@ -64,7 +65,7 @@ class BaumWelchTraining : public ExpectationMaximization<Alphabet, Subject> {
   BaumWelchTraining(const BaumWelchParams& params,
                     const data_vector& data,
                     HMM<Alphabet>& hmm,
-                    std::ostream& out);
+                    FILE* fout);
 
   virtual ~BaumWelchTraining();
 
@@ -130,7 +131,7 @@ template< class Alphabet,
 class BaumWelchProgressTable : public ProgressTable {
  public:
   BaumWelchProgressTable(const BaumWelchTraining<Alphabet, Subject>* training,
-                         std::ostream& out = std::cout,
+                         FILE* fout = stdout,
                          int width = 30);
 
   virtual ~BaumWelchProgressTable() { }

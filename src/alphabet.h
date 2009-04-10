@@ -7,6 +7,8 @@
 #include <cmath>
 #include <cstddef>
 #include <cstring>
+#include <cstdio>
+#include <cstdlib>
 
 #include <iostream>
 #include <vector>
@@ -54,13 +56,15 @@ class Alphabet {
   // the alphabet.
   const_iterator end() const { return itoc_.begin() + size(); }
 
-  // Print alphabet characters delimited by tabbs.
+  // Print alphabet characters delimited by tabs.
   friend std::ostream& operator<< (std::ostream& out, const Alphabet& alph) {
     out << *alph.begin();
     for (Alphabet::const_iterator a = alph.begin() + 1; a != alph.end(); ++a)
       out << '\t' << *a;
     return out;
   }
+  // Write alphabet characters delimited by tabs.
+  void write(FILE* fout) const;
 
  protected:
   // Denotes invalid characters in ctoi array

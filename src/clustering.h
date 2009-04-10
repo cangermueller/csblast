@@ -4,8 +4,9 @@
 #define SRC_CLUSTERING_H_
 
 #include <cmath>
+#include <cstdlib>
+#include <cstdio>
 
-#include <iostream>
 #include <valarray>
 #include <vector>
 
@@ -47,7 +48,7 @@ class Clustering : public ExpectationMaximization<Alphabet, Subject> {
   Clustering(const ClusteringParams& params,
              const data_vector& data,
              ProfileLibrary<Alphabet>& lib,
-             std::ostream& out);
+             FILE* fout);
 
   virtual ~Clustering();
 
@@ -90,7 +91,7 @@ class Clustering : public ExpectationMaximization<Alphabet, Subject> {
   Emitter<Alphabet> emitter_;
   // Global expected sufficient statistics for emissions and state priors.
   profiles_vector profile_stats_;
-  // Expeted sufficient statistics for emissions and state priors based on
+  // Expected sufficient statistics for emissions and state priors based on
   // current block.
   profiles_vector profile_stats_block_;
 };
@@ -101,7 +102,7 @@ template< class Alphabet,
 class ClusteringProgressTable : public ProgressTable {
  public:
   ClusteringProgressTable(const Clustering<Alphabet, Subject>* clustering,
-                          std::ostream& out = std::cout,
+                          FILE* fout = stdout,
                           int width = 30);
 
   virtual ~ClusteringProgressTable() { }

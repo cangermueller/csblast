@@ -5,6 +5,20 @@
 
 #include "profile.h"
 
+#include <climits>
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+
+#include <iostream>
+#include <limits>
+#include <vector>
+
+#include "exception.h"
+#include "log.h"
+#include "utils-inl.h"
+
 namespace cs {
 
 template<class Alphabet>
@@ -19,13 +33,6 @@ template<class Alphabet>
 inline Profile<Alphabet>::Profile(int num_cols)
     : data_(num_cols, Alphabet::instance().size(), 0.0f),
       logspace_(false) { }
-
-template<class Alphabet>
-inline Profile<Alphabet>::Profile(std::istream& in)
-    : data_(),
-      logspace_(false) {
-  read(in);
-}
 
 template<class Alphabet>
 inline Profile<Alphabet>::Profile(FILE* fin)
@@ -46,15 +53,6 @@ inline Profile<Alphabet>::Profile(const Profile& other,
   for (int i = 0; i < num_cols(); ++i)
     for (int a = 0; a < alphabet_size(); ++a)
       data_[i][a] = other[i+index][a];
-}
-
-template<class Alphabet>
-inline void Profile<Alphabet>::readall(std::istream& in,
-                                       std::vector< shared_ptr<Profile> >& v) {
-  while (in.peek() && in.good()) {
-    shared_ptr<Profile> p(new Profile(in));
-    v.push_back(p);
-  }
 }
 
 template<class Alphabet>
@@ -91,23 +89,6 @@ void Profile<Alphabet>::transform_to_linspace() {
 }
 
 template<class Alphabet>
-void Profile<Alphabet>::read(std::istream& in) {
-  LOG(DEBUG1) << "Reading profile from stream ...";
-
-  // Check if stream actually contains a serialized profile
-  std::string tmp;
-  while (getline(in, tmp) && tmp.empty()) continue;
-  if (tmp.find(class_identity()) == std::string::npos)
-    throw Exception("Bad format: profile does not start with '%s'!",
-                    class_id());
-
-  read_header(in);
-  read_body(in);
-
-  LOG(DEBUG1) << *this;
-}
-
-template<class Alphabet>
 void Profile<Alphabet>::read(FILE* fin) {
   LOG(DEBUG1) << "Reading profile from stream ...";
 
@@ -123,34 +104,6 @@ void Profile<Alphabet>::read(FILE* fin) {
   read_body(fin);
 
   LOG(DEBUG1) << *this;
-}
-
-template<class Alphabet>
-void Profile<Alphabet>::read_header(std::istream& in) {
-  std::string tmp;
-
-  // Read num_cols
-  int num_cols = 0;
-  if (getline(in, tmp) && tmp.find("num_cols") != std::string::npos)
-    num_cols = atoi(tmp.c_str() + 8);
-  else
-    throw Exception("Bad format: profile does not contain 'num_cols' record!");
-
-  // Read alphabet_size
-  int alphabet_size = 0;
-  if (getline(in, tmp) && tmp.find("alphabet_size") != std::string::npos)
-    alphabet_size = atoi(tmp.c_str() + 13);
-  else
-    throw Exception("Bad format: profile does not contain 'alphabet_size' record!");
-  if (alphabet_size != Alphabet::instance().size())
-    throw Exception("Bad format: %i does not fit with alphabet size %i!",
-                    alphabet_size, Alphabet::instance().size());
-
-  // Read logspace
-  if (getline(in, tmp) && tmp.find("logspace") != std::string::npos)
-    logspace_ = atoi(tmp.c_str() + 8) == 1;
-
-  resize(num_cols, alphabet_size);
 }
 
 template<class Alphabet>
@@ -189,31 +142,6 @@ void Profile<Alphabet>::read_header(FILE* fin) {
 }
 
 template<class Alphabet>
-void Profile<Alphabet>::read_body(std::istream& in) {
-  std::string tmp;
-  std::vector<std::string> tokens;
-  int i = 0;
-  getline(in, tmp);  // skip alphabet description line
-  while (getline(in, tmp)) {
-    if (tmp.empty()) continue;
-    if (tmp.length() > 1 && tmp[0] == '/' && tmp[1] == '/') break;
-
-    split(tmp, '\t', tokens);
-    i = atoi(tokens[0].c_str()) - 1;
-    for (int a = 0; a < alphabet_size(); ++a) {
-      float log_p =
-        tokens[a+1][0] == '*' ? INT_MAX : atoi(tokens[a+1].c_str());
-      data_[i][a] =
-        logspace_ ? -log_p / kLogScale : pow(2.0, -log_p / kLogScale);
-    }
-    tokens.clear();
-  }
-  if (i != num_cols() - 1)
-    throw Exception("Bad format: profile has %i columns but should have %i!",
-                    i+1, num_cols());
-}
-
-template<class Alphabet>
 void Profile<Alphabet>::read_body(FILE* fin) {
   const int alph_size = alphabet_size();
   char buffer[kBufferSize];
@@ -238,17 +166,10 @@ void Profile<Alphabet>::read_body(FILE* fin) {
 }
 
 template<class Alphabet>
-void Profile<Alphabet>::write(std::ostream& out) const {
-  out << class_identity() << std::endl;
-  write_header(out);
-  write_body(out);
-}
-
-template<class Alphabet>
-void Profile<Alphabet>::write_header(std::ostream& out) const {
-  out << "num_cols\t" << num_cols() << std::endl;
-  out << "alphabet_size\t" << alphabet_size() << std::endl;
-  out << "logspace\t" << (logspace() ? 1 : 0) << std::endl;
+void Profile<Alphabet>::write(FILE* fout) const {
+  fprintf(fout, "%s\n", class_id());
+  write_header(fout);
+  write_body(fout);
 }
 
 template<class Alphabet>
@@ -259,36 +180,35 @@ void Profile<Alphabet>::write_header(FILE* fout) const {
 }
 
 template<class Alphabet>
-void Profile<Alphabet>::write_body(std::ostream& out) const {
-  out << "\t" << Alphabet::instance() << std::endl;
+void Profile<Alphabet>::write_body(FILE* fout) const {
+  fputc('\t', fout);
+  Alphabet::instance().write(fout);
+
   for (int i = 0; i < num_cols(); ++i) {
-    out << i+1;
+    fprintf(fout, "%i", i+1);
     for (int a = 0; a < alphabet_size(); ++a) {
-      float logval = logspace_ ? data_[i][a] : log2(data_[i][a]);
-      if (-logval == std::numeric_limits<float>::infinity())
-        out << "\t*";
+      float log_p = logspace_ ? data_[i][a] : log2(data_[i][a]);
+      if (log_p == -std::numeric_limits<float>::infinity())
+        fputs("\t*", fout);
       else
-        out << "\t" << -iround(logval * kLogScale);
+        fprintf(fout, "\t%i", -iround(log_p * kLogScale));
     }
-    out << std::endl;
+    fputc('\n', fout);
   }
-  out << "//" << std::endl;
+  fputs("//\n", fout);
 }
 
 template<class Alphabet>
 void Profile<Alphabet>::print(std::ostream& out) const {
-  std::ios_base::fmtflags flags = out.flags();  // save flags
-
   out << "\t" << Alphabet::instance() << std::endl;
+
   for (int i = 0; i < num_cols(); ++i) {
     out << i+1;
     for (int a = 0; a < alphabet_size(); ++a)
-      out << '\t' << std::fixed << std::setprecision(4)
-          << (logspace_ ? pow(2.0, data_[i][a]) : data_[i][a]);
+      out << strprintf("\t%6.4f",
+                       logspace_ ? pow(2.0, data_[i][a]) : data_[i][a]);
     out << std::endl;
   }
-
-  out.flags(flags);
 }
 
 template<class Alphabet>
@@ -298,8 +218,6 @@ void Profile<Alphabet>::resize(int num_cols, int alphabet_size) {
                     num_cols, alphabet_size);
   data_.resize(num_cols, alphabet_size);
 }
-
-
 
 template<class Alphabet>
 inline void reset(Profile<Alphabet>* p) {

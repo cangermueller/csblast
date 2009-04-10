@@ -5,20 +5,19 @@
 
 #include "count_profile.h"
 
-#include <string>
+#include <limits>
 #include <vector>
+
+#include "alignment-inl.h"
+#include "exception.h"
+#include "profile-inl.h"
+#include "sequence-inl.h"
+#include "utils-inl.h"
 
 namespace cs {
 
 template<class Alphabet>
 const char* CountProfile<Alphabet>::kClassID = "CountProfile";
-
-template<class Alphabet>
-inline CountProfile<Alphabet>::CountProfile(std::istream& in)
-    : neff_(),
-      has_counts_(false) {
-  read(in);
-}
 
 template<class Alphabet>
 inline CountProfile<Alphabet>::CountProfile(FILE* fin)
@@ -76,15 +75,6 @@ inline CountProfile<Alphabet>::CountProfile(const CountProfile& other,
 }
 
 template<class Alphabet>
-void CountProfile<Alphabet>::readall(std::istream& in,
-                                     std::vector< shared_ptr<CountProfile> >& v) {
-  while (in.peek() && in.good()) {
-    shared_ptr<CountProfile> p(new CountProfile(in));
-    v.push_back(p);
-  }
-}
-
-template<class Alphabet>
 void CountProfile<Alphabet>::readall(FILE* fin,
                                      std::vector< shared_ptr<CountProfile> >* v) {
   while (!feof(fin)) {
@@ -121,17 +111,6 @@ void CountProfile<Alphabet>::convert_to_frequencies() {
 }
 
 template<class Alphabet>
-void CountProfile<Alphabet>::read_header(std::istream& in) {
-  Profile<Alphabet>::read_header(in);
-  neff_.resize(num_cols());
-
-  // Read has_counts
-  std::string tmp;
-  if (getline(in, tmp) && tmp.find("has_counts") != std::string::npos)
-    has_counts_ = atoi(tmp.c_str() + 10) == 1;
-}
-
-template<class Alphabet>
 void CountProfile<Alphabet>::read_header(FILE* fin) {
   Profile<Alphabet>::read_header(fin);
   neff_.resize(num_cols());
@@ -145,32 +124,6 @@ void CountProfile<Alphabet>::read_header(FILE* fin) {
   } else {
     throw Exception("Bad format: profile does not contain 'has_counts' record!");
   }
-}
-
-template<class Alphabet>
-void CountProfile<Alphabet>::read_body(std::istream& in) {
-  std::string tmp;
-  std::vector<std::string> tokens;
-  int i = 0;
-  getline(in, tmp);  // skip alphabet description line
-  while (getline(in, tmp)) {
-    if (tmp.empty()) continue;
-    if (tmp.length() > 1 && tmp[0] == '/' && tmp[1] == '/') break;
-
-    split(tmp, '\t', tokens);
-    i = atoi(tokens[0].c_str()) - 1;
-    for (int a = 0; a < alphabet_size(); ++a) {
-      float log_p = tokens[a+1][0] == '*' ?
-        std::numeric_limits<int>::max() : atoi(tokens[a+1].c_str());
-      data_[i][a] =
-        (logspace() ? -log_p / kLogScale : pow(2.0, -log_p / kLogScale));
-    }
-    neff_[i] = atof(tokens[alphabet_size()+1].c_str()) / kLogScale;
-    tokens.clear();
-  }
-  if (i != num_cols() - 1)
-    throw Exception("Bad format: profile has %i columns but should have %i!",
-                    i+1, num_cols());
 }
 
 template<class Alphabet>
@@ -199,42 +152,41 @@ void CountProfile<Alphabet>::read_body(FILE* fin) {
 }
 
 template<class Alphabet>
-void CountProfile<Alphabet>::write_header(std::ostream& out) const {
-  Profile<Alphabet>::write_header(out);
-  out << "has_counts\t" << has_counts_ << std::endl;
+void CountProfile<Alphabet>::write_header(FILE* fout) const {
+  Profile<Alphabet>::write_header(fout);
+  fprintf(fout, "has_counts\t%i", has_counts_ ? 1 : 0);
 }
 
 template<class Alphabet>
-void CountProfile<Alphabet>::write_body(std::ostream& out) const {
-  out << "\t" << Alphabet::instance() << "\tNeff" << std::endl;
+void CountProfile<Alphabet>::write_body(FILE* fout) const {
+  fputc('\t', fout);
+  Alphabet::instance().write(fout);
+
   for (int i = 0; i < num_cols(); ++i) {
-    out << i+1;
+    fprintf(fout, "%i", i+1);
     for (int a = 0; a < alphabet_size(); ++a) {
       float log_p = logspace() ? data_[i][a] : log2(data_[i][a]);
-      if (-log_p == std::numeric_limits<float>::infinity())
-        out << "\t*";
+      if (log_p == -std::numeric_limits<float>::infinity())
+        fputs("\t*", fout);
       else
-        out << "\t" << -iround(log_p * kLogScale);
+        fprintf(fout, "\t%i", -iround(log_p * kLogScale));
     }
-    out << "\t" << iround(neff_[i] * kLogScale) << std::endl;
+    fprintf(fout, "\t%i\n", iround(neff_[i] * kLogScale));
   }
-  out << "//" << std::endl;
+  fputs("//\n", fout);
 }
 
 template<class Alphabet>
 void CountProfile<Alphabet>::print(std::ostream& out) const {
-  std::ios_base::fmtflags flags = out.flags();
-
   out << "\t" << Alphabet::instance() << "\tNeff" << std::endl;
+
   for (int i = 0; i < num_cols(); ++i) {
     out << i+1;
     for (int a = 0; a < alphabet_size(); ++a)
-      out << '\t' << std::fixed << std::setprecision(4)
-          << (logspace() ? pow(2.0, data_[i][a]) : data_[i][a]);
-    out << '\t' << std::setprecision(2) << neff_[i] << std::endl;
+      out << strprintf("\t%6.4f",
+                       logspace() ? pow(2.0, data_[i][a]) : data_[i][a]);
+    out << strprintf("\t%5.2f\n", neff_[i]);
   }
-
-  out.flags(flags);
 }
 
 }  // namespace cs

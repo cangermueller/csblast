@@ -12,14 +12,19 @@
 #include <vector>
 
 #include "globals.h"
-#include "log.h"
 #include "matrix.h"
-#include "exception.h"
-#include "sequence-inl.h"
+#include "sequence.h"
 #include "shared_ptr.h"
-#include "utils-inl.h"
 
 namespace cs {
+
+// Forward declarations
+template<class Alphabet>
+class Alignment;
+
+// Convince the compiler that operator<< is a template friend.
+template<class Alphabet>
+std::ostream& operator<< (std::ostream& out, const Alignment<Alphabet>& ali);
 
 // A container class for multiple sequence alignments.
 template<class Alphabet>
@@ -44,18 +49,10 @@ class Alignment {
 
   // Constructs alignment multi FASTA formatted alignment read from input
   // stream.
-  Alignment(std::istream& in, Format format);
-  // Constructs alignment multi FASTA formatted alignment read from input
-  // stream.
   Alignment(FILE* fin, Format format);
 
   ~Alignment() { }
 
-  // Reads all available alignments from the input stream and returns them in a
-  // vector.
-  static void readall(std::istream& in,
-                      Format format,
-                      std::vector< shared_ptr<Alignment> >& v);
   // Reads all available alignments from the input stream and returns them in a
   // vector.
   static void readall(FILE* fin,
@@ -114,23 +111,17 @@ class Alignment {
   void assign_match_columns_by_gap_rule(int gap_threshold = 50);
   // Initializes object with an alignment in FASTA format read from given
   // stream.
-  void read(std::istream& in, Format format);
-  // Initializes object with an alignment in FASTA format read from given
-  // stream.
   void read(FILE* fin, Format format);
   // Writes the alignment in given format to ouput stream.
-  void write(std::ostream& out, Format format, int width = 100) const;
+  void write(FILE* fout, Format format, int width = 100) const;
   // Returns true if column i is a match column.
   bool match_column(int i) const { return match_column_[i]; }
   // Removes all insert columns from the alignment.
   void remove_insert_columns();
 
   // Prints the Alignment in A2M format for debugging.
-  friend std::ostream& operator<< (std::ostream& out,
-                                   const Alignment& alignment) {
-    alignment.write(out, Alignment::CLUSTAL);
-    return out;
-  }
+  friend std::ostream& operator<< <> (std::ostream& out,
+                                      const Alignment<Alphabet>& ali);
 
  private:
   // Buffer size for reading
@@ -148,22 +139,6 @@ class Alignment {
   // Fills match_indexes_ with the indexes of all match columns.
   void set_match_indexes();
   // Reads an alignment in FASTA format.
-  void read_fasta(std::istream& in,
-                  std::vector<std::string>& headers,
-                  std::vector<std::string>& seqs);
-  // Reads an alignment in A2M format from given stream.
-  void read_a2m(std::istream& in,
-                std::vector<std::string>& headers,
-                std::vector<std::string>& seqs);
-  // Reads an alignment in A3M format from given stream.
-  void read_a3m(std::istream& in,
-                std::vector<std::string>& headers,
-                std::vector<std::string>& seqs);
-  // Helper method that reads a FASTA, A2M, or A3M formatted alignment.
-  void read_fasta_flavors(std::istream& in,
-                          std::vector<std::string>& headers,
-                          std::vector<std::string>& seqs);
-  // Reads an alignment in FASTA format.
   void read_fasta(FILE* fin,
                   std::vector<std::string>* headers,
                   std::vector<std::string>* seqs);
@@ -180,13 +155,9 @@ class Alignment {
                           std::vector<std::string>* headers,
                           std::vector<std::string>* seqs);
   // Writes the alignment in FASTA, A2M, or A3M format to output stream.
-  void write_fasta_flavors(std::ostream& out,
-                           Format format,
-                           int width = 100) const;
+  void write_fasta_flavors(FILE* fout, Format format, int width = 100) const;
   // Writes the alignment in CLUSTAL or PSI format to output stream.
-  void write_clustal_flavors(std::ostream& out,
-                             Format format,
-                             int width = 100) const;
+  void write_clustal_flavors(FILE* fout, Format format, int width = 100) const;
 
   // Row major matrix with sequences in integer representation.
   matrix<char> seqs_;

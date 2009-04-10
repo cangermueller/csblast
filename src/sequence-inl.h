@@ -5,19 +5,21 @@
 
 #include "sequence.h"
 
+#include <cstdio>
+
 #include <string>
 #include <vector>
+
+#include "exception.h"
+#include "log.h"
+#include "shared_ptr.h"
+#include "utils-inl.h"
 
 namespace cs {
 
 template<class Alphabet>
 inline Sequence<Alphabet>::Sequence(int length)
     : seq_(length) { }
-
-template<class Alphabet>
-inline Sequence<Alphabet>::Sequence(std::istream& in) {
-  read(in);
-}
 
 template<class Alphabet>
 inline Sequence<Alphabet>::Sequence(FILE* in) {
@@ -28,15 +30,6 @@ template<class Alphabet>
 Sequence<Alphabet>::Sequence(const std::string& header,
                              const std::string& sequence) {
   init(header, sequence);
-}
-
-template<class Alphabet>
-inline void Sequence<Alphabet>::readall(std::istream& in,
-                                        std::vector< shared_ptr<Sequence> >& v) {
-  while (in.peek() && in.good()) {
-    shared_ptr<Sequence> p(new Sequence(in));
-    v.push_back(p);
-  }
 }
 
 template<class Alphabet>
@@ -70,29 +63,6 @@ void Sequence<Alphabet>::init(std::string header, std::string sequence) {
                       c, i, header_.c_str());
     }
   }
-}
-
-template<class Alphabet>
-void Sequence<Alphabet>::read(std::istream& in) {
-  LOG(DEBUG1) << "Reading sequence from stream ...";
-  std::string tmp;
-  std::string header;
-  std::string sequence;
-
-  // Read header
-  if (getline(in, tmp)) {
-    if (tmp.empty() ||  tmp[0] != '>')
-      throw Exception("Sequence header does not start with '>' character!");
-    header.append(tmp.begin() + 1, tmp.end());
-  } else {
-    throw Exception("Failed to read sequence from stream!");
-  }
-  // Read sequence
-  while (in.peek() != '>' && getline(in, tmp))
-    sequence.append(tmp.begin(), tmp.end());
-
-  init(header, sequence);
-  LOG(DEBUG1) << *this;
 }
 
 template<class Alphabet>
@@ -130,13 +100,13 @@ void Sequence<Alphabet>::read(FILE* fin) {
 }
 
 template<class Alphabet>
-void Sequence<Alphabet>::write(std::ostream& out, int width) const {
-  out << '>' << header_ << std::endl;
+void Sequence<Alphabet>::write(FILE* fout, int width) const {
+  fprintf(fout, ">%s\n", header_.c_str());
   for (int i = 0; i < length(); ++i) {
-    out << chr(i);
-    if ((i+1) % width == 0) out << std::endl;
+    fputc(char(i), fout);
+    if ((i+1) % width == 0) fputc('\n', fout);
   }
-  if (length() % width != 0) out << std::endl;
+  if (length() % width != 0) fputc('\n', fout);
 }
 
 }  // namespace cs

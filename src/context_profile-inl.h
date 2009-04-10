@@ -5,8 +5,14 @@
 
 #include "context_profile.h"
 
-#include <string>
+#include <iostream>
 #include <vector>
+
+#include "alignment-inl.h"
+#include "exception.h"
+#include "profile-inl.h"
+#include "shared_ptr.h"
+#include "utils-inl.h"
 
 namespace cs {
 
@@ -37,15 +43,6 @@ inline ContextProfile<Alphabet>::ContextProfile(int index,
 }
 
 template<class Alphabet>
-inline ContextProfile<Alphabet>::ContextProfile(std::istream& in)
-    : Profile<Alphabet>(),
-      index_(0),
-      prior_(0.0f) {
-  read(in);
-  check();
-}
-
-template<class Alphabet>
 inline ContextProfile<Alphabet>::ContextProfile(FILE* fin)
     : Profile<Alphabet>(),
       index_(0),
@@ -55,32 +52,10 @@ inline ContextProfile<Alphabet>::ContextProfile(FILE* fin)
 }
 
 template<class Alphabet>
-void ContextProfile<Alphabet>::readall(
-    std::istream& in, std::vector< shared_ptr<ContextProfile> >& v) {
-  while (in.peek() && in.good()) {
-    shared_ptr<ContextProfile> p(new ContextProfile(in));
-    v.push_back(p);
-  }
-}
-
-template<class Alphabet>
 void ContextProfile<Alphabet>::check() {
   if (num_cols() % 2 != 1)
     throw Exception("Column number in context profiles must be odd but is %i!",
                     num_cols());
-}
-
-template<class Alphabet>
-void ContextProfile<Alphabet>::read_header(std::istream& in) {
-  // Read has_counts
-  std::string tmp;
-  if (getline(in, tmp) && tmp.find("index") != std::string::npos)
-    index_ = atoi(tmp.c_str() + 5);
-  // Read prior
-  if (getline(in, tmp) && tmp.find("prior") != std::string::npos)
-    prior_ = atof(tmp.c_str() + 5);
-
-  Profile<Alphabet>::read_header(in);
 }
 
 template<class Alphabet>
@@ -103,14 +78,6 @@ void ContextProfile<Alphabet>::read_header(FILE* fin) {
   }
 
   Profile<Alphabet>::read_header(fin);
-}
-
-template<class Alphabet>
-void ContextProfile<Alphabet>::write_header(std::ostream& out) const {
-  out << "index\t\t" << index() << std::endl;
-  out << "prior\t\t" << strprintf("%-10.8g", prior()) << std::endl;
-
-  Profile<Alphabet>::write_header(out);
 }
 
 template<class Alphabet>

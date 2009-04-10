@@ -4,14 +4,12 @@
 #define SRC_STATE_H_
 
 #include <cstdio>
-#include <cstring>
 
 #include <functional>
 #include <google/sparsetable>
-#include <string>
 
-#include "context_profile-inl.h"
-#include "profile-inl.h"
+#include "context_profile.h"
+#include "profile.h"
 #include "transition.h"
 
 using google::sparsetable;
@@ -39,8 +37,6 @@ class State : public ContextProfile<Alphabet> {
   using ContextProfile<Alphabet>::set_index;
   using ContextProfile<Alphabet>::read;
 
-  // Constructs HMM state from serialized state read from input stream.
-  explicit State(std::istream& in);
   // Constructs HMM state from serialized state read from input stream.
   explicit State(FILE* fin);
   // Constructs HMM state with given profile and all transitions initialized to
@@ -93,11 +89,7 @@ class State : public ContextProfile<Alphabet> {
   using ContextProfile<Alphabet>::write_body;
 
   // Reads and initializes serialized scalar data members from stream.
-  virtual void read_header(std::istream& in);
-  // Reads and initializes serialized scalar data members from stream.
   virtual void read_header(FILE* in);
-  // Writes serialized scalar data members to stream.
-  virtual void write_header(std::ostream& out) const;
   // Writes serialized scalar data members to stream.
   virtual void write_header(FILE* fout) const;
 
@@ -106,10 +98,6 @@ class State : public ContextProfile<Alphabet> {
   static const char* kClassID;
 
   // Returns serialization class identity.
-  virtual const std::string class_identity() const {
-    static std::string id("State");
-    return id;
-  }
   virtual const char* class_id() const { return kClassID; }
 
   // Size of HMM to which the state belongs.

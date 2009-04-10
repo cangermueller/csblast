@@ -7,14 +7,11 @@
 #include <cstring>
 
 #include <iostream>
-#include <string>
 #include <vector>
 
-#include "alignment-inl.h"
-#include "exception.h"
-#include "profile-inl.h"
+#include "alignment.h"
+#include "profile.h"
 #include "shared_ptr.h"
-#include "utils-inl.h"
 
 namespace cs {
 
@@ -33,8 +30,6 @@ class ContextProfile : public Profile<Alphabet> {
   // Constructs a context profile with num_cols columns initialized to zero.
   ContextProfile(int index, int num_cols);
   // Constructs profile from serialized profile read from input stream.
-  explicit ContextProfile(std::istream& in);
-  // Constructs profile from serialized profile read from input stream.
   explicit ContextProfile(FILE* fin);
   // Constructs a context profile from simple profile and checks if length is
   // valid.
@@ -42,10 +37,6 @@ class ContextProfile : public Profile<Alphabet> {
 
   virtual ~ContextProfile() { }
 
-  // Reads all available profiles from the input stream and returns them in a
-  // vector.
-  static void readall(std::istream& in,
-                      std::vector< shared_ptr<ContextProfile> >& v);
   // Returns the index of this context profile.
   int index() const { return index_; }
   // Sets the index of this context profile.
@@ -63,11 +54,7 @@ class ContextProfile : public Profile<Alphabet> {
   using Profile<Alphabet>::kBufferSize;
 
   // Reads and initializes serialized scalar data members from stream.
-  virtual void read_header(std::istream& in);
-  // Reads and initializes serialized scalar data members from stream.
   virtual void read_header(FILE* fin);
-  // Writes serialized scalar data members to stream.
-  virtual void write_header(std::ostream& out) const;
   // Writes serialized scalar data members to stream.
   virtual void write_header(FILE* fout) const;
   // Prints the profile in human-readable format to output stream.
@@ -83,10 +70,6 @@ class ContextProfile : public Profile<Alphabet> {
   static const char* kClassID;
 
   // Return serialization class identity.
-  virtual const std::string class_identity() const {
-    static std::string id("ContextProfile");
-    return id;
-  }
   virtual const char* class_id() const { return kClassID; }
   // Checks if profile has odd number of columns.
   void check();
