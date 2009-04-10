@@ -2,9 +2,6 @@
 
 #include <cstdio>
 
-#include <string>
-#include <sstream>
-
 #include "amino_acid.h"
 #include "nucleotide.h"
 #include "profile-inl.h"

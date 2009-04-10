@@ -204,7 +204,7 @@ void Profile<Alphabet>::read_body(std::istream& in) {
       float log_p =
         tokens[a+1][0] == '*' ? INT_MAX : atoi(tokens[a+1].c_str());
       data_[i][a] =
-        logspace_ ? -log_p / kScaleFactor : pow(2.0, -log_p / kScaleFactor);
+        logspace_ ? -log_p / kLogScale : pow(2.0, -log_p / kLogScale);
     }
     tokens.clear();
   }
@@ -268,7 +268,7 @@ void Profile<Alphabet>::write_body(std::ostream& out) const {
       if (-logval == std::numeric_limits<float>::infinity())
         out << "\t*";
       else
-        out << "\t" << -iround(logval * kScaleFactor);
+        out << "\t" << -iround(logval * kLogScale);
     }
     out << std::endl;
   }

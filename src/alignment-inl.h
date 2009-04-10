@@ -34,19 +34,22 @@ inline void Alignment<Alphabet>::readall(
 }
 
 template<class Alphabet>
-inline void Alignment<Alphabet>::readall(
-    FILE* fin,
-    Format format,
-    std::vector< shared_ptr<Alignment> >* v) {
+void Alignment<Alphabet>::readall(FILE* fin,
+                                  Format format,
+                                  std::vector< shared_ptr<Alignment> >* v) {
   while (!feof(fin)) {
     shared_ptr<Alignment> p(new Alignment(fin, format));
     v->push_back(p);
+
+    int c = fgetc(fin);
+    if (c == EOF) break;
+    ungetc(c, fin);
   }
 }
 
 template<class Alphabet>
 void Alignment<Alphabet>::init(const std::vector<std::string>& headers,
-                                 const std::vector<std::string>& seqs) {
+                               const std::vector<std::string>& seqs) {
   if (seqs.empty())
     throw Exception("Bad alignment: no aligned sequences found!");
   if (headers.size() != seqs.size())
@@ -146,10 +149,9 @@ void Alignment<Alphabet>::read(FILE* fin, Format format) {
 }
 
 template<class Alphabet>
-void Alignment<Alphabet>::read_fasta_flavors(
-    std::istream& in,
-    std::vector<std::string>& headers,
-    std::vector<std::string>& seqs) {
+void Alignment<Alphabet>::read_fasta_flavors(std::istream& in,
+                                             std::vector<std::string>& headers,
+                                             std::vector<std::string>& seqs) {
   headers.clear();
   seqs.clear();
   std::string buffer;
@@ -188,10 +190,9 @@ void Alignment<Alphabet>::read_fasta_flavors(
 }
 
 template<class Alphabet>
-void Alignment<Alphabet>::read_fasta_flavors(
-    FILE* fin,
-    std::vector<std::string>* headers,
-    std::vector<std::string>* seqs) {
+void Alignment<Alphabet>::read_fasta_flavors(FILE* fin,
+                                             std::vector<std::string>* headers,
+                                             std::vector<std::string>* seqs) {
   headers->clear();
   seqs->clear();
 

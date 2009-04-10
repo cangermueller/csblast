@@ -1,8 +1,7 @@
 #include <gtest/gtest.h>
 
-#include <fstream>
-#include <iostream>
-#include <sstream>
+#include <cstdio>
+
 #include <vector>
 
 #include "alignment-inl.h"
@@ -44,15 +43,15 @@ class BaumWelchTrainingTest : public testing::Test {
     hmm_.transform_states_to_logspace();
 
     // Read zinc finger sequences
-    std::ifstream seq_in("../data/zinc_finger_proteins.fas");
-    Sequence<AminoAcid>::readall(seq_in, seqs_);
-    seq_in.close();
+    FILE* seq_in = fopen("../data/zinc_finger_proteins.fas", "r");
+    Sequence<AminoAcid>::readall(seq_in, &seqs_);
+    fclose(seq_in);
 
     // Read zinc finger alignments and construct count profiles
-    std::ifstream ali_in("../data/zinc_finger_alignments.fas");
     std::vector< shared_ptr< Alignment<AminoAcid> > > alis;
-    Alignment<AminoAcid>::readall(ali_in, Alignment<AminoAcid>::FASTA, alis);
-    ali_in.close();
+    FILE* ali_in = fopen("../data/zinc_finger_alignments.fas", "r");
+    Alignment<AminoAcid>::readall(ali_in, Alignment<AminoAcid>::FASTA, &alis);
+    fclose(ali_in);
 
     // Convert alignments to counts and add pseudocounts
     typedef std::vector< shared_ptr< Alignment<AminoAcid> > > ali_vector;

@@ -1,8 +1,7 @@
 #include <gtest/gtest.h>
 
-#include <fstream>
-#include <iostream>
-#include <sstream>
+#include <cstdio>
+
 #include <vector>
 
 #include "alignment-inl.h"
@@ -23,11 +22,11 @@ const float kFloatDelta = 0.01;
 
 class ClusteringTest : public testing::Test {
  protected:
-  static const int WINDOW_LENGTH = 5;
-  static const int NUM_STATES    = 10;
+  static const int kWindowLength = 5;
+  static const int kNumStates    = 10;
 
   ClusteringTest()
-      : lib_(NUM_STATES, WINDOW_LENGTH) { }
+      : lib_(kNumStates, kWindowLength) { }
 
   virtual void SetUp() {
     // Build generic zinc finger HMM
@@ -39,26 +38,26 @@ class ClusteringTest : public testing::Test {
     mpc.add_to_sequence(seq, ConstantAdmixture(1.0f), &profile);
 
     // Initialize profile library
-    for (int i = 0; i < NUM_STATES; ++i) {
-      Profile<AminoAcid> p(profile, i, WINDOW_LENGTH);
+    for (int i = 0; i < kNumStates; ++i) {
+      Profile<AminoAcid> p(profile, i, kWindowLength);
       lib_.add_profile(p);
     }
     lib_.transform_to_logspace();
 
     // Read zinc finger alignments
-    std::ifstream ali_in("../data/zinc_finger_alignments.fas");
     std::vector< shared_ptr< Alignment<AminoAcid> > > alis;
-    Alignment<AminoAcid>::readall(ali_in, Alignment<AminoAcid>::FASTA, alis);
-    ali_in.close();
+    FILE* ali_in = fopen("../data/zinc_finger_alignments.fas", "r");
+    Alignment<AminoAcid>::readall(ali_in, Alignment<AminoAcid>::FASTA, &alis);
+    fclose(ali_in);
 
     // Convert alignments to counts and add pseudocounts
     typedef std::vector< shared_ptr< Alignment<AminoAcid> > > ali_vector;
     typedef ali_vector::iterator alignment_iterator;
     for (alignment_iterator ai = alis.begin(); ai != alis.end(); ++ai) {
       CountProfile<AminoAcid> p_full(**ai, true);
-      for (int i = 0; i < p_full.num_cols() - WINDOW_LENGTH + 1; ++i) {
+      for (int i = 0; i < p_full.num_cols() - kWindowLength + 1; ++i) {
         shared_ptr< CountProfile<AminoAcid> > p_ptr(
-            new CountProfile<AminoAcid>(p_full, i, WINDOW_LENGTH));
+            new CountProfile<AminoAcid>(p_full, i, kWindowLength));
         mpc.add_to_profile(ConstantAdmixture(0.01f), p_ptr.get());
         p_ptr->convert_to_counts();
         counts_.push_back(p_ptr);

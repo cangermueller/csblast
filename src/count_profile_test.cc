@@ -3,10 +3,6 @@
 #include <cstdio>
 
 #include <algorithm>
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <sstream>
 
 #include "amino_acid.h"
 #include "matrix_pseudocounts-inl.h"
@@ -15,8 +11,7 @@
 #include "shared_ptr.h"
 #include "nucleotide_matrix.h"
 
-namespace cs
-{
+namespace cs {
 
 const float kFloatDelta = 0.01f;
 
@@ -88,8 +83,7 @@ TEST(CountProfileTest, Alignment1Q7L) {
   EXPECT_NEAR(0.05f, profile[10][AminoAcid::instance().ctoi('G')], kFloatDelta);
 }
 
-TEST(CountProfileTest, AlignmentCelegansRefGene)
-{
+TEST(CountProfileTest, AlignmentCelegansRefGene) {
   FILE* fin = fopen("../data/ce_refgene.fas", "r");
   Alignment<Nucleotide> alignment(fin, Alignment<Nucleotide>::FASTA);
   fclose(fin);
@@ -103,8 +97,7 @@ TEST(CountProfileTest, AlignmentCelegansRefGene)
   EXPECT_FLOAT_EQ(0.0f, profile[1][Nucleotide::instance().ctoi('T')]);
 }
 
-TEST(CountProfileTest, AddMatrixPseudocountsToProfile)
-{
+TEST(CountProfileTest, AddMatrixPseudocountsToProfile) {
   FILE* fin = fopen("../data/ce_refgene.fas", "r");
   Alignment<Nucleotide> alignment(fin, Alignment<Nucleotide>::FASTA);
   fclose(fin);

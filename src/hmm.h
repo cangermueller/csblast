@@ -8,9 +8,9 @@
 
 #include <algorithm>
 #include <iostream>
-#include <limits>
 #include <vector>
 
+#include "globals.h"
 #include "profile-inl.h"
 #include "context_profile-inl.h"
 #include "count_profile-inl.h"
@@ -32,7 +32,7 @@ class TransitionAdaptor;
 template<class Alphabet>
 class StateInitializer {
  public:
-  StateInitializer() {}
+  StateInitializer() { }
   virtual ~StateInitializer() { }
   virtual void init(HMM<Alphabet>& hmm) const = 0;
 };
@@ -40,7 +40,7 @@ class StateInitializer {
 template<class Alphabet>
 class TransitionInitializer {
  public:
-  TransitionInitializer() {}
+  TransitionInitializer() { }
   virtual ~TransitionInitializer() { }
   virtual void init(HMM<Alphabet>& hmm) const = 0;
 };
@@ -52,21 +52,19 @@ template<class Alphabet>
 class HMM {
  public:
   // Public typedefs
-  typedef typename
-  std::vector< shared_ptr< State<Alphabet> > >::iterator state_iterator;
-  typedef typename
-  std::vector< shared_ptr< State<Alphabet> > >::const_iterator const_state_iterator;
-  typedef typename
-  sparse_matrix<Transition>::nonempty_iterator transition_iterator;
-  typedef typename
-  sparse_matrix<Transition>::const_nonempty_iterator const_transition_iterator;
+  typedef std::vector< shared_ptr< State<Alphabet> > > state_vector;
+  typedef sparse_matrix<Transition> transition_matrix;
+  typedef typename state_vector::iterator state_iterator;
+  typedef typename state_vector::const_iterator const_state_iterator;
+  typedef typename transition_matrix::nonempty_iterator transition_iterator;
+  typedef typename transition_matrix::const_nonempty_iterator const_transition_iterator;
 
   // Constructs an empty HMM of given size without any states or transitions.
   HMM(int num_states, int num_cols);
   // Constructs context HMM from serialized HMM read from input stream.
-  HMM(std::istream& in);
+  explicit HMM(std::istream& in);
   // Constructs context HMM from serialized HMM read from input stream.
-  HMM(FILE* fin);
+  explicit HMM(FILE* fin);
   // Constructs context HMM with the help of a state- and a
   // transition-initializer.
   HMM(int num_states,
@@ -91,7 +89,7 @@ class HMM {
   // Returns index of central profile column in states.
   int center() const { return (num_cols() - 1) / 2; }
   // Returns the size of the alphabet of the HMM.
-  int alphabet_size() const { return Alphabet::instance().size();  }
+  int alphabet_size() const { return Alphabet::instance().size(); }
   // Returns the number of training iterations.
   int iterations() const { return iterations_; }
   // Returns the number of non-null transitions in the HMM.
@@ -177,10 +175,9 @@ class HMM {
 
  private:
   // Scaling factor for serialization of profile log values
-  static const int kScaleFactor = 1000;
   static const int kLogScale = 1000;
   // Buffer size for reading
-  static const int kBufferSize = 1024;
+  static const int kBufferSize = KB;
 
   // Prints the HMM in human-readable format to output stream.
   void print(std::ostream& out) const;
@@ -260,8 +257,7 @@ class SamplingStateInitializer : public StateInitializer<Alphabet> {
 };
 
 template<class Alphabet>
-class HomogeneousTransitionInitializer : public TransitionInitializer<Alphabet>
-{
+class HomogeneousTransitionInitializer : public TransitionInitializer<Alphabet> {
  public:
   HomogeneousTransitionInitializer() { }
   virtual ~HomogeneousTransitionInitializer() { }
@@ -277,8 +273,7 @@ class HomogeneousTransitionInitializer : public TransitionInitializer<Alphabet>
 };
 
 template<class Alphabet>
-class RandomTransitionInitializer : public TransitionInitializer<Alphabet>
-{
+class RandomTransitionInitializer : public TransitionInitializer<Alphabet> {
  public:
   RandomTransitionInitializer() { }
   virtual ~RandomTransitionInitializer() { }

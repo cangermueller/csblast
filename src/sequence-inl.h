@@ -116,8 +116,8 @@ void Sequence<Alphabet>::read(FILE* fin) {
   }
   // Read sequence
   while (fgetline(buffer, kBufferSize, fin)) {
-    if (!strscn(buffer)) continue;
-    sequence.append(buffer);
+    if (strscn(buffer))
+      sequence.append(buffer);
 
     c = getc(fin);
     if (c == EOF) break;

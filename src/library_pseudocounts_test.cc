@@ -1,8 +1,5 @@
 #include <gtest/gtest.h>
 
-#include <fstream>
-#include <iostream>
-
 #include "amino_acid.h"
 #include "blosum_matrix.h"
 #include "count_profile-inl.h"
@@ -24,8 +21,10 @@ TEST(LibraryPseudocountsTest, AddToSequence) {
   ASSERT_EQ(AminoAcid::instance().ctoi('R'), seq[1]);
   ASSERT_EQ(seq.length(), profile.num_cols());
 
-  std::ifstream in("../data/scop20_1.73_opt_N100000_W13.lib");
-  ProfileLibrary<AminoAcid> lib(in);
+  FILE* fin = fopen("../data/scop20_1.73_opt_N100000_W13.lib", "r");
+  ProfileLibrary<AminoAcid> lib(fin);
+  fclose(fin);
+
   ASSERT_EQ(50, lib.num_profiles());
 
   EmissionParams params;
@@ -36,17 +35,19 @@ TEST(LibraryPseudocountsTest, AddToSequence) {
 }
 
 TEST(LibraryPseudocountsTest, AddProfileSequence) {
-  std::ifstream ali_in("../data/zinc_finger_alignments.fas");
+  FILE* ali_in = fopen("../data/zinc_finger_alignments.fas", "r");
   Alignment<AminoAcid> ali(ali_in, Alignment<AminoAcid>::FASTA);
-  ali_in.close();
+  fclose(ali_in);
   CountProfile<AminoAcid> profile(ali, false);
 
   BlosumMatrix m;
   MatrixPseudocounts<AminoAcid> mpc(&m);
   mpc.add_to_profile(ConstantAdmixture(0.1f), &profile);
 
-  std::ifstream in("../data/scop20_1.73_opt_N100000_W13.lib");
-  ProfileLibrary<AminoAcid> lib(in);
+  FILE* fin = fopen("../data/scop20_1.73_opt_N100000_W13.lib", "r");
+  ProfileLibrary<AminoAcid> lib(fin);
+  fclose(fin);
+
   ASSERT_EQ(50, lib.num_profiles());
 
   EmissionParams params;

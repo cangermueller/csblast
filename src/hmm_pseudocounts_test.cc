@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
 
-#include <fstream>
-#include <iostream>
+#include <cstdio>
 
 #include "amino_acid.h"
 #include "count_profile-inl.h"
@@ -21,8 +20,10 @@ TEST(HMMPseudocountsTest, AddToSequence) {
                           "SDELTRHIRIHTGQKPFQCRICMRNFSRSDHLTTH");
   Profile<AminoAcid> profile(seq.length());
 
-  std::ifstream in("../data/scop20_K100.hmm");
-  HMM<AminoAcid> hmm(in);
+  FILE* fin = fopen("../data/scop20_K100.hmm", "r");
+  HMM<AminoAcid> hmm(fin);
+  fclose(fin);
+
   ASSERT_EQ(100, hmm.num_states());
 
   EmissionParams params;
@@ -34,13 +35,15 @@ TEST(HMMPseudocountsTest, AddToSequence) {
 }
 
 TEST(HMMPseudocountsTest, AddProfileSequence) {
-  std::ifstream ali_in("../data/zinc_finger.fas");
+  FILE* ali_in = fopen("../data/zinc_finger.fas", "r");
   Alignment<AminoAcid> ali(ali_in, Alignment<AminoAcid>::FASTA);
-  ali_in.close();
+  fclose(ali_in);
   CountProfile<AminoAcid> profile(ali, false);
 
-  std::ifstream in("../data/scop20_K100.hmm");
-  HMM<AminoAcid> hmm(in);
+  FILE* fin = fopen("../data/scop20_K100.hmm", "r");
+  HMM<AminoAcid> hmm(fin);
+  fclose(fin);
+
   ASSERT_EQ(100, hmm.num_states());
 
   EmissionParams params;

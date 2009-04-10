@@ -2,10 +2,6 @@
 
 #include <cstdio>
 
-#include <fstream>
-#include <iostream>
-#include <sstream>
-#include <string>
 #include <vector>
 
 #include "alignment-inl.h"
@@ -94,19 +90,6 @@ TEST_F(HMMTest, ConstructionFromSerializedHMM) {
   EXPECT_TRUE(hmm.states_logspace());
   EXPECT_FALSE(hmm.transitions_logspace());
   EXPECT_TRUE(hmm[0].logspace());
-}
-
-TEST_F(HMMTest, DISABLED_ConstructionFromSerializedHMM2) {
-  std::ifstream fin("../data/scop20_K100.hmm");
-  HMM<AminoAcid> hmm(fin);
-  fin.close();
-
-  EXPECT_EQ(869, hmm.num_transitions());
-  EXPECT_EQ(100, hmm.num_states());
-  EXPECT_EQ(13, hmm.num_cols());
-  EXPECT_EQ(34, hmm.iterations());
-  EXPECT_TRUE(hmm.states_logspace());
-  EXPECT_FALSE(hmm.transitions_logspace());
 }
 
 TEST_F(HMMTest, NormalizeTransitions) {

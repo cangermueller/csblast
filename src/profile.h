@@ -102,7 +102,6 @@ class Profile {
 
  protected:
   // Scaling factor for serialization of profile log values
-  static const int kScaleFactor = 1000;
   static const int kLogScale = 1000;
   // Buffer size for reading
   static const int kBufferSize = KB;

@@ -5,7 +5,15 @@
 
 #include "profile_library.h"
 
+#include <cstdlib>
+#include <cstdio>
+#include <cstring>
+
 #include <string>
+
+#include "exception.h"
+#include "log.h"
+#include "utils-inl.h"
 
 namespace cs {
 
@@ -27,6 +35,16 @@ ProfileLibrary<Alphabet>::ProfileLibrary(std::istream& in)
       profiles_(),
       logspace_(false) {
   read(in);
+}
+
+template<class Alphabet>
+ProfileLibrary<Alphabet>::ProfileLibrary(FILE* fin)
+    : num_profiles_(0),
+      num_cols_(0),
+      iterations_(0),
+      profiles_(),
+      logspace_(false) {
+  read(fin);
 }
 
 template<class Alphabet>
@@ -93,7 +111,8 @@ void ProfileLibrary<Alphabet>::read(std::istream& in) {
   std::string tmp;
   while (getline(in, tmp) && tmp.empty()) continue;
   if (tmp.find("ProfileLibrary") == std::string::npos)
-    throw Exception("Profile library does not start with 'ProfileLibrary' keyword!");
+    throw Exception("Profile library does not start with 'ProfileLibrary' "
+                    "keyword!");
   // Read number of profiles
   if (getline(in, tmp) && tmp.find("num_profiles") != std::string::npos)
     num_profiles_ = atoi(tmp.c_str() + 12);
@@ -108,7 +127,7 @@ void ProfileLibrary<Alphabet>::read(std::istream& in) {
   if (getline(in, tmp) && tmp.find("iterations") != std::string::npos)
     iterations_= atoi(tmp.c_str() + 10);
   else
-    throw Exception("Profile library does not contain 'num_cols' record!");
+    throw Exception("Profile library does not contain 'iterations' record!");
   // Read profiles_logspace
   if (getline(in, tmp) && tmp.find("logspace") != std::string::npos)
     logspace_ = atoi(tmp.c_str() + 8) == 1;
@@ -119,6 +138,62 @@ void ProfileLibrary<Alphabet>::read(std::istream& in) {
     shared_ptr< ContextProfile<Alphabet> >
       profile_ptr(new ContextProfile<Alphabet>(in));
     profiles_.push_back(profile_ptr);
+  }
+  if (!full())
+    throw Exception("Profile library has %i profiles but should have %i!",
+                    profiles_.size(), num_profiles());
+
+  LOG(DEBUG1) << *this;
+}
+
+template<class Alphabet>
+void ProfileLibrary<Alphabet>::read(FILE* fin) {
+  LOG(DEBUG1) << "Reading profile library from stream ...";
+
+  char buffer[kBufferSize];
+  const char* ptr = buffer;
+
+  // Check if stream actually contains a serialized HMM
+  while (fgetline(buffer, kBufferSize, fin))
+    if (strscn(buffer)) break;
+  if (!strstr(buffer, "ProfileLibrary"))
+    throw Exception("Profile library does not start with 'ProfileLibrary' "
+                    "keyword!");
+
+  // Read number of profiles
+  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "num_profiles")) {
+    ptr = buffer;
+    num_profiles_ = strtoi(ptr);
+  } else {
+    throw Exception("HMM does not contain 'num_profiles' record!");
+  }
+  // Read number of columns
+  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "num_cols")) {
+    ptr = buffer;
+    num_cols_ = strtoi(ptr);
+  } else {
+    throw Exception("HMM does not contain 'num_cols' record!");
+  }
+  // Read number of iterations
+  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "iterations")) {
+    ptr = buffer;
+    iterations_ = strtoi(ptr);
+  } else {
+    throw Exception("HMM does not contain 'iterations' record!");
+  }
+  // Read states logspace
+  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "logspace")) {
+    ptr = buffer;
+    logspace_ = strtoi(ptr) == 1;
+  } else {
+    throw Exception("Bad format: HMM does not contain 'logspace' record!");
+  }
+
+  // Read context profiles
+  profiles_.reserve(num_profiles());
+  while (!full() && !feof(fin)) {
+    shared_ptr< ContextProfile<Alphabet> > p(new ContextProfile<Alphabet>(fin));
+    profiles_.push_back(p);
   }
   if (!full())
     throw Exception("Profile library has %i profiles but should have %i!",
@@ -139,6 +214,20 @@ void ProfileLibrary<Alphabet>::write(std::ostream& out) const {
   // Serialize profiles
   for (const_profile_iterator pi = profiles_.begin(); pi != profiles_.end(); ++pi)
     (*pi)->write(out);
+}
+
+template<class Alphabet>
+void ProfileLibrary<Alphabet>::write(FILE* fout) const {
+  // Write header
+  fputs("ProfileLibrary\n", fout);
+  fprintf(fout, "num_profiles\t\t%i\n", num_profiles());
+  fprintf(fout, "num_cols\t\t%i\n", num_cols());
+  fprintf(fout, "iterations\t\t%i\n", iterations());
+  fprintf(fout, "logspace\t\t%i\n", logspace() ? 1 : 0);
+
+  // Serialize profiles
+  for (const_profile_iterator pi = profiles_.begin(); pi != profiles_.end(); ++pi)
+    (*pi)->write(fout);
 }
 
 template<class Alphabet>

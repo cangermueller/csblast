@@ -163,9 +163,9 @@ void CountProfile<Alphabet>::read_body(std::istream& in) {
       float log_p = tokens[a+1][0] == '*' ?
         std::numeric_limits<int>::max() : atoi(tokens[a+1].c_str());
       data_[i][a] =
-        (logspace() ? -log_p / kScaleFactor : pow(2.0, -log_p / kScaleFactor));
+        (logspace() ? -log_p / kLogScale : pow(2.0, -log_p / kLogScale));
     }
-    neff_[i] = atof(tokens[alphabet_size()+1].c_str()) / kScaleFactor;
+    neff_[i] = atof(tokens[alphabet_size()+1].c_str()) / kLogScale;
     tokens.clear();
   }
   if (i != num_cols() - 1)
@@ -214,16 +214,16 @@ void CountProfile<Alphabet>::write_body(std::ostream& out) const {
       if (-log_p == std::numeric_limits<float>::infinity())
         out << "\t*";
       else
-        out << "\t" << -iround(log_p * kScaleFactor);
+        out << "\t" << -iround(log_p * kLogScale);
     }
-    out << "\t" << iround(neff_[i] * kScaleFactor) << std::endl;
+    out << "\t" << iround(neff_[i] * kLogScale) << std::endl;
   }
   out << "//" << std::endl;
 }
 
 template<class Alphabet>
 void CountProfile<Alphabet>::print(std::ostream& out) const {
-  std::ios_base::fmtflags flags = out.flags();  // save old flags
+  std::ios_base::fmtflags flags = out.flags();
 
   out << "\t" << Alphabet::instance() << "\tNeff" << std::endl;
   for (int i = 0; i < num_cols(); ++i) {
@@ -231,7 +231,6 @@ void CountProfile<Alphabet>::print(std::ostream& out) const {
     for (int a = 0; a < alphabet_size(); ++a)
       out << '\t' << std::fixed << std::setprecision(4)
           << (logspace() ? pow(2.0, data_[i][a]) : data_[i][a]);
-    // print neff
     out << '\t' << std::setprecision(2) << neff_[i] << std::endl;
   }
 

@@ -64,8 +64,6 @@ class CountProfile : public Profile<Alphabet> {
  protected:
   // Needed to access names in templatized Profile base class
   using Profile<Alphabet>::data_;
-  using Profile<Alphabet>::kScaleFactor;
-
   using Profile<Alphabet>::kLogScale;
   using Profile<Alphabet>::kBufferSize;
 

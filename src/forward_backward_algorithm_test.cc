@@ -1,8 +1,6 @@
 #include <gtest/gtest.h>
 
-#include <fstream>
-#include <iostream>
-#include <sstream>
+#include <cstdio>
 
 #include "amino_acid.h"
 #include "blosum_matrix.h"
@@ -58,11 +56,11 @@ TEST_F(ForwardBackwardAlgorithmTest, ZincFingerMotif) {
 }
 
 TEST_F(ForwardBackwardAlgorithmTest, 1Q7L) {
-  std::ifstream fin("../data/1Q7L.fas");
-  Alignment<AminoAcid> alignment(fin, Alignment<AminoAcid>::FASTA);
-  fin.close();
-  alignment.assign_match_columns_by_gap_rule();
-  CountProfile<AminoAcid> profile(alignment, true);
+  FILE* fin = fopen("../data/1Q7L.fas", "r");
+  Alignment<AminoAcid> ali(fin, Alignment<AminoAcid>::FASTA);
+  fclose(fin);
+  ali.assign_match_columns_by_gap_rule();
+  CountProfile<AminoAcid> profile(ali, true);
 
   BlosumMatrix m;
   MatrixPseudocounts<AminoAcid> mpc(&m);

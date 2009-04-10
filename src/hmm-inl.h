@@ -215,7 +215,7 @@ void HMM<Alphabet>::read(std::istream& in) {
   if (getline(in, tmp) && tmp.find("iterations") != std::string::npos)
     iterations_= atoi(tmp.c_str() + 10);
   else
-    throw Exception("HMM does not contain 'num_cols' record!");
+    throw Exception("HMM does not contain 'iterations' record!");
   // Read transitions_logspace
   if (getline(in, tmp) && tmp.find("transitions_logspace") != std::string::npos)
     transitions_logspace_ = atoi(tmp.c_str() + 20) == 1;
@@ -245,7 +245,7 @@ void HMM<Alphabet>::read(std::istream& in) {
     set_transition( atoi(tokens[0].c_str()),
                     atoi(tokens[1].c_str()),
                     transitions_logspace() ?
-                    -log_p / kScaleFactor : pow(2.0, -log_p / kScaleFactor) );
+                    -log_p / kLogScale : pow(2.0, -log_p / kLogScale) );
     tokens.clear();
   }
   if (num_transitions() != ntr)
@@ -294,10 +294,11 @@ void HMM<Alphabet>::read(FILE* fin) {
     ptr = buffer;
     iterations_ = strtoi(ptr);
   } else {
-    throw Exception("HMM does not contain 'num_cols' record!");
+    throw Exception("HMM does not contain 'iterations' record!");
   }
   // Read transitions logspace
-  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "transitions_logspace")) {
+  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer,
+                                                   "transitions_logspace")) {
     ptr = buffer;
     transitions_logspace_ = strtoi(ptr) == 1;
   } else {
@@ -369,7 +370,7 @@ void HMM<Alphabet>::write(std::ostream& out) const {
     if (-logval == std::numeric_limits<float>::infinity())
       out << "*" << std::endl;
     else
-      out << -iround(logval * kScaleFactor) << std::endl;
+      out << -iround(logval * kLogScale) << std::endl;
   }
   out << "//" << std::endl;
 }
