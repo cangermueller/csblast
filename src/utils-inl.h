@@ -82,7 +82,7 @@ inline float fast_log2(float x) {
 // In summary: x = (-1)^s * 1.mmmmmmmmmmmmmmmmmmmmmm * 2^(eeeeeee-127)
 inline float fast_pow2(float x) {
   if (x>=127) return FLT_MAX;
-  if (x<=-127) return 0.0f;
+  if (x<=-127) return FLT_MIN;
 
   // store address of float as pointer to long
   int *px = (int*)(&x);

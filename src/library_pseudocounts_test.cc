@@ -61,6 +61,12 @@ TEST(LibraryPseudocountsTest, AddToSmallProfile) {
 }
 
 TEST(LibraryPseudocountsTest, AddToZnFingerSequence) {
+  fprintf(stdout, "%7.2g\n", FLT_MAX);
+  fprintf(stdout, "%8.2g\n", FLT_MIN);
+  fprintf(stdout, "%i\n", FLT_MAX_10_EXP);
+  fprintf(stdout, "%10.5g\n", log2(FLT_MAX));
+  fprintf(stdout, "%10.5g\n", log2(FLT_MIN));
+
   FILE* seq_in = fopen("../data/zinc_finger.seq", "r");
   Sequence<AminoAcid> seq(seq_in);
   fclose(seq_in);

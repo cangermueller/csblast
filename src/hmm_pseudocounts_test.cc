@@ -55,5 +55,3 @@ TEST(HMMPseudocountsTest, AddToProfile) {
 }
 
 }  // namespace cs
-
-

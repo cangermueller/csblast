@@ -104,6 +104,7 @@ void LibraryPseudocounts<Alphabet>::add_to_profile(
     // Calculate profile probabilities P(p_k|X_i)
     for (int k = 0; k < num_profiles; ++k) {
       prob[k] = lib_[k].prior() * fast_pow2(emitter_(lib_[k], p, i));
+      //prob[k] = lib_[k].prior() * pow(2.0, emitter_(lib_[k], p, i));
     }
     prob /= prob.sum();  // normalization
 

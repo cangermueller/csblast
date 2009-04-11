@@ -75,8 +75,9 @@ inline CountProfile<Alphabet>::CountProfile(const CountProfile& other,
 }
 
 template<class Alphabet>
-void CountProfile<Alphabet>::readall(FILE* fin,
-                                     std::vector< shared_ptr<CountProfile> >* v) {
+void CountProfile<Alphabet>::readall(
+    FILE* fin,
+    std::vector< shared_ptr<CountProfile> >* v) {
   while (!feof(fin)) {
     shared_ptr<CountProfile> p(new CountProfile(fin));
     v->push_back(p);
@@ -185,7 +186,7 @@ void CountProfile<Alphabet>::print(std::ostream& out) const {
     for (int a = 0; a < alphabet_size(); ++a)
       out << strprintf("\t%6.4f",
                        logspace() ? fast_pow2(data_[i][a]) : data_[i][a]);
-    out << strprintf("\t%5.2f\n", neff_[i]);
+    out << strprintf("\t%-5.2f\n", neff_[i]);
   }
 }
 
