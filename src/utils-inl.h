@@ -13,6 +13,7 @@
 #include <cstdarg>
 
 #include <iostream>
+#include <limits>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -23,6 +24,11 @@ namespace cs {
 
 // Returns the base 2 logarithm of x.
 inline float log2(float x) {
+  return 1.442695041f * log(x);
+}
+
+// Returns the base 2 logarithm of x.
+inline double log2(double x) {
   return 1.442695041 * log(x);
 }
 
@@ -47,11 +53,11 @@ inline int iround(double x) {
 // Check:  assert( sizeof(f) == sizeof(int) );
 // Check:  assert( sizeof(f) == 4 );
 inline float fast_log2(float x) {
+  if (x <= 0.0f) return log2(x);
+
   static float lg2[1025];   // lg2[i] = log2[1+x/1024]
   static float diff[1025];  // diff[i]= (lg2[i+1]-lg2[i])/8096 (for interpolation)
-  static char initialized;
-
-  if (x<=0) return -kMaxInt;
+  static bool initialized;
 
   if (!initialized) {
       assert( sizeof(x) == kIntSize );
@@ -64,7 +70,7 @@ inline float fast_log2(float x) {
         diff[i-1] = (lg2[i]-prev)*1.2352E-4;
         prev = lg2[i];
       }
-      initialized=1;
+      initialized=true;
   }
 
   int a = (((*((int *)&x)) & 0x7F800000) >>23 )-0x7f;
@@ -81,9 +87,38 @@ inline float fast_log2(float x) {
 //                        seee eeee emmm mmmm mmmm mmmm mmmm mmmm
 // In summary: x = (-1)^s * 1.mmmmmmmmmmmmmmmmmmmmmm * 2^(eeeeeee-127)
 inline float fast_pow2(float x) {
-  if (x>=127) return FLT_MAX;
-  if (x<=-127) return FLT_MIN;
+  if (x == -std::numeric_limits<float>::infinity() ||
+      x > FLT_MAX_EXP || x < FLT_MIN_EXP)
+    return pow(2.0f, x);
 
+  // store address of float as pointer to long
+  int *px = (int*)(&x);
+  // temporary value for truncation: x-0.5 is added to a large integer (3<<22)
+  float tx = (x-0.5f) + (3<<22);
+  int lx = *((int*)&tx) - 0x4b400000;   // integer value of x
+  float dx = x-(float)(lx);             // float remainder of x
+  x = 1.0f + dx*(0.693153f              // polynomial apporoximation of 2^x
+           + dx*(0.240153f              // for x in the range [0, 1]
+           + dx*(0.0558282f
+           + dx*(0.00898898f
+           + dx* 0.00187682f ))));
+
+  *px += (lx<<23);                      // add integer power of 2 to exponent
+  return x;
+}
+
+// Fast 2^x
+// ATTENTION: need to compile with g++ -fno-strict-aliasing when using -O2 or -O3!!!
+// Relative deviation < 2.3E-7
+// Speed: 2.3E-8s per call! (exp(): 8.5E-8, pow(): 1.7E-7)
+//                        seee eeee emmm mmmm mmmm mmmm mmmm mmmm
+// In summary: x = (-1)^s * 1.mmmmmmmmmmmmmmmmmmmmmm * 2^(eeeeeee-127)
+inline double fast_pow2(double d) {
+  if (d == -std::numeric_limits<double>::infinity() ||
+      d > FLT_MAX_EXP || d < FLT_MIN_EXP)
+    return pow(2.0, d);
+
+  float x = d;
   // store address of float as pointer to long
   int *px = (int*)(&x);
   // temporary value for truncation: x-0.5 is added to a large integer (3<<22)

@@ -61,12 +61,6 @@ TEST(LibraryPseudocountsTest, AddToSmallProfile) {
 }
 
 TEST(LibraryPseudocountsTest, AddToZnFingerSequence) {
-  fprintf(stdout, "%7.2g\n", FLT_MAX);
-  fprintf(stdout, "%8.2g\n", FLT_MIN);
-  fprintf(stdout, "%i\n", FLT_MAX_10_EXP);
-  fprintf(stdout, "%10.5g\n", log2(FLT_MAX));
-  fprintf(stdout, "%10.5g\n", log2(FLT_MIN));
-
   FILE* seq_in = fopen("../data/zinc_finger.seq", "r");
   Sequence<AminoAcid> seq(seq_in);
   fclose(seq_in);
@@ -86,11 +80,15 @@ TEST(LibraryPseudocountsTest, AddToZnFingerSequence) {
   EXPECT_NEAR(0.8214, profile[56][AminoAcid::instance().ctoi('C')], kFloatDelta);
 }
 
-TEST(LibraryPseudocountsTest, DISABLED_AddToZincFingers) {
+TEST(LibraryPseudocountsTest, DISABLED_AddToZnFingerAlignment) {
   FILE* ali_in = fopen("../data/zinc_finger.fas", "r");
   Alignment<AminoAcid> ali(ali_in, Alignment<AminoAcid>::FASTA);
   fclose(ali_in);
-  CountProfile<AminoAcid> profile(ali, true);
+  CountProfile<AminoAcid> profile(ali, false);
+
+  BlosumMatrix m;
+  MatrixPseudocounts<AminoAcid> mpc(&m);
+  mpc.add_to_profile(ConstantAdmixture(0.01f), &profile);
 
   FILE* fin = fopen("../data/scop20_1.73_opt_N100000_W13.lib", "r");
   ProfileLibrary<AminoAcid> lib(fin);
