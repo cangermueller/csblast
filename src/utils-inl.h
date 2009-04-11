@@ -13,7 +13,6 @@
 #include <cstdarg>
 
 #include <iostream>
-#include <limits>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -87,8 +86,7 @@ inline float fast_log2(float x) {
 //                        seee eeee emmm mmmm mmmm mmmm mmmm mmmm
 // In summary: x = (-1)^s * 1.mmmmmmmmmmmmmmmmmmmmmm * 2^(eeeeeee-127)
 inline float fast_pow2(float x) {
-  if (x == -std::numeric_limits<float>::infinity() ||
-      x > FLT_MAX_EXP || x < FLT_MIN_EXP)
+  if (x == -INFINITY || x > FLT_MAX_EXP || x < FLT_MIN_EXP)
     return pow(2.0f, x);
 
   // store address of float as pointer to long
@@ -114,8 +112,7 @@ inline float fast_pow2(float x) {
 //                        seee eeee emmm mmmm mmmm mmmm mmmm mmmm
 // In summary: x = (-1)^s * 1.mmmmmmmmmmmmmmmmmmmmmm * 2^(eeeeeee-127)
 inline double fast_pow2(double d) {
-  if (d == -std::numeric_limits<double>::infinity() ||
-      d > FLT_MAX_EXP || d < FLT_MIN_EXP)
+  if (d == -INFINITY || d > FLT_MAX_EXP || d < FLT_MIN_EXP)
     return pow(2.0, d);
 
   float x = d;
@@ -134,6 +131,43 @@ inline double fast_pow2(double d) {
   *px += (lx<<23);                      // add integer power of 2 to exponent
   return x;
 }
+
+// Fast 2^x
+// ATTENTION: need to compile with g++ -fno-strict-aliasing when using -O2 or -O3!!!
+// Relative deviation < 2.3E-7
+// Speed: 2.3E-8s per call! (exp(): 8.5E-8, pow(): 1.7E-7)
+//                        seee eeee emmm mmmm mmmm mmmm mmmm mmmm
+// In summary: x = (-1)^s * 1.mmmmmmmmmmmmmmmmmmmmmm * 2^(eeeeeee-127)
+// inline double fast_pow2(double d) {
+//   if (d == -INFINITY || d > DBL_MAX_EXP || d < DBL_MIN_EXP)
+//     return pow(2.0, d);
+
+//   double y = 1.0;
+//   while (d > FLT_MAX_EXP) {
+//     d -= FLT_MAX_EXP;
+//     y *= FLT_MAX;
+//   }
+//   while (d < FLT_MIN_EXP) {
+//     d += FLT_MAX_EXP;
+//     y /= FLT_MAX;
+//   }
+//   float x = d;
+
+//   // store address of float as pointer to long
+//   int *px = (int*)(&x);
+//   // temporary value for truncation: x-0.5 is added to a large integer (3<<22)
+//   float tx = (x-0.5f) + (3<<22);
+//   int lx = *((int*)&tx) - 0x4b400000;   // integer value of x
+//   float dx = x-(float)(lx);             // float remainder of x
+//   x = 1.0f + dx*(0.693153f              // polynomial apporoximation of 2^x
+//            + dx*(0.240153f              // for x in the range [0, 1]
+//            + dx*(0.0558282f
+//            + dx*(0.00898898f
+//            + dx* 0.00187682f ))));
+
+//   *px += (lx<<23);                      // add integer power of 2 to exponent
+//   return y * x;
+// }
 
 // Normalize a float array such that it sums to one. If it sums to 0 then assign
 //  def_array elements to array (optional)

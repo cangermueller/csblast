@@ -48,6 +48,7 @@ TEST(HMMPseudocountsTest, AddToProfile) {
 
   EmissionParams params;
   HMMPseudocounts<AminoAcid> pc(&hmm, params);
+  //  for (int n = 0; n < 40; ++n)
   pc.add_to_profile(DivergenceDependentAdmixture(1.0f, 10.0f), &profile);
 
   EXPECT_NEAR(0.7756f, profile[53][AminoAcid::instance().ctoi('C')], kFloatDelta);

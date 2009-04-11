@@ -5,7 +5,6 @@
 
 #include "count_profile.h"
 
-#include <limits>
 #include <vector>
 
 #include "alignment-inl.h"
@@ -167,7 +166,7 @@ void CountProfile<Alphabet>::write_body(FILE* fout) const {
     fprintf(fout, "%i", i+1);
     for (int a = 0; a < alphabet_size(); ++a) {
       float log_p = logspace() ? data_[i][a] : fast_log2(data_[i][a]);
-      if (log_p == -std::numeric_limits<float>::infinity())
+      if (log_p == -INFINITY)
         fputs("\t*", fout);
       else
         fprintf(fout, "\t%i", -iround(log_p * kLogScale));

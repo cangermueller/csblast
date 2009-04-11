@@ -16,7 +16,7 @@
 
 namespace cs {
 
-template< class Alphabet>
+template<class Alphabet>
 inline Emitter<Alphabet>::Emitter(int num_cols, const EmissionParams& params)
     : params_(params),
       num_cols_(num_cols),
@@ -28,7 +28,7 @@ inline Emitter<Alphabet>::Emitter(int num_cols, const EmissionParams& params)
   init_weights();
 }
 
-template< class Alphabet>
+template<class Alphabet>
 inline double Emitter<Alphabet>::operator() (
     const ContextProfile<Alphabet>& profile,
     const CountProfile<Alphabet>& counts,
@@ -57,7 +57,7 @@ inline double Emitter<Alphabet>::operator() (
   return rv;
 }
 
-template< class Alphabet>
+template<class Alphabet>
 inline double Emitter<Alphabet>::operator() (
     const ContextProfile<Alphabet>& profile,
     const Sequence<Alphabet>& seq,
@@ -78,7 +78,7 @@ inline double Emitter<Alphabet>::operator() (
   return rv;
 }
 
-template< class Alphabet>
+template<class Alphabet>
 void Emitter<Alphabet>::init_weights() {
   weights_[center_] = params_.weight_center;
   for (int i = 1; i <= center_; ++i) {
@@ -88,7 +88,7 @@ void Emitter<Alphabet>::init_weights() {
   }
 }
 
-template< class Alphabet>
+template<class Alphabet>
 inline float Emitter<Alphabet>::sum_weights() const {
   return params_.ignore_context ? weights_[center_] : weights_.sum();
 }
