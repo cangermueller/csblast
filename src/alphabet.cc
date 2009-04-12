@@ -14,10 +14,10 @@
 namespace cs {
 
 Alphabet::Alphabet(int size, char any)
-        : size_(size),
-          any_(any),
-          ctoi_(static_cast<int>(pow(2, 8*sizeof(char))), INVALID_CHAR),
-          itoc_(size + 3, '\0') { }
+    : size_(size),
+      any_(any),
+      ctoi_(static_cast<int>(pow(2, 8*sizeof(char))), kInvalidChar),
+      itoc_(size + 3, '\0') { }
 
 void Alphabet::init() {
   const char* itoc = get_itoc();

@@ -32,6 +32,10 @@ const char kDirSep = '\\';
 const char kDirSep = '/';
 #endif
 
+#ifndef VERSION
+#define VERSION "0.0.0"
+#endif
+
 // A macro to disallow the evil copy constructor and operator= functions
 // This should be used in the private: declarations for a class
 #define DISALLOW_COPY_AND_ASSIGN(TypeName)      \

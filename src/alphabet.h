@@ -47,7 +47,7 @@ class Alphabet {
   char any_chr() const { return any_; }
   // Returns true if the character belongs to the alphabet.
   bool valid(char letter, bool allow_gap = false) const {
-    return ctoi_[toupper(letter)] != INVALID_CHAR
+    return ctoi_[toupper(letter)] != kInvalidChar
       && (allow_gap || (letter != '-' && letter != '.'));
   }
   // Returns a const iterator to the first character in the alphabet.
@@ -68,7 +68,7 @@ class Alphabet {
 
  protected:
   // Denotes invalid characters in ctoi array
-  static const int INVALID_CHAR = -1;
+  static const int kInvalidChar = -1;
 
   // Constructor to be used by derived classes to setup alphabet.
   Alphabet(int size, char any);

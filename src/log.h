@@ -22,6 +22,7 @@ class Log {
   static std::string to_string(LogLevel log_level);
   static LogLevel from_string(const std::string& log_level);
   static LogLevel from_integer(int log_level);
+  static FILE*& stream();
 
  protected:
   std::ostringstream os;
@@ -33,14 +34,13 @@ class Log {
 };
 
 
-
 #ifndef LOG_MAX_LEVEL
 #define LOG_MAX_LEVEL DEBUG4
 #endif
 
 #define LOG(level)                              \
   if (level > LOG_MAX_LEVEL) ;                  \
-  else if (level > Log::reporting_level()) ;    \
+  else if (level > Log::reporting_level() || !Log::stream()) ;    \
   else Log().get(level)
 
 #endif  // SRC_LOG_H_

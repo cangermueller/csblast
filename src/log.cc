@@ -39,7 +39,7 @@ std::ostringstream& Log::get(LogLevel log_level) {
 Log::~Log() {
   if (os.str().find('\n') == std::string::npos) {
     os << std::endl;
-    fprintf(stderr, "%s", os.str().c_str());
+    fprintf(stream(), "%s", os.str().c_str());
   } else {
     const std::string margin(
         "\t\t\t" + std::string(level > DEBUG ? (level - DEBUG) : 0, '\t'));
@@ -49,15 +49,20 @@ Log::~Log() {
     std::string::size_type i = 0;
     std::string::size_type j = s.find('\n');
     while (j != std::string::npos) {
-      fprintf(stderr, "%s\n%s", s.substr(i, j-i).c_str(), margin.c_str());
+      fprintf(stream(), "%s\n%s", s.substr(i, j-i).c_str(), margin.c_str());
       i = ++j;
       j = s.find('\n', j);
 
       if (j == std::string::npos)
-        fprintf(stderr, "%s\n", s.substr(i, s.length()).c_str());
+        fprintf(stream(), "%s\n", s.substr(i, s.length()).c_str());
     }
   }
-  fflush(stderr);
+  fflush(stream());
+}
+
+inline FILE*& Log::stream() {
+  static FILE* p_stream = stderr;
+  return p_stream;
 }
 
 LogLevel& Log::reporting_level() {

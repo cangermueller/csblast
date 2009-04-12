@@ -19,7 +19,7 @@ class AminoAcid : public Alphabet {
   }
 
  protected:
-  // Gets ctoi conversion array from derived class.
+  // Gets itoc conversion array from derived class.
   virtual const char* get_itoc() const { return amino_acids_; }
 
  private:
