@@ -74,7 +74,6 @@ TEST_F(ForwardBackwardAlgorithmTest, 1Q7L) {
   hmm.init_transitions(HomogeneousTransitionInitializer<AminoAcid>());
   hmm.transform_states_to_logspace();
 
-  profile.convert_to_counts();
   EmissionParams params;
   params.weight_center = 1.0f;
   Emitter<AminoAcid> emitter(1, params);

@@ -80,7 +80,6 @@ template<class Alphabet>
 void HMMPseudocounts<Alphabet>::add_to_profile(
     const Admixture& pca,
     CountProfile<Alphabet>* profile) const {
-  assert(!profile->has_counts());
   assert(!profile->logspace());
 
   LOG(DEBUG2) << "Adding context-specific, HMM-derived pseudocounts to profile ...";

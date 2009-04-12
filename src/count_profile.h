@@ -49,12 +49,6 @@ class CountProfile : public Profile<Alphabet> {
   static void readall(FILE* in, std::vector< shared_ptr<CountProfile> >* v);
   // Returns the number of effective sequences in alignment column i
   float neff(int i) const { return neff_[i]; }
-  // Converts the profile to counts of alphabet letters.
-  void convert_to_counts();
-  // Converts the profile back to relative frequencies of alphabet letters.
-  void convert_to_frequencies();
-  // Returns true if the profile contains counts.
-  bool has_counts() const { return has_counts_; }
 
  protected:
   // Needed to access names in templatized Profile base class
@@ -66,8 +60,6 @@ class CountProfile : public Profile<Alphabet> {
   virtual void read_header(FILE* fin);
   // Reads and initializes array data members from stream.
   virtual void read_body(FILE* fin);
-  // Writes serialized scalar data members to stream.
-  virtual void write_header(FILE* fout) const;
   // Writes serialized array data members to stream.
   virtual void write_body(FILE* fout) const;
   // Prints the profile in human-readable format to output stream.
@@ -82,8 +74,6 @@ class CountProfile : public Profile<Alphabet> {
 
   // Number of effective sequences in each alignment column.
   std::vector<float> neff_;
-  // Flag indicating if the profile contains counts or (relative) frequencies.
-  bool has_counts_;
 };  // CountProfile
 
 }  // namespace cs

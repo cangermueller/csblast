@@ -413,8 +413,6 @@ void SamplingStateInitializer<Alphabet>::init(HMM<Alphabet>& hmm) const {
          i != idx.end() && !hmm.full(); ++i) {
       CountProfile<Alphabet> p(**pi, *i, hmm.num_cols());
       LOG(DEBUG1) << "Extracted profile window at position " << *i << ":";
-      // make sure that profile contains frequencies not counts
-      p.convert_to_frequencies();
       if (pc_) pc_->add_to_profile(ConstantAdmixture(pc_admixture_), &p);
       hmm.add_profile(p);
     }

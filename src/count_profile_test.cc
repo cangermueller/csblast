@@ -25,7 +25,6 @@ TEST(CountProfileTest, ConstructionFromInputStream) {
   EXPECT_FLOAT_EQ(1.0f, profile[0][0]);
   EXPECT_FLOAT_EQ(0.0f, profile[1][0]);
   EXPECT_FLOAT_EQ(1.0f, profile.neff(1));
-  EXPECT_FALSE(profile.has_counts());
 }
 
 TEST(CountProfileTest, ConstructionFromAlignment) {
@@ -40,23 +39,6 @@ TEST(CountProfileTest, ConstructionFromAlignment) {
   EXPECT_FLOAT_EQ(0.0f, profile[3][Nucleotide::instance().ctoi('C')]);
   EXPECT_FLOAT_EQ(0.0f, profile[3][Nucleotide::instance().ctoi('G')]);
   EXPECT_FLOAT_EQ(1.0f, profile[3][Nucleotide::instance().ctoi('T')]);
-}
-
-TEST(CountProfileTest, ConversionToCounts) {
-  FILE* fin = fopen("../data/nt_alignment8.fas", "r");
-  Alignment<Nucleotide> alignment(fin, Alignment<Nucleotide>::FASTA);
-  fclose(fin);
-
-  CountProfile<Nucleotide> profile(alignment, true);
-  ASSERT_EQ(0.25f, profile[3][Nucleotide::instance().ctoi('A')]);
-
-  profile.convert_to_counts();
-
-  EXPECT_TRUE(profile.has_counts());
-  EXPECT_FLOAT_EQ(0.25*profile.neff(3),
-                  profile[3][Nucleotide::instance().ctoi('A')]);
-  EXPECT_FLOAT_EQ(profile.neff(3), std::accumulate(profile.col_begin(3),
-                                                   profile.col_end(3), 0.0f));
 }
 
 TEST(CountProfileTest, AlignmentBpdS) {

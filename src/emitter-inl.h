@@ -36,17 +36,15 @@ inline double Emitter<Alphabet>::operator() (
   assert(profile.logspace());
   assert(!counts.logspace());
 
-  const bool has_counts = counts.has_counts();
   double rv = 0.0;
   if (!params_.ignore_context) {
     const int beg = std::max(0, index - center_);
     const int end = std::min(counts.num_cols() - 1, index + center_);
     for(int i = beg; i <= end; ++i) {
-      int j = i - index + center_;
+      const int j = i - index + center_;
       double sum = 0.0f;
       for (int a = 0; a < profile.alphabet_size(); ++a)
-        sum += (has_counts ?
-                counts[i][a] : counts[i][a] * counts.neff(i)) * profile[j][a];
+        sum += counts[i][a] * counts.neff(i) * profile[j][a];
       rv += weights_[j] * sum;
     }
   } else {
@@ -69,7 +67,7 @@ inline double Emitter<Alphabet>::operator() (
     const int beg = std::max(0, index - center_);
     const int end = std::min(seq.length() - 1, index + center_);
     for(int i = beg; i <= end; ++i) {
-      int j = i - index + center_;
+      const int j = i - index + center_;
       rv += weights_[j] * profile[j][seq[i]];
     }
   } else {

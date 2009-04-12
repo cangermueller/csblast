@@ -60,7 +60,6 @@ class BaumWelchTrainingTest : public testing::Test {
       shared_ptr< CountProfile<AminoAcid> > p_ptr(
           new CountProfile<AminoAcid>(**ai, true));
       mpc.add_to_profile(ConstantAdmixture(0.01f), p_ptr.get());
-      p_ptr->convert_to_counts();
       counts_.push_back(p_ptr);
     }
   }

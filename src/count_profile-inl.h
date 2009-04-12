@@ -20,16 +20,14 @@ const char* CountProfile<Alphabet>::kClassID = "CountProfile";
 
 template<class Alphabet>
 inline CountProfile<Alphabet>::CountProfile(FILE* fin)
-    : neff_(),
-      has_counts_(false) {
+    : neff_() {
   read(fin);
 }
 
 template<class Alphabet>
 CountProfile<Alphabet>::CountProfile(const Sequence<Alphabet>& sequence)
     : Profile<Alphabet>(sequence.length()),
-      neff_(sequence.length(), 1.0f),
-      has_counts_(false) {
+      neff_(sequence.length(), 1.0f) {
   for (int i = 0; i < num_cols(); ++i)
     data_[i][sequence[i]] = 1.0f;
 }
@@ -38,8 +36,7 @@ template<class Alphabet>
 CountProfile<Alphabet>::CountProfile(const Alignment<Alphabet>& alignment,
                                      bool position_specific_weights)
     : Profile<Alphabet>(alignment.num_match_cols()),
-      neff_(alignment.num_match_cols()),
-      has_counts_(false) {
+      neff_(alignment.num_match_cols()) {
   const int num_cols = alignment.num_match_cols();
   const int num_seqs = alignment.num_seqs();
   const int any   = Alphabet::instance().any();
@@ -70,7 +67,6 @@ inline CountProfile<Alphabet>::CountProfile(const CountProfile& other,
     : Profile<Alphabet>(other, index, length) {
   neff_.insert(neff_.begin(), other.neff_.begin() + index,
                other.neff_.begin() + index + length);
-  has_counts_ = other.has_counts_;
 }
 
 template<class Alphabet>
@@ -88,42 +84,9 @@ void CountProfile<Alphabet>::readall(
 }
 
 template<class Alphabet>
-void CountProfile<Alphabet>::convert_to_counts() {
-  if (!has_counts_) {
-    const bool islog = logspace();
-    if (islog) transform_to_linspace();
-
-    for (int i = 0; i < num_cols(); ++i)
-      for (int a = 0; a < alphabet_size(); ++a)
-        data_[i][a] *= neff_[i];
-    has_counts_ = true;
-
-    if (islog) transform_to_logspace();
-  }
-}
-
-template<class Alphabet>
-void CountProfile<Alphabet>::convert_to_frequencies() {
-  if (has_counts_) {
-    normalize(this);
-    has_counts_ = false;
-  }
-}
-
-template<class Alphabet>
 void CountProfile<Alphabet>::read_header(FILE* fin) {
   Profile<Alphabet>::read_header(fin);
   neff_.resize(num_cols());
-
-  // Read has_counts
-  char buffer[kBufferSize];
-  const char* ptr = buffer;
-  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "has_counts")) {
-    ptr = buffer;
-    has_counts_ = strtoi(ptr) == 1;
-  } else {
-    throw Exception("Bad format: profile does not contain 'has_counts' record!");
-  }
 }
 
 template<class Alphabet>
@@ -149,12 +112,6 @@ void CountProfile<Alphabet>::read_body(FILE* fin) {
   if (i != num_cols() - 1)
     throw Exception("Bad format: profile has %i columns but should have %i!",
                     i+1, num_cols());
-}
-
-template<class Alphabet>
-void CountProfile<Alphabet>::write_header(FILE* fout) const {
-  Profile<Alphabet>::write_header(fout);
-  fprintf(fout, "has_counts\t%i", has_counts_ ? 1 : 0);
 }
 
 template<class Alphabet>
