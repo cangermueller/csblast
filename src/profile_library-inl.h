@@ -158,10 +158,10 @@ template<class Alphabet>
 void ProfileLibrary<Alphabet>::write(FILE* fout) const {
   // Write header
   fputs("ProfileLibrary\n", fout);
-  fprintf(fout, "num_profiles\t\t%i\n", num_profiles());
-  fprintf(fout, "num_cols\t\t%i\n", num_cols());
-  fprintf(fout, "iterations\t\t%i\n", iterations());
-  fprintf(fout, "logspace\t\t%i\n", logspace() ? 1 : 0);
+  fprintf(fout, "num_profiles\t%i\n", num_profiles());
+  fprintf(fout, "num_cols\t%i\n", num_cols());
+  fprintf(fout, "iterations\t%i\n", iterations());
+  fprintf(fout, "logspace\t%i\n", logspace() ? 1 : 0);
 
   // Serialize profiles
   for (const_profile_iterator pi = profiles_.begin(); pi != profiles_.end(); ++pi)

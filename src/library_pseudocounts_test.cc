@@ -60,7 +60,7 @@ TEST(LibraryPseudocountsTest, AddToSmallProfile) {
   EXPECT_NEAR(0.81f, profile[5][AminoAcid::instance().ctoi('C')], kFloatDelta);
 }
 
-TEST(LibraryPseudocountsTest, AddToZnFingerSequence) {
+TEST(LibraryPseudocountsTest, AddToZnFingerSequenceK50) {
   FILE* seq_in = fopen("../data/zinc_finger.seq", "r");
   Sequence<AminoAcid> seq(seq_in);
   fclose(seq_in);
@@ -74,10 +74,33 @@ TEST(LibraryPseudocountsTest, AddToZnFingerSequence) {
   EmissionParams params;
   LibraryPseudocounts<AminoAcid> pc(&lib, params);
   for (int n = 0; n < 80; ++n)
-    pc.add_to_sequence(seq, DivergenceDependentAdmixture(1.0f, 10.0f), &profile);
+    pc.add_to_sequence(seq, ConstantAdmixture(1.0f), &profile);
 
   EXPECT_NEAR(0.8259, profile[53][AminoAcid::instance().ctoi('C')], kFloatDelta);
   EXPECT_NEAR(0.8214, profile[56][AminoAcid::instance().ctoi('C')], kFloatDelta);
+}
+
+TEST(LibraryPseudocountsTest, AddToZnFingerSequenceK4000) {
+  FILE* seq_in = fopen("../data/zinc_finger.seq", "r");
+  Sequence<AminoAcid> seq(seq_in);
+  fclose(seq_in);
+  Profile<AminoAcid> profile(seq.length());
+
+  FILE* fin = fopen("../data/K4000.lib", "r");
+  ProfileLibrary<AminoAcid> lib(fin);
+  fclose(fin);
+
+  ASSERT_EQ(4000, lib.num_profiles());
+  ASSERT_EQ(13, lib.num_cols());
+  ASSERT_EQ(20, lib.alphabet_size());
+  ASSERT_TRUE(lib.logspace());
+
+  EmissionParams params;
+  LibraryPseudocounts<AminoAcid> pc(&lib, params);
+  pc.add_to_sequence(seq, ConstantAdmixture(1.0f), &profile);
+
+  EXPECT_NEAR(0.78696, profile[53][AminoAcid::instance().ctoi('C')], kFloatDelta);
+  EXPECT_NEAR(0.84759, profile[56][AminoAcid::instance().ctoi('C')], kFloatDelta);
 }
 
 TEST(LibraryPseudocountsTest, DISABLED_AddToZnFingerAlignment) {

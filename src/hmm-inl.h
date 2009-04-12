@@ -10,7 +10,6 @@
 #include <cstring>
 
 #include <iostream>
-#include <limits>
 #include <vector>
 
 #include "exception.h"
@@ -294,7 +293,7 @@ void HMM<Alphabet>::write(FILE* fout) const {
             static_cast<int>(ti->from), static_cast<int>(ti->to));
     float log_p =
       transitions_logspace() ? ti->probability : fast_log2(ti->probability);
-    if (log_p == -std::numeric_limits<float>::infinity())
+    if (log_p == -INFINITY)
       fputs("*\n", fout);
     else
       fprintf(fout, "%i\n", -iround(log_p * kLogScale));
