@@ -18,12 +18,14 @@ namespace cs {
 
 Application* Application::instance_;
 
+const char* Application::kVersionNumber = "2.0.0";
+
 const char* Application::kCopyright =
-  "(C) Andreas Biegert, Johannes Soding, and Ludwig-Maximillians\n"
+  "Copyright (c) 2008 Andreas Biegert, Johannes Soding, and Ludwig-Maximillians\n"
   "University Munich";
 
 Application::Application()
-    : log_level_(Log::to_string(Log::reporting_level())),
+    : log_level_(Log::to_string(Log::from_int(LOG_MAX_LEVEL))),
       log_file_fp_(NULL) {
   // Register the app. instance
   if (instance_)
@@ -39,7 +41,7 @@ Application::~Application() {
 int Application::main(int argc,
                       char* argv[],
                       FILE* fout,
-                      const std::string& name) {
+                      const string& name) {
   output_fp_     = fout;
   app_name_      = name;
   log_file_name_ = name + ".log";
@@ -64,7 +66,7 @@ int Application::main(int argc,
     Log::stream() = log_file_fp_;
 
     // Let subclasses parse the command line options
-    parse_options(options);
+    parse_options(&options);
 
     // Run application
     run();
@@ -79,12 +81,14 @@ int Application::main(int argc,
 }
 
 void Application::print_usage() const {
-  fprintf(stream(), "%s version %s\n", app_name_.c_str(), VERSION);
+  fprintf(stream(), "%s version %s\n", app_name_.c_str(), kVersionNumber);
   print_description();
-  fprintf(stream(), "\n%s\n\nOptions:\n", kCopyright);
+  fprintf(stream(), "%s\n\n", kCopyright);
+  print_banner();
+  fputs("\nOptions:\n", stream());
   print_options();
 
-  if (LOG_MAX_LEVEL >= 0) {
+  if (LOG_MAX_LEVEL > WARNING) {
     fprintf(stream(), "  %-30s %s (def=%s)\n", "    --log-level <level>",
             "Maximal reporting level for logging", log_level_.c_str());
     fprintf(stream(), "  %-30s %s (def=%s)\n", "    --log-file <filename>",

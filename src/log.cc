@@ -98,7 +98,7 @@ LogLevel Log::from_string(const std::string& log_level) {
   return INFO;
 }
 
-LogLevel Log::from_integer(int log_level) {
+LogLevel Log::from_int(int log_level) {
   if (log_level == 7)
     return DEBUG4;
   if (log_level == 6)

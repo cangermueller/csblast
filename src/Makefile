@@ -114,10 +114,10 @@ test : $(OBJECTS) $(DEPS) gtest_main.a
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $(OBJECTS) gtest_main.a
 
 # Executable targets:
-csbuild_aa: csbuild_aa.cc $(OBJECTS_NO_TESTS) $(DEPS_NO_TESTS)
+csbuild_aa: $(OBJECTS_NO_TESTS) $(DEPS_NO_TESTS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $@.cc $(OBJECTS_NO_TESTS) $(LIBS)
 
-csbuild_nt: csbuild_nt.cc $(OBJECTS_NO_TESTS) $(DEPS_NO_TESTS)
+csbuild_nt: $(OBJECTS_NO_TESTS) $(DEPS_NO_TESTS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $@.cc $(OBJECTS_NO_TESTS) $(LIBS)
 
 cssample_aa: cssample_aa.cc $(OBJECTS_NO_TESTS) $(DEPS_NO_TESTS)

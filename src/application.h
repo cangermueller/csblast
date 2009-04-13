@@ -38,16 +38,18 @@ class Application {
   FILE* stream() const { return output_fp_; }
 
  private:
+  // Version number for usage output.
+  static const char* kVersionNumber;
   // Copyright string for usage output.
   static const char* kCopyright;
 
   // Runs the application. To be implemented by derived classes.
   virtual void run() = 0;
   // Parses command line options.
-  virtual void parse_options(GetOpt_pp& /* options */) const { };
+  virtual void parse_options(GetOpt_pp* /* options */) { };
   // Prints options summary to stream.
   virtual void print_options() const { };
-  // Prints options summary to stream.
+  // Prints usage banner to stream.
   virtual void print_banner() const { };
   // Prints short application description.
   virtual void print_description() const { };

@@ -11,6 +11,7 @@
 #include <climits>
 #include <cmath>
 #include <cstdarg>
+#include <cstring>
 
 #include <iostream>
 #include <sstream>
