@@ -9,7 +9,7 @@
 #include <sstream>
 #include <string>
 
-namespace {
+namespace cs {
 
 inline std::string now_time() {
   char buffer[11];
@@ -21,11 +21,6 @@ inline std::string now_time() {
   std::sprintf(result, "%s.%03ld", buffer, (long)tv.tv_usec / 1000);
   return result;
 }
-
-}  // namespace
-
-
-Log::Log() { }
 
 std::ostringstream& Log::get(LogLevel log_level) {
   level = log_level;
@@ -119,4 +114,6 @@ LogLevel Log::from_int(int log_level) {
                      << "'. Using INFO level as default.";
   return INFO;
 }
+
+}  // cs namespace
 

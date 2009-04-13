@@ -43,8 +43,9 @@ class Application {
   // Copyright string for usage output.
   static const char* kCopyright;
 
-  // Runs the application. To be implemented by derived classes.
-  virtual void run() = 0;
+  // Runs the application and return exit code. To be implemented by derived
+  // classes.
+  virtual int run() = 0;
   // Parses command line options.
   virtual void parse_options(GetOpt_pp* /* options */) { };
   // Prints options summary to stream.

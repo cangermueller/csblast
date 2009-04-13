@@ -13,8 +13,8 @@
 #include "exception.h"
 #include "getopt_pp.h"
 #include "sequence-inl.h"
-#include "log.h"
 
+using namespace GetOpt;
 using std::string;
 
 namespace cs {
@@ -35,11 +35,11 @@ struct CSBuildParams {
   }
 
   // The input alignment file with training data.
-  std::string infile;
+  string infile;
   // The output file for the trained HMM.
-  std::string outfile;
+  string outfile;
   // File format of input alignment
-  std::string format;
+  string format;
   // Match column assignment for FASTA alignments
   int matchcol_assignment;
   // Use global instead of position specific weights for profile construction.
@@ -51,7 +51,7 @@ template<class Alphabet>
 class CSBuildApp : public Application {
  private:
   // Runs the csbuild application.
-  virtual void run();
+  virtual int run();
   // Parses command line options.
   virtual void parse_options(GetOpt_pp* options);
   // Prints options summary to stream.
@@ -68,7 +68,7 @@ class CSBuildApp : public Application {
 
 template<class Alphabet>
 void CSBuildApp<Alphabet>::parse_options(GetOpt_pp* options) {
-  *options >> Option('i', "infile", params_.infile);
+  *options >> Option('i', "infile", params_.infile, params_.infile);
   *options >> Option('o', "outfile", params_.outfile, params_.outfile);
   *options >> Option('f', "format", params_.format, params_.format);
   *options >> Option('M', "matchcol", params_.matchcol_assignment,
@@ -111,7 +111,7 @@ void CSBuildApp<Alphabet>::print_options() const {
 }
 
 template<class Alphabet>
-void CSBuildApp<Alphabet>::run() {
+int CSBuildApp<Alphabet>::run() {
   FILE* fin = fopen(params_.infile.c_str(), "r");
   if (!fin)
     throw Exception("Unable to read from input file '%s'!",
@@ -146,6 +146,8 @@ void CSBuildApp<Alphabet>::run() {
 
   fclose(fout);
   fclose(fin);
+
+  return 0;
 }
 
 }  // namespace cs

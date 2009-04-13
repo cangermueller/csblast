@@ -8,4 +8,3 @@
 int main(int argc, char* argv[]) {
   return cs::CSBuildApp<cs::AminoAcid>().main(argc, argv, stdout, "csbuild");
 }
-

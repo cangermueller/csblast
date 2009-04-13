@@ -34,7 +34,7 @@ Application::Application()
 }
 
 Application::~Application() {
-  if (log_file_fp_)
+  if (log_file_fp_ && log_file_fp_ != stderr)
     fclose(log_file_fp_);
 }
 
@@ -42,6 +42,8 @@ int Application::main(int argc,
                       char* argv[],
                       FILE* fout,
                       const string& name) {
+  int status = 0;
+
   output_fp_     = fout;
   app_name_      = name;
   log_file_name_ = name + ".log";
@@ -58,26 +60,28 @@ int Application::main(int argc,
       return 1;
     }
 
-    // Process logging options
-    options >> Option(' ', "log-level", log_level_, log_level_);
-    Log::reporting_level() = Log::from_string(log_level_);
-    options >> Option(' ', "log-file", log_file_name_, log_file_name_);
-    log_file_fp_ = fopen(log_file_name_.c_str(), "w");
-    Log::stream() = log_file_fp_;
+    if (kDebug) {
+      // Process logging options
+      options >> Option(' ', "log-level", log_level_, log_level_);
+      Log::reporting_level() = Log::from_string(log_level_);
+      options >> Option(' ', "log-file", log_file_name_, log_file_name_);
+      log_file_fp_ = fopen(log_file_name_.c_str(), "w");
+      Log::stream() = log_file_fp_;
+    }
 
     // Let subclasses parse the command line options
     parse_options(&options);
 
     // Run application
-    run();
+    status = run();
 
   } catch(const std::exception& e) {
     LOG(ERROR) << e.what();
-    fprintf(fout, "%s\n", e.what());
+    fprintf(fout, "\n%s\n", e.what());
     return 1;
   }
 
-  return 0;
+  return status;
 }
 
 void Application::print_usage() const {
@@ -88,7 +92,7 @@ void Application::print_usage() const {
   fputs("\nOptions:\n", stream());
   print_options();
 
-  if (LOG_MAX_LEVEL > WARNING) {
+  if (kDebug) {
     fprintf(stream(), "  %-30s %s (def=%s)\n", "    --log-level <level>",
             "Maximal reporting level for logging", log_level_.c_str());
     fprintf(stream(), "  %-30s %s (def=%s)\n", "    --log-file <filename>",

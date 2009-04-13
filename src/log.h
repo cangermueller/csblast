@@ -10,11 +10,15 @@
 #include <sstream>
 #include <string>
 
+#include "globals.h"
+
+namespace cs {
+
 enum LogLevel { ERROR, WARNING, INFO, DEBUG, DEBUG1, DEBUG2, DEBUG3, DEBUG4 };
 
 class Log {
  public:
-  Log();
+  Log() { }
   virtual ~Log();
   std::ostringstream& get(LogLevel level = INFO);
 
@@ -33,14 +37,15 @@ class Log {
   Log& operator =(const Log&);
 };
 
-
 #ifndef LOG_MAX_LEVEL
 #define LOG_MAX_LEVEL DEBUG4
 #endif
 
-#define LOG(level)                              \
-  if (level > LOG_MAX_LEVEL) ;                  \
-  else if (level > Log::reporting_level() || !Log::stream()) ;    \
+#define LOG(level)                                              \
+  if (level > LOG_MAX_LEVEL || !kDebug) ;                       \
+  else if (level > Log::reporting_level() || !Log::stream()) ;  \
   else Log().get(level)
+
+}  // namespace cs
 
 #endif  // SRC_LOG_H_

@@ -38,6 +38,8 @@ ifdef STATIC
 endif
 ifndef NDEBUG
 	CXXFLAGS += -g
+else
+	CXXFLAGS += -DNDEBUG=1
 endif
 
 # Flags passed to the C++ compiler for Google Test compilation
@@ -54,7 +56,8 @@ BUILDDIR = build
 
 # C++ source files
 #SOURCES = $(wildcard *.$(EXT))
-SOURCES = $(filter-out $(patsubst %, %.$(EXT), $(TARGETS)), $(wildcard *.$(EXT)))
+SOURCES_WITH_APP = $(filter-out $(patsubst %, %.$(EXT), $(TARGETS)), $(wildcard *.$(EXT)))
+SOURCES = $(filter-out $(wildcard *_app.$(EXT)),  $(SOURCES_WITH_APP))
 OBJECTS = $(patsubst %.$(EXT), $(BUILDDIR)/%.o, $(SOURCES))
 DEPS    = $(patsubst %.$(EXT), $(BUILDDIR)/%.dep, $(SOURCES))
 OBJECTS_NO_TESTS = $(filter-out $(patsubst %.$(EXT), $(BUILDDIR)/%.o, $(wildcard *test*.$(EXT))), $(OBJECTS))
@@ -114,26 +117,26 @@ test : $(OBJECTS) $(DEPS) gtest_main.a
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $(OBJECTS) gtest_main.a
 
 # Executable targets:
-csbuild_aa: $(OBJECTS_NO_TESTS) $(DEPS_NO_TESTS)
+csbuild_aa: csbuild_app.cc $(OBJECTS_NO_TESTS) $(DEPS_NO_TESTS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $@.cc $(OBJECTS_NO_TESTS) $(LIBS)
 
-csbuild_nt: $(OBJECTS_NO_TESTS) $(DEPS_NO_TESTS)
+csbuild_nt: csbuild_app.cc $(OBJECTS_NO_TESTS) $(DEPS_NO_TESTS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $@.cc $(OBJECTS_NO_TESTS) $(LIBS)
 
-cssample_aa: cssample_aa.cc $(OBJECTS_NO_TESTS) $(DEPS_NO_TESTS)
+cssample_aa: cssample_app.cc $(OBJECTS_NO_TESTS) $(DEPS_NO_TESTS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $@.cc $(OBJECTS_NO_TESTS) $(LIBS)
 
-cssample_nt: cssample_nt.cc $(OBJECTS_NO_TESTS) $(DEPS_NO_TESTS)
+cssample_nt: cssample_app.cc $(OBJECTS_NO_TESTS) $(DEPS_NO_TESTS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $@.cc $(OBJECTS_NO_TESTS) $(LIBS)
 
-cstrain_aa: cstrain_aa.cc $(OBJECTS_NO_TESTS) $(DEPS_NO_TESTS)
+cstrain_aa: cstrain_app.cc $(OBJECTS_NO_TESTS) $(DEPS_NO_TESTS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $@.cc $(OBJECTS_NO_TESTS) $(LIBS)
 
-cstrain_nt: cstrain_nt.cc $(OBJECTS_NO_TESTS) $(DEPS_NO_TESTS)
+cstrain_nt: cstrain_app.cc $(OBJECTS_NO_TESTS) $(DEPS_NO_TESTS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $@.cc $(OBJECTS_NO_TESTS) $(LIBS)
 
-csclust_aa: csclust_aa.cc $(OBJECTS_NO_TESTS) $(DEPS_NO_TESTS)
+csclust_aa: csclust_app.cc $(OBJECTS_NO_TESTS) $(DEPS_NO_TESTS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $@.cc $(OBJECTS_NO_TESTS) $(LIBS)
 
-csclust_nt: csclust_nt.cc $(OBJECTS_NO_TESTS) $(DEPS_NO_TESTS)
+csclust_nt: csclust_app.cc $(OBJECTS_NO_TESTS) $(DEPS_NO_TESTS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $@.cc $(OBJECTS_NO_TESTS) $(LIBS)

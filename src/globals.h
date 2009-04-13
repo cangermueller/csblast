@@ -7,10 +7,10 @@ namespace cs {
 
 // Constants
 
-#ifdef DEBUG
-const bool kDebug = true;
-#else
+#ifdef NDEBUG
 const bool kDebug = false;
+#else
+const bool kDebug = true;
 #endif  // DEBUG
 
 const int KB = 1024;
@@ -37,7 +37,6 @@ const char kDirSep = '/';
 #define DISALLOW_COPY_AND_ASSIGN(TypeName)      \
   TypeName(const TypeName&);                    \
   void operator=(const TypeName&)
-
 
 // A macro to disallow all the implicit constructors, namely the
 // default constructor, copy constructor and operator= functions.

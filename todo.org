@@ -1,5 +1,0 @@
-#+STARTUP: overview
-#+SEQ_TODO: TODO BUG DONE
-#+STARTUP: hidestars
-
-* Rename 'from' and 'to' members in Transition to 'source' and 'target'

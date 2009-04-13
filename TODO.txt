@@ -1,0 +1,9 @@
+Definitely:
+* User-friendly error messages for GetOpt-Exceptions.
+* ProgressBar class for use in cstrain and csclust.
+* Make BaumWelch and Clustering take pointer to Params instead of reference.
+* Add return value to BW::run and Clustering::run (1: converged, 0: not converged)
+* Make HMM/ProfileLib arguments to EM methods pointers instead of refs
+
+Nice-to-have:
+* Rename 'from' and 'to' members in Transition to 'source' and 'target'
