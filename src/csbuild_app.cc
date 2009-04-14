@@ -5,25 +5,31 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include <memory>
 #include <string>
 
 #include "globals.h"
 #include "alignment-inl.h"
 #include "count_profile-inl.h"
+#include "emitter.h"
 #include "exception.h"
 #include "getopt_pp.h"
+#include "library_pseudocounts-inl.h"
+#include "profile_library-inl.h"
 #include "sequence-inl.h"
 
 using namespace GetOpt;
+using std::auto_ptr;
 using std::string;
 
 namespace cs {
 
-struct CSBuildParams {
+struct CSBuildParams : public EmissionParams {
   static const int kMatchColAssignByQuery = -1;
 
   CSBuildParams()
       : format("auto"),
+        pc_admix(1.0f),
         matchcol_assignment(kMatchColAssignByQuery),
         global_weights(false) { }
 
@@ -40,6 +46,12 @@ struct CSBuildParams {
   string outfile;
   // File format of input alignment
   string format;
+  // Library input file for restarting
+  string libfile;
+  // Overall pseudocount admixture
+  float pc_admix;
+  // Constant in pseudocount calculation for alignments
+  float pc_ali;
   // Match column assignment for FASTA alignments
   int matchcol_assignment;
   // Use global instead of position specific weights for profile construction.
@@ -61,7 +73,10 @@ class CSBuildApp : public Application {
   // Prints usage banner to stream.
   virtual void print_banner() const;
 
-  CSBuildParams params_;  // parameter wrapper
+  // Parameter wrapper
+  CSBuildParams params_;
+  // Profile library for pseudocounts
+  auto_ptr< ProfileLibrary<Alphabet> > lib_;
 };  // CSBuildApp
 
 
@@ -73,6 +88,8 @@ void CSBuildApp<Alphabet>::parse_options(GetOpt_pp* options) {
   *options >> Option('f', "format", params_.format, params_.format);
   *options >> Option('M', "matchcol", params_.matchcol_assignment,
                      params_.matchcol_assignment);
+  *options >> Option('x', "pc-admix", params_.pc_admix, params_.pc_admix);
+  *options >> Option('D', "context-pc", params_.libfile, params_.libfile);
   *options >> OptionPresent(' ', "global-weights", params_.global_weights);
 
   params_.validate();
@@ -85,13 +102,14 @@ void CSBuildApp<Alphabet>::parse_options(GetOpt_pp* options) {
 
 template<class Alphabet>
 void CSBuildApp<Alphabet>::print_description() const {
-  fputs("Build a sequence profile from an alignment or sequence.\n",
+  fputs("Build a profile, PSSM, or HMM from an alignment or sequence.\n",
         stream());
 }
 
 template<class Alphabet>
 void CSBuildApp<Alphabet>::print_banner() const {
   fputs("Usage: csbuild -i <infile> [options]\n", stream());
+  fputs("       csbuild -i <infile> -D <library> [options]\n", stream());
 }
 
 template<class Alphabet>
@@ -106,8 +124,12 @@ void CSBuildApp<Alphabet>::print_options() const {
           "Make all FASTA columns with less than X% gaps match columns");
   fprintf(stream(), "  %-30s %s\n", "", "(def: make columns with residue in "
           "first sequence match columns)");
+  fprintf(stream(), "  %-30s %s (def=off)\n", "-D, --context-pc <library>",
+          "Add context-specific pseudocounts with profile library");
+  fprintf(stream(), "  %-30s %s (def=%-.2f)\n", "-x, --pc-admix [0,1]",
+          "Overall pseudocount admixture", params_.pc_admix);
   fprintf(stream(), "  %-30s %s\n", "    --global-weights",
-          "Use global instead of position-specific weights for profiles");
+          "Use global instead of position-specific sequence weighting");
 }
 
 template<class Alphabet>
@@ -121,9 +143,26 @@ int CSBuildApp<Alphabet>::run() {
     throw Exception("Unable to write profiles to output file '%s'!",
                     params_.outfile.c_str());
 
+  // Iniialize profile library if needed
+  if (!params_.libfile.empty()) {
+    FILE* fin = fopen(params_.libfile.c_str(), "r");
+    if (!fin)
+      throw Exception("Unable to read from jumpstart file '%s'!",
+                      params_.libfile.c_str());
+    lib_ = auto_ptr< ProfileLibrary<Alphabet> >(new ProfileLibrary<Alphabet>(fin));
+    fclose(fin);
+  }
+
+  // Read input sequence/alignment
   if (params_.format == "seq") {  // build profile from sequence
     Sequence<Alphabet> seq(fin);
+
     CountProfile<Alphabet> profile(seq);
+    if (lib_.get()) {
+      LibraryPseudocounts<Alphabet> pc(lib_.get(), params_);
+      pc.add_to_sequence(seq, ConstantAdmixture(params_.pc_admix), &profile);
+    }
+
     profile.write(fout);
     fprintf(stream(), "Wrote profile with %i columns to %s\n",
             profile.num_cols(), params_.outfile.c_str());
@@ -138,7 +177,14 @@ int CSBuildApp<Alphabet>::run() {
       else
         ali.assign_match_columns_by_gap_rule(params_.matchcol_assignment);
     }
+
     CountProfile<Alphabet> profile(ali, !params_.global_weights);
+    if (lib_.get()) {
+      LibraryPseudocounts<Alphabet> pc(lib_.get(), params_);
+      pc.add_to_profile(DivergenceDependentAdmixture(params_.pc_admix,
+                                                     params_.pc_ali), &profile);
+    }
+
     profile.write(fout);
     fprintf(stream(), "Wrote profile with %i columns to %s\n",
             profile.num_cols(), params_.outfile.c_str());

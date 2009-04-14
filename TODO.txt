@@ -4,6 +4,13 @@ Definitely:
 * Make BaumWelch and Clustering take pointer to Params instead of reference.
 * Add return value to BW::run and Clustering::run (1: converged, 0: not converged)
 * Make HMM/ProfileLib arguments to EM methods pointers instead of refs
+* Make pseudocount methods return auto_ptr< CountProfile >
+* Make Pseudocounts constructor take 'const Admixture*'.
+* Implement 'create_and_add_to'/'add_to' method in Pseudocounts
+  base class and overload for:
+  const Sequence&  // returns auto_ptr<CountProfile>
+  const Alignment& // returns auto_ptr<CountProfile>
+  CountProfile*    // changes in place
 
 Nice-to-have:
 * Rename 'from' and 'to' members in Transition to 'source' and 'target'

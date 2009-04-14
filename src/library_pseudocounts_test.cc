@@ -103,26 +103,27 @@ TEST(LibraryPseudocountsTest, AddToZnFingerSequenceK4000) {
   EXPECT_NEAR(0.84759, profile[56][AminoAcid::instance().ctoi('C')], kFloatDelta);
 }
 
-TEST(LibraryPseudocountsTest, DISABLED_AddToZnFingerAlignment) {
+TEST(LibraryPseudocountsTest, AddToZnFingerAlignmentK4000) {
   FILE* ali_in = fopen("../data/zinc_finger.fas", "r");
   Alignment<AminoAcid> ali(ali_in, Alignment<AminoAcid>::FASTA);
   fclose(ali_in);
   CountProfile<AminoAcid> profile(ali, false);
 
-  BlosumMatrix m;
-  MatrixPseudocounts<AminoAcid> mpc(&m);
-  mpc.add_to_profile(ConstantAdmixture(0.01f), &profile);
-
-  FILE* fin = fopen("../data/scop20_1.73_opt_N100000_W13.lib", "r");
+  FILE* fin = fopen("../data/K4000.lib", "r");
   ProfileLibrary<AminoAcid> lib(fin);
   fclose(fin);
+
+  ASSERT_EQ(4000, lib.num_profiles());
+  ASSERT_EQ(13, lib.num_cols());
+  ASSERT_EQ(20, lib.alphabet_size());
+  ASSERT_TRUE(lib.logspace());
 
   EmissionParams params;
   LibraryPseudocounts<AminoAcid> pc(&lib, params);
   pc.add_to_profile(DivergenceDependentAdmixture(1.0f, 10.0f), &profile);
 
-  EXPECT_NEAR(0.7756f, profile[53][AminoAcid::instance().ctoi('C')], kFloatDelta);
-  EXPECT_NEAR(0.7720f, profile[56][AminoAcid::instance().ctoi('C')], kFloatDelta);
+  EXPECT_NEAR(0.7612, profile[53][AminoAcid::instance().ctoi('C')], kFloatDelta);
+  EXPECT_NEAR(0.7925, profile[56][AminoAcid::instance().ctoi('C')], kFloatDelta);
 }
 
 }  // namespace cs

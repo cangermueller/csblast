@@ -171,13 +171,28 @@ inline double fast_pow2(double d) {
 // }
 
 // Normalize a float array such that it sums to one. If it sums to 0 then assign
-//  def_array elements to array (optional)
+// def_array elements to array (optional)
 inline float normalize_to_one(float* array, int length,
                               const float* default_array = NULL) {
   float sum = 0.0f;
   for (int i = 0; i < length; ++i) sum += array[i];
   if (sum != 0.0f) {
     float fac = 1.0f / sum;
+    for (int i = 0; i < length; ++i) array[i] *= fac;
+  } else if (default_array) {
+    for (int i = 0; i < length; ++i) array[i] = default_array[i];
+  }
+  return sum;
+}
+
+// Normalize a double array such that it sums to one. If it sums to 0 then assign
+// def_array elements to array (optional)
+inline double normalize_to_one(double* array, int length,
+                               const double* default_array = NULL) {
+  double sum = 0.0;
+  for (int i = 0; i < length; ++i) sum += array[i];
+  if (sum != 0.0) {
+    double fac = 1.0 / sum;
     for (int i = 0; i < length; ++i) array[i] *= fac;
   } else if (default_array) {
     for (int i = 0; i < length; ++i) array[i] = default_array[i];

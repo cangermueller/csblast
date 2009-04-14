@@ -39,7 +39,7 @@ CountProfile<Alphabet>::CountProfile(const Alignment<Alphabet>& alignment,
       neff_(alignment.num_match_cols()) {
   const int num_cols = alignment.num_match_cols();
   const int num_seqs = alignment.num_seqs();
-  const int any   = Alphabet::instance().any();
+  const int any      = Alphabet::instance().any();
 
   if (position_specific_weights) {
     matrix<float> w;  // position-specific sequence weights

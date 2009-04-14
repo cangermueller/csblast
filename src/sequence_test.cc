@@ -64,13 +64,4 @@ TEST(SequenceTest, AddMatrixPseudocountsToSequence) {
   EXPECT_NEAR(0.06f, profile[0][AminoAcid::instance().ctoi('V')], kFloatDelta);
 }
 
-TEST(DISABLED_SequenceTest, ReadSwissprotDatabase) {
-  FILE* fin = fopen("../../../databases/uniprot_sprot.fasta", "r");
-  for (int i = 0; i < 200000; ++i) {
-    const Sequence<AminoAcid> sequence(fin);
-    EXPECT_LT(0, sequence.length());
-  }
-  fclose(fin);
-}
-
 }  // namespace cs

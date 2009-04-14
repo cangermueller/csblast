@@ -6,13 +6,16 @@
 #include "library_pseudocounts.h"
 
 #include <cassert>
-#include <cmath>
 
+#include "amino_acid.h"
 #include "count_profile-inl.h"
 #include "log.h"
+#include "matrix.h"
 #include "profile-inl.h"
 #include "sequence-inl.h"
 #include "utils-inl.h"
+
+using std::valarray;
 
 namespace cs {
 
@@ -44,32 +47,33 @@ void LibraryPseudocounts<Alphabet>::add_to_sequence(
   const float tau         = pca(1.0f);  // number of effective seqs is one
 
   // Profile probabilities P(p_k|X_i) at position i
-  std::valarray<float> prob(0.0f, num_profiles);
+  valarray<double> prob(0.0, num_profiles);
   // Pseudocount vector P(a|X_i) at position i
-  std::valarray<float> pc(0.0f, alphabet_size);
+  valarray<double> pc(0.0, alphabet_size);
   // Output profile with pseudocounts
   Profile<Alphabet>& p = *profile;
 
   for (int i = 0; i < length; ++i) {
     // Calculate profile probabilities P(p_k|X_i)
     for (int k = 0; k < num_profiles; ++k) {
-      prob[k] = lib_[k].prior() * fast_pow2(emitter_(lib_[k], seq, i));
+      prob[k] = fast_pow2(emitter_(lib_[k], seq, i)) * lib_[k].prior();
     }
     prob /= prob.sum();  // normalization
 
     // Calculate pseudocount vector P(a|X_i)
-    for(int a = 0; a < alphabet_size; ++a) {
-      pc[a] = 0.0f;
-      for (int k = 0; k < num_profiles; ++k) {
+    pc = 0.0;
+    for (int k = 0; k < num_profiles; ++k) {
+      for(int a = 0; a < alphabet_size; ++a) {
         pc[a] += prob[k] * fast_pow2(lib_[k][center][a]);
       }
     }
     pc /= pc.sum();  // normalization
 
-    // Add pseudocounts to sequence by storing probabilities in output profile
+    // Add pseudocounts to sequence
     for(int a = 0; a < alphabet_size; ++a) {
-      float pa = (1.0f - tau) * (static_cast<int>(seq[i]) == a ?
-                                 1.0f : 0.0f) + tau * pc[a];
+      assert(pc[a] > 0.0);  // should be always true because of log-scaling
+      const float pa = (1.0f - tau) *
+        (static_cast<int>(seq[i]) == a ? 1.0f : 0.0f) + tau * pc[a];
       p[i][a] = p.logspace() ? fast_log2(pa) : pa;
     }
   }
@@ -92,33 +96,45 @@ void LibraryPseudocounts<Alphabet>::add_to_profile(
   const int center        = lib_.center();
   const int alphabet_size = Alphabet::instance().size();
 
+  // Unscaled log emission probabilities P(X_i|p_k)
+  valarray<double> log_ep(0.0, num_profiles);
   // Profile probabilities P(p_k|X_i) at position i
-  std::valarray<float> prob(0.0f, num_profiles);
-  // Pseudocount vector P(a|X_i) at position i
-  std::valarray<float> pc(0.0f, alphabet_size);
+  valarray<double> prob(0.0, num_profiles);
+  // Pseudocount matrix P(a|X_i)
+  matrix<double> pc(length, alphabet_size, 0.0);
   // Output profile with pseudocounts
   CountProfile<Alphabet>& p = *profile;
 
   for (int i = 0; i < length; ++i) {
+    // Calculate unscaled emission probs
+    for (int k = 0; k < num_profiles; ++k) {
+      log_ep[k] = emitter_(lib_[k], p, i);
+    }
+    double log_ep_average = log_ep.sum() / num_profiles;
+    log_ep -= log_ep_average;  // scale logs
+
     // Calculate profile probabilities P(p_k|X_i)
     for (int k = 0; k < num_profiles; ++k) {
-      prob[k] = lib_[k].prior() * fast_pow2(emitter_(lib_[k], p, i));
+      prob[k] = fast_pow2(log_ep[k]) * lib_[k].prior();
     }
     prob /= prob.sum();  // normalization
 
     // Calculate pseudocount vector P(a|X_i)
-    for(int a = 0; a < alphabet_size; ++a) {
-      pc[a] = 0.0f;
-      for (int k = 0; k < num_profiles; ++k) {
-        pc[a] += prob[k] * fast_pow2(lib_[k][center][a]);
+    for (int k = 0; k < num_profiles; ++k) {
+      for(int a = 0; a < alphabet_size; ++a) {
+        pc[i][a] += prob[k] * fast_pow2(lib_[k][center][a]);
       }
     }
-    pc /= pc.sum();  // normalization
+    normalize_to_one(&pc[i][0], alphabet_size);
+  }
 
-    // Add pseudocounts to sequence by storing probabilities in output profile
-    float tau = pca(p.neff(i));
+  // Add pseudocounts to profile
+  for (int i = 0; i < length; ++i) {
+    const float tau = pca(p.neff(i));
+
     for(int a = 0; a < alphabet_size; ++a) {
-      p[i][a] = (1.0f - tau) * p[i][a] + tau * pc[a];
+      assert(pc[i][a] > 0.0);  // should be always true because of log-scaling
+      p[i][a] = (1.0f - tau) * p[i][a] + tau * pc[i][a];
     }
   }
   normalize(profile);

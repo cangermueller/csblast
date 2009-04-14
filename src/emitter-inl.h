@@ -36,19 +36,20 @@ inline double Emitter<Alphabet>::operator() (
   assert(profile.logspace());
   assert(!counts.logspace());
 
+  const int alphabet_size = profile.alphabet_size();
   double rv = 0.0;
   if (!params_.ignore_context) {
     const int beg = std::max(0, index - center_);
     const int end = std::min(counts.num_cols() - 1, index + center_);
     for(int i = beg; i <= end; ++i) {
       const int j = i - index + center_;
-      double sum = 0.0f;
-      for (int a = 0; a < profile.alphabet_size(); ++a)
+      double sum = 0.0;
+      for (int a = 0; a < alphabet_size; ++a)
         sum += counts[i][a] * counts.neff(i) * profile[j][a];
       rv += weights_[j] * sum;
     }
   } else {
-    for (int a = 0; a < profile.alphabet_size(); ++a)
+    for (int a = 0; a < alphabet_size; ++a)
       rv += counts[index][a] * profile[center_][a];
     rv *= weights_[center_];
   }

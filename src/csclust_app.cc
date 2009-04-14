@@ -105,7 +105,7 @@ class CSClustApp : public Application {
   CSClustParams params_;
   // Count profiles for training
   profile_vector data_;
-  // Count profiles for training
+  // Profile library to be clustered
   auto_ptr< ProfileLibrary<Alphabet> > lib_;
   // Substitution matrix for pseudocount generation
   auto_ptr< SubstitutionMatrix<Alphabet> > subst_matrix_;
