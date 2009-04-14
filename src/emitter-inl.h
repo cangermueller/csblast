@@ -17,8 +17,8 @@
 namespace cs {
 
 template<class Alphabet>
-inline Emitter<Alphabet>::Emitter(int num_cols, const EmissionParams& params)
-    : params_(params),
+inline Emitter<Alphabet>::Emitter(int num_cols, const EmissionOptions& opts)
+    : opts_(opts),
       num_cols_(num_cols),
       center_((num_cols - 1) / 2),
       weights_(1.0f, num_cols) {
@@ -38,7 +38,7 @@ inline double Emitter<Alphabet>::operator() (
 
   const int alphabet_size = profile.alphabet_size();
   double rv = 0.0;
-  if (!params_.ignore_context) {
+  if (!opts_.ignore_context) {
     const int beg = std::max(0, index - center_);
     const int end = std::min(counts.num_cols() - 1, index + center_);
     for(int i = beg; i <= end; ++i) {
@@ -64,7 +64,7 @@ inline double Emitter<Alphabet>::operator() (
   assert(profile.logspace());
 
   double rv = 0.0;
-  if (!params_.ignore_context) {
+  if (!opts_.ignore_context) {
     const int beg = std::max(0, index - center_);
     const int end = std::min(seq.length() - 1, index + center_);
     for(int i = beg; i <= end; ++i) {
@@ -79,9 +79,9 @@ inline double Emitter<Alphabet>::operator() (
 
 template<class Alphabet>
 void Emitter<Alphabet>::init_weights() {
-  weights_[center_] = params_.weight_center;
+  weights_[center_] = opts_.weight_center;
   for (int i = 1; i <= center_; ++i) {
-    float weight = params_.weight_center * pow(params_.weight_decay, i);
+    float weight = opts_.weight_center * pow(opts_.weight_decay, i);
     weights_[center_ - i] = weight;
     weights_[center_ + i] = weight;
   }
@@ -89,7 +89,7 @@ void Emitter<Alphabet>::init_weights() {
 
 template<class Alphabet>
 inline float Emitter<Alphabet>::sum_weights() const {
-  return params_.ignore_context ? weights_[center_] : weights_.sum();
+  return opts_.ignore_context ? weights_[center_] : weights_.sum();
 }
 
 }  // namespace cs

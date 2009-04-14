@@ -21,7 +21,7 @@ template<class Alphabet>
 class LibraryPseudocounts : public Pseudocounts<Alphabet> {
  public:
   LibraryPseudocounts(const ProfileLibrary<Alphabet>* lib,
-                      const EmissionParams& params);
+                      const EmissionOptions& opts);
   ~LibraryPseudocounts() { }
 
   // Adds context-specific pseudocounts to sequence and stores resulting

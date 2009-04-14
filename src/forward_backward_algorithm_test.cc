@@ -44,9 +44,9 @@ class ForwardBackwardAlgorithmTest : public testing::Test {
 
 TEST_F(ForwardBackwardAlgorithmTest, ZincFingerMotif) {
   Sequence<AminoAcid> seq("zinc finger motif", "GQKPFQCRICMRN\n");
-  EmissionParams params;
-  params.weight_center = 1.0f;
-  Emitter<AminoAcid> emitter(1, params);
+  EmissionOptions opts;
+  opts.weight_center = 1.0f;
+  Emitter<AminoAcid> emitter(1, opts);
   ForwardBackwardMatrices m(seq.length(), hmm_.num_states());
   forward_backward_algorithm(hmm_, seq, emitter, &m);
 
@@ -74,9 +74,9 @@ TEST_F(ForwardBackwardAlgorithmTest, 1Q7L) {
   hmm.init_transitions(HomogeneousTransitionInitializer<AminoAcid>());
   hmm.transform_states_to_logspace();
 
-  EmissionParams params;
-  params.weight_center = 1.0f;
-  Emitter<AminoAcid> emitter(1, params);
+  EmissionOptions opts;
+  opts.weight_center = 1.0f;
+  Emitter<AminoAcid> emitter(1, opts);
   ForwardBackwardMatrices mat(profile.length(), hmm.num_states());
   forward_backward_algorithm(hmm, profile, emitter, &mat);
 }

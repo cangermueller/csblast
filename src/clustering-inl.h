@@ -22,13 +22,13 @@ namespace cs {
 
 template< class Alphabet,
           template<class A> class Subject >
-Clustering<Alphabet, Subject>::Clustering(const ClusteringParams& params,
+Clustering<Alphabet, Subject>::Clustering(const ClusteringOptions& opts,
                                           const data_vector& data,
                                           ProfileLibrary<Alphabet>& lib)
     : ExpectationMaximization<Alphabet, Subject>(data),
-      params_(params),
+      opts_(opts),
       lib_(lib),
-      emitter_(lib.num_cols(), params),
+      emitter_(lib.num_cols(), opts),
       profile_stats_(),
       profile_stats_block_() {
   init();
@@ -36,14 +36,14 @@ Clustering<Alphabet, Subject>::Clustering(const ClusteringParams& params,
 
 template< class Alphabet,
           template<class A> class Subject >
-Clustering<Alphabet, Subject>::Clustering(const ClusteringParams& params,
+Clustering<Alphabet, Subject>::Clustering(const ClusteringOptions& opts,
                                           const data_vector& data,
                                           ProfileLibrary<Alphabet>& lib,
                                           FILE* fout)
     : ExpectationMaximization<Alphabet, Subject>(data),
-      params_(params),
+      opts_(opts),
       lib_(lib),
-      emitter_(lib.num_cols(), params),
+      emitter_(lib.num_cols(), opts),
       profile_stats_(),
       profile_stats_block_() {
   progress_table_ = new ClusteringProgressTable<Alphabet, Subject>(this, fout);

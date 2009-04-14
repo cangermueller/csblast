@@ -22,9 +22,9 @@ namespace cs {
 template<class Alphabet>
 inline LibraryPseudocounts<Alphabet>::LibraryPseudocounts(
     const ProfileLibrary<Alphabet>* lib,
-    const EmissionParams& params)
+    const EmissionOptions& opts)
     : lib_(*lib),
-      emitter_(lib->num_cols(), params) {
+      emitter_(lib->num_cols(), opts) {
   assert(lib_.logspace());
 }
 

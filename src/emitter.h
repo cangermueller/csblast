@@ -12,19 +12,19 @@
 
 namespace cs {
 
-// Parameters for computation of emitter probabilities.
-struct EmissionParams {
-  EmissionParams()
+// Options for computation of emission probabilities.
+struct EmissionOptions {
+  EmissionOptions()
       : ignore_context(false),
         weight_center(1.6f),
         weight_decay(0.85f) { }
 
-  EmissionParams(const EmissionParams& p)
+  EmissionOptions(const EmissionOptions& p)
       : ignore_context(p.ignore_context),
         weight_center(p.weight_center),
         weight_decay(p.weight_decay) { }
 
-  virtual ~EmissionParams() { }
+  virtual ~EmissionOptions() { }
 
   bool ignore_context;
   float weight_center;
@@ -36,7 +36,7 @@ template< class Alphabet>
 class Emitter {
  public:
   // Constructs a profile matcher with positional window weights.
-  Emitter(int num_cols, const EmissionParams& params);
+  Emitter(int num_cols, const EmissionOptions& opts);
 
   ~Emitter() { }
 
@@ -57,7 +57,7 @@ class Emitter {
 
  private:
   // Paramter wrapper
-  const EmissionParams& params_;
+  const EmissionOptions& opts_;
   // Number of columns in context profiles.
   int num_cols_;
   // Index of central column in context profiles.

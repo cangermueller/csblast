@@ -69,7 +69,7 @@ class ClusteringTest : public testing::Test {
 };
 
 TEST_F(ClusteringTest, ZincFingerAlisClustering) {
-  ClusteringParams p;
+  ClusteringOptions p;
   p.num_blocks   = 1;
   p.epsilon_null = 1.0f;
   p.beta         = 0.0f;
@@ -83,7 +83,7 @@ TEST_F(ClusteringTest, ZincFingerAlisClustering) {
 }
 
 TEST_F(ClusteringTest, ZincFingerAlisOnlineClustering) {
-  ClusteringParams p;
+  ClusteringOptions p;
   p.num_blocks   = 2;
   p.epsilon_null = 0.05f;
   p.beta         = 0.5f;

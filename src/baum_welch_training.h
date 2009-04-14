@@ -25,19 +25,19 @@ template< class Alphabet,
 class BaumWelchProgressTable;
 
 // Parameter wrapper for Baum-Welch training.
-struct BaumWelchParams : public EmissionParams,
-                         public ExpectationMaximizationParams {
-  BaumWelchParams()
-      : EmissionParams(),
-        ExpectationMaximizationParams(),
+struct BaumWelchOptions : public EmissionOptions,
+                         public ExpectationMaximizationOptions {
+  BaumWelchOptions()
+      : EmissionOptions(),
+        ExpectationMaximizationOptions(),
         transition_pseudocounts(1.0f),
         max_connectivity(0) { }
 
-  BaumWelchParams(const BaumWelchParams& params)
-      : EmissionParams(params),
-        ExpectationMaximizationParams(params),
-        transition_pseudocounts(params.transition_pseudocounts),
-        max_connectivity(params.max_connectivity) { }
+  BaumWelchOptions(const BaumWelchOptions& opts)
+      : EmissionOptions(opts),
+        ExpectationMaximizationOptions(opts),
+        transition_pseudocounts(opts.transition_pseudocounts),
+        max_connectivity(opts.max_connectivity) { }
 
   // Pseudocounts added to transitions (values below 1 enforce sparsity).
   float transition_pseudocounts;
@@ -58,11 +58,11 @@ class BaumWelchTraining : public ExpectationMaximization<Alphabet, Subject> {
   using ExpectationMaximization<Alphabet, Subject>::log_likelihood_change;
 
   // Initializes a new training object without output.
-  BaumWelchTraining(const BaumWelchParams& params,
+  BaumWelchTraining(const BaumWelchOptions& opts,
                     const data_vector& data,
                     HMM<Alphabet>& hmm);
   // Initializes a new training object with output.
-  BaumWelchTraining(const BaumWelchParams& params,
+  BaumWelchTraining(const BaumWelchOptions& opts,
                     const data_vector& data,
                     HMM<Alphabet>& hmm,
                     FILE* fout);
@@ -87,7 +87,7 @@ class BaumWelchTraining : public ExpectationMaximization<Alphabet, Subject> {
   // Returns true if any termination condition is fullfilled.
   virtual bool terminate() const;
   // Returns parameter wrapper
-  virtual const BaumWelchParams& params() const { return params_; }
+  virtual const BaumWelchOptions& opts() const { return opts_; }
   // Adds the contribution of a subject's forward-backward matrices to prior
   // probabilities of states.
   void add_contribution_to_priors(const ForwardBackwardMatrices& m);
@@ -107,7 +107,7 @@ class BaumWelchTraining : public ExpectationMaximization<Alphabet, Subject> {
   void update_sufficient_statistics();
 
   // Parameter wrapper for clustering.
-  const BaumWelchParams& params_;
+  const BaumWelchOptions& opts_;
   // HMM to be trained
   HMM<Alphabet>& hmm_;
   // Profile matcher for calculation of emission probabilities.

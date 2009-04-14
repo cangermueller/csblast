@@ -20,9 +20,9 @@ namespace cs {
 
 template<class Alphabet>
 inline HMMPseudocounts<Alphabet>::HMMPseudocounts(const HMM<Alphabet>* hmm,
-                                                  const EmissionParams& params)
+                                                  const EmissionOptions& opts)
     : hmm_(*hmm),
-      emitter_(hmm->num_cols(), params) {
+      emitter_(hmm->num_cols(), opts) {
   assert(hmm_.states_logspace());
   assert(!hmm_.transitions_logspace());
 }

@@ -12,8 +12,8 @@
 namespace cs {
 
 // Abstract base class for expectation maximization algorithms.
-struct ExpectationMaximizationParams {
-  ExpectationMaximizationParams()
+struct ExpectationMaximizationOptions {
+  ExpectationMaximizationOptions()
       : min_scans(10),
         max_scans(500),
         log_likelihood_change(2e-4f),
@@ -22,14 +22,14 @@ struct ExpectationMaximizationParams {
         beta(0.2f),
         epsilon_batch(0.05f) { }
 
-  ExpectationMaximizationParams(const ExpectationMaximizationParams& params)
-      : min_scans(params.min_scans),
-        max_scans(params.max_scans),
-        log_likelihood_change(params.log_likelihood_change),
-        num_blocks(params.num_blocks),
-        epsilon_null(params.epsilon_null),
-        beta(params.beta),
-        epsilon_batch(params.epsilon_batch) { }
+  ExpectationMaximizationOptions(const ExpectationMaximizationOptions& opts)
+      : min_scans(opts.min_scans),
+        max_scans(opts.max_scans),
+        log_likelihood_change(opts.log_likelihood_change),
+        num_blocks(opts.num_blocks),
+        epsilon_null(opts.epsilon_null),
+        beta(opts.beta),
+        epsilon_batch(opts.epsilon_batch) { }
 
   // Minimal number of data scans.
   int min_scans;
@@ -88,7 +88,7 @@ class ExpectationMaximization {
   // Initializes members for running the EM algorithm.
   virtual void init() = 0;
   // Returns parameter wrapper
-  virtual const ExpectationMaximizationParams& params() const = 0;
+  virtual const ExpectationMaximizationOptions& opts() const = 0;
   // Returns true if any termination condition is fullfilled.
   virtual bool terminate() const;
   // Fills the blocks vector with training data.

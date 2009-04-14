@@ -70,7 +70,7 @@ class BaumWelchTrainingTest : public testing::Test {
 };
 
 TEST_F(BaumWelchTrainingTest, ZincFingerSeqsTraining) {
-  BaumWelchParams p;
+  BaumWelchOptions p;
   p.num_blocks         = 1;
   p.epsilon_null       = 1.0;
   p.beta               = 0.0;
@@ -86,7 +86,7 @@ TEST_F(BaumWelchTrainingTest, ZincFingerSeqsTraining) {
 }
 
 TEST_F(BaumWelchTrainingTest, ZincFingerAlisTraining) {
-  BaumWelchParams p;
+  BaumWelchOptions p;
   p.transition_pseudocounts  = 0.8f;
   p.log_likelihood_change    = 0.02f;
   p.max_connectivity         = 5;
@@ -104,7 +104,7 @@ TEST_F(BaumWelchTrainingTest, ZincFingerAlisTraining) {
 }
 
 TEST_F(BaumWelchTrainingTest, ZincFingerAlisOnlineTraining) {
-  BaumWelchParams p;
+  BaumWelchOptions p;
   p.transition_pseudocounts  = 0.8f;
   p.log_likelihood_change    = 0.02f;
   p.max_connectivity         = 5;

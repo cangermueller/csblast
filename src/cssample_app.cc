@@ -24,13 +24,13 @@ using std::vector;
 
 namespace cs {
 
-struct CSSampleParams {
-  CSSampleParams()
+struct CSSampleAppOptions {
+  CSSampleAppOptions()
       : sample_size(kMaxInt),
         window_length(0),
         sample_rate(0.2f) { }
 
-  virtual ~CSSampleParams() { }
+  virtual ~CSSampleAppOptions() { }
 
   // Validates the parameter settings and throws exception if needed.
   void validate() {
@@ -49,7 +49,7 @@ struct CSSampleParams {
   // Fraction of profile windows sampled from each full length alignment
   // or sequence.
   float sample_rate;
-};  // CSSampleParams
+};  // CSSampleAppOptions
 
 
 template<class Alphabet>
@@ -73,7 +73,7 @@ class CSSampleApp : public Application {
   void sample();
 
   // Parameter wrapper
-  CSSampleParams params_;
+  CSSampleAppOptions opts_;
   // Database of profiles to sample from.
   profile_vector database_;
   // Sampled profiles.
@@ -84,19 +84,19 @@ class CSSampleApp : public Application {
 
 template<class Alphabet>
 void CSSampleApp<Alphabet>::parse_options(GetOpt_pp* options) {
-  *options >> Option('i', "infile", params_.infile, params_.infile);
-  *options >> Option('o', "outfile", params_.outfile, params_.outfile);
-  *options >> Option('N', "sample-size", params_.sample_size,
-                     params_.sample_size);
-  *options >> Option('W', "window-length", params_.window_length,
-                     params_.window_length);
-  *options >> Option('s', "sample-rate", params_.sample_rate,
-                     params_.sample_rate);
+  *options >> Option('i', "infile", opts_.infile, opts_.infile);
+  *options >> Option('o', "outfile", opts_.outfile, opts_.outfile);
+  *options >> Option('N', "sample-size", opts_.sample_size,
+                     opts_.sample_size);
+  *options >> Option('W', "window-length", opts_.window_length,
+                     opts_.window_length);
+  *options >> Option('s', "sample-rate", opts_.sample_rate,
+                     opts_.sample_rate);
 
-  params_.validate();
+  opts_.validate();
 
-  if (params_.outfile.empty())
-    params_.outfile = get_file_basename(params_.infile, false) + "prf";
+  if (opts_.outfile.empty())
+    opts_.outfile = get_file_basename(opts_.infile, false) + "prf";
 }
 
 template<class Alphabet>
@@ -122,37 +122,37 @@ void CSSampleApp<Alphabet>::print_options() const {
           "Sample context profiles of length W instead of full-length profiles");
   fprintf(stream(), "  %-30s %s (def=%3.1f)\n", "-s, --sample-rate [0,1]",
           "Fraction of context profiles sampled per full-length profile",
-          params_.sample_rate);
+          opts_.sample_rate);
 }
 
 template<class Alphabet>
 void CSSampleApp<Alphabet>::sample() {
   fprintf(stream(), "Sampling %i profiles from pool of %i profiles ...\n",
-          params_.sample_size, database_.size());
+          opts_.sample_size, static_cast<int>(database_.size()));
   fflush(stream());
 
   // Iterate over input data and build counts profiles either by full-length
   // conversion or by sampling of context windows
   for (profile_iterator it = database_.begin(); it != database_.end()
-         && static_cast<int>(samples_.size()) < params_.sample_size; ++it) {
-    if (params_.window_length == 0) {  // add full length profile to samples
+         && static_cast<int>(samples_.size()) < opts_.sample_size; ++it) {
+    if (opts_.window_length == 0) {  // add full length profile to samples
       samples_.push_back(*it);
 
-    } else if ((*it)->num_cols() >= params_.window_length) {
+    } else if ((*it)->num_cols() >= opts_.window_length) {
       // Sample context windows if profile has sufficient length
       vector<int> idx;  // sample of indices
-      for (int j = 0; j <= (*it)->num_cols() - params_.window_length; ++j)
+      for (int j = 0; j <= (*it)->num_cols() - opts_.window_length; ++j)
         idx.push_back(j);
       random_shuffle(idx.begin(), idx.end());
-      const int sample_size = iround(params_.sample_rate * idx.size());
+      const int sample_size = iround(opts_.sample_rate * idx.size());
       // sample only a fraction of the profile indices.
       idx.erase(idx.begin() + sample_size, idx.end());
 
       // Add sub-profiles at sampled indices to HMM
       for (index_iterator ii = idx.begin(); ii != idx.end()
-             && static_cast<int>(samples_.size()) < params_.sample_size; ++ii) {
+             && static_cast<int>(samples_.size()) < opts_.sample_size; ++ii) {
         shared_ptr< CountProfile<Alphabet> > p(
-            new CountProfile<Alphabet>(**it, *ii, params_.window_length));
+            new CountProfile<Alphabet>(**it, *ii, opts_.window_length));
         samples_.push_back(p);
       }
     }
@@ -161,12 +161,12 @@ void CSSampleApp<Alphabet>::sample() {
 
 template<class Alphabet>
 int CSSampleApp<Alphabet>::run() {
-  FILE* fin = fopen(params_.infile.c_str(), "r");
+  FILE* fin = fopen(opts_.infile.c_str(), "r");
   if (!fin)
     throw Exception("Unable to read from input file '%s'!",
-                    params_.infile.c_str());
+                    opts_.infile.c_str());
   fprintf(stream(), "Reading profiles from %s ...",
-          get_file_basename(params_.infile).c_str());
+          get_file_basename(opts_.infile).c_str());
   fflush(stream());
 
   CountProfile<Alphabet>::readall(fin, &database_);
@@ -179,17 +179,17 @@ int CSSampleApp<Alphabet>::run() {
   sample();
 
   // Write sampled profiles to outfile
-  FILE* fout = fopen(params_.outfile.c_str(), "w");
+  FILE* fout = fopen(opts_.outfile.c_str(), "w");
   if (!fout)
     throw Exception("Unable to write profiles to output file '%s'!",
-                    params_.outfile.c_str());
+                    opts_.outfile.c_str());
   int num_cols = 0;
   for (profile_iterator it = samples_.begin(); it != samples_.end(); ++it) {
     (*it)->write(fout);
     num_cols += (*it)->num_cols();
   }
   fprintf(stream(), "Wrote %i profiles with a total number of %i columns to %s\n",
-          samples_.size(), num_cols, params_.outfile.c_str());
+          static_cast<int>(samples_.size()), num_cols, opts_.outfile.c_str());
 
   fclose(fout);
 

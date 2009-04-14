@@ -23,13 +23,13 @@ namespace cs {
 template< class Alphabet,
           template<class A> class Subject >
 BaumWelchTraining<Alphabet, Subject>::BaumWelchTraining(
-    const BaumWelchParams& params,
+    const BaumWelchOptions& opts,
     const data_vector& data,
     HMM<Alphabet>& hmm)
-    : ExpectationMaximization<Alphabet, Subject>(params, data),
-      params_(params),
+    : ExpectationMaximization<Alphabet, Subject>(opts, data),
+      opts_(opts),
       hmm_(hmm),
-      emitter_(hmm.num_cols(), params),
+      emitter_(hmm.num_cols(), opts),
       transition_stats_(hmm.num_states(), hmm.num_states()),
       profile_stats_(),
       transition_stats_block_(hmm.num_states(), hmm.num_states()),
@@ -40,14 +40,14 @@ BaumWelchTraining<Alphabet, Subject>::BaumWelchTraining(
 template< class Alphabet,
           template<class A> class Subject >
 BaumWelchTraining<Alphabet, Subject>::BaumWelchTraining(
-    const BaumWelchParams& params,
+    const BaumWelchOptions& opts,
     const data_vector& data,
     HMM<Alphabet>& hmm,
     FILE* fout)
     : ExpectationMaximization<Alphabet, Subject>(data),
-      params_(params),
+      opts_(opts),
       hmm_(hmm),
-      emitter_(hmm.num_cols(), params),
+      emitter_(hmm.num_cols(), opts),
       transition_stats_(hmm.num_states(), hmm.num_states()),
       profile_stats_(),
       transition_stats_block_(hmm.num_states(), hmm.num_states()),
@@ -116,7 +116,7 @@ void BaumWelchTraining<Alphabet, Subject>::maximization_step() {
     for (int l = 0; l < num_states; ++l) {
       if (transition_stats_.test(k,l)) {
         const float a_kl =
-          transition_stats_[k][l] + params_.transition_pseudocounts - 1.0f;
+          transition_stats_[k][l] + opts_.transition_pseudocounts - 1.0f;
         if (a_kl > 0.0f) {
           transition_stats_[k][l] = a_kl;
           sum += a_kl;
@@ -290,16 +290,16 @@ void BaumWelchTraining<Alphabet, Subject>::init() {
 template< class Alphabet,
           template<class A> class Subject >
 inline bool BaumWelchTraining<Alphabet, Subject>::terminate() const {
-  if (scan_ < params_.min_scans)
+  if (scan_ < opts_.min_scans)
     return false;
-  else if (scan_ >= params_.max_scans)
+  else if (scan_ >= opts_.max_scans)
     return true;
-  else if (params_.max_connectivity == 0)
-    return fabs(log_likelihood_change()) <= params_.log_likelihood_change;
+  else if (opts_.max_connectivity == 0)
+    return fabs(log_likelihood_change()) <= opts_.log_likelihood_change;
   else
     return
-      fabs(log_likelihood_change()) <= params_.log_likelihood_change
-      && hmm_.connectivity() <= params_.max_connectivity;
+      fabs(log_likelihood_change()) <= opts_.log_likelihood_change
+      && hmm_.connectivity() <= opts_.max_connectivity;
 }
 
 

@@ -22,7 +22,7 @@ namespace cs {
 template<class Alphabet>
 class HMMPseudocounts : public Pseudocounts<Alphabet> {
  public:
-  HMMPseudocounts(const HMM<Alphabet>* hmm, const EmissionParams& params);
+  HMMPseudocounts(const HMM<Alphabet>* hmm, const EmissionOptions& opts);
   ~HMMPseudocounts() { }
 
   // Adds context-specific pseudocounts to sequence and stores resulting

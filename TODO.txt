@@ -11,6 +11,11 @@ Definitely:
   const Sequence&  // returns auto_ptr<CountProfile>
   const Alignment& // returns auto_ptr<CountProfile>
   CountProfile*    // changes in place
+* Add set_defaults method to Params structs.
+* Rename Params to Options? ... and params to opts
+* Really need directory in CSTrainApp???
+* Use GTEST's FilePath class???
 
 Nice-to-have:
 * Rename 'from' and 'to' members in Transition to 'source' and 'target'
+* Unified validation "framework" for Option classes

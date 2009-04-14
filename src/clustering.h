@@ -20,15 +20,15 @@
 namespace cs {
 
 // Parameter wrapper for expectation-maximization clustering.
-struct ClusteringParams : public EmissionParams,
-                          public ExpectationMaximizationParams {
-  ClusteringParams()
-      : EmissionParams(),
-        ExpectationMaximizationParams() { }
+struct ClusteringOptions : public EmissionOptions,
+                          public ExpectationMaximizationOptions {
+  ClusteringOptions()
+      : EmissionOptions(),
+        ExpectationMaximizationOptions() { }
 
-  ClusteringParams(const ClusteringParams& params)
-      : EmissionParams(params),
-        ExpectationMaximizationParams(params) { }
+  ClusteringOptions(const ClusteringOptions& opts)
+      : EmissionOptions(opts),
+        ExpectationMaximizationOptions(opts) { }
 };
 
 // Encapsulation of expectation-maximization clustering.
@@ -41,11 +41,11 @@ class Clustering : public ExpectationMaximization<Alphabet, Subject> {
   std::vector< shared_ptr< ContextProfile<Alphabet> > > profiles_vector;
 
   // Initializes a new clustering object without output.
-  Clustering(const ClusteringParams& params,
+  Clustering(const ClusteringOptions& opts,
              const data_vector& data,
              ProfileLibrary<Alphabet>& lib);
   // Initializes a new clustering object with output.
-  Clustering(const ClusteringParams& params,
+  Clustering(const ClusteringOptions& opts,
              const data_vector& data,
              ProfileLibrary<Alphabet>& lib,
              FILE* fout);
@@ -67,7 +67,7 @@ class Clustering : public ExpectationMaximization<Alphabet, Subject> {
   // Prepares all members for clustering.
   virtual void init();
   // Returns parameter wrapper
-  virtual const ClusteringParams& params() const { return params_; }
+  virtual const ClusteringOptions& opts() const { return opts_; }
   // Adds the contribution of the responsibilities for a subject to sufficient
   // statistics for priors.
   void add_contribution_to_priors(const std::valarray<double>& p_zn);
@@ -84,7 +84,7 @@ class Clustering : public ExpectationMaximization<Alphabet, Subject> {
   void update_sufficient_statistics();
 
   // Parameter wrapper for clustering.
-  const ClusteringParams& params_;
+  const ClusteringOptions& opts_;
   // Profile library with context profiles
   ProfileLibrary<Alphabet> lib_;
   // Calculation of emission probabilities.
