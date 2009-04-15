@@ -20,7 +20,7 @@ ExpectationMaximization<Alphabet, Subject>::ExpectationMaximization(
       log_likelihood_prev_(0.0f),
       iterations_(0),
       scan_(1),
-      epsilon_(1.0f) { }
+      epsilon_(1.0f) {}
 
 template< class Alphabet,
           template<class A> class Subject >

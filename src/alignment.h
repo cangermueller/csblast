@@ -51,7 +51,7 @@ class Alignment {
   // stream.
   Alignment(FILE* fin, Format format);
 
-  ~Alignment() { }
+  ~Alignment() {}
 
   // Reads all available alignments from the input stream and returns them in a
   // vector.
@@ -64,7 +64,7 @@ class Alignment {
   col_type operator[](int i) { return seqs_[match_indexes[i]]; }
   const_col_type operator[](int i) const { return seqs_[match_indexes[i]]; }
   // Returns the integer in column i of sequence k.
-  char seq(int k, int i) const { return seqs_[i][k]; }
+  char at(int k, int i) const { return seqs_[i][k]; }
   // Returns the character in column i of sequence k.
   char chr(int k, int i) const {
     return Alphabet::instance().itoc(seqs_[i][k]);
@@ -118,6 +118,8 @@ class Alignment {
   bool match_column(int i) const { return match_column_[i]; }
   // Removes all insert columns from the alignment.
   void remove_insert_columns();
+  // Returns the sequence k as Sequence object.
+  Sequence<Alphabet> GetSequence(int k) const;
 
   // Prints the Alignment in A2M format for debugging.
   friend std::ostream& operator<< <> (std::ostream& out,

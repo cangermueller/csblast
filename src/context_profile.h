@@ -35,7 +35,7 @@ class ContextProfile : public Profile<Alphabet> {
   // valid.
   ContextProfile(int index, const Profile<Alphabet>& profile);
 
-  virtual ~ContextProfile() { }
+  virtual ~ContextProfile() {}
 
   // Returns the index of this context profile.
   int index() const { return index_; }

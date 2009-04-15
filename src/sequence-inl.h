@@ -19,7 +19,7 @@ namespace cs {
 
 template<class Alphabet>
 inline Sequence<Alphabet>::Sequence(int length)
-    : seq_(length) { }
+    : seq_(length) {}
 
 template<class Alphabet>
 inline Sequence<Alphabet>::Sequence(FILE* in) {

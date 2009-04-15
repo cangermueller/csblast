@@ -14,7 +14,7 @@ ProgressTable::ProgressTable(FILE* fout, int width)
       width_(width),
       bar_(0),
       work_done_(0),
-      work_total_(0) { }
+      work_total_(0) {}
 
 void ProgressTable::reset() {
   work_done_ = 0;

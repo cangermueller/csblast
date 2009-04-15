@@ -19,10 +19,10 @@ SubstitutionMatrix<Alphabet>::SubstitutionMatrix()
       p_(size_, size_, 0.0f),
       s_(size_, size_, 0.0f),
       r_(size_, size_, 0.0f),
-      f_(size_, 0.0f) { }
+      f_(size_, 0.0f) {}
 
 template<class Alphabet>
-SubstitutionMatrix<Alphabet>::~SubstitutionMatrix() { }
+SubstitutionMatrix<Alphabet>::~SubstitutionMatrix() {}
 
 template<class Alphabet>
 void SubstitutionMatrix<Alphabet>::init_from_target_frequencies() {

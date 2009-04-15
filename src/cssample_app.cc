@@ -28,9 +28,9 @@ struct CSSampleAppOptions {
   CSSampleAppOptions()
       : sample_size(kMaxInt),
         window_length(0),
-        sample_rate(0.2f) { }
+        sample_rate(0.2f) {}
 
-  virtual ~CSSampleAppOptions() { }
+  virtual ~CSSampleAppOptions() {}
 
   // Validates the parameter settings and throws exception if needed.
   void validate() {

@@ -43,7 +43,7 @@ class State : public ContextProfile<Alphabet> {
   // zero.
   State(int index, const Profile<Alphabet>& profile, int num_states);
 
-  virtual ~State() { }
+  virtual ~State() {}
 
   // Returns number of in-transitions.
   int num_in_transitions() const

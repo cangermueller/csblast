@@ -18,9 +18,9 @@ class stride_iter {
   typedef stride_iter self;
 
   // constructors
-  stride_iter() : m_(NULL), step_(0) { }
-  stride_iter(const self& x) : m_(x.m_), step_(x.step_) { }
-  stride_iter(Iter_T x, difference_type n) : m_(x), step_(n) { }
+  stride_iter() : m_(NULL), step_(0) {}
+  stride_iter(const self& x) : m_(x.m_), step_(x.step_) {}
+  stride_iter(Iter_T x, difference_type n) : m_(x), step_(n) {}
 
   // operators
   self& operator++() {

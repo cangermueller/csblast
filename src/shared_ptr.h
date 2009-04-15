@@ -9,7 +9,7 @@
 // object, typically with a C++ new-expression. The object pointed to is
 // guaranteed to be deleted when the last shared_ptr pointing to it is
 // destroyed or reset.
-template <class T>
+template <typename T>
 class shared_ptr {
  public:
   shared_ptr() : p_(NULL), c_(new long(0)) {}
@@ -20,7 +20,7 @@ class shared_ptr {
   shared_ptr(const shared_ptr& other) : p_(other.p_), c_(other.c_) { ++*c_; }
 
   // Generalized copy constructor
-  template <class U>
+  template <typename U>
   shared_ptr(const shared_ptr<U>& other)
       : p_(other.get()), c_(other.use_count()) { ++*c_; }
 
@@ -35,7 +35,7 @@ class shared_ptr {
   }
 
   // Generalized copy assignment
-  template <class U>
+  template <typename U>
   shared_ptr& operator= (const shared_ptr<U> &rhs) {
     if (this != &rhs) {
       if (!--*c_) { delete c_; delete p_; }

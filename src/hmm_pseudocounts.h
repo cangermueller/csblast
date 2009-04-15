@@ -23,7 +23,7 @@ template<class Alphabet>
 class HMMPseudocounts : public Pseudocounts<Alphabet> {
  public:
   HMMPseudocounts(const HMM<Alphabet>* hmm, const EmissionOptions& opts);
-  ~HMMPseudocounts() { }
+  ~HMMPseudocounts() {}
 
   // Adds context-specific pseudocounts to sequence and stores resulting
   // frequencies in given profile.

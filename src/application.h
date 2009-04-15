@@ -47,13 +47,13 @@ class Application {
   // classes.
   virtual int run() = 0;
   // Parses command line options.
-  virtual void parse_options(GetOpt_pp* /* options */) { };
+  virtual void parse_options(GetOpt_pp* /* options */) {};
   // Prints options summary to stream.
-  virtual void print_options() const { };
+  virtual void print_options() const {};
   // Prints usage banner to stream.
-  virtual void print_banner() const { };
+  virtual void print_banner() const {};
   // Prints short application description.
-  virtual void print_description() const { };
+  virtual void print_description() const {};
   // Prints copyright notification.
   void print_usage() const;
 

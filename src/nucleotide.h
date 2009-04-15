@@ -27,7 +27,7 @@ class Nucleotide : public Alphabet {
   static const char nucleotides_[];
 
   Nucleotide() : Alphabet(4, 'N') { init(); }
-  virtual ~Nucleotide() { }
+  virtual ~Nucleotide() {}
 
   DISALLOW_COPY_AND_ASSIGN(Nucleotide);
 };

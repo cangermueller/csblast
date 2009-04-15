@@ -25,8 +25,8 @@ class ProfileLibrary;
 template<class Alphabet>
 class ProfileInitializer {
  public:
-  ProfileInitializer() { }
-  virtual ~ProfileInitializer() { }
+  ProfileInitializer() {}
+  virtual ~ProfileInitializer() {}
   virtual void init(ProfileLibrary<Alphabet>& lib) const = 0;
 };
 
@@ -51,7 +51,7 @@ class ProfileLibrary {
                  int num_cols,
                  const ProfileInitializer<Alphabet>& profile_init);
 
-  virtual ~ProfileLibrary() { }
+  virtual ~ProfileLibrary() {}
 
   bool full() const {
     return static_cast<int>(profiles_.size()) == num_profiles_;
@@ -143,7 +143,7 @@ class SamplingProfileInitializer : public ProfileInitializer<Alphabet> {
         pc_admixture_(pc_admixture) {
     random_shuffle(profiles_.begin(), profiles_.end());
   }
-  virtual ~SamplingProfileInitializer() { }
+  virtual ~SamplingProfileInitializer() {}
   virtual void init(ProfileLibrary<Alphabet>& lib) const;
 
  private:

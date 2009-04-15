@@ -1,12 +1,12 @@
 // Copyright 2009, Andreas Biegert
 
-#ifndef SRC_CONTEXT_SPECIFIC_BLAST_H_
-#define SRC_CONTEXT_SPECIFIC_BLAST_H_
+#ifndef SRC_CSBLAST_H_
+#define SRC_CSBLAST_H_
 
 #include <map>
-#include <memory>
 #include <string>
 
+#include "amino_acid.h"
 #include "emitter.h"
 #include "profile_library.h"
 #include "library_pseudocounts.h"
@@ -19,7 +19,7 @@ struct CSBlastOptions : public EmissionOptions {
   typedef std::map<char, std::string> psiblast_options;
 
   CSBlastOptions() { SetDefaults(); }
-  virtual ~CSBlastOptions() { }
+  virtual ~CSBlastOptions() {}
 
   // Set CS-BLAST default parameters
   void SetDefaults() {
@@ -46,9 +46,6 @@ struct CSBlastOptions : public EmissionOptions {
   std::string psiblast_exec;
 };
 
-struct Pssm { }
-
-
 // Implementation of CS-BLAST algorithm.
 class CSBlast {
  public:
@@ -64,7 +61,7 @@ class CSBlast {
           const ProfileLibrary<AminoAcid>* lib,
           const CSBlastOptions* opts);
 
-  ~ContextSpecificBlast() { }
+  ~ContextSpecificBlast() {}
 
   // Runs the CS-BLAST algorithm by adding context-specific pseudocounts to the
   // query sequence and then jumpstarting PSI-BLAST with the resulting profile.
@@ -86,4 +83,4 @@ class CSBlast {
 
 }  // namespace cs
 
-#endif  // SRC_CONTEXT_SPECIFIC_BLAST_H_
+#endif  // SRC_CSBLAST_H_

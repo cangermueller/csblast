@@ -26,7 +26,7 @@ class ClusteringTest : public testing::Test {
   static const int kNumStates    = 10;
 
   ClusteringTest()
-      : lib_(kNumStates, kWindowLength) { }
+      : lib_(kNumStates, kWindowLength) {}
 
   virtual void SetUp() {
     // Build generic zinc finger HMM

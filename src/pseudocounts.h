@@ -21,8 +21,8 @@ class CountProfile;
 // Calculates pseudocount admixture for profile column.
 class Admixture {
  public:
-  Admixture() { }
-  virtual ~Admixture() { };
+  Admixture() {}
+  virtual ~Admixture() {};
 
   virtual float operator() (float neff) const = 0;
 };
@@ -31,8 +31,8 @@ class Admixture {
 template<class Alphabet>
 class Pseudocounts {
  public:
-  Pseudocounts() { }
-  virtual ~Pseudocounts() { }
+  Pseudocounts() {}
+  virtual ~Pseudocounts() {}
 
   // Adds pseudocounts to sequence and stores resulting frequencies in given
   // profile.
@@ -53,8 +53,8 @@ class Pseudocounts {
 // sequences.
 class ConstantAdmixture : public Admixture {
  public:
-  ConstantAdmixture(float x) : x_(x) { }
-  ~ConstantAdmixture() { };
+  ConstantAdmixture(float x) : x_(x) {}
+  ~ConstantAdmixture() {};
 
   virtual float operator() (float) const { return x_; }
 

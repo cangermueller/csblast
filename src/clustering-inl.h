@@ -218,7 +218,7 @@ ClusteringProgressTable<Alphabet, Subject>::ClusteringProgressTable(
     FILE* fout,
     int width)
     : ProgressTable(fout, width),
-      clustering_(clustering) { }
+      clustering_(clustering) {}
 
 template< class Alphabet,
           template<class A> class Subject >

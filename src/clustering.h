@@ -24,11 +24,11 @@ struct ClusteringOptions : public EmissionOptions,
                           public ExpectationMaximizationOptions {
   ClusteringOptions()
       : EmissionOptions(),
-        ExpectationMaximizationOptions() { }
+        ExpectationMaximizationOptions() {}
 
   ClusteringOptions(const ClusteringOptions& opts)
       : EmissionOptions(opts),
-        ExpectationMaximizationOptions(opts) { }
+        ExpectationMaximizationOptions(opts) {}
 };
 
 // Encapsulation of expectation-maximization clustering.
@@ -105,7 +105,7 @@ class ClusteringProgressTable : public ProgressTable {
                           FILE* fout = stdout,
                           int width = 30);
 
-  virtual ~ClusteringProgressTable() { }
+  virtual ~ClusteringProgressTable() {}
 
   virtual void print_header();
   virtual void print_row_begin();

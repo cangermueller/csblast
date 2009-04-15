@@ -20,7 +20,7 @@ struct ExpectationMaximizationOptions {
         num_blocks(0),
         epsilon_null(0.5f),
         beta(0.2f),
-        epsilon_batch(0.05f) { }
+        epsilon_batch(0.05f) {}
 
   ExpectationMaximizationOptions(const ExpectationMaximizationOptions& opts)
       : min_scans(opts.min_scans),
@@ -29,7 +29,7 @@ struct ExpectationMaximizationOptions {
         num_blocks(opts.num_blocks),
         epsilon_null(opts.epsilon_null),
         beta(opts.beta),
-        epsilon_batch(opts.epsilon_batch) { }
+        epsilon_batch(opts.epsilon_batch) {}
 
   // Minimal number of data scans.
   int min_scans;
@@ -79,7 +79,7 @@ class ExpectationMaximization {
   // Constructs a new EM object.
   ExpectationMaximization(const data_vector& data);
 
-  virtual ~ExpectationMaximization() { }
+  virtual ~ExpectationMaximization() {}
 
   // Evaluates the responsibilities using the current parameter values.
   virtual void expectation_step(const data_vector& block) = 0;

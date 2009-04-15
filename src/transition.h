@@ -8,9 +8,9 @@ namespace cs {
 // Simple struct for transitions between HMM states.
 struct Transition {
   // Simple Constructors
-  Transition() : from(0), to(0), probability(0.0f) { }
-  Transition(int f, int t, float p) : from(f), to(t), probability(p) { }
-  ~Transition() { }
+  Transition() : from(0), to(0), probability(0.0f) {}
+  Transition(int f, int t, float p) : from(f), to(t), probability(p) {}
+  ~Transition() {}
 
   operator float() const { return probability; }
 
@@ -24,9 +24,9 @@ struct Transition {
 
 struct AnchoredTransition {
   // Simple Constructors
-  AnchoredTransition() : state(0), probability(0.0f) { }
-  AnchoredTransition(int i, float p) : state(i), probability(p) { }
-  ~AnchoredTransition() { }
+  AnchoredTransition() : state(0), probability(0.0f) {}
+  AnchoredTransition(int i, float p) : state(i), probability(p) {}
+  ~AnchoredTransition() {}
 
   operator float() const { return probability; }
 

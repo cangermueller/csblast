@@ -22,7 +22,7 @@ class LibraryPseudocounts : public Pseudocounts<Alphabet> {
  public:
   LibraryPseudocounts(const ProfileLibrary<Alphabet>* lib,
                       const EmissionOptions& opts);
-  ~LibraryPseudocounts() { }
+  ~LibraryPseudocounts() {}
 
   // Adds context-specific pseudocounts to sequence and stores resulting
   // frequencies in given profile.

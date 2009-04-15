@@ -15,7 +15,7 @@ class ProgressTable {
   // To be used by derived classes.
   ProgressTable(FILE* fout = stdout, int width = 30);
 
-  virtual ~ProgressTable() { }
+  virtual ~ProgressTable() {}
 
   // Prints header information.
   virtual void print_header() = 0;

@@ -15,7 +15,7 @@ class NucleotideMatrix : public SubstitutionMatrix<Nucleotide> {
   NucleotideMatrix(float match, float mismatch) {
     init(match, mismatch);
   }
-  virtual ~NucleotideMatrix() { }
+  virtual ~NucleotideMatrix() {}
 
  private:
   // Initializes all matrix data members.

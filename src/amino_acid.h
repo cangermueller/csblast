@@ -35,7 +35,7 @@ class AminoAcid : public Alphabet {
     set_ctoi('B', ctoi('D'));
     set_ctoi('Z', ctoi('E'));
   }
-  virtual ~AminoAcid() { }
+  virtual ~AminoAcid() {}
 
   DISALLOW_COPY_AND_ASSIGN(AminoAcid);
 };

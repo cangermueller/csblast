@@ -33,7 +33,7 @@ inline State<Alphabet>::State(int index,
     : ContextProfile<Alphabet>(index, profile),
       num_states_(num_states),
       in_transitions_(num_states),
-      out_transitions_(num_states) { }
+      out_transitions_(num_states) {}
 
 template<class Alphabet>
 inline float State<Alphabet>::to(int k) const {

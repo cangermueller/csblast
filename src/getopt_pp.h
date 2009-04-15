@@ -65,7 +65,7 @@ struct _Option {
   virtual Result operator() (ShortOptions& short_ops,
                              LongOptions& long_ops,
                              std::ios::fmtflags flags) const = 0;
-  virtual ~_Option() { }
+  virtual ~_Option() {}
 };
 
 template <class T> inline _Option::Result convert(const std::string& s,
@@ -104,10 +104,10 @@ class _OptionTBase : public _Option {
       : _Option(other),
         short_opt(other.short_opt),
         long_opt(other.long_opt),
-        target(other.target) { }
+        target(other.target) {}
 
   _OptionTBase(char short_opt, const std::string& long_opt, T& target)
-      : short_opt(short_opt), long_opt(long_opt), target(target) { }
+      : short_opt(short_opt), long_opt(long_opt), target(target) {}
 
   virtual Result operator() (ShortOptions& short_ops,
                              LongOptions& long_ops,
@@ -150,10 +150,10 @@ class _OptionT : public _OptionTBase<T> {
   }
  public:
   _OptionT(const _OptionT<T>& other)
-      : _OptionTBase<T>(other) { }
+      : _OptionTBase<T>(other) {}
 
   _OptionT(char short_opt, const std::string& long_opt, T& target)
-      : _OptionTBase<T>(short_opt, long_opt, target) { }
+      : _OptionTBase<T>(short_opt, long_opt, target) {}
 
 };
 
@@ -183,10 +183,10 @@ class _OptionT<std::vector<T> > : public _OptionTBase<std::vector<T> > {
 
  public:
   _OptionT(const _OptionT<std::vector<T> >& other)
-      : _OptionTBase<std::vector<T> >(other) { }
+      : _OptionTBase<std::vector<T> >(other) {}
 
   _OptionT(char short_opt, const std::string& long_opt, std::vector<T>& target)
-      : _OptionTBase<std::vector<T> >(short_opt, long_opt, target) { }
+      : _OptionTBase<std::vector<T> >(short_opt, long_opt, target) {}
 };
 
 
@@ -196,14 +196,14 @@ class _DefValOption : public BaseOption {
  public:
 
   _DefValOption(const _DefValOption<T, BaseOption>& other)
-      : BaseOption(other), default_value(other.default_value) { }
+      : BaseOption(other), default_value(other.default_value) {}
 
   _DefValOption(char short_opt,
                 const std::string& long_opt,
                 T& target,
                 const T& default_value)
       : BaseOption(short_opt, long_opt, target),
-        default_value(default_value) { }
+        default_value(default_value) {}
 
   virtual _Option::Result operator() (ShortOptions& short_ops,
                                       LongOptions& long_ops,
@@ -274,17 +274,17 @@ class OptionPresent : public _Option {
 
   // WITH long_opt:
   OptionPresent(char short_opt, const std::string& long_opt, bool& present)
-      : short_opt(short_opt), long_opt(long_opt), present(&present) { }
+      : short_opt(short_opt), long_opt(long_opt), present(&present) {}
 
   OptionPresent(char short_opt, const std::string& long_opt)
-      : short_opt(short_opt), long_opt(long_opt), present(NULL) { }
+      : short_opt(short_opt), long_opt(long_opt), present(NULL) {}
 
   // WITHOUT long_opt:
   OptionPresent(char short_opt, bool& present)
-      : short_opt(short_opt), present(&present) { }
+      : short_opt(short_opt), present(&present) {}
 
   OptionPresent(char short_opt)
-      : short_opt(short_opt), present(NULL) { }
+      : short_opt(short_opt), present(NULL) {}
 
  protected:
   virtual Result operator() (ShortOptions& short_ops,
@@ -406,7 +406,7 @@ class GetOpt_pp {
       _it = Adapter::adapt(p);
     }
 
-    _iterator() { }
+    _iterator() {}
 
     _iterator<Container, Adapter, OptionType>& operator = (
         const _iterator<Container, Adapter, OptionType>& other) {

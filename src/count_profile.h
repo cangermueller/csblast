@@ -42,7 +42,7 @@ class CountProfile : public Profile<Alphabet> {
   // columns long.
   CountProfile(const CountProfile& other, int index, int length);
 
-  virtual ~CountProfile() { }
+  virtual ~CountProfile() {}
 
   // Reads all available profiles from the input stream and returns them in a
   // vector.

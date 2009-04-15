@@ -41,9 +41,9 @@ struct CSClustAppOptions : public ClusteringOptions {
         data_pseudocounts(0.01f),
         blosum_type("BLOSUM62"),
         nucleotide_match(1.0f),
-        nucleotide_mismatch(-3.0f) { }
+        nucleotide_mismatch(-3.0f) {}
 
-  virtual ~CSClustAppOptions() { }
+  virtual ~CSClustAppOptions() {}
 
   // Validates the parameter settings and throws exception if needed.
   void validate() {

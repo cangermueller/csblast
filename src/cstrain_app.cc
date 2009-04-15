@@ -46,9 +46,9 @@ struct CSTrainAppOptions : public BaumWelchOptions {
         global_weights(false),
         blosum_type("BLOSUM62"),
         nucleotide_match(1.0f),
-        nucleotide_mismatch(-3.0f) { }
+        nucleotide_mismatch(-3.0f) {}
 
-  virtual ~CSTrainAppOptions() { }
+  virtual ~CSTrainAppOptions() {}
 
   // Validates the parameter settings and throws exception if needed.
   void validate() {
@@ -133,7 +133,7 @@ void CSTrainApp<Alphabet>::parse_options(GetOpt_pp* options) {
   *options >> Option('i', "infile", opts_.infile, opts_.infile);
   *options >> Option('o', "outfile", opts_.outfile, opts_.outfile);
   *options >> Option('d', "directory", opts_.directory, opts_.directory);
-  *options >> Option('f', "format", opts_.format, opts_.format);
+  *options >> Option('I', "informat", opts_.format, opts_.format);
   *options >> Option('M', "matchcol", opts_.matchcol_assignment,
                      opts_.matchcol_assignment);
   *options >> Option('K', "num-states", opts_.num_states, opts_.num_states);
@@ -215,7 +215,7 @@ void CSTrainApp<Alphabet>::print_options() const {
   fprintf(stream(), "  %-30s %s (def=%s)\n", "-d, --directory <directory>",
           "Directory for temporary and output files",
           opts_.directory.empty() ? "." : opts_.directory.c_str());
-  fprintf(stream(), "  %-30s %s (def=%s)\n", "-f, --format <string>",
+  fprintf(stream(), "  %-30s %s (def=%s)\n", "-I, --informat <string>",
           "Format of training data: prf, seq, fas, a2m, or a3m",
           opts_.format.c_str());
   fprintf(stream(), "  %-30s %s\n", "-M, --matchcol [0:100]",
@@ -402,7 +402,7 @@ int CSTrainApp<Alphabet>::run() {
   init_hmm();
 
   // Add pseudocounts to training data
-  fprintf(stream(), "Adding pseudocounts to training profiles (admix=%.2f) ...",
+  fprintf(stream(), "Adding pseudocounts to training profiles (admix=%-.2f) ...",
           opts_.data_pseudocounts);
   fflush(stream());
   int num_data_cols = 0;

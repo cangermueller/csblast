@@ -18,7 +18,7 @@ enum LogLevel { ERROR, WARNING, INFO, DEBUG, DEBUG1, DEBUG2, DEBUG3, DEBUG4 };
 
 class Log {
  public:
-  Log() { }
+  Log() {}
   virtual ~Log();
   std::ostringstream& get(LogLevel level = INFO);
 

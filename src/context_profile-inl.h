@@ -23,7 +23,7 @@ template<class Alphabet>
 inline ContextProfile<Alphabet>::ContextProfile()
     : Profile<Alphabet>(),
       index_(0),
-      prior_(0.0f) { }
+      prior_(0.0f) {}
 
 template<class Alphabet>
 inline ContextProfile<Alphabet>::ContextProfile(int index, int num_cols)

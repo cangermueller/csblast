@@ -24,7 +24,7 @@ const float kFloatDelta = 0.01;
 class BaumWelchTrainingTest : public testing::Test {
  protected:
   BaumWelchTrainingTest()
-      : hmm_(23, 1) { }
+      : hmm_(23, 1) {}
 
   virtual void SetUp() {
     // Build generic zinc finger HMM

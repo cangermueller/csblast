@@ -27,15 +27,15 @@ class sparse_matrix {
   typedef stride_iter< typename sparsetable<T>::const_iterator > const_col_type;
 
   // constructors
-  sparse_matrix() : num_rows_(0), num_cols_(0), m_() { }
-  sparse_matrix(int r, int c) : num_rows_(r), num_cols_(c), m_(r * c) { }
+  sparse_matrix() : num_rows_(0), num_cols_(0), m_() {}
+  sparse_matrix(int r, int c) : num_rows_(r), num_cols_(c), m_(r * c) {}
   sparse_matrix(const self& x)
-  : num_rows_(x.num_rows_), num_cols_(x.num_cols_), m_(x.m_) { }
+  : num_rows_(x.num_rows_), num_cols_(x.num_cols_), m_(x.m_) {}
 
   // allow construction from matricies of other types
   template<typename New_T>
   explicit sparse_matrix(const sparse_matrix<New_T>& x)
-      : num_rows_(x.num_rows_), num_cols_(x.num_cols_), m_(x) { }
+      : num_rows_(x.num_rows_), num_cols_(x.num_cols_), m_(x) {}
 
   // public functions
   int num_rows() const { return num_rows_; }

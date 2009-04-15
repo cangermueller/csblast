@@ -25,10 +25,10 @@ class matrix {
   typedef stride_iter<const value_type*> const_col_type;
 
   // constructors
-  matrix() : num_rows_(0), num_cols_(0), m_() { }
-  matrix(int r, int c) : num_rows_(r), num_cols_(c), m_(r * c) { }
+  matrix() : num_rows_(0), num_cols_(0), m_() {}
+  matrix(int r, int c) : num_rows_(r), num_cols_(c), m_(r * c) {}
   matrix(const self& x)
-      : num_rows_(x.num_rows_), num_cols_(x.num_cols_), m_(x.m_) { }
+      : num_rows_(x.num_rows_), num_cols_(x.num_cols_), m_(x.m_) {}
 
   matrix(int r, int c, const T& val)
       : num_rows_(r), num_cols_(c), m_(r * c) {

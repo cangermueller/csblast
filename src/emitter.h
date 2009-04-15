@@ -17,14 +17,14 @@ struct EmissionOptions {
   EmissionOptions()
       : ignore_context(false),
         weight_center(1.6f),
-        weight_decay(0.85f) { }
+        weight_decay(0.85f) {}
 
   EmissionOptions(const EmissionOptions& p)
       : ignore_context(p.ignore_context),
         weight_center(p.weight_center),
-        weight_decay(p.weight_decay) { }
+        weight_decay(p.weight_decay) {}
 
-  virtual ~EmissionOptions() { }
+  virtual ~EmissionOptions() {}
 
   bool ignore_context;
   float weight_center;
@@ -38,7 +38,7 @@ class Emitter {
   // Constructs a profile matcher with positional window weights.
   Emitter(int num_cols, const EmissionOptions& opts);
 
-  ~Emitter() { }
+  ~Emitter() {}
 
   // Calculates the log emission probability of profile window centered at given
   // index.

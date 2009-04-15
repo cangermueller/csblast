@@ -26,12 +26,12 @@ const char* Profile<Alphabet>::kClassID = "Profile";
 template<class Alphabet>
 inline Profile<Alphabet>::Profile()
     : data_(),
-      logspace_(false) { }
+      logspace_(false) {}
 
 template<class Alphabet>
 inline Profile<Alphabet>::Profile(int num_cols)
     : data_(num_cols, Alphabet::instance().size(), 0.0f),
-      logspace_(false) { }
+      logspace_(false) {}
 
 template<class Alphabet>
 inline Profile<Alphabet>::Profile(FILE* fin)

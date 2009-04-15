@@ -21,7 +21,7 @@ class BlosumMatrix : public SubstitutionMatrix<AminoAcid> {
   };
 
   BlosumMatrix(Type matrix = BLOSUM62);
-  virtual ~BlosumMatrix() { }
+  virtual ~BlosumMatrix() {}
 
  private:
   // Initializes the matrix from target frequencies in raw data array.

@@ -310,7 +310,7 @@ BaumWelchProgressTable<Alphabet, Subject>::BaumWelchProgressTable(
     FILE* fout,
     int width)
     : ProgressTable(fout, width),
-      training_(training) { }
+      training_(training) {}
 
 template< class Alphabet,
           template<class A> class Subject >

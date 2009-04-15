@@ -34,7 +34,7 @@ class Profile {
   // columns long.
   Profile(const Profile& other, int index, int length);
 
-  virtual ~Profile() { }
+  virtual ~Profile() {}
 
   // Reads all available profiles from the input stream and returns them in a
   // vector.

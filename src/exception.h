@@ -34,7 +34,7 @@ class Exception : public std::exception {
     delete [] buffer;
   }
 
-  virtual ~Exception() throw() { };
+  virtual ~Exception() throw() {};
 
   virtual const char* what() const throw() { return msg.c_str(); }
 

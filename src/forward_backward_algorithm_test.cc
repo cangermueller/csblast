@@ -21,7 +21,7 @@ const float kFloatDelta = 0.0001;
 class ForwardBackwardAlgorithmTest : public testing::Test {
  protected:
   ForwardBackwardAlgorithmTest()
-      : hmm_(13, 1) { }
+      : hmm_(13, 1) {}
 
   virtual void SetUp() {
     Sequence<AminoAcid> seq("zinc finger motif", "GQKPFQCRICMRN\n");

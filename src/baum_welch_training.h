@@ -31,13 +31,13 @@ struct BaumWelchOptions : public EmissionOptions,
       : EmissionOptions(),
         ExpectationMaximizationOptions(),
         transition_pseudocounts(1.0f),
-        max_connectivity(0) { }
+        max_connectivity(0) {}
 
   BaumWelchOptions(const BaumWelchOptions& opts)
       : EmissionOptions(opts),
         ExpectationMaximizationOptions(opts),
         transition_pseudocounts(opts.transition_pseudocounts),
-        max_connectivity(opts.max_connectivity) { }
+        max_connectivity(opts.max_connectivity) {}
 
   // Pseudocounts added to transitions (values below 1 enforce sparsity).
   float transition_pseudocounts;
@@ -134,7 +134,7 @@ class BaumWelchProgressTable : public ProgressTable {
                          FILE* fout = stdout,
                          int width = 30);
 
-  virtual ~BaumWelchProgressTable() { }
+  virtual ~BaumWelchProgressTable() {}
 
   virtual void print_header();
   virtual void print_row_begin();

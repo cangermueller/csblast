@@ -16,7 +16,7 @@ namespace cs {
 template<class Alphabet>
 inline MatrixPseudocounts<Alphabet>::MatrixPseudocounts(
     const SubstitutionMatrix<Alphabet>* m)
-    : m_(m) { }
+    : m_(m) {}
 
 template<class Alphabet>
 void MatrixPseudocounts<Alphabet>::add_to_sequence(

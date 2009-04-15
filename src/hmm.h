@@ -32,16 +32,16 @@ class TransitionAdaptor;
 template<class Alphabet>
 class StateInitializer {
  public:
-  StateInitializer() { }
-  virtual ~StateInitializer() { }
+  StateInitializer() {}
+  virtual ~StateInitializer() {}
   virtual void init(HMM<Alphabet>& hmm) const = 0;
 };
 
 template<class Alphabet>
 class TransitionInitializer {
  public:
-  TransitionInitializer() { }
-  virtual ~TransitionInitializer() { }
+  TransitionInitializer() {}
+  virtual ~TransitionInitializer() {}
   virtual void init(HMM<Alphabet>& hmm) const = 0;
 };
 
@@ -205,7 +205,7 @@ class TransitionAdaptor {
  public:
   TransitionAdaptor(HMM<Alphabet>* hmm, int k, int l)
       : hmm_(hmm), k_(k), l_(l)
-  { }
+  {}
 
   TransitionAdaptor& operator= (float val) {
     hmm_->set_transition(k_, l_, val);
@@ -238,7 +238,7 @@ class SamplingStateInitializer : public StateInitializer<Alphabet> {
     random_shuffle(profiles_.begin(), profiles_.end());
   }
 
-  virtual ~SamplingStateInitializer() { };
+  virtual ~SamplingStateInitializer() {};
   virtual void init(HMM<Alphabet>& hmm) const;
 
  private:
@@ -255,8 +255,8 @@ class SamplingStateInitializer : public StateInitializer<Alphabet> {
 template<class Alphabet>
 class HomogeneousTransitionInitializer : public TransitionInitializer<Alphabet> {
  public:
-  HomogeneousTransitionInitializer() { }
-  virtual ~HomogeneousTransitionInitializer() { }
+  HomogeneousTransitionInitializer() {}
+  virtual ~HomogeneousTransitionInitializer() {}
 
   virtual void init(HMM<Alphabet>& hmm) const {
     float prob = 1.0f / hmm.num_states();
@@ -271,8 +271,8 @@ class HomogeneousTransitionInitializer : public TransitionInitializer<Alphabet> 
 template<class Alphabet>
 class RandomTransitionInitializer : public TransitionInitializer<Alphabet> {
  public:
-  RandomTransitionInitializer() { }
-  virtual ~RandomTransitionInitializer() { }
+  RandomTransitionInitializer() {}
+  virtual ~RandomTransitionInitializer() {}
 
   virtual void init(HMM<Alphabet>& hmm) const {
     srand(static_cast<unsigned int>(clock()));

@@ -34,7 +34,7 @@ class Sequence {
   // Constructs sequence with given header and sequence string of characters.
   Sequence(const std::string& header, const std::string& sequence);
 
-  ~Sequence() { }
+  ~Sequence() {}
 
   // Reads all available sequences from the input stream and returns them in a
   // vector.
@@ -43,6 +43,7 @@ class Sequence {
   // Accessors for integer at position i of the sequence.
   char& operator[](int i) { return seq_[i]; }
   const char& operator[](int i) const { return seq_[i]; }
+  char& at(int i) { return seq_[i]; }
   // Returns the character at position i of the sequence.
   char chr(int i) const { return Alphabet::instance().itoc(seq_[i]); }
   // Returns the sequence length.
@@ -80,10 +81,6 @@ class Sequence {
  private:
   // Buffer size for reading
   static const int kBufferSize = 16 * KB;
-
-  // Disallow copy and assign
-  Sequence(const Sequence&);
-  void operator=(const Sequence&);
 
   // Convert the sequence in character representation to integer representation.
   void init(std::string header, std::string sequence);

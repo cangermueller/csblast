@@ -19,14 +19,14 @@ struct ForwardBackwardMatrices {
   typedef double value_type;
 
   ForwardBackwardMatrices()
-      : log_likelihood(0.0) { }
+      : log_likelihood(0.0) {}
 
   ForwardBackwardMatrices(int slen, int nstates)
       : f(slen, nstates, 0.0),
         b(slen, nstates, 0.0),
         e(slen, nstates, 1.0),
         s(0.0, slen),
-        log_likelihood(0.0) { }
+        log_likelihood(0.0) {}
 
   friend std::ostream& operator<< (std::ostream& out,
                                    const ForwardBackwardMatrices& m) {
