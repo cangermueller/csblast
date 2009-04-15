@@ -59,13 +59,17 @@ class Alignment {
                       Format format,
                       std::vector< shared_ptr<Alignment> >* v);
 
-  // Accessors for integer representation of character in match column i of
+  // Accessors for integer representation of character in MATCH column i of
   // sequence k.
   col_type operator[](int i) { return seqs_[match_indexes[i]]; }
   const_col_type operator[](int i) const { return seqs_[match_indexes[i]]; }
-  // Returns the integer in column i of sequence k.
-  char at(int k, int i) const { return seqs_[i][k]; }
-  // Returns the character in column i of sequence k.
+  char& at(int i, int k) { return seqs_[match_indexes[i]][k]; }
+  const char& at(int i, int k) const { return seqs_[match_indexes[i]][k]; }
+  // Accessors for integer representation of the character at position i
+  // (NOT match column i) of sequence k.
+  char& seq(int k, int i) { return seqs_[i][k]; }
+  const char& seq(int k, int i) const { return seqs_[i][k]; }
+  // Returns the character at position i (NOT match column i) of sequence k.
   char chr(int k, int i) const {
     return Alphabet::instance().itoc(seqs_[i][k]);
   }

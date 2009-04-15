@@ -17,6 +17,11 @@ Definitely:
 * Use GTEST's FilePath class??? probably not!
 * change serialization format to HMMER like tags (NCOLS, ALPHS, etc.)
 * Make refs in xxx_weights_xxx functions pointers
+* Rename App functions:
+  print_usage       -> PrintHelp
+  print_options     -> PrintOptions
+  print_banner      -> PrintUsage
+  print_description -> PrintBanner
 
 Nice-to-have:
 * Rename 'from' and 'to' members in Transition to 'source' and 'target'

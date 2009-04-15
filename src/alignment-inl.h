@@ -296,8 +296,8 @@ void Alignment<Alphabet>::write_fasta_flavors(FILE* fout,
           if (match_column_[i]) {
             fputc(to_match_chr(chr(k, i)), fout);
             ++j;
-          } else if (at(k, i) != Alphabet::instance().gap()
-                     && at(k, i) != Alphabet::instance().endgap()) {
+          } else if (seq(k, i) != Alphabet::instance().gap()
+                     && seq(k, i) != Alphabet::instance().endgap()) {
             fputc(to_insert_chr(chr(k, i)), fout);
             ++j;
           }
@@ -426,8 +426,8 @@ template<class Alphabet>
 Sequence<Alphabet> Alignment<Alphabet>::GetSequence(int k) const {
   std::string seq_str;
   for (int i = 0; i < num_cols(); ++i)
-    if (seqs_[i][k] < Alphabet::instance().gap())
-      seq_str.append(1, chr(i,k));
+    if (seq(0,i) < Alphabet::instance().gap())
+      seq_str.append(1, chr(0,i));
 
   return Sequence<Alphabet>(header(k), seq_str);
 }

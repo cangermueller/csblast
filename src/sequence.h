@@ -44,6 +44,7 @@ class Sequence {
   char& operator[](int i) { return seq_[i]; }
   const char& operator[](int i) const { return seq_[i]; }
   char& at(int i) { return seq_[i]; }
+  const char& at(int i) const { return seq_[i]; }
   // Returns the character at position i of the sequence.
   char chr(int i) const { return Alphabet::instance().itoc(seq_[i]); }
   // Returns the sequence length.

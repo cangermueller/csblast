@@ -3,6 +3,7 @@
 #ifndef SRC_PSIBLAST_PSSM_H_
 #define SRC_PSIBLAST_PSSM_H_
 
+#include <cassert>
 #include <cstdio>
 #include <cstdlib>
 
@@ -32,6 +33,7 @@ class PsiBlastPssm {
   const Profile<AminoAcid>& profile() const { return *profile_; }
   // Overwrites profile with new profile.
   void set_profile(const Profile<AminoAcid> profile) {
+    assert(profile.num_cols() == query_->length());
     profile_.reset(new Profile<AminoAcid>(profile));
   }
   // Overwrites existing PSSM with PSSM from PSI-BLAST checkpoint.

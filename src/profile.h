@@ -43,6 +43,8 @@ class Profile {
   // Access methods to get the (i,j) element
   col_type operator[](int i) { return data_[i]; }
   const_col_type operator[](int i) const { return data_[i]; }
+  float& at(int i, int a) { return data_[i][a]; }
+  const float& at(int i, int a) const { return data_[i][a]; }
   // Returns #columns in the profile
   int num_cols() const { return data_.num_rows(); }
   // Returns #columns in the profile
