@@ -10,30 +10,34 @@
 #include <string>
 
 #include "amino_acid.h"
+#include "exception.h"
 #include "profile.h"
 #include "scoped_ptr.h"
-#include "sequence.h"
 
 namespace cs {
 
 // Container class for PSI-BLAST PSSM and the associated query sequence.
 class PsiBlastPssm {
  public:
-  // Constructor to create a PSSM from the query and its sequence profile.
-  PsiBlastPssm(Sequence<AminoAcid> query, Profile<AminoAcid> profile);
-  // Constructor to create a PSSM from a PSI-BLAST checkpoint.
+  // Constructor to create a PSSM from query string and a sequence profile.
+  PsiBlastPssm(const std::string& query,
+               const Profile<AminoAcid>& profile);
+  // Constructor to create a PSSM from a PSI-BLAST checkpoint file.
   PsiBlastPssm(FILE* fin);
-
-  // Do nothing - scoped_ptr's do the job!
   ~PsiBlastPssm() {}
 
   // Gets query sequence
-  const Sequence<AminoAcid>& query() const { return *query_; }
+  const std::string query() const { return query_; }
   // Gets sequence profile
   const Profile<AminoAcid>& profile() const { return *profile_; }
+  // Overwrites query with new sequence string.
+  void set_query(const std::string seq) {
+    assert(profile_->num_cols() == seq.length());
+    query_ = seq;
+  }
   // Overwrites profile with new profile.
   void set_profile(const Profile<AminoAcid> profile) {
-    assert(profile.num_cols() == query_->length());
+    assert(profile.num_cols() == query_.length());
     profile_.reset(new Profile<AminoAcid>(profile));
   }
   // Overwrites existing PSSM with PSSM from PSI-BLAST checkpoint.
@@ -43,7 +47,7 @@ class PsiBlastPssm {
 
  private:
   // Query sequence with which search was started
-  scoped_ptr< Sequence<AminoAcid> > query_;
+  std::string query_;
   // Evolving sequence profile
   scoped_ptr< Profile<AminoAcid> > profile_;
 };  // class PsiBlastPssm

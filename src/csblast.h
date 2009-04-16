@@ -9,6 +9,7 @@
 #include "amino_acid.h"
 #include "emitter.h"
 #include "profile_library.h"
+#include "psiblast_pssm.h"
 #include "library_pseudocounts.h"
 #include "sequence-inl.h"
 
@@ -51,34 +52,29 @@ class CSBlast {
  public:
   // Constructor to compare a single sequence against a database of protein
   // sequences.
-  CSBlast(const Sequence<AminoAcid>* query,
-          const ProfileLibrary<AminoAcid>* lib,
+  CSBlast(const Sequence<AminoAcid>& query,
+          const Pseudocounts<AminoAcid>* pc,
           const CSBlastOptions* opts);
-
-  // Constructor to compare a single sequence against a database of protein
-  // sequences.
-  CSBlast(const Sequence<AminoAcid>* query,
-          const ProfileLibrary<AminoAcid>* lib,
+  // Constructor for restarting CS-BLAST iterations with a previously generated
+  // PSSM.
+  CSBlast(const PsiBlastPssm& pssm,
+          const Pseudocounts<AminoAcid>* pc,
           const CSBlastOptions* opts);
-
-  ~ContextSpecificBlast() {}
+  ~CSBlast() {}
 
   // Runs the CS-BLAST algorithm by adding context-specific pseudocounts to the
   // query sequence and then jumpstarting PSI-BLAST with the resulting profile.
   int Run();
 
-
-  // Adds context-specific pseudocounts to alignment derived profile.
-  virtual void add_to_profile(const Admixture& pca,
-                              CountProfile<Alphabet>* p) const;
-
  private:
-  // Profile library with context profiles.
-  const ProfileLibrary<Alphabet>& lib_;
-  // Needed to compute emission probabilities of context profiles.
-  const Emitter<Alphabet> emitter_;
+  // Query sequence (either extracted from PSSM or provided in constructor)
+  const Sequence<AminoAcid> query_;
+  // PSI-BLAST position-specific scoring matrix
+  PsiBlatPssm pssm_;
+  // Pseudocount factory for generation of sequence profile.
+  const Pseudocounts<AminoAcid>* pc_;
 
-  DISALLOW_COPY_AND_ASSIGN(ContextSpecificBlast);
+  DISALLOW_COPY_AND_ASSIGN(CSBlast);
 };  // ContextSpecificBlast
 
 }  // namespace cs

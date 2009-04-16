@@ -13,11 +13,13 @@
 #include "profile-inl.h"
 #include "sequence-inl.h"
 
+using std::string;
+
 namespace cs {
 
-PsiBlastPssm::PsiBlastPssm(Sequence<AminoAcid> query,
-                           Profile<AminoAcid> profile)
-    : query_(new Sequence<AminoAcid>(query)),
+PsiBlastPssm::PsiBlastPssm (const std::string& query,
+                            const Profile<AminoAcid>& profile)
+    : query_(query),
       profile_(new Profile<AminoAcid>(profile)) {
   assert(profile.num_cols() == query.length());
 }
@@ -35,15 +37,14 @@ void PsiBlastPssm::Read(FILE* fin) {
   assert(count == 1);
   assert(query_length > 0);
 
-  query_.reset(new Sequence<AminoAcid>(query_length));
+  query_.resize(query_length);
   profile_.reset(new Profile<AminoAcid>(query_length));
 
   for(int i = 0; i < query_length; ++i) {
     char c = '\0';
     count += fread(&c, kCharSize, 1, fin);
-
     assert(AminoAcid::instance().valid(c));
-    query_->at(i) = AminoAcid::instance().ctoi(c);
+    query_[i] = c;
   }
   for(int i = 0; i < query_length; ++i) {
     for(int a = 0; a < alph_size; ++a) {
@@ -66,7 +67,7 @@ void PsiBlastPssm::Write(FILE* fout) {
 
   count += fwrite(reinterpret_cast<char*>(&query_length), kIntSize, 1, fout);
   for(int i = 0; i < query_length; ++i) {
-    char c = AminoAcid::instance().itoc(query_->at(i));
+    char c = query_[i];
     count += fwrite(&c, kCharSize, 1, fout);
   }
 

@@ -165,9 +165,9 @@ void CSBuildApp<Alphabet>::WriteProfile(const CountProfile<Alphabet>& profile) {
 }
 
 template<class Alphabet>
-void CSBuildApp<Alphabet>::WriteCheckpoint(const Sequence<Alphabet> query,
+void CSBuildApp<Alphabet>::WriteCheckpoint(const Sequence<Alphabet>& query,
                                            const CountProfile<Alphabet>& profile) {
-  PsiBlastPssm pssm(query, profile);
+  PsiBlastPssm pssm(query.ToString(), profile);
 
   FILE* fout = fopen(opts_.outfile.c_str(), "wb");
   if (!fout)

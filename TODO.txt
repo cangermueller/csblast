@@ -1,4 +1,4 @@
-Definitely:
+Todo:
 * User-friendly error messages for GetOpt-Exceptions.
 * ProgressBar class for use in cstrain and csclust.
 * Make BaumWelch and Clustering take pointer to Params instead of reference.
@@ -22,7 +22,9 @@ Definitely:
   print_options     -> PrintOptions
   print_banner      -> PrintUsage
   print_description -> PrintBanner
+* Rename interface classes to KlassInterface (PseudocountsInterface, AlphabetInterface)
+* Create ContextSpecificPseudocounts class with constructor taking FILE*
 
-Nice-to-have:
+Someday:
 * Rename 'from' and 'to' members in Transition to 'source' and 'target'
 * Unified validation "framework" for Option classes

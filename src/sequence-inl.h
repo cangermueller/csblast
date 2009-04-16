@@ -15,6 +15,8 @@
 #include "shared_ptr.h"
 #include "utils-inl.h"
 
+using std::string
+
 namespace cs {
 
 template<class Alphabet>
@@ -27,8 +29,8 @@ inline Sequence<Alphabet>::Sequence(FILE* in) {
 }
 
 template<class Alphabet>
-Sequence<Alphabet>::Sequence(const std::string& header,
-                             const std::string& sequence) {
+Sequence<Alphabet>::Sequence(const string& header,
+                             const string& sequence) {
   init(header, sequence);
 }
 
@@ -42,9 +44,9 @@ inline void Sequence<Alphabet>::readall(FILE* fin,
 }
 
 template<class Alphabet>
-void Sequence<Alphabet>::init(std::string header, std::string sequence) {
+void Sequence<Alphabet>::init(string header, string sequence) {
   // Init header
-  std::string().swap(header_);
+  string().swap(header_);
   header_.append(header.begin() + (header[0] == '>' ? 1 : 0), header.end());
 
   // Strip whitespace and newlines from sequence.
@@ -71,8 +73,8 @@ void Sequence<Alphabet>::read(FILE* fin) {
 
   char buffer[kBufferSize];
   int c = '\0';
-  std::string header;
-  std::string sequence;
+  string header;
+  string sequence;
 
   // Read header
   while (fgetline(buffer, kBufferSize, fin)) {
@@ -107,6 +109,14 @@ void Sequence<Alphabet>::write(FILE* fout, int width) const {
     if ((i+1) % width == 0) fputc('\n', fout);
   }
   if (length() % width != 0) fputc('\n', fout);
+}
+
+template<class Alphabet>
+string Sequence<Alphabet>::ToString() const {
+  string s(begin(), end());
+  for (int i = 0; i < s.length(); ++i)
+    s[i] = Alphabet::instance().itoc(s[i]);
+  return s;
 }
 
 }  // namespace cs
