@@ -170,9 +170,8 @@ void CSBuildApp<Alphabet>::WriteCheckpoint(const Sequence<Alphabet>& query,
   PsiBlastPssm pssm(query.ToString(), profile);
 
   FILE* fout = fopen(opts_.outfile.c_str(), "wb");
-  if (!fout)
-    throw Exception("Unable to write profile to output file '%s'!",
-                    opts_.outfile.c_str());
+  if (!fout) throw Exception("Unable to write profile to output file '%s'!",
+                             opts_.outfile.c_str());
   pssm.Write(fout);
   fprintf(stream(), "Wrote profile with %i columns as checkpoint file to %s\n",
           profile.num_cols(), opts_.outfile.c_str());
@@ -182,16 +181,14 @@ void CSBuildApp<Alphabet>::WriteCheckpoint(const Sequence<Alphabet>& query,
 template<class Alphabet>
 int CSBuildApp<Alphabet>::run() {
   FILE* fin = fopen(opts_.infile.c_str(), "r");
-  if (!fin)
-    throw Exception("Unable to read from input file '%s'!",
-                    opts_.infile.c_str());
+  if (!fin) throw Exception("Unable to read from input file '%s'!",
+                            opts_.infile.c_str());
 
   // Iniialize profile library if needed
   if (!opts_.libfile.empty()) {
     FILE* fin = fopen(opts_.libfile.c_str(), "r");
-    if (!fin)
-      throw Exception("Unable to read from jumpstart file '%s'!",
-                      opts_.libfile.c_str());
+    if (!fin) throw Exception("Unable to read from jumpstart file '%s'!",
+                              opts_.libfile.c_str());
     lib_.reset(new ProfileLibrary<Alphabet>(fin));
     fclose(fin);
   }

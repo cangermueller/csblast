@@ -50,6 +50,8 @@ class PsiBlastPssm {
   std::string query_;
   // Evolving sequence profile
   scoped_ptr< Profile<AminoAcid> > profile_;
+
+  DISALLOW_COPY_AND_ASSIGN(PsiBlastPssm);
 };  // class PsiBlastPssm
 
 }  // namespace cs

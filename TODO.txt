@@ -24,6 +24,10 @@ Todo:
   print_description -> PrintBanner
 * Rename interface classes to KlassInterface (PseudocountsInterface, AlphabetInterface)
 * Create ContextSpecificPseudocounts class with constructor taking FILE*
+* Allow raw sequence for initialization of Sequence from stream.
+* Rename typedefs to CamelCase (e.g. ProfileIter)
+* Move kLogScale to globals
+* replace kBufferSize by KB constants.
 
 Someday:
 * Rename 'from' and 'to' members in Transition to 'source' and 'target'
