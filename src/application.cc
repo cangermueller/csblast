@@ -21,8 +21,7 @@ Application* Application::instance_;
 const char* Application::kVersionNumber = "2.0.0";
 
 const char* Application::kCopyright =
-  "Copyright (c) 2008 Andreas Biegert, Johannes Soding, and Ludwig-Maximillians\n"
-  "University Munich";
+  "Copyright (c) 2008 Andreas Biegert, Johannes Soding, and LMU Munich";
 
 Application::Application()
     : log_level_(Log::to_string(Log::from_int(LOG_MAX_LEVEL))),

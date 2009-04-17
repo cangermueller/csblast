@@ -30,7 +30,7 @@ class PsiBlast {
   ~PsiBlast() {}
 
   // Runs one iteration of PSI-BLAST
-  int Run();
+  int Run(FILE* fout = NULL);
   // Sets path to PSI-BLAST executable.
   void set_exec_path(std::string exec_path) { exec_path_ = exec_path; }
   // Gets path to PSI-BLAST executable.
@@ -41,6 +41,8 @@ class PsiBlast {
  private:
   // Default path to PSI-BLAST executable
   static const char* kPsiBlastExec;
+  // Reference string for output
+  static const char* kCSBlastReference;
 
   void WriteQuery(std::string filepath) const;
   void WriteCheckpoint(std::string filepath) const;

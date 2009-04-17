@@ -105,7 +105,7 @@ template<class Alphabet>
 void Sequence<Alphabet>::write(FILE* fout, int width) const {
   fprintf(fout, ">%s\n", header_.c_str());
   for (int i = 0; i < length(); ++i) {
-    fputc(char(i), fout);
+    fputc(chr(i), fout);
     if ((i+1) % width == 0) fputc('\n', fout);
   }
   if (length() % width != 0) fputc('\n', fout);

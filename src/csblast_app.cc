@@ -39,11 +39,12 @@ struct CSBlastAppOptions : public EmissionOptions {
     infile              = "";
     outfile             = "";
     libfile             = "";
-    restartfile         = "";
     outformat           = 0;
     pc_admix            = 1.0f;
     pc_ali              = 10.0f;
     global_weights      = false;
+    weight_center       = 1.3;
+    weight_decay        = 0.9;
   }
 
   // Validates the parameter settings and throws exception if needed.
@@ -58,8 +59,6 @@ struct CSBlastAppOptions : public EmissionOptions {
   string outfile;
   // Library input file for restarting
   string libfile;
-  // Checkpoint file for PSI-BLAST restarting
-  string restartfile;
   // BLAST output format
   int outformat;
   // Overall pseudocount admixture
@@ -75,8 +74,6 @@ struct CSBlastAppOptions : public EmissionOptions {
 
 class CSBlastApp : public Application {
  private:
-
-
   // Runs the csbuild application.
   virtual int run();
   // Parses command line options.
@@ -106,43 +103,43 @@ class CSBlastApp : public Application {
 
 void CSBlastApp::parse_options(GetOpt_pp* options) {
   *options >> Option('i', "infile", opts_.infile, opts_.infile);
-  *options >> Option('o', "outfile", opts_.outfile, opts_.outfile);
-  *options >> Option('R', "restart", opts_.restartfile, opts_.restartfile);
-  *options >> Option('m', "outformat", opts_.outformat, opts_.outformat);
+  //  *options >> Option('o', "outfile", opts_.outfile, opts_.outfile);
+  //  *options >> Option('m', "outformat", opts_.outformat, opts_.outformat);
   *options >> Option('x', "pc-admix", opts_.pc_admix, opts_.pc_admix);
   *options >> Option('D', "context-pc", opts_.libfile, opts_.libfile);
   *options >> OptionPresent(' ', "global-weights", opts_.global_weights);
 
   // Put remaining arguments into PSI-BLAST options map
   for(GetOpt_pp::short_iterator it = options->begin(); it != options->end(); ++it) {
-    putc(it.option(), stdout);
-    putc('\n', stdout);
     if (!it.extracted())
       opts_.psiblast_opts[it.option()] = it.args().front();
   }
-
 
   opts_.Validate();
 }
 
 void CSBlastApp::print_description() const {
   fputs("Search with an amino acid sequence against protein databases for locally\n"
-        "similar sequences.\n", stream());
+        "similar sequences.\n"
+        "Biegert, A. and Soding, J. (2009), Sequence context-specific profiles for\n"
+        "homology searching. Proc Natl Acad Sci USA, 106 (10), 3770-3775\n",
+        stream());
 }
 
 void CSBlastApp::print_banner() const {
-  fputs("Usage: csblast -i <infile> -D <library> [options]\n", stream());
+  fputs("Usage: csblast -i <infile> -D <profile library> [options] [blast options]\n",
+        stream());
 }
 
 void CSBlastApp::print_options() const {
   fprintf(stream(), "  %-30s %s\n", "-i, --infile <filename>",
           "Input file with query sequence");
+  fprintf(stream(), "  %-30s %s\n", "-D, --context-pc <library>",
+          "Path to library with context profiles for cs pseudocounts");
   fprintf(stream(), "  %-30s %s\n", "-o, --outfile <filename>",
           "Output file with search results (def=stdout)");
-  fprintf(stream(), "  %-30s %s (def=off)\n", "-D, --context-pc <library>",
-          "Path to profile library.");
-  fprintf(stream(), "  %-30s %s\n", "-R, --restart <filename>",
-          "Input file for CS-BLAST restart");
+  fprintf(stream(), "  %-30s %s\n", "-d, --database <dbname>",
+          "Protein database to search against (def=nr)");
   fprintf(stream(), "  %-30s %s (def=%i)\n", "-m, --outformat [0,11]",
           "Alignment view option", opts_.outformat);
   fprintf(stream(), "  %-30s %s (def=%-.2f)\n", "-x, --pc-admix [0,1]",
@@ -168,28 +165,21 @@ int CSBlastApp::run() {
   // Setup context-specific pseudocounts generator
   pc_.reset(new LibraryPseudocounts<AminoAcid>(lib_.get(), opts_));
 
-  // Read PSSM from restart file or init PSSM with query profile generated
-  // with context-specific pseudocounts
-  if (!opts_.restartfile.empty()) {
-    fin = fopen(opts_.restartfile.c_str(), "rb");
-    if (!fin) throw Exception("Unable to read file '%s'!",
-                              opts_.restartfile.c_str());
-    pssm_.reset(new PsiBlastPssm(fin));
-    fclose(fin);
-  } else {
-    CountProfile<AminoAcid> profile(*query_);
-    pc_->add_to_sequence(*query_, ConstantAdmixture(opts_.pc_admix), &profile);
-    pssm_.reset(new PsiBlastPssm(query_->ToString(), profile));
-  }
+  // Construct PSSM with query profile generated with context-specific
+  // pseudocounts
+  CountProfile<AminoAcid> profile(*query_);
+  pc_->add_to_sequence(*query_, ConstantAdmixture(opts_.pc_admix), &profile);
+  pssm_.reset(new PsiBlastPssm(query_->ToString(), profile));
 
   // Setup PSI-BLAST engine
-  psiblast_.reset(new PsiBlast(query_.get(), pssm_.get(),
+  psiblast_.reset(new PsiBlast(query_.get(),
+                               pssm_.get(),
                                opts_.psiblast_opts));
 
-  // Run CS-BLAST until convergence or for maximum number of iterations
-  psiblast_->Run();
+  // Run one iteration of CS-BLAST
+  int status = psiblast_->Run(stream());
 
-  return 0;
+  return status;
 }
 
 }  // namespace cs

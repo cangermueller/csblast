@@ -107,64 +107,67 @@ inline float fast_pow2(float x) {
   return x;
 }
 
-/////////////////////////////////////////////////////////////////////////////////////
-// fast 2^x
-// ATTENTION: need to compile with g++ -fno-strict-aliasing when using -O2 or -O3!!!
-// Relative deviation < ??  (< 2.3E-7 with 5'th order polynomial)
-// Speed: ???E-8s (??E-8s) per call!
-// Internal representation of double number according to IEEE 754:
-//   1bit sign, 11 bits exponent, 52 bits mantissa: seee eeee eeee mmmm mmmm mmmm mmmm mmmm mmmm mmmm mmmm mmmm mmmm mmmm mmmm mmmm
-// In summary: x = (-1)^s * 1.mmmmmmmmmmmmmmmmmmmmmm... * 2^(eeeeeeeeee-1023)
-/////////////////////////////////////////////////////////////////////////////////////
-inline double fast_pow2(double x)
-{
-   if (x > DBL_MAX_EXP) return DBL_MAX;
-   if (x < DBL_MIN_EXP) return 0.0f;
-   int64_t *px = (int64_t*)(&x);                 // store address of float as pointer to long int
-   double tx = (x-0.5f) + (3<<51);       // temporary value for truncation: x-0.5 is added to a large integer (3<<51)
-                                         // 3<<51 = (1.1bin)*252 = (1.1bin)*2^(1075-1023)
-                                         // which, in internal bits, is written 0x4338000000000000 (since 0100 0011 0011 bin = 1075)
-   int64_t lx = *((int64_t*)&tx) - 0x4338000000000000;   // integer value of x
-   double dx = x-(double)(lx);           // float remainder of x
-   // x = 1.0f + dx*(0.693019d              // polynomial apporoximation of 2^x
-   //          + dx*(0.241404d              // for x in the range [0, 1]
-   //          + dx*(0.0520749d
-   //          + dx* 0.0134929d )));
-   x = 1.0 + dx*(0.693153              // polynomial apporoximation of 2^x
-           + dx*(0.240153              // for x in the range [0, 1]
-           + dx*(0.0558282
-           + dx*(0.00898898
-           + dx* 0.00187682 ))));
-   *px += (lx<<52);                      // add integer power of 2 to exponent
-   return x;
-}
-
-// // Fast 2^x
+// /////////////////////////////////////////////////////////////////////////////////////
+// // fast 2^x
 // // ATTENTION: need to compile with g++ -fno-strict-aliasing when using -O2 or -O3!!!
-// // Relative deviation < 2.3E-7
-// // Speed: 2.3E-8s per call! (exp(): 8.5E-8, pow(): 1.7E-7)
-// //                        seee eeee emmm mmmm mmmm mmmm mmmm mmmm
-// // In summary: x = (-1)^s * 1.mmmmmmmmmmmmmmmmmmmmmm * 2^(eeeeeee-127)
-// inline double fast_pow2(double d) {
-//   if (d == -INFINITY || d > FLT_MAX_EXP || d < FLT_MIN_EXP)
-//     return pow(2.0, d);
+// // Relative deviation < ??  (< 2.3E-7 with 5'th order polynomial)
+// // Speed: ???E-8s (??E-8s) per call!
+// // Internal representation of double number according to IEEE 754:
+// //   1bit sign, 11 bits exponent, 52 bits mantissa: seee eeee eeee mmmm mmmm mmmm mmmm mmmm mmmm mmmm mmmm mmmm mmmm mmmm mmmm mmmm
+// // In summary: x = (-1)^s * 1.mmmmmmmmmmmmmmmmmmmmmm... * 2^(eeeeeeeeee-1023)
+// /////////////////////////////////////////////////////////////////////////////////////
+// inline double fast_pow2(double x) {
+//   if (x == -INFINITY || x > DBL_MAX_EXP || x < DBL_MIN_EXP)
+//     return pow(2.0, x);
+//   uint64_t *px = (uint64_t*)(&x);       // store address of float as pointer to long int
+//   double tx = (x - 0.5) + (static_cast<uint64_t>(3) << 51);        // temporary value for truncation: x-0.5 is added to a large integer (3<<51)
+//                                         // 3<<51 = (1.1bin)*252 = (1.1bin)*2^(1075-1023)
+//                                         // which, in internal bits, is written 0x4338000000000000 (since 0100 0011 0011 bin = 1075)
+//   const uint64_t kTMP = (static_cast<uint64_t>(0x43380000) << 32) | 0x00000000;
+//   uint64_t lx = *((uint64_t*)&tx) - kTMP;   // integer value of x
+//   //  uint64_t lx = *((uint64_t*)&tx) -             0x4338000000000000ull;   // integer value of x
+//   double dx = x-(double)(lx);           // float remainder of x
+//   // x = 1.0f + dx*(0.693019d              // polynomial apporoximation of 2^x
+//   //          + dx*(0.241404d              // for x in the range [0, 1]
+//   //          + dx*(0.0520749d
+//   //          + dx* 0.0134929d )));
+//   x = 1.0 + dx*(0.693153               // polynomial apporoximation of 2^x
+//            + dx*(0.240153              // for x in the range [0, 1]
+//            + dx*(0.0558282
+//            + dx*(0.00898898
+//            + dx* 0.00187682 ))));
 
-//   float x = d;
-//   // store address of float as pointer to long
-//   int *px = (int*)(&x);
-//   // temporary value for truncation: x-0.5 is added to a large integer (3<<22)
-//   float tx = (x-0.5f) + (3<<22);
-//   int lx = *((int*)&tx) - 0x4b400000;   // integer value of x
-//   float dx = x-(float)(lx);             // float remainder of x
-//   x = 1.0f + dx*(0.693153f              // polynomial apporoximation of 2^x
-//            + dx*(0.240153f              // for x in the range [0, 1]
-//            + dx*(0.0558282f
-//            + dx*(0.00898898f
-//            + dx* 0.00187682f ))));
-
-//   *px += (lx<<23);                      // add integer power of 2 to exponent
+//   *px += ((static_cast<uint64_t>(lx) << 32) | 0x00000000);
+//   //  *px += (static_cast<uint64_t>(lx) << 52);                      // add integer power of 2 to exponent
 //   return x;
 // }
+
+// Fast 2^x
+// ATTENTION: need to compile with g++ -fno-strict-aliasing when using -O2 or -O3!!!
+// Relative deviation < 2.3E-7
+// Speed: 2.3E-8s per call! (exp(): 8.5E-8, pow(): 1.7E-7)
+//                        seee eeee emmm mmmm mmmm mmmm mmmm mmmm
+// In summary: x = (-1)^s * 1.mmmmmmmmmmmmmmmmmmmmmm * 2^(eeeeeee-127)
+inline double fast_pow2(double d) {
+  if (d == -INFINITY || d > FLT_MAX_EXP || d < FLT_MIN_EXP)
+    return pow(2.0, d);
+
+  float x = d;
+  // store address of float as pointer to long
+  int *px = (int*)(&x);
+  // temporary value for truncation: x-0.5 is added to a large integer (3<<22)
+  float tx = (x-0.5f) + (3<<22);
+  int lx = *((int*)&tx) - 0x4b400000;   // integer value of x
+  float dx = x-(float)(lx);             // float remainder of x
+  x = 1.0f + dx*(0.693153f              // polynomial apporoximation of 2^x
+           + dx*(0.240153f              // for x in the range [0, 1]
+           + dx*(0.0558282f
+           + dx*(0.00898898f
+           + dx* 0.00187682f ))));
+
+  *px += (lx<<23);                      // add integer power of 2 to exponent
+  return x;
+}
 
 // Fast 2^x
 // ATTENTION: need to compile with g++ -fno-strict-aliasing when using -O2 or -O3!!!
