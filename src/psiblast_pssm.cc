@@ -21,7 +21,7 @@ PsiBlastPssm::PsiBlastPssm (const std::string& query,
                             const Profile<AminoAcid>& profile)
     : query_(query),
       profile_(new Profile<AminoAcid>(profile)) {
-  assert(profile.num_cols() == query.length());
+  assert(profile.num_cols() == static_cast<int>(query.length()));
 }
 
 PsiBlastPssm::PsiBlastPssm(FILE* fin) {
@@ -56,13 +56,13 @@ void PsiBlastPssm::Read(FILE* fin) {
   assert(count == 1 + query_length + query_length * alph_size);
 }
 
-void PsiBlastPssm::Write(FILE* fout) {
+void PsiBlastPssm::Write(FILE* fout) const {
   LOG(DEBUG2) << "Writing query and profile as PSI-BLAST checkpoint ...";
-  LOG(DEBUG2) << *query_;
+  LOG(DEBUG2) << query_;
   LOG(DEBUG2) << *profile_;
 
   const int alph_size = AminoAcid::instance().size();
-  int query_length = query_->length();
+  int query_length = query_.length();
   int count = 0;
 
   count += fwrite(reinterpret_cast<char*>(&query_length), kIntSize, 1, fout);

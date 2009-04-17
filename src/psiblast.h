@@ -21,12 +21,12 @@ class PsiBlast {
   // Constructor to compare a single sequence against a database of protein
   // sequences.
   PsiBlast(const Sequence<AminoAcid>* query,
-           const Options* opts);
+           const Options& opts);
   // Constructor for restarting CS-BLAST iterations with a previously generated
   // PSSM.
   PsiBlast(const Sequence<AminoAcid>* query,
            const PsiBlastPssm* pssm,
-           const Options* opts);
+           const Options& opts);
   ~PsiBlast() {}
 
   // Runs one iteration of PSI-BLAST
@@ -44,15 +44,15 @@ class PsiBlast {
 
   void WriteQuery(std::string filepath) const;
   void WriteCheckpoint(std::string filepath) const;
-  std::string GetCommandString(std::string queryfile,
-                               std::string checkpointfile = "");
+  std::string ComposeCommandString(std::string queryfile,
+                                   std::string checkpointfile = "") const;
 
   // Query sequence provided by constructor
   const Sequence<AminoAcid>* query_;
   // PSI-BLAST position-specific scoring matrix
   const PsiBlastPssm* pssm_;
   // Options map with PSI-BLAST specific command-line arguments
-  const Options* opts_;
+  Options opts_;
   // Path to PSI-BLAST executable
   std::string exec_path_;
 

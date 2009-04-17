@@ -426,6 +426,9 @@ class GetOpt_pp {
     const OptionArgs&  args() const {
       return _it->second.args;
     }
+    bool  extracted() const {
+      return _it->second.flags == OptionData::CmdLine_Extracted;
+    }
     _iterator<Container, Adapter, OptionType>& operator ++() {
       ++_it; return *this;
     }

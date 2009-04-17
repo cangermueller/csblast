@@ -140,3 +140,6 @@ csclust_aa: csclust_app.cc $(OBJECTS_NO_TESTS) $(DEPS_NO_TESTS)
 
 csclust_nt: csclust_app.cc $(OBJECTS_NO_TESTS) $(DEPS_NO_TESTS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $@.cc $(OBJECTS_NO_TESTS) $(LIBS)
+
+csblast: csblast_app.cc $(OBJECTS_NO_TESTS) $(DEPS_NO_TESTS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ csblast_app.cc $(OBJECTS_NO_TESTS) $(LIBS)

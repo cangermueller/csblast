@@ -48,8 +48,8 @@ class shared_ptr {
   T& operator*() const { return *p_; }
   T* operator->() const { return p_; }
   T* get() const { return p_; }
-  long use_count() const { return c_; }
-  bool unique() const { c_ == 1; }
+  long use_count() const { return *c_; }
+  bool unique() const { return *c_ == 1; }
   operator bool () const { return p_ != NULL; }
 
   // Template function for implicit conversion (see More Effectove C++
@@ -58,8 +58,8 @@ class shared_ptr {
   // operator shared_ptr<U>() { return shared_ptr<U>(p_); }
 
  private:
-  T *p_;
-  long *c_;
+  T* p_;
+  long* c_;
 };
 
 #endif  // SRC_SHARED_PTR_H_

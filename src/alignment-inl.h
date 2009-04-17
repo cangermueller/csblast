@@ -427,7 +427,7 @@ Sequence<Alphabet> Alignment<Alphabet>::GetSequence(int k) const {
   std::string seq_str;
   for (int i = 0; i < num_cols(); ++i)
     if (seq(0,i) < Alphabet::instance().gap())
-      seq_str.append(1, chr(0,i));
+      seq_str += chr(0,i);
 
   return Sequence<Alphabet>(header(k), seq_str);
 }

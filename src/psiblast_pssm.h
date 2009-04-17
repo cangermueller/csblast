@@ -32,18 +32,18 @@ class PsiBlastPssm {
   const Profile<AminoAcid>& profile() const { return *profile_; }
   // Overwrites query with new sequence string.
   void set_query(const std::string seq) {
-    assert(profile_->num_cols() == seq.length());
+    assert(profile_->num_cols() == static_cast<int>(seq.length()));
     query_ = seq;
   }
   // Overwrites profile with new profile.
   void set_profile(const Profile<AminoAcid> profile) {
-    assert(profile.num_cols() == query_.length());
+    assert(profile.num_cols() == static_cast<int>(query_.length()));
     profile_.reset(new Profile<AminoAcid>(profile));
   }
   // Overwrites existing PSSM with PSSM from PSI-BLAST checkpoint.
   void Read(FILE* fin);
   // Writes PSSM in PSI-BLAST binary checkpoint format to stream.
-  void Write(FILE* fout);
+  void Write(FILE* fout) const;
 
  private:
   // Query sequence with which search was started

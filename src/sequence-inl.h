@@ -15,7 +15,7 @@
 #include "shared_ptr.h"
 #include "utils-inl.h"
 
-using std::string
+using std::string;
 
 namespace cs {
 
