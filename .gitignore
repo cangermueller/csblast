@@ -4,3 +4,5 @@ src/test
 src/*.a
 src/*_aa
 src/*_nt
+src/*.log
+

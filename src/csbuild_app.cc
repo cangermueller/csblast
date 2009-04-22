@@ -82,11 +82,13 @@ class CSBuildApp : public Application {
   virtual void print_description() const;
   // Prints usage banner to stream.
   virtual void print_banner() const;
+  // Prints output format options.
+  void print_output_format_options() const;
   // Writes profile to outfile
-  void WriteProfile(const CountProfile<Alphabet>& profile);
+  void WriteProfile(const CountProfile<Alphabet>& profile) const;
   // Writes PSI-BLAST checkpoint file
-  void WriteCheckpoint(const Sequence<Alphabet> query,
-                       const CountProfile<Alphabet>& profile);
+  void WriteCheckpoint(const Sequence<Alphabet>& query,
+                       const CountProfile<Alphabet>& profile) const;
 
   // Parameter wrapper
   CSBuildAppOptions opts_;
@@ -107,6 +109,7 @@ void CSBuildApp<Alphabet>::parse_options(GetOpt_pp* options) {
   *options >> Option('x', "pc-admix", opts_.pc_admix, opts_.pc_admix);
   *options >> Option('D', "context-pc", opts_.libfile, opts_.libfile);
   *options >> OptionPresent(' ', "global-weights", opts_.global_weights);
+  *options >> OptionPresent(' ', "psiblast-exec", opts_.psiblast_exec);
 
   opts_.Validate();
 
@@ -136,9 +139,9 @@ void CSBuildApp<Alphabet>::print_options() const {
           "Output file with serialized profile (def: <basename>.prf)");
   fprintf(stream(), "  %-30s %s (def=%s)\n", "-I, --informat seq|fas|...",
           "Input format: seq, fas, a2m, or a3m", opts_.informat.c_str());
-  fprintf(stream(), "  %-30s %s (def=%s)\n", "-O, --outformat prf|chk",
-          "Output format: profile or PSI-BLAST checkpoint",
-          opts_.outformat.c_str());
+
+  print_output_format_options();
+
   fprintf(stream(), "  %-30s %s\n", "-M, --matchcol [0:100]",
           "Make all FASTA columns with less than X% gaps match columns");
   fprintf(stream(), "  %-30s %s\n", "", "(def: make columns with residue in "
@@ -153,7 +156,20 @@ void CSBuildApp<Alphabet>::print_options() const {
 }
 
 template<class Alphabet>
-void CSBuildApp<Alphabet>::WriteProfile(const CountProfile<Alphabet>& profile) {
+void CSBuildApp<Alphabet>::print_output_format_options() const {
+  /* There is only one output format for nucleotides! */
+}
+
+template<>
+void CSBuildApp<AminoAcid>::print_output_format_options() const {
+  fprintf(stream(), "  %-30s %s (def=%s)\n", "-O, --outformat prf|chk",
+          "Output format: profile or PSI-BLAST checkpoint",
+          opts_.outformat.c_str());
+}
+
+template<class Alphabet>
+void CSBuildApp<Alphabet>::WriteProfile(
+    const CountProfile<Alphabet>& profile) const {
   FILE* fout = fopen(opts_.outfile.c_str(), "w");
   if (!fout)
     throw Exception("Unable to write profile to output file '%s'!",
@@ -165,8 +181,16 @@ void CSBuildApp<Alphabet>::WriteProfile(const CountProfile<Alphabet>& profile) {
 }
 
 template<class Alphabet>
-void CSBuildApp<Alphabet>::WriteCheckpoint(const Sequence<Alphabet>& query,
-                                           const CountProfile<Alphabet>& profile) {
+void CSBuildApp<Alphabet>::WriteCheckpoint(
+    const Sequence<Alphabet>& query,
+    const CountProfile<Alphabet>& profile) const {
+  /* do nothing */
+}
+
+template<>
+void CSBuildApp<AminoAcid>::WriteCheckpoint(
+    const Sequence<AminoAcid>& query,
+    const CountProfile<AminoAcid>& profile) const {
   PsiBlastPssm pssm(query.ToString(), profile);
 
   FILE* fout = fopen(opts_.outfile.c_str(), "wb");

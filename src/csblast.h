@@ -1,7 +1,9 @@
 // Copyright 2009, Andreas Biegert
 
-#ifndef SRC_PSIBLAST_H_
-#define SRC_PSIBLAST_H_
+#ifndef SRC_CSBLAST_H_
+#define SRC_CSBLAST_H_
+
+#include <cstdio>
 
 #include <map>
 #include <string>
@@ -14,25 +16,29 @@
 namespace cs {
 
 // Encapsulation of database searching with PSI-BLAST.
-class PsiBlast {
+class CSBlast {
  public:
   typedef std::map<char, std::string> Options;
 
   // Constructor to compare a single sequence against a database of protein
   // sequences.
-  PsiBlast(const Sequence<AminoAcid>* query,
-           const Options& opts);
+  CSBlast(const Sequence<AminoAcid>* query,
+          const Options& opts);
   // Constructor for restarting CS-BLAST iterations with a previously generated
   // PSSM.
-  PsiBlast(const Sequence<AminoAcid>* query,
-           const PsiBlastPssm* pssm,
-           const Options& opts);
-  ~PsiBlast() {}
+  CSBlast(const Sequence<AminoAcid>* query,
+          const PsiBlastPssm* pssm,
+          const Options& opts);
+  ~CSBlast() {}
 
   // Runs one iteration of PSI-BLAST
-  int Run(FILE* fout = NULL);
+  int Run(FILE* fout = stdout);
   // Sets path to PSI-BLAST executable.
-  void set_exec_path(std::string exec_path) { exec_path_ = exec_path; }
+  void set_exec_path(std::string exec_path) {
+    exec_path_ = exec_path;
+    if (exec_path_[exec_path_.length() - 1] != kDirSep)
+      exec_path_ += kDirSep;
+  }
   // Gets path to PSI-BLAST executable.
   std::string exec_path() const { return exec_path_; }
   // Sets position specific scoring matrix
@@ -43,6 +49,8 @@ class PsiBlast {
   static const char* kPsiBlastExec;
   // Reference string for output
   static const char* kCSBlastReference;
+  // Options to be ignored for building command line string
+  static const char* kIgnoreOptions;
 
   void WriteQuery(std::string filepath) const;
   void WriteCheckpoint(std::string filepath) const;
@@ -58,8 +66,8 @@ class PsiBlast {
   // Path to PSI-BLAST executable
   std::string exec_path_;
 
-  DISALLOW_COPY_AND_ASSIGN(PsiBlast);
-};  // class PsiBlast
+  DISALLOW_COPY_AND_ASSIGN(CSBlast);
+};  // class CSBlast
 
 }  // namespace cs
 

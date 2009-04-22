@@ -1,6 +1,6 @@
 // Copyright 2009, Andreas Biegert
 
-#include "psiblast.h"
+#include "csblast.h"
 
 #include <cassert>
 #include <cstdio>
@@ -19,28 +19,29 @@ using std::string;
 namespace cs {
 
 #ifdef _WIN32
-const char* PsiBlast::kPsiBlastExec = "blastpgp.exe";
+const char* CSBlast::kPsiBlastExec = "blastpgp.exe";
 #else
-//const char* PsiBlast::kPsiBlastExec = "blastpgp";
-const char* PsiBlast::kPsiBlastExec = "/cluster/bioprogs/blast32/blastpgp";
+const char* CSBlast::kPsiBlastExec = "blastpgp";
 #endif
 
-const char* PsiBlast::kCSBlastReference =
+const char* CSBlast::kIgnoreOptions = "ioR";
+
+const char* CSBlast::kCSBlastReference =
   "Reference for sequence context-specific profiles:\n"
   "Biegert, Andreas and Soding, Johannes (2009), \n"
   "\"Sequence context-specific profiles for homology searching\", \n"
   "Proc Natl Acad Sci USA, 106 (10), 3770-3775.";
 
-PsiBlast::PsiBlast(const Sequence<AminoAcid>* query,
+CSBlast::CSBlast(const Sequence<AminoAcid>* query,
                    const Options& opts)
-    : query_(query), pssm_(NULL), opts_(opts), exec_path_(kPsiBlastExec) {}
+    : query_(query), pssm_(NULL), opts_(opts), exec_path_() {}
 
-PsiBlast::PsiBlast(const Sequence<AminoAcid>* query,
+CSBlast::CSBlast(const Sequence<AminoAcid>* query,
                    const PsiBlastPssm* pssm,
                    const Options& opts)
-    : query_(query), pssm_(pssm), opts_(opts), exec_path_(kPsiBlastExec) {}
+    : query_(query), pssm_(pssm), opts_(opts), exec_path_() {}
 
-int PsiBlast::Run(FILE* fout) {
+int CSBlast::Run(FILE* fout) {
   // Create unique basename for sequence and checkpoint file
   char name_template[] = "/tmp/csblast_XXXXXX";
   const int captured_fd = mkstemp(name_template);
@@ -59,20 +60,23 @@ int PsiBlast::Run(FILE* fout) {
   blast_out = popen(command.c_str(), "r");
   if (!blast_out) throw Exception("Error executing '%s'", command.c_str());
 
-  // Print CS-BLAST reference
-  if (fout && opts_.find('m') == opts_.end() || opts_['m'] == "0") {
-    fputs(kCSBlastReference, fout);
-    fputs("\n\n", fout);
-  }
-
-  // Read PSI-BLAST output and print to stdout if no outfile given
-  char c;
+  // Read PSI-BLAST output and print to stdout
+  const int kLF = 0x0A;
+  int c;
+  bool print_reference =
+    (opts_.find('m') == opts_.end() || opts_['m'] == "0") &&
+    (opts_.find('T') == opts_.end() || opts_['T'] == "F");
   while (!feof(blast_out)) {
-    if ((c = fgetc(blast_out)) != EOF) {
-      if (fout) {
-        fputc(c, fout);
-        fflush(fout);
+    if ((c = fgetc(blast_out)) != EOF && fout) {
+      // Print CS-BLAST reference before BLAST reference
+      if (print_reference && c == kLF) {
+        fputs("\n\n", fout);
+        fputs(kCSBlastReference, fout);
+        print_reference = false;
       }
+
+      fputc(c, fout);
+      fflush(fout);
     }
   }
   int status = pclose(blast_out);
@@ -84,30 +88,33 @@ int PsiBlast::Run(FILE* fout) {
   return status;
 }
 
-void PsiBlast::WriteQuery(string filepath) const {
+void CSBlast::WriteQuery(string filepath) const {
   FILE* fout = fopen(filepath.c_str(), "w");
   if (!fout) throw Exception("Unable to write to file '%s'!", filepath.c_str());
   query_->write(fout);
   fclose(fout);
 }
 
-void PsiBlast::WriteCheckpoint(string filepath) const {
+void CSBlast::WriteCheckpoint(string filepath) const {
   FILE* fout = fopen(filepath.c_str(), "wb");
   if (!fout) throw Exception("Unable to write to file '%s'!", filepath.c_str());
   pssm_->Write(fout);
   fclose(fout);
 }
 
-string PsiBlast::ComposeCommandString(string queryfile,
-                                       string checkpointfile) const {
+string CSBlast::ComposeCommandString(string queryfile,
+                                     string checkpointfile) const {
   string rv(exec_path_);
+  rv = rv + kPsiBlastExec + " ";
   rv += " -i " + queryfile;
   if (pssm_) rv += " -R " + checkpointfile;
 
   for (Options::const_iterator it = opts_.begin(); it != opts_.end(); ++it) {
-    if (it->first != 'i' && it->first != 'R')
+    if (!strchr(kIgnoreOptions, it->first))
       rv = rv + " -" + it->first + " " + it->second;
   }
+
+  fputs(rv.c_str(), stderr);
 
   return rv;
 }

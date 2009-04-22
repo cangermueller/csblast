@@ -17,7 +17,7 @@
 #include "getopt_pp.h"
 #include "library_pseudocounts-inl.h"
 #include "profile_library-inl.h"
-#include "psiblast.h"
+#include "csblast.h"
 #include "psiblast_pssm.h"
 #include "scoped_ptr.h"
 #include "sequence-inl.h"
@@ -45,6 +45,7 @@ struct CSBlastAppOptions : public EmissionOptions {
     global_weights      = false;
     weight_center       = 1.3;
     weight_decay        = 0.9;
+    blast_path          = "";
   }
 
   // Validates the parameter settings and throws exception if needed.
@@ -69,6 +70,8 @@ struct CSBlastAppOptions : public EmissionOptions {
   bool global_weights;
   // PSI-BLAST options map
   PsiBlastOptions psiblast_opts;
+  // Path to PSI-BLAST executable
+  string blast_path;
 };  // struct CSBlastAppOptions
 
 
@@ -94,7 +97,7 @@ class CSBlastApp : public Application {
   // Pseudocount factory
   scoped_ptr< LibraryPseudocounts<AminoAcid> > pc_;
   // PSI-BLAST engine
-  scoped_ptr<PsiBlast> psiblast_;
+  scoped_ptr<CSBlast> csblast_;
   // PSSM for PSI-BLAST jumpstarting
   scoped_ptr<PsiBlastPssm> pssm_;
 };  // class CSBlastApp
@@ -103,11 +106,13 @@ class CSBlastApp : public Application {
 
 void CSBlastApp::parse_options(GetOpt_pp* options) {
   *options >> Option('i', "infile", opts_.infile, opts_.infile);
-  //  *options >> Option('o', "outfile", opts_.outfile, opts_.outfile);
+  *options >> Option('o', "outfile", opts_.outfile, opts_.outfile);
   //  *options >> Option('m', "outformat", opts_.outformat, opts_.outformat);
   *options >> Option('x', "pc-admix", opts_.pc_admix, opts_.pc_admix);
   *options >> Option('D', "context-pc", opts_.libfile, opts_.libfile);
   *options >> OptionPresent(' ', "global-weights", opts_.global_weights);
+  *options >> Option(' ', "blast-path", opts_.blast_path, opts_.blast_path);
+  *options >> Option(' ', "BLAST_PATH", opts_.blast_path, opts_.blast_path);
 
   // Put remaining arguments into PSI-BLAST options map
   for(GetOpt_pp::short_iterator it = options->begin(); it != options->end(); ++it) {
@@ -147,9 +152,13 @@ void CSBlastApp::print_options() const {
           opts_.pc_admix);
   fprintf(stream(), "  %-30s %s\n", "    --global-weights",
           "Use global instead of position-specific sequence weighting");
+  fprintf(stream(), "  %-30s %s\n", "    --blast-path",
+          "Set path to directory with PSI-BLAST executable");
 }
 
 int CSBlastApp::run() {
+  int status = 0;
+
   // Read query sequence
   FILE* fin = fopen(opts_.infile.c_str(), "r");
   if (!fin) throw Exception("Unable to read file '%s'!", opts_.infile.c_str());
@@ -172,12 +181,20 @@ int CSBlastApp::run() {
   pssm_.reset(new PsiBlastPssm(query_->ToString(), profile));
 
   // Setup PSI-BLAST engine
-  psiblast_.reset(new PsiBlast(query_.get(),
-                               pssm_.get(),
-                               opts_.psiblast_opts));
+  csblast_.reset(new CSBlast(query_.get(),
+                             pssm_.get(),
+                             opts_.psiblast_opts));
+  if (!opts_.blast_path.empty())
+    csblast_->set_exec_path(opts_.blast_path);
 
   // Run one iteration of CS-BLAST
-  int status = psiblast_->Run(stream());
+  if (opts_.outfile.empty()) {
+    status = csblast_->Run(stream());
+  } else {
+    FILE* fout = fopen(opts_.outfile.c_str(), "w");
+    status = csblast_->Run(fout);
+    fclose(fout);
+  }
 
   return status;
 }
