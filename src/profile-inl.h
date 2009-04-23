@@ -112,29 +112,29 @@ void Profile<Alphabet>::read_header(FILE* fin) {
 
   // Read num_cols
   int num_cols = 0;
-  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "num_cols")) {
+  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "NCOLS")) {
     ptr = buffer;
     num_cols = strtoi(ptr);
   } else {
-    throw Exception("Bad format: profile does not contain 'num_cols' record!");
+    throw Exception("Bad format: profile does not contain 'NCOLS' record!");
   }
   // Read alphabet_size
   int alphabet_size = 0;
-  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "alphabet_size")) {
+  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "ALPH")) {
     ptr = buffer;
     alphabet_size = strtoi(ptr);
   } else {
-    throw Exception("Bad format: profile does not contain 'alphabet_size' record!");
+    throw Exception("Bad format: profile does not contain 'ALPH' record!");
   }
   if (alphabet_size != Alphabet::instance().size())
     throw Exception("Bad format: profile alphabet_size should be %i but is %i!",
                     Alphabet::instance().size(), alphabet_size);
   // Read logspace
-  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "logspace")) {
+  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "LOG")) {
     ptr = buffer;
     logspace_ = strtoi(ptr) == 1;
   } else {
-    throw Exception("Bad format: profile does not contain 'logspace' record!");
+    throw Exception("Bad format: profile does not contain 'LOG' record!");
   }
 
   resize(num_cols, alphabet_size);
@@ -173,14 +173,14 @@ void Profile<Alphabet>::write(FILE* fout) const {
 
 template<class Alphabet>
 void Profile<Alphabet>::write_header(FILE* fout) const {
-  fprintf(fout, "num_cols\t%i\n", num_cols());
-  fprintf(fout, "alphabet_size\t%i\n", alphabet_size());
-  fprintf(fout, "logspace\t%i\n", logspace() ? 1 : 0);
+  fprintf(fout, "NCOLS\t%i\n", num_cols());
+  fprintf(fout, "ALPH\t%i\n", alphabet_size());
+  fprintf(fout, "LOG\t%i\n", logspace() ? 1 : 0);
 }
 
 template<class Alphabet>
 void Profile<Alphabet>::write_body(FILE* fout) const {
-  fputc('\t', fout);
+  fputs("PROF\t", fout);
   Alphabet::instance().write(fout);
   fputc('\n', fout);
 

@@ -65,11 +65,11 @@ void State<Alphabet>::read_header(FILE* fin) {
   // Read HMM size
   char buffer[kBufferSize];
   const char* ptr = buffer;
-  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "num_states")) {
+  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "NSTATES")) {
     ptr = buffer;
     num_states_ = strtoi(ptr);
   } else {
-    throw Exception("Bad format: profile does not contain 'num_states' record!");
+    throw Exception("Bad format: profile does not contain 'NSTATES' record!");
   }
 
   in_transitions_.resize(num_states_);
@@ -79,8 +79,7 @@ void State<Alphabet>::read_header(FILE* fin) {
 template<class Alphabet>
 void State<Alphabet>::write_header(FILE* fout) const {
   ContextProfile<Alphabet>::write_header(fout);
-
-  fprintf(fout, "num_states\t%i\n", num_states_);
+  fprintf(fout, "NSTATES\t%i\n", num_states_);
 }
 
 }  // namespace cs

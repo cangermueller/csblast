@@ -116,9 +116,9 @@ void CountProfile<Alphabet>::read_body(FILE* fin) {
 
 template<class Alphabet>
 void CountProfile<Alphabet>::write_body(FILE* fout) const {
-  fputc('\t', fout);
+  fputs("PROF\t", fout);
   Alphabet::instance().write(fout);
-  fputs("\tNeff\n", fout);
+  fputs("\tNEFF\n", fout);
 
   for (int i = 0; i < num_cols(); ++i) {
     fprintf(fout, "%i", i+1);

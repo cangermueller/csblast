@@ -1,8 +1,8 @@
 Profile
-num_cols        6
-alphabet_size   4
-logspace        0
-        A       C       G       T
+NCOLS   6
+ALPH    4
+LOG     0
+PROF    A       C       G       T
 1       0       *       *       *
 2       *       0       *       *
 3       *       *       0       *
@@ -11,10 +11,10 @@ logspace        0
 6       *       0       *       *
 //
 Profile
-num_cols        6
-alphabet_size   4
-logspace        0
-        A       C       G       T
+NCOLS   6
+ALPH    4
+LOG     0
+PROF    A       C       G       T
 1       0       *       *       *
 2       *       0       *       *
 3       *       *       0       *

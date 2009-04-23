@@ -64,17 +64,17 @@ void ContextProfile<Alphabet>::read_header(FILE* fin) {
   const char* ptr = buffer;
 
   // Read index
-  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "index")) {
+  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "INDEX")) {
     ptr = buffer;
     index_ = strtoi(ptr);
   } else {
-    throw Exception("Bad format: profile does not contain 'index' record!");
+    throw Exception("Bad format: profile does not contain 'INDEX' record!");
   }
   // Read prior
-  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "prior")) {
+  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "PRIOR")) {
     prior_ = atof(buffer + 5);
   } else {
-    throw Exception("Bad format: profile does not contain 'prior' record!");
+    throw Exception("Bad format: profile does not contain 'PRIOR' record!");
   }
 
   Profile<Alphabet>::read_header(fin);
@@ -82,8 +82,8 @@ void ContextProfile<Alphabet>::read_header(FILE* fin) {
 
 template<class Alphabet>
 void ContextProfile<Alphabet>::write_header(FILE* fout) const {
-  fprintf(fout, "index\t\t%i\n", index());
-  fprintf(fout, "prior\t\t%-10.8g\n", prior());
+  fprintf(fout, "INDEX\t%i\n", index());
+  fprintf(fout, "PRIOR\t%-10.8g\n", prior());
 
   Profile<Alphabet>::write_header(fout);
 }

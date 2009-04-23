@@ -113,32 +113,32 @@ void ProfileLibrary<Alphabet>::read(FILE* fin) {
                     "keyword!");
 
   // Read number of profiles
-  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "num_profiles")) {
+  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "NPROF")) {
     ptr = buffer;
     num_profiles_ = strtoi(ptr);
   } else {
-    throw Exception("HMM does not contain 'num_profiles' record!");
+    throw Exception("HMM does not contain 'NPROF' record!");
   }
   // Read number of columns
-  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "num_cols")) {
+  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "NCOLS")) {
     ptr = buffer;
     num_cols_ = strtoi(ptr);
   } else {
-    throw Exception("HMM does not contain 'num_cols' record!");
+    throw Exception("HMM does not contain 'NCOLS' record!");
   }
   // Read number of iterations
-  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "iterations")) {
+  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "ITERS")) {
     ptr = buffer;
     iterations_ = strtoi(ptr);
   } else {
-    throw Exception("HMM does not contain 'iterations' record!");
+    throw Exception("HMM does not contain 'ITERS' record!");
   }
   // Read states logspace
-  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "logspace")) {
+  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "LOG")) {
     ptr = buffer;
     logspace_ = strtoi(ptr) == 1;
   } else {
-    throw Exception("Bad format: HMM does not contain 'logspace' record!");
+    throw Exception("Bad format: HMM does not contain 'LOG' record!");
   }
 
   // Read context profiles
@@ -158,10 +158,10 @@ template<class Alphabet>
 void ProfileLibrary<Alphabet>::write(FILE* fout) const {
   // Write header
   fputs("ProfileLibrary\n", fout);
-  fprintf(fout, "num_profiles\t%i\n", num_profiles());
-  fprintf(fout, "num_cols\t%i\n", num_cols());
-  fprintf(fout, "iterations\t%i\n", iterations());
-  fprintf(fout, "logspace\t%i\n", logspace() ? 1 : 0);
+  fprintf(fout, "NPROF\t%i\n", num_profiles());
+  fprintf(fout, "NCOLS\t%i\n", num_cols());
+  fprintf(fout, "ITERS\t%i\n", iterations());
+  fprintf(fout, "LOG\t%i\n", logspace() ? 1 : 0);
 
   // Serialize profiles
   for (const_profile_iterator pi = profiles_.begin(); pi != profiles_.end(); ++pi)

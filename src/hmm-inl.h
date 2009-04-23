@@ -88,7 +88,7 @@ void HMM<Alphabet>::init_transitions(
 template<class Alphabet>
 inline void HMM<Alphabet>::set_transition(int k, int l, float prob) {
   if (transitions_.test(k,l)) {
-    // transitions already set -> modify in place
+    // Transitions already set -> modify in place
     Transition* tr = &transitions_[k][l];
     tr->probability = prob;
     AnchoredTransition* out_tr = &states_[k]->out_transitions_[l];
@@ -96,7 +96,7 @@ inline void HMM<Alphabet>::set_transition(int k, int l, float prob) {
     AnchoredTransition* in_tr = &states_[l]->in_transitions_[k];
     in_tr->probability = prob;
   } else {
-    // transitions unset -> insert into matrix and tables
+    // Transitions unset -> insert into matrix and tables
     transitions_.set(k, l, Transition(k, l, prob));
     states_[k]->out_transitions_.set(l, AnchoredTransition(l, prob));
     states_[l]->in_transitions_.set(k, AnchoredTransition(k, prob));
@@ -193,48 +193,47 @@ void HMM<Alphabet>::read(FILE* fin) {
     throw Exception("HMM does not start with 'HMM' keyword!");
 
   // Read number of states
-  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "num_states")) {
+  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "NSTATES")) {
     ptr = buffer;
     num_states_ = strtoi(ptr);
   } else {
-    throw Exception("HMM does not contain 'num_states' record!");
+    throw Exception("HMM does not contain 'NSTATES' record!");
   }
   // Read number of transitions
   int ntr = 0;
-  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "num_transitions")) {
+  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "NTRANS")) {
     ptr = buffer;
     ntr = strtoi(ptr);
   } else {
-    throw Exception("HMM does not contain 'num_transitions' record!");
+    throw Exception("HMM does not contain 'NTRANS' record!");
   }
   // Read number of columns
-  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "num_cols")) {
+  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "NCOLS")) {
     ptr = buffer;
     num_cols_ = strtoi(ptr);
   } else {
-    throw Exception("HMM does not contain 'num_cols' record!");
+    throw Exception("HMM does not contain 'NCOLS' record!");
   }
   // Read number of iterations
-  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "iterations")) {
+  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "ITERS")) {
     ptr = buffer;
     iterations_ = strtoi(ptr);
   } else {
-    throw Exception("HMM does not contain 'iterations' record!");
+    throw Exception("HMM does not contain 'ITERS' record!");
   }
   // Read transitions logspace
-  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer,
-                                                   "transitions_logspace")) {
+  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "TRLOG")) {
     ptr = buffer;
     transitions_logspace_ = strtoi(ptr) == 1;
   } else {
-    throw Exception("hMM does not contain 'transitions_logspace' record!");
+    throw Exception("hMM does not contain 'TRLOG' record!");
   }
   // Read states logspace
-  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "states_logspace")) {
+  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "STLOG")) {
     ptr = buffer;
     states_logspace_ = strtoi(ptr) == 1;
   } else {
-    throw Exception("Bad format: HMM does not contain 'states_logspace' record!");
+    throw Exception("Bad format: HMM does not contain 'STLOG' record!");
   }
 
   init();
@@ -274,19 +273,19 @@ template<class Alphabet>
 void HMM<Alphabet>::write(FILE* fout) const {
   // Write header
   fputs("HMM\n", fout);
-  fprintf(fout, "num_states\t\t%i\n", num_states());
-  fprintf(fout, "num_transitions\t\t%i\n", num_transitions());
-  fprintf(fout, "num_cols\t\t%i\n", num_cols());
-  fprintf(fout, "iterations\t\t%i\n", iterations());
-  fprintf(fout, "transitions_logspace\t%i\n", transitions_logspace() ? 1 : 0);
-  fprintf(fout, "states_logspace\t\t%i\n", states_logspace() ? 1 : 0);
+  fprintf(fout, "NSTATES\t%i\n", num_states());
+  fprintf(fout, "NTRANS\t%i\n", num_transitions());
+  fprintf(fout, "NCOLS\t%i\n", num_cols());
+  fprintf(fout, "ITERS\t%i\n", iterations());
+  fprintf(fout, "TRLOG\t%i\n", transitions_logspace() ? 1 : 0);
+  fprintf(fout, "STLOG\t%i\n", states_logspace() ? 1 : 0);
 
   // Write states
   for (const_state_iterator si = states_begin(); si != states_end(); ++si)
     (*si)->write(fout);
 
   // Write transitions
-  fputs("transitions\n", fout);
+  fputs("TRANS\n", fout);
   for (const_transition_iterator ti = transitions_begin();
        ti != transitions_end(); ++ti) {
     fprintf(fout, "%i\t%i\t",

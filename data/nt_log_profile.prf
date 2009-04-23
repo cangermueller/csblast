@@ -1,8 +1,8 @@
 Profile
-num_cols        6
-alphabet_size   4
-logspace        1
-        A       C       G       T
+NCOLS   6
+ALPH    4
+LOG     1
+PROF    A       C       G       T
 1       0       *       *       *
 2       *       0       *       *
 3       *       *       0       *

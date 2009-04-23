@@ -40,7 +40,7 @@ struct CSBlastAppOptions : public EmissionOptions {
     outfile             = "";
     libfile             = "";
     outformat           = 0;
-    pc_admix            = 1.0f;
+    pc_admix            = 0.95f;
     pc_ali              = 10.0f;
     global_weights      = false;
     weight_center       = 1.3;

@@ -114,7 +114,7 @@ void Sequence<Alphabet>::write(FILE* fout, int width) const {
 template<class Alphabet>
 string Sequence<Alphabet>::ToString() const {
   string s(begin(), end());
-  for (int i = 0; i < s.length(); ++i)
+  for (int i = 0; i < static_cast<int>(s.length()); ++i)
     s[i] = Alphabet::instance().itoc(s[i]);
   return s;
 }
