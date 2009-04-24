@@ -242,17 +242,17 @@ inline void reset(float* array, int length, float value = 0.0f) {
 }
 
 // Splits a string into multiple strings with character delimiter removed.
-inline void split(const std::string& s, char c, std::vector<std::string>& v) {
+inline void split(const std::string& s, char c, std::vector<std::string>* v) {
   std::string::size_type i = 0;
   std::string::size_type j = s.find(c);
 
   while (j != std::string::npos) {
-    v.push_back(s.substr(i, j-i));
+    v->push_back(s.substr(i, j-i));
     i = ++j;
     j = s.find(c, j);
 
     if (j == std::string::npos)
-      v.push_back(s.substr(i, s.length()));
+      v->push_back(s.substr(i, s.length()));
   }
 }
 
