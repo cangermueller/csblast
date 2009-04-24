@@ -84,6 +84,7 @@ void BlastResults::read(FILE* fin) {
       while (isspace(*ptr)) ++ptr;
       while (isgraph(*ptr)) hits_[i].hsps.back().query_seq.push_back(*ptr++);
       hits_[i].hsps.back().query_end = strtoi(ptr);
+      hits_[i].hsps.back().length = hits_[i].hsps.back().query_seq.size();
 
     } else if (strstr(buffer, "Sbjct:")) {
       ptr = buffer;

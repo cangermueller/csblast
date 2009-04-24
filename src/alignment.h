@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "globals.h"
+#include "blast_results.h"
 #include "matrix.h"
 #include "sequence.h"
 #include "shared_ptr.h"
@@ -47,9 +48,15 @@ class Alignment {
   typedef matrix<char>::iterator iterator;
   typedef matrix<char>::const_iterator const_iterator;
 
-  // Constructs alignment multi FASTA formatted alignment read from input
+  // Constructs alignment from multi FASTA formatted alignment read from input
   // stream.
   Alignment(FILE* fin, Format format);
+  // Constructs a query anchored alignment from query sequence and BLAST results.
+  // If an E-value threshold is provided only hits with E-value better than the
+  // threshold are included in the alignment.
+  Alignment(const Sequence<Alphabet>& query,
+            const BlastResults& results,
+            double incl_thresh = 0.0);
 
   ~Alignment() {}
 

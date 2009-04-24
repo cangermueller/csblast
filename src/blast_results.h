@@ -44,6 +44,8 @@ class BlastResults {
     int subject_end;
     // Query sequence segment
     std::vector<char> subject_seq;
+    // Length of the HSP alignment
+    int length;
   };
 
   // Simple struct for data associated with each hit to a database sequence.

@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 
+#include "blast_results.h"
 #include "exception.h"
 #include "log.h"
 #include "sequence-inl.h"
@@ -21,6 +22,36 @@ namespace cs {
 template<class Alphabet>
 inline Alignment<Alphabet>::Alignment(FILE* fin, Format format) {
   read(fin, format);
+}
+
+template<class Alphabet>
+inline Alignment<Alphabet>::Alignment(const Sequence<Alphabet>& query,
+                                      const BlastResults& results,
+                                      double incl_thresh) {
+  // Alignment in character encoding
+  std::vector<std::string> headers;
+  std::vector<std::string> seqs;
+  // Add query sequence to alignment
+  headers.push_back(query.header());
+  seqs.push_back(query.ToString());
+  // Add all hits that meet E-value threshold to alignment
+  typedef typename BlastResults::ConstHitIter HitIter;
+  for (HitIter it = results.begin(); it != results.end(); ++it) {
+    if ((incl_thresh == 0.0 || it->evalue <= incl_thresh) &&
+        !it->hsps.empty()) {
+      const BlastResults::HSP& hsp = it->hsps.front();
+      // Construct query anchored alignment string
+      std::string seq(hsp.query_start - 1, '-');
+      for (int i =  0; i < hsp.length; ++i)
+        if (hsp.query_seq[i] != '-')
+          seq += hsp.subject_seq[i];
+      seq.append(query.length() - seq.length(), '-');
+      // Add hit to alignment
+      headers.push_back(it->definition);
+      seqs.push_back(seq);
+    }
+  }
+  init(headers, seqs);
 }
 
 template<class Alphabet>
@@ -277,7 +308,7 @@ void Alignment<Alphabet>::write_fasta_flavors(FILE* fout,
                                               Format format,
                                               int width) const {
   for (int k = 0; k < num_seqs(); ++k) {
-    fprintf(fout, ">%s\n", headers_[k]);
+    fprintf(fout, ">%s\n", headers_[k].c_str());
     int j = 0;  // counts printed characters
     for (int i = 0; i < num_cols(); ++i) {
       switch (format) {
@@ -289,7 +320,7 @@ void Alignment<Alphabet>::write_fasta_flavors(FILE* fout,
           if (match_column_[i])
             fputc(to_match_chr(chr(k, i)), fout);
           else
-            fputc(to_insert_chr(chr(k, i)));
+            fputc(to_insert_chr(chr(k, i)), fout);
           ++j;
           break;
         case A3M:
@@ -400,7 +431,7 @@ void Alignment<Alphabet>::assign_match_columns_by_gap_rule(int gap_threshold) {
 
 template<class Alphabet>
 void Alignment<Alphabet>::remove_insert_columns() {
-  // create new sequence matrix
+  // Create new sequence matrix
   const int match_cols = num_match_cols();
   matrix<char> new_seqs(match_cols, num_seqs());
   for (int i = 0; i < match_cols; ++i) {
@@ -411,7 +442,7 @@ void Alignment<Alphabet>::remove_insert_columns() {
   seqs_.resize(match_cols, num_seqs());
   seqs_ = new_seqs;
 
-  // update match indexes
+  // Update match indexes
   column_indexes_.resize(match_cols);
   match_indexes.resize(match_cols);
   match_column_.resize(match_cols);

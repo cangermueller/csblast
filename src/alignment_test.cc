@@ -24,6 +24,19 @@ TEST(AlignmentTest, ConstructionFromInputStream) {
   EXPECT_EQ(Nucleotide::instance().endgap(), alignment[78][1]);
 }
 
+TEST(AlignmentTest, ConstructionFromBlastResults) {
+  FILE* fin = fopen("../data/d1w6ga2.seq", "r");
+  Sequence<AminoAcid> query(fin);
+  fclose(fin);
+  fin = fopen("../data/blast_results_broken_hitlist.txt", "r");
+  BlastResults results(fin);
+  fclose(fin);
+  ASSERT_EQ(5, results.num_hits());
+
+  Alignment<AminoAcid> ali(query, results, 2.0);
+  EXPECT_EQ(3, ali.num_seqs());
+}
+
 TEST(AlignmentTest, CalculationOfGlobalWeights) {
   FILE* fin = fopen("../data/nt_alignment2.fas", "r");
   Alignment<Nucleotide> alignment(fin, Alignment<Nucleotide>::FASTA);

@@ -66,7 +66,7 @@ class Sequence {
   void read(FILE* in);
   // Prints the sequence in FASTA format to output stream.
   void write(FILE* fout, int width = 100) const;
-  // Returns sequnce as character string.
+  // Returns sequence as character string.
   std::string ToString() const;
 
   // Prints the Alignment in A2M format for debugging.
