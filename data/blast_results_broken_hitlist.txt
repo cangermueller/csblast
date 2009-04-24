@@ -1,0 +1,157 @@
+BLASTP 2.2.17 [Aug-26-2007]
+
+
+Reference: Altschul, Stephen F., Thomas L. Madden, Alejandro A. Schaffer, 
+Jinghui Zhang, Zheng Zhang, Webb Miller, and David J. Lipman (1997), 
+"Gapped BLAST and PSI-BLAST: a new generation of protein database search
+programs",  Nucleic Acids Res. 25:3389-3402.
+
+
+Reference for composition-based statistics:
+Schaffer, Alejandro A., L. Aravind, Thomas L. Madden,
+Sergei Shavirin, John L. Spouge, Yuri I. Wolf,  
+Eugene V. Koonin, and Stephen F. Altschul (2001), 
+"Improving the accuracy of PSI-BLAST protein database searches with 
+composition-based statistics and other refinements",  Nucleic Acids Res. 29:2994-3005.
+
+Query= d1w6ga2 d.17.2.1 (A:9-96) Copper amine oxidase, domains 1 and 2
+{Arthrobacter globiformis [TaxId: 1665]}
+         (88 letters)
+
+Database: d.17.2.1 
+           10 sequences; 1108 total letters
+
+Searching..........done
+
+
+
+                                                                 Score    E
+Sequences producing significant alignments:                      (bits) Value
+
+d1w6ga2 d.17.2.1 (A:9-96) Copper amine oxidase, domains 1 and 2 ...   129   5e-35
+d1ksia2 d.17.2.1 (A:6-98) Copper amine oxidase, domains 1 and 2 ...    15   1.4  
+d2oqea2 d.17.2.1 (A:18-115) Copper amine oxidase, domains 1 and ...    13   5.1  
+d1w6ga3 d.17.2.1 (A:97-211) Copper amine oxidase, domains 1 and ...    12      17
+d1oaca3 d.17.2.1 (A:186-300) Copper amine oxidase, domains 1 and...    11      37
+d1n9ea2 d.17.2.1 (A:41-169) Lysyl oxidase PplO, domains 1 and 2 ... 
+
+>d1w6ga2 d.17.2.1 (A:9-96) Copper amine oxidase, domains 1 and 2
+          {Arthrobacter globiformis [TaxId: 1665]}
+          Length = 88
+
+ Score =  129 bits (325), Expect = 5e-35,   Method: Composition-based stats.
+ Identities = 88/88 (100%), Positives = 88/88 (100%)
+
+Query: 1  ASPFRLASAGEISEVQGILRTAGLLGPEKRIAYLGVLDPARGAGSEAEDRRFRVFIHDVS 60
+          ASPFRLASAGEISEVQGILRTAGLLGPEKRIAYLGVLDPARGAGSEAEDRRFRVFIHDVS
+Sbjct: 1  ASPFRLASAGEISEVQGILRTAGLLGPEKRIAYLGVLDPARGAGSEAEDRRFRVFIHDVS 60
+
+Query: 61 GARPQEVTVSVTNGTVISAVELDTAATG 88
+          GARPQEVTVSVTNGTVISAVELDTAATG
+Sbjct: 61 GARPQEVTVSVTNGTVISAVELDTAATG 88
+
+
+>d1ksia2 d.17.2.1 (A:6-98) Copper amine oxidase, domains 1 and 2
+          {Pea seedling (Pisum sativum) [TaxId: 3888]}
+          Length = 93
+
+ Score = 15.3 bits (28), Expect = 1.4,   Method: Composition-based stats.
+ Identities = 8/52 (15%), Positives = 24/52 (46%), Gaps = 6/52 (11%)
+
+Query: 33 YLGVLDPARGAGSEAEDRRF------RVFIHDVSGARPQEVTVSVTNGTVIS 78
+          Y+G+ DP +      E          ++F+  +  ++  E+ +++   +++S
+Sbjct: 35 YIGLDDPEKDHVLRYETHPTLVSIPRKIFVVAIINSQTHEILINLRIRSIVS 86
+
+
+>d2oqea2 d.17.2.1 (A:18-115) Copper amine oxidase, domains 1 and 2
+          {Yeast (Hansenula polymorpha) [TaxId: 4905]} PDB:
+          d1ekma2
+          Length = 98
+
+ Score = 13.3 bits (23), Expect = 5.1,   Method: Composition-based stats.
+ Identities = 8/33 (24%), Positives = 17/33 (51%), Gaps = 2/33 (6%)
+
+Query: 13 SEVQGILRTAGLLGPEKRIAY--LGVLDPARGA 43
+          +E++    T       K+I++  + + +PAR A
+Sbjct: 14 AEIKAATNTVKSYFAGKKISFNTVTLREPARKA 46
+
+
+>d1w6ga3 d.17.2.1 (A:97-211) Copper amine oxidase, domains 1 and 2
+          {Arthrobacter globiformis [TaxId: 1665]}
+          Length = 115
+
+ Score = 11.8 bits (19), Expect =    17,   Method: Composition-based stats.
+ Identities = 4/9 (44%), Positives = 6/9 (66%)
+
+Query: 47 AEDRRFRVF 55
+          AE+R  R+ 
+Sbjct: 49 AEERGRRIL 57
+
+
+
+ Score = 11.0 bits (17), Expect =    29,   Method: Composition-based stats.
+ Identities = 3/7 (42%), Positives = 4/7 (57%)
+
+Query: 55 FIHDVSG 61
+          + H V G
+Sbjct: 72 WAHPVDG 78
+
+
+
+ Score =  9.9 bits (14), Expect =    63,   Method: Composition-based stats.
+ Identities = 2/2 (100%), Positives = 2/2 (100%)
+
+Query: 38  DP 39
+           DP
+Sbjct: 110 DP 111
+
+
+>d1oaca3 d.17.2.1 (A:186-300) Copper amine oxidase, domains 1 and
+          2 {Escherichia coli [TaxId: 562]}
+          Length = 115
+
+ Score = 10.6 bits (16), Expect =    37,   Method: Composition-based stats.
+ Identities = 3/19 (15%), Positives = 7/19 (36%)
+
+Query: 16 QGILRTAGLLGPEKRIAYL 34
+          +GI     ++     + Y 
+Sbjct: 27 RGITDAKKVITTPLTVGYF 45
+
+
+  Database: d.17.2.1
+    Posted date:  Apr 23, 2008  1:53 PM
+  Number of letters in database: 1108
+  Number of sequences in database:  10
+  
+Lambda     K      H
+   0.319    0.148    0.421 
+
+Lambda     K      H
+   0.267   0.0452    0.140 
+
+
+Matrix: BLOSUM62
+Gap Penalties: Existence: 11, Extension: 1
+Number of Hits to DB: 296
+Number of Sequences: 10
+Number of extensions: 34
+Number of successful extensions: 34
+Number of sequences better than 2512.5: 6
+Number of HSP's better than 2512.5 without gapping: 6
+Number of HSP's successfully gapped in prelim test: 0
+Number of HSP's that attempted gapping in prelim test: 0
+Number of HSP's gapped (non-prelim): 9
+length of query: 88
+length of database: 1108
+effective HSP length: 24
+effective length of query: 64
+effective length of database: 868
+effective search space:    55552
+effective search space used:    55552
+T: 11
+A: 40
+X1: 0 ( 0.0 bits)
+X2: 38 (14.6 bits)
+X3: 64 (24.7 bits)
+S1: 0 ( 2.8 bits)
+S2: 0 ( 4.5 bits)

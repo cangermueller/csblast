@@ -4,6 +4,7 @@
 #ifndef SRC_UTILS_H_
 #define SRC_UTILS_H_
 
+#include <cassert>
 #include <cctype>
 #include <cfloat>
 #include <cstdlib>
