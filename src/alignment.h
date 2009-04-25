@@ -12,7 +12,7 @@
 #include <vector>
 
 #include "globals.h"
-#include "blast_results.h"
+#include "blast_hits.h"
 #include "matrix.h"
 #include "sequence.h"
 #include "shared_ptr.h"
@@ -55,8 +55,7 @@ class Alignment {
   // If an E-value threshold is provided only hits with E-value better than the
   // threshold are included in the alignment.
   Alignment(const Sequence<Alphabet>& query,
-            const BlastResults& results,
-            double incl_thresh = 0.0);
+            const BlastHits& hits);
 
   ~Alignment() {}
 

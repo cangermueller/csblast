@@ -10,7 +10,7 @@
 #include <string>
 #include <vector>
 
-#include "blast_results.h"
+#include "blast_hits.h"
 #include "exception.h"
 #include "log.h"
 #include "sequence-inl.h"
@@ -26,8 +26,7 @@ inline Alignment<Alphabet>::Alignment(FILE* fin, Format format) {
 
 template<class Alphabet>
 inline Alignment<Alphabet>::Alignment(const Sequence<Alphabet>& query,
-                                      const BlastResults& results,
-                                      double incl_thresh) {
+                                      const BlastHits& hits) {
   // Alignment in character encoding
   std::vector<std::string> headers;
   std::vector<std::string> seqs;
@@ -35,11 +34,10 @@ inline Alignment<Alphabet>::Alignment(const Sequence<Alphabet>& query,
   headers.push_back(query.header());
   seqs.push_back(query.ToString());
   // Add all hits that meet E-value threshold to alignment
-  typedef typename BlastResults::ConstHitIter HitIter;
-  for (HitIter it = results.begin(); it != results.end(); ++it) {
-    if ((incl_thresh == 0.0 || it->evalue <= incl_thresh) &&
-        !it->hsps.empty()) {
-      const BlastResults::HSP& hsp = it->hsps.front();
+  typedef typename BlastHits::ConstHitIter HitIter;
+  for (HitIter it = hits.begin(); it != hits.end(); ++it) {
+    if (!it->hsps.empty()) {
+      const BlastHits::HSP& hsp = it->hsps.front();
       // Construct query anchored alignment string
       std::string seq(hsp.query_start - 1, '-');
       for (int i =  0; i < hsp.length; ++i)

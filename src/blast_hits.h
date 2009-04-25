@@ -1,7 +1,7 @@
 // Copyright 2009, Andreas Biegert
 
-#ifndef SRC_BLAST_RESULTS_H_
-#define SRC_BLAST_RESULTS_H_
+#ifndef SRC_BLAST_HITS_H_
+#define SRC_BLAST_HITS_H_
 
 #include <cstdio>
 #include <cstdlib>
@@ -17,7 +17,7 @@ namespace cs {
 
 // A container class that class encapsulates all the search results of a
 // BLAST search.
-class BlastResults {
+class BlastHits {
  public:
   // Simple struct for data associated with a HSP.
   struct HSP {
@@ -69,9 +69,9 @@ class BlastResults {
 
   // Constructs results object from BLAST output in -m 0 format read from
   // file stream.
-  explicit BlastResults(FILE* fin);
+  explicit BlastHits(FILE* fin);
 
-  ~BlastResults() {}
+  ~BlastHits() {}
 
   // Accessors for integer at position i of the sequence.
   Hit& operator[](int i) { return hits_[i]; }
@@ -86,13 +86,15 @@ class BlastResults {
   HitIter begin() { return hits_.begin(); }
   // Returns an iterator just past the end of the sequence.
   HitIter end() { return hits_.end(); }
-  // Returns number of hits
+  // Returns number of hits.
   int num_hits() const { return hits_.size(); }
-  // Returns number of hits
+  // Returns true if hit list is empty.
   bool empty() const { return hits_.empty(); }
+  // Filters hits by e-value threshold.
+  void Filter(double evalue_threshold);
 
   // Prints the results for logging
-  friend std::ostream& operator<< (std::ostream& out, const BlastResults& res);
+  friend std::ostream& operator<< (std::ostream& out, const BlastHits& res);
 
  private:
   // Initializes the sequence object with a sequence in FASTA format read from
@@ -101,8 +103,8 @@ class BlastResults {
 
   // List of hits in the BLAST results
   std::vector<Hit> hits_;
-};  // class BlastResults
+};  // class BlastHits
 
 }  // namespace cs
 
-#endif  // SRC_BLAST_RESULTS_H_
+#endif  // SRC_BLAST_HITS_H_

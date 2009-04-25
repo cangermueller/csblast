@@ -1,6 +1,6 @@
 // Copyright 2009, Andreas Biegert
 
-#include "blast_results.h"
+#include "blast_hits.h"
 
 #include <cstdlib>
 #include <cstdio>
@@ -20,11 +20,11 @@ using std::vector;
 
 namespace cs {
 
-BlastResults::BlastResults(FILE* fin) {
+BlastHits::BlastHits(FILE* fin) {
   read(fin);
 }
 
-void BlastResults::read(FILE* fin) {
+void BlastHits::read(FILE* fin) {
   char buffer[KB];
   const char* ptr;
 
@@ -96,6 +96,15 @@ void BlastResults::read(FILE* fin) {
       hits_[i].hsps.back().subject_end = strtoi(ptr);
     }
   }
+}
+
+void BlastHits::Filter(double evalue_threshold) {
+   for (HitIter it = begin(); it != end(); ++it) {
+     if (it->evalue > evalue_threshold) {
+       hits_.erase(it, end());
+       return;
+     }
+   }
 }
 
 }  // namespace cs
