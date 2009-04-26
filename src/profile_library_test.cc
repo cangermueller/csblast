@@ -41,11 +41,11 @@ TEST_F(ProfileLibraryTest, SimpleConstruction) {
   EXPECT_EQ(3, lib.num_profiles());
   EXPECT_EQ(5, lib.num_cols());
 
-  int index_p1 = lib.add_profile(p1_);
+  int index_p1 = lib.AddState(p1_);
   EXPECT_EQ(0, index_p1);
-  int index_p2 = lib.add_profile(p2_);
+  int index_p2 = lib.AddState(p2_);
   EXPECT_EQ(1, index_p2);
-  int index_p3 = lib.add_profile(p3_);
+  int index_p3 = lib.AddState(p3_);
   EXPECT_EQ(2, index_p3);
 
   EXPECT_FLOAT_EQ(1.0f, lib[0][0][0]);
@@ -74,9 +74,9 @@ TEST_F(ProfileLibraryTest, ConstructionFromSerializedLibrary) {
 
 TEST_F(ProfileLibraryTest, LinLogTransformation) {
   ProfileLibrary<Nucleotide> lib(3, 5);
-  lib.add_profile(p1_);
-  lib.add_profile(p2_);
-  lib.add_profile(p3_);
+  lib.AddState(p1_);
+  lib.AddState(p2_);
+  lib.AddState(p3_);
 
   lib.transform_to_logspace();
 

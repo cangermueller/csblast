@@ -42,6 +42,9 @@ class State : public ContextProfile<Alphabet> {
   // Constructs HMM state with given profile and all transitions initialized to
   // zero.
   State(int index, const Profile<Alphabet>& profile, int num_states);
+  // Constructs HMM state with given context profile and all transitions
+  // initialized to zero.
+  State(int index, const ContextProfile<Alphabet>& profile, int num_states);
 
   virtual ~State() {}
 
@@ -87,6 +90,7 @@ class State : public ContextProfile<Alphabet> {
   using ContextProfile<Alphabet>::read_body;
   using ContextProfile<Alphabet>::write_header;
   using ContextProfile<Alphabet>::write_body;
+  using ContextProfile<Alphabet>::index_;
 
   // Reads and initializes serialized scalar data members from stream.
   virtual void read_header(FILE* in);

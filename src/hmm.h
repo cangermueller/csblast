@@ -14,6 +14,7 @@
 #include "profile.h"
 #include "context_profile.h"
 #include "count_profile.h"
+#include "profile_library.h"
 #include "pseudocounts.h"
 #include "shared_ptr.h"
 #include "sparse_matrix.h"
@@ -120,8 +121,12 @@ class HMM {
   void clear();
   // Clears all transitions but leaves profile of states untouched.
   void clear_transitions();
-  // Adds the given profile as state to the HMM and returns its state index.
-  int add_profile(const Profile<Alphabet>& profile);
+  // Adds a profile as state to the HMM and returns its state index.
+  int AddState(const Profile<Alphabet>& profile);
+  // Adds a context profile as state to the HMM and returns its state index.
+  // The prior probability of the context profile becomes the prior probability
+  // of the state.
+  int AddState(const ContextProfile<Alphabet>& profile);
   // Returns an iterator to a list of pointers of states.
   state_iterator states_begin() { return states_.begin(); }
   // Returns an iterator pointing past the end of a list of pointers of states.
@@ -151,6 +156,10 @@ class HMM {
   bool transitions_logspace() const { return transitions_logspace_; }
   // Returns true if state profiles are in logspace.
   bool states_logspace() const { return states_logspace_; }
+  // Sets flag indicating if transitions are in logspace.
+  void set_transitions_logspace(bool flag) { transitions_logspace_ = flag; }
+  // Sets flag indicating if state profiles are in logspace.
+  void set_states_logspace(bool flag) { states_logspace_ = flag; }
   // Transforms transitions to logspace.
   void transform_transitions_to_logspace();
   // Transforms transitions to linspace.
@@ -252,6 +261,25 @@ class SamplingStateInitializer : public StateInitializer<Alphabet> {
   float pc_admixture_;
 };
 
+// Compare function to sort states in descending prior probability.
+template<class Alphabet>
+bool PriorCompare(const shared_ptr< ContextProfile<Alphabet> >& lhs,
+                  const shared_ptr< ContextProfile<Alphabet> >& rhs);
+
+template<class Alphabet>
+class LibraryStateInitializer : public StateInitializer<Alphabet> {
+ public:
+  LibraryStateInitializer(const ProfileLibrary<Alphabet>* lib)
+      : lib_(lib) {}
+
+  virtual ~LibraryStateInitializer() {};
+  virtual void init(HMM<Alphabet>& hmm) const;
+
+ private:
+  // Profile library of context profiles.
+  const ProfileLibrary<Alphabet>* lib_;
+};
+
 template<class Alphabet>
 class HomogeneousTransitionInitializer : public TransitionInitializer<Alphabet> {
  public:
@@ -282,6 +310,22 @@ class RandomTransitionInitializer : public TransitionInitializer<Alphabet> {
           static_cast<float>(rand()) / (static_cast<float>(RAND_MAX) + 1.0f);
     normalize_transitions(hmm);
   }
+};
+
+template<class Alphabet>
+class RelEntropyTransitionInitializer : public TransitionInitializer<Alphabet> {
+ public:
+  RelEntropyTransitionInitializer() {}
+  virtual ~RelEntropyTransitionInitializer() {}
+  virtual void init(HMM<Alphabet>& hmm) const;
+
+ private:
+  // Calculates column normalized relative entropy between two profiles.
+  float CalculateRelativeEntropy(const Profile<Alphabet>& p,
+                                 const Profile<Alphabet>& q,
+                                 int i,
+                                 int j,
+                                 int ncols) const;
 };
 
 }  // namespace cs

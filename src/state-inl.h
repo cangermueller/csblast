@@ -36,6 +36,17 @@ inline State<Alphabet>::State(int index,
       out_transitions_(num_states) {}
 
 template<class Alphabet>
+inline State<Alphabet>::State(int index,
+                              const ContextProfile<Alphabet>& profile,
+                              int num_states)
+    : ContextProfile<Alphabet>(profile),
+      num_states_(num_states),
+      in_transitions_(num_states),
+      out_transitions_(num_states) {
+  index_ = index;
+}
+
+template<class Alphabet>
 inline float State<Alphabet>::to(int k) const {
   return out_transitions_.test(k) ? out_transitions_.get(k).probability : 0.0f;
 }

@@ -5,6 +5,7 @@
 
 #include "hmm.h"
 
+#include <cassert>
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
@@ -15,8 +16,10 @@
 #include "exception.h"
 #include "context_profile-inl.h"
 #include "count_profile-inl.h"
-#include "profile-inl.h"
+
 #include "log.h"
+#include "profile-inl.h"
+#include "profile_library-inl.h"
 #include "pseudocounts.h"
 #include "shared_ptr.h"
 #include "state-inl.h"
@@ -125,7 +128,7 @@ void HMM<Alphabet>::clear_transitions() {
 }
 
 template<class Alphabet>
-inline int HMM<Alphabet>::add_profile(const Profile<Alphabet>& profile) {
+inline int HMM<Alphabet>::AddState(const Profile<Alphabet>& profile) {
   if (full())
     throw Exception("Unable to add state: the HMM contains already %i states!",
                     num_states());
@@ -138,6 +141,24 @@ inline int HMM<Alphabet>::add_profile(const Profile<Alphabet>& profile) {
                                                               num_states()));
   state_ptr->set_prior(1.0f / num_states());
   states_.push_back(state_ptr);
+
+  return states_.size() - 1;
+}
+
+template<class Alphabet>
+inline int HMM<Alphabet>::AddState(const ContextProfile<Alphabet>& profile) {
+  if (full())
+    throw Exception("Unable to add state: the HMM contains already %i states!",
+                    num_states());
+  if (profile.num_cols() != num_cols())
+    throw Exception("Profile to add as state has %i columns but should have %i!",
+                    profile.num_cols(), num_cols());
+
+  shared_ptr< State<Alphabet> > state(new State<Alphabet>(states_.size(),
+                                                          profile,
+                                                          num_states()));
+  states_.push_back(state);
+
   return states_.size() - 1;
 }
 
@@ -413,7 +434,7 @@ void SamplingStateInitializer<Alphabet>::init(HMM<Alphabet>& hmm) const {
       CountProfile<Alphabet> p(**pi, *i, hmm.num_cols());
       LOG(DEBUG1) << "Extracted profile window at position " << *i << ":";
       if (pc_) pc_->add_to_profile(ConstantAdmixture(pc_admixture_), &p);
-      hmm.add_profile(p);
+      hmm.AddState(p);
     }
   }
   if (!hmm.full())
@@ -423,6 +444,52 @@ void SamplingStateInitializer<Alphabet>::init(HMM<Alphabet>& hmm) const {
 
   LOG(DEBUG) << "HMM after state initialization:";
   LOG(DEBUG) << hmm;
+}
+
+template<class Alphabet>
+bool PriorCompare(const shared_ptr< ContextProfile<Alphabet> >& lhs,
+                  const shared_ptr< ContextProfile<Alphabet> >& rhs) {
+  return lhs->prior() > rhs->prior();
+}
+
+template<class Alphabet>
+void LibraryStateInitializer<Alphabet>::init(HMM<Alphabet>& hmm) const {
+  assert(lib_->num_cols() == hmm.num_cols());
+  LOG(DEBUG) << "Initializing HMM states with profile library ...";
+
+  typedef std::vector< shared_ptr< ContextProfile<Alphabet> > > ContextProfiles;
+  typedef typename ContextProfiles::const_iterator ContextProfileIter;
+  ContextProfiles profiles(lib_->begin(), lib_->end());
+  sort(profiles.begin(), profiles.end(), PriorCompare<Alphabet>);
+
+  for (ContextProfileIter it = profiles.begin(); it != profiles.end() &&
+         !hmm.full(); ++it) {
+    hmm.AddState(**it);
+  }
+  hmm.set_states_logspace(lib_->logspace());
+  if (!hmm.full())
+    throw Exception("Could not fully initialize all %i HMM states. "
+                    "Context library contains too few profiles!",
+                    hmm.num_states());
+
+  LOG(DEBUG) << "HMM after state initialization:";
+  LOG(DEBUG) << hmm;
+}
+
+template<class Alphabet>
+void RelEntropyTransitionInitializer<Alphabet>::init(HMM<Alphabet>& hmm) const {
+
+}
+
+template<class Alphabet>
+float RelEntropyTransitionInitializer<Alphabet>CalculateRelativeEntropy(
+    const Profile<Alphabet>& p,
+    const Profile<Alphabet>& q,
+    int i,
+    int j,
+    int ncols) const {
+
+
 }
 
 }  // namespace cs

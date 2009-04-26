@@ -40,7 +40,7 @@ class ClusteringTest : public testing::Test {
     // Initialize profile library
     for (int i = 0; i < kNumStates; ++i) {
       Profile<AminoAcid> p(profile, i, kWindowLength);
-      lib_.add_profile(p);
+      lib_.AddState(p);
     }
     lib_.transform_to_logspace();
 

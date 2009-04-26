@@ -76,7 +76,7 @@ class ProfileLibrary {
   // Clears the library.
   void clear();
   // Adds the given profile to the library and returns its profile index.
-  int add_profile(const Profile<Alphabet>& profile);
+  int AddState(const Profile<Alphabet>& profile);
   // Returns an iterator to a list of pointers to context profiles.
   profile_iterator begin() { return profiles_.begin(); }
   // Returns an iterator pointing past the end of a list of pointers of states.

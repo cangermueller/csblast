@@ -12,6 +12,7 @@
 #include "matrix_pseudocounts-inl.h"
 #include "nucleotide.h"
 #include "profile-inl.h"
+#include "profile_library-inl.h"
 #include "shared_ptr.h"
 
 namespace cs {
@@ -41,11 +42,11 @@ TEST_F(HMMTest, SimpleConstruction) {
   EXPECT_EQ(0, hmm.num_transitions());
   EXPECT_EQ(3, hmm.num_states());
 
-  int index_p1 = hmm.add_profile(p1_);
+  int index_p1 = hmm.AddState(p1_);
   EXPECT_EQ(0, index_p1);
-  int index_p2 = hmm.add_profile(p2_);
+  int index_p2 = hmm.AddState(p2_);
   EXPECT_EQ(1, index_p2);
-  int index_p3 = hmm.add_profile(p3_);
+  int index_p3 = hmm.AddState(p3_);
   EXPECT_EQ(2, index_p3);
 
   EXPECT_FLOAT_EQ(1.0f, hmm[0][0][0]);
@@ -94,9 +95,9 @@ TEST_F(HMMTest, ConstructionFromSerializedHMM) {
 
 TEST_F(HMMTest, NormalizeTransitions) {
   HMM<Nucleotide> hmm(3, 5);
-  hmm.add_profile(p1_);
-  hmm.add_profile(p2_);
-  hmm.add_profile(p3_);
+  hmm.AddState(p1_);
+  hmm.AddState(p2_);
+  hmm.AddState(p3_);
   hmm(0,1) = 0.3f;
   hmm(0,2) = 0.3f;
   hmm(1,2) = 0.9f;
@@ -112,9 +113,9 @@ TEST_F(HMMTest, NormalizeTransitions) {
 
 TEST_F(HMMTest, LinLogTransformation) {
   HMM<Nucleotide> hmm(3, 5);
-  hmm.add_profile(p1_);
-  hmm.add_profile(p2_);
-  hmm.add_profile(p3_);
+  hmm.AddState(p1_);
+  hmm.AddState(p2_);
+  hmm.AddState(p3_);
   hmm(0,1) = 0.5f;
   hmm(0,2) = 0.5f;
   hmm(1,2) = 1.0f;
@@ -161,6 +162,19 @@ TEST(HMMTestInitialization, RandomSampleInitializer) {
   EXPECT_EQ(100, hmm.num_transitions());
   EXPECT_EQ(5, hmm.num_cols());
   EXPECT_EQ(5, hmm[0].num_cols());
+}
+
+TEST(HMMTestInitialization, LibraryInitialization) {
+  FILE* fin = fopen("../data/scop20_1.73_opt_N100000_W13.lib", "r");
+  ProfileLibrary<AminoAcid> profile_lib(fin);
+  fclose(fin);
+
+  ASSERT_EQ(50, profile_lib.num_profiles());
+  ASSERT_EQ(13, profile_lib.num_cols());
+
+  LibraryStateInitializer<AminoAcid> st_init(&profile_lib);
+  HomogeneousTransitionInitializer<AminoAcid> tr_init;
+  HMM<AminoAcid> hmm(50, 13, st_init, tr_init);
 }
 
 }  // namespace cs
