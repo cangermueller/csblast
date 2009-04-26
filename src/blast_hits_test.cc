@@ -16,7 +16,7 @@ TEST(BlastHitsTest, SimpleResults) {
   fclose(fin);
 
   EXPECT_EQ(500, hits.num_hits());
-  EXPECT_EQ(3, hits.hit(3).hsps.size());
+  EXPECT_EQ(3, static_cast<int>(hits.hit(3).hsps.size()));
   EXPECT_EQ(string("HVLHSRHP"), string(hits.hit(3).hsps[2].query_seq.begin(),
                                        hits.hit(3).hsps[2].query_seq.end()));
 }
