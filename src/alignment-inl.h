@@ -20,19 +20,24 @@
 namespace cs {
 
 template<class Alphabet>
-inline Alignment<Alphabet>::Alignment(FILE* fin, Format format) {
+Alignment<Alphabet>::Alignment(FILE* fin, Format format) {
   read(fin, format);
 }
 
 template<class Alphabet>
-inline Alignment<Alphabet>::Alignment(const Sequence<Alphabet>& query,
-                                      const BlastHits& hits) {
+Alignment<Alphabet>::Alignment(const Sequence<Alphabet>& seq) {
+  std::vector<std::string> headers;
+  std::vector<std::string> seqs;
+  headers.push_back(seq.header());
+  seqs.push_back(seq.ToString());
+  init(headers, seqs);
+}
+
+template<class Alphabet>
+Alignment<Alphabet>::Alignment(const BlastHits& hits) {
   // Alignment in character encoding
   std::vector<std::string> headers;
   std::vector<std::string> seqs;
-  // Add query sequence to alignment
-  headers.push_back(query.header());
-  seqs.push_back(query.ToString());
   // Add all hits that meet E-value threshold to alignment
   typedef typename BlastHits::ConstHitIter HitIter;
   for (HitIter it = hits.begin(); it != hits.end(); ++it) {
@@ -43,7 +48,7 @@ inline Alignment<Alphabet>::Alignment(const Sequence<Alphabet>& query,
       for (int i =  0; i < hsp.length; ++i)
         if (hsp.query_seq[i] != '-')
           seq += hsp.subject_seq[i];
-      seq.append(query.length() - seq.length(), '-');
+      seq.append(hits.query_length() - seq.length(), '-');
       // Add hit to alignment
       headers.push_back(it->definition);
       seqs.push_back(seq);
@@ -180,7 +185,7 @@ void Alignment<Alphabet>::read_fasta_flavors(FILE* fin,
     seqs->back().erase(remove_if(seqs->back().begin(), seqs->back().end(), isspace),
                        seqs->back().end());
 
-    LOG(DEBUG1) << headers->back();
+    LOG(DEBUG2) << headers->back();
   }
   if (headers->empty())
     throw Exception("Bad alignment: no alignment data found in stream!");
@@ -449,6 +454,46 @@ void Alignment<Alphabet>::remove_insert_columns() {
     match_column_[i]   = true;
   }
   set_match_indexes();
+}
+
+template<class Alphabet>
+void Alignment<Alphabet>::Merge(const Alignment<Alphabet>& ali) {
+  if (num_match_cols() != ali.num_match_cols()) return;
+  // FIXME: Keep insert columns when merging two alignments
+  remove_insert_columns();
+
+  // Copy and keep track of headers that are not already contained in master
+  // alignment
+  std::vector<bool> include_seq(ali.num_seqs(), false);
+  std::vector<std::string> headers_merged(headers_);
+  for (int k = 0; k < ali.num_seqs(); ++k) {
+    if (find(headers_.begin(), headers_.end(), ali.header(k)) == headers_.end()) {
+      include_seq[k] = true;
+      headers_merged.push_back(ali.header(k));
+    }
+  }
+
+  // Append new sequences to alignment
+  matrix<char> seqs_merged(num_match_cols(), headers_merged.size());
+  for (int i = 0; i < num_match_cols(); ++i) {
+    for (int k = 0; k < num_seqs(); ++k) {
+      seqs_merged[i][k] = seqs_[match_indexes[i]][k];
+    }
+    int l = num_seqs(); // index of sequence k in merged alignment
+    for (int k = 0; k < ali.num_seqs(); ++k) {
+      if (include_seq[k]) {
+        seqs_merged[i][l] = ali.seqs_[ali.match_indexes[i]][k];
+        ++l;
+      }
+    }
+  }
+
+  // Apply the merging
+  headers_ = headers_merged;
+  seqs_    = seqs_merged;
+
+  LOG(DEBUG) << "Merged alignment:";
+  LOG(DEBUG) << *this;
 }
 
 template<class Alphabet>

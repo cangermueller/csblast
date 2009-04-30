@@ -30,9 +30,13 @@ void BlastHits::Read(FILE* fin) {
   char buffer[KB];
   const char* ptr;
 
-  // Advance to hitlist
+  // Advance to hitlist and parse query length on the way
   while (fgetline(buffer, KB, fin)) {
     if (strstr(buffer, "Sequences producing significant alignments")) break;
+    if (strstr(buffer, "letters)")) {
+      ptr = buffer;
+      query_length_ = strtoi(ptr);
+    }
   }
   fgetline(buffer, KB, fin);  // skip empty line
 

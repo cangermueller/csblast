@@ -90,6 +90,8 @@ class BlastHits {
   HitIter end() { return hits_.end(); }
   // Returns number of hits.
   int num_hits() const { return hits_.size(); }
+  // Returns length of query sequence.
+  int query_length() const { return query_length_; }
   // Returns true if hit list is empty.
   bool empty() const { return hits_.empty(); }
   // Filters hits by e-value threshold.
@@ -103,6 +105,8 @@ class BlastHits {
  private:
   // List of hits in the BLAST results
   std::vector<Hit> hits_;
+  // Length of query sequence
+  int query_length_;
 };  // class BlastHits
 
 }  // namespace cs
