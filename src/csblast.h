@@ -10,6 +10,7 @@
 
 #include "globals.h"
 #include "amino_acid.h"
+#include "blast_hits.h"
 #include "psiblast_pssm.h"
 #include "sequence-inl.h"
 
@@ -31,13 +32,14 @@ class CSBlast {
           const Options& opts);
   ~CSBlast() {}
 
-  // Runs one iteration of PSI-BLAST
+  // Runs one iteration of PSI-BLAST with cs-PSSM
   int Run(FILE* fout = stdout);
+  // Runs one iteration of PSI-BLAST with cs-PSSM and returns found hits
+  // in BlastHits object. Works for alignment format "-m 0" only!
+  int Run(FILE* fout = stdout, BlastHits& hits);
   // Sets path to PSI-BLAST executable.
   void set_exec_path(std::string exec_path) {
-    exec_path_ = exec_path;
-    if (exec_path_[exec_path_.length() - 1] != kDirSep)
-      exec_path_ += kDirSep;
+    exec_path_ = exec_path + (*exec_path.rbegin() != kDirSep ? kDirSep : "");
   }
   // Gets path to PSI-BLAST executable.
   std::string exec_path() const { return exec_path_; }

@@ -31,12 +31,12 @@ class PsiBlastPssm {
   // Gets sequence profile
   const Profile<AminoAcid>& profile() const { return *profile_; }
   // Overwrites query with new sequence string.
-  void set_query(const std::string seq) {
+  void set_query(const std::string& seq) {
     assert(profile_->num_cols() == static_cast<int>(seq.length()));
     query_ = seq;
   }
   // Overwrites profile with new profile.
-  void set_profile(const Profile<AminoAcid> profile) {
+  void set_profile(const Profile<AminoAcid>& profile) {
     assert(profile.num_cols() == static_cast<int>(query_.length()));
     profile_.reset(new Profile<AminoAcid>(profile));
   }

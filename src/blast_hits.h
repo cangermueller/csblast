@@ -67,7 +67,9 @@ class BlastHits {
   typedef std::vector<Hit>::iterator HitIter;
   typedef std::vector<Hit>::const_iterator ConstHitIter;
 
-  // Constructs results object from BLAST output in -m 0 format read from
+  // Constructs an empty hits object that can be filled by calling Read
+  BlastHits();
+  // Constructs an hit object from BLAST output in -m 0 format read from
   // file stream.
   explicit BlastHits(FILE* fin);
 
@@ -92,15 +94,13 @@ class BlastHits {
   bool empty() const { return hits_.empty(); }
   // Filters hits by e-value threshold.
   void Filter(double evalue_threshold);
+  // Fills the hits object with with hits parsed from BLAST output.
+  void Read(FILE* fin);
 
   // Prints the results for logging
   friend std::ostream& operator<< (std::ostream& out, const BlastHits& res);
 
  private:
-  // Initializes the sequence object with a sequence in FASTA format read from
-  // file stream.
-  void read(FILE* fin);
-
   // List of hits in the BLAST results
   std::vector<Hit> hits_;
 };  // class BlastHits

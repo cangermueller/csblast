@@ -11,6 +11,7 @@
 
 #include "globals.h"
 #include "amino_acid.h"
+#include "blast_hits.h"
 #include "pseudocounts.h"
 #include "sequence-inl.h"
 
@@ -41,14 +42,15 @@ CSBlast::CSBlast(const Sequence<AminoAcid>* query,
                    const Options& opts)
     : query_(query), pssm_(pssm), opts_(opts), exec_path_() {}
 
-int CSBlast::Run(FILE* fout) {
+int CSBlast::Run(FILE* fout, BlastHits& hits) {
   // Create unique basename for sequence and checkpoint file
   char name_template[] = "/tmp/csblast_XXXXXX";
   const int captured_fd = mkstemp(name_template);
-  if (!captured_fd) throw Exception("Unable to make unique basename!");
+  if (!captured_fd) throw Exception("Unable to create unique filename!");
   const string basename       = name_template;
   const string queryfile      = basename + ".seq";
   const string checkpointfile = basename + ".chk";
+  const string resultsfile    = basename + ".out";
 
   // Write PSI-BLAST input files
   WriteQuery(queryfile);
@@ -56,7 +58,8 @@ int CSBlast::Run(FILE* fout) {
 
   // Run PSI-BLAST with provided options
   string command(ComposeCommandString(queryfile, checkpointfile));
-  FILE *blast_out;
+  FILE* fres = fopen(resultsfile.c_str(),"rw");
+  FILE* blast_out;
   blast_out = popen(command.c_str(), "r");
   if (!blast_out) throw Exception("Error executing '%s'", command.c_str());
 
@@ -77,12 +80,20 @@ int CSBlast::Run(FILE* fout) {
 
       fputc(c, fout);
       fflush(fout);
+      fputc(c, fres);
+      fflush(fres);
     }
   }
   int status = pclose(blast_out);
 
+  // Parse hits from PSI-BLAST results
+  rewind(fres);
+  hits.Read(fres);
+  fclose(fres);
+
   // Cleanup temporary files
   remove(queryfile.c_str());
+  remove(resultsfile.c_str());
   if (pssm_) remove(checkpointfile.c_str());
 
   return status;

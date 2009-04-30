@@ -20,11 +20,13 @@ using std::vector;
 
 namespace cs {
 
+BlastHits::BlastHits() {}
+
 BlastHits::BlastHits(FILE* fin) {
-  read(fin);
+  Read(fin);
 }
 
-void BlastHits::read(FILE* fin) {
+void BlastHits::Read(FILE* fin) {
   char buffer[KB];
   const char* ptr;
 
