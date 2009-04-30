@@ -109,7 +109,6 @@ void CSBuildApp<Alphabet>::parse_options(GetOpt_pp* options) {
   *options >> Option('x', "pc-admix", opts_.pc_admix, opts_.pc_admix);
   *options >> Option('D', "context-pc", opts_.libfile, opts_.libfile);
   *options >> OptionPresent(' ', "global-weights", opts_.global_weights);
-  *options >> OptionPresent(' ', "psiblast-exec", opts_.psiblast_exec);
 
   opts_.Validate();
 
@@ -182,8 +181,8 @@ void CSBuildApp<Alphabet>::WriteProfile(
 
 template<class Alphabet>
 void CSBuildApp<Alphabet>::WriteCheckpoint(
-    const Sequence<Alphabet>& query,
-    const CountProfile<Alphabet>& profile) const {
+    const Sequence<Alphabet>& /* query */,
+    const CountProfile<Alphabet>& /* profile */) const {
   /* do nothing */
 }
 

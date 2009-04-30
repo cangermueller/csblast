@@ -33,13 +33,14 @@ class CSBlast {
   ~CSBlast() {}
 
   // Runs one iteration of PSI-BLAST with cs-PSSM
-  int Run(FILE* fout = stdout);
+  int Run(FILE* fout);
   // Runs one iteration of PSI-BLAST with cs-PSSM and returns found hits
   // in BlastHits object. Works for alignment format "-m 0" only!
-  int Run(FILE* fout = stdout, BlastHits& hits);
+  int Run(FILE* fout, BlastHits& hits);
   // Sets path to PSI-BLAST executable.
   void set_exec_path(std::string exec_path) {
-    exec_path_ = exec_path + (*exec_path.rbegin() != kDirSep ? kDirSep : "");
+    exec_path_ = exec_path;
+    if (*exec_path.rbegin() != kDirSep) exec_path_ += kDirSep;
   }
   // Gets path to PSI-BLAST executable.
   std::string exec_path() const { return exec_path_; }

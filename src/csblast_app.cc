@@ -151,7 +151,7 @@ void CSBlastApp::print_options() const {
           opts_.pc_admix);
   fprintf(stream(), "  %-30s %s (def=%i)\n", "-j, --iterations [1,inf[",
           "Maximum number of iterations to use in  CSI-BLAST", opts_.iterations);
-  fprintf(stream(), "  %-30s %s (def=%-3f)\n", "-h, --inclusion [0,inf[",
+  fprintf(stream(), "  %-30s %s (def=%-.3f)\n", "-h, --inclusion [0,inf[",
           "E-value threshold for inclusion in  CSI-BLAST", opts_.inclusion);
   fprintf(stream(), "  %-30s %s\n", "    --global-weights",
           "Use global instead of position-specific sequence weighting");
@@ -190,7 +190,7 @@ int CSBlastApp::run() {
   scoped_ptr<CSBlast> csblast(
       new CSBlast(query.get(), pssm.get(), opts_.psiblast_opts));
   if (!opts_.blast_path.empty())
-    csblast_->set_exec_path(opts_.blast_path);
+    csblast->set_exec_path(opts_.blast_path);
 
   CSBlastIteration itr(opts_.iterations);
   FILE* fout = opts_.outfile.empty() ? stream() : fopen(opts_.outfile.c_str(), "w");

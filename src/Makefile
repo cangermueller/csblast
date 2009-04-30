@@ -70,10 +70,10 @@ GTEST_HEADERS = $(GTEST_DIR)/include/gtest/*.h \
 
 # House-keeping build targets.
 
-all : $(TARGETS) 
+all : $(TARGETS) csblast
 
 clean :
-	rm -rf $(BUILDDIR) $(TARGETS) gtest.a gtest_main.a *.o
+	rm -rf $(BUILDDIR) $(TARGETS) csblast gtest.a gtest_main.a *.o
 
 .PHONY: all clean
 
