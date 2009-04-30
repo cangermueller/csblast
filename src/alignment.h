@@ -51,11 +51,12 @@ class Alignment {
   // Constructs alignment from multi FASTA formatted alignment read from input
   // stream.
   Alignment(FILE* fin, Format format);
-  // Constructs a query anchored alignment from query sequence and BLAST results.
-  // If an E-value threshold is provided only hits with E-value better than the
-  // threshold are included in the alignment.
-  Alignment(const Sequence<Alphabet>& query,
-            const BlastHits& hits);
+  // Constructs an alignment from a single sequence.
+  Alignment(const Sequence<Alphabet>& seq);
+  // Constructs a query anchored alignment from BLAST results. If an E-value
+  // threshold is provided only hits with E-value better than the threshold
+  // are included in the alignment.
+  Alignment(const BlastHits& hits);
 
   ~Alignment() {}
 
@@ -128,7 +129,11 @@ class Alignment {
   bool match_column(int i) const { return match_column_[i]; }
   // Removes all insert columns from the alignment.
   void remove_insert_columns();
-  // Returns the sequence k as Sequence object.
+  // Merges the provided alignment with this alignment considering only sequences
+  // that are not already included in this alignment. Warning: Inserts in current
+  // alignment are lost!
+  void Merge(const Alignment<Alphabet>& ali);
+ // Returns the sequence k as Sequence object.
   Sequence<Alphabet> GetSequence(int k) const;
 
   // Prints the Alignment in A2M format for debugging.

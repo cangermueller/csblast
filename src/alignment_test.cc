@@ -6,6 +6,7 @@
 
 #include "alignment-inl.h"
 #include "amino_acid.h"
+#include "log.h"
 #include "matrix.h"
 #include "nucleotide.h"
 
@@ -24,11 +25,18 @@ TEST(AlignmentTest, ConstructionFromInputStream) {
   EXPECT_EQ(Nucleotide::instance().endgap(), alignment[78][1]);
 }
 
-TEST(AlignmentTest, ConstructionFromBlastHits) {
+TEST(AlignmentTest, ConstructionFromSequence) {
   FILE* fin = fopen("../data/d1w6ga2.seq", "r");
   Sequence<AminoAcid> query(fin);
   fclose(fin);
-  fin = fopen("../data/blast_results_broken_hitlist.txt", "r");
+
+  Alignment<AminoAcid> ali(query);
+  EXPECT_EQ(1, ali.num_seqs());
+  EXPECT_EQ(query.ToString(), ali.GetSequence(0).ToString());
+}
+
+TEST(AlignmentTest, ConstructionFromBlastHits) {
+  FILE* fin = fopen("../data/blast_results_broken_hitlist.txt", "r");
   BlastHits blast_hits(fin);
   fclose(fin);
 
@@ -36,8 +44,8 @@ TEST(AlignmentTest, ConstructionFromBlastHits) {
   blast_hits.Filter(2.0);
   ASSERT_EQ(2, blast_hits.num_hits());
 
-  Alignment<AminoAcid> ali(query, blast_hits);
-  EXPECT_EQ(3, ali.num_seqs());
+  Alignment<AminoAcid> ali(blast_hits);
+  EXPECT_EQ(2, ali.num_seqs());
 }
 
 TEST(AlignmentTest, CalculationOfGlobalWeights) {
@@ -141,6 +149,28 @@ TEST(AlignmentTest, RemoveInsertColumns) {
   ASSERT_TRUE(alignment.match_column(3));
   ASSERT_TRUE(alignment.match_column(4));
   ASSERT_EQ('G', alignment.chr(0,4));
+}
+
+TEST(AlignmentTest, Merging) {
+  FILE* fin = fopen("../data/MalT_slim.fas", "r");
+  Alignment<AminoAcid> ali_slim(fin, Alignment<AminoAcid>::FASTA);
+  fclose(fin);
+  ASSERT_EQ(5, ali_slim.num_seqs());
+  LOG(DEBUG) << ali_slim;
+
+  fin = fopen("../data/MalT_diverse.fas", "r");
+  Alignment<AminoAcid> ali_diverse(fin, Alignment<AminoAcid>::FASTA);
+  fclose(fin);
+  ASSERT_EQ(21, ali_diverse.num_seqs());
+  LOG(DEBUG) << ali_diverse;
+
+  ali_slim.Merge(ali_diverse);
+  EXPECT_EQ(23, ali_slim.num_seqs());
+  EXPECT_EQ(ali_slim[180][22], ali_diverse[180][20]);
+  EXPECT_EQ(ali_slim[181][22], ali_diverse[181][20]);
+  EXPECT_EQ(ali_slim[182][22], ali_diverse[182][20]);
+  EXPECT_EQ(ali_slim[183][22], ali_diverse[183][20]);
+  EXPECT_EQ(ali_slim[184][22], ali_diverse[184][20]);
 }
 
 }  // namespace cs

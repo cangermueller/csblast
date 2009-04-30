@@ -28,6 +28,7 @@ Todo:
 * Rename typedefs to CamelCase (e.g. ProfileIter)
 * Move kLogScale to globals
 * replace kBufferSize by KB constants.
+* remove inline from constructors
 
 Someday:
 * Rename 'from' and 'to' members in Transition to 'source' and 'target'

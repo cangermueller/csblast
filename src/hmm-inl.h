@@ -476,22 +476,6 @@ void LibraryStateInitializer<Alphabet>::init(HMM<Alphabet>& hmm) const {
   LOG(DEBUG) << hmm;
 }
 
-template<class Alphabet>
-void RelEntropyTransitionInitializer<Alphabet>::init(HMM<Alphabet>& hmm) const {
-
-}
-
-template<class Alphabet>
-float RelEntropyTransitionInitializer<Alphabet>CalculateRelativeEntropy(
-    const Profile<Alphabet>& p,
-    const Profile<Alphabet>& q,
-    int i,
-    int j,
-    int ncols) const {
-
-
-}
-
 }  // namespace cs
 
 #endif  // SRC_HMM_INL_H_
