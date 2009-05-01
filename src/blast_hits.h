@@ -90,6 +90,8 @@ class BlastHits {
   HitIter end() { return hits_.end(); }
   // Returns number of hits.
   int num_hits() const { return hits_.size(); }
+  // Returns number of hits.
+  int size() const { return hits_.size(); }
   // Returns length of query sequence.
   int query_length() const { return query_length_; }
   // Returns true if hit list is empty.

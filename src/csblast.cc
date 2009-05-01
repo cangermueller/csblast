@@ -12,6 +12,7 @@
 #include "globals.h"
 #include "amino_acid.h"
 #include "blast_hits.h"
+#include "log.h"
 #include "pseudocounts.h"
 #include "sequence-inl.h"
 
@@ -42,7 +43,7 @@ CSBlast::CSBlast(const Sequence<AminoAcid>* query,
                    const Options& opts)
     : query_(query), pssm_(pssm), opts_(opts), exec_path_() {}
 
-int CSBlast::Run(FILE* fout, BlastHits& hits) {
+int CSBlast::Run(FILE* fout, BlastHits* hits) {
   // Create unique basename for sequence and checkpoint file
   char name_template[] = "/tmp/csblast_XXXXXX";
   const int captured_fd = mkstemp(name_template);
@@ -57,10 +58,10 @@ int CSBlast::Run(FILE* fout, BlastHits& hits) {
   if (pssm_) WriteCheckpoint(checkpointfile);
 
   // Run PSI-BLAST with provided options
+  FILE* fres = fopen(resultsfile.c_str(),"w+");
+  if (!fres) throw Exception("Unable to open file '%s'!", resultsfile.c_str());
   string command(ComposeCommandString(queryfile, checkpointfile));
-  FILE* fres = fopen(resultsfile.c_str(),"rw");
-  FILE* blast_out;
-  blast_out = popen(command.c_str(), "r");
+  FILE* blast_out = popen(command.c_str(), "r");
   if (!blast_out) throw Exception("Error executing '%s'", command.c_str());
 
   // Read PSI-BLAST output and print to stdout
@@ -88,7 +89,7 @@ int CSBlast::Run(FILE* fout, BlastHits& hits) {
 
   // Parse hits from PSI-BLAST results
   rewind(fres);
-  hits.Read(fres);
+  hits->Read(fres);
   fclose(fres);
 
   // Cleanup temporary files
@@ -124,8 +125,7 @@ string CSBlast::ComposeCommandString(string queryfile,
     if (!strchr(kIgnoreOptions, it->first))
       rv = rv + " -" + it->first + " " + it->second;
   }
-
-  fputs(rv.c_str(), stderr);
+  LOG(INFO) << rv;
 
   return rv;
 }

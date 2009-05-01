@@ -40,6 +40,8 @@ struct CSBlastAppOptions : public EmissionOptions {
     infile              = "";
     outfile             = "";
     libfile             = "";
+    alifile             = "";
+    checkpointfile      = "";
     outformat           = 0;
     pc_admix            = 0.95f;
     pc_ali              = 12.0f;
@@ -51,7 +53,7 @@ struct CSBlastAppOptions : public EmissionOptions {
     inclusion           = 0.002;
   }
 
-  // Validates the parameter settings and throws exception if needed.
+  // Validates parameter settings and throws exception if needed.
   void Validate() {
     if (infile.empty()) throw Exception("No input file provided!");
     if (libfile.empty()) throw Exception("No profile library provided!");
@@ -63,6 +65,10 @@ struct CSBlastAppOptions : public EmissionOptions {
   string outfile;
   // Library input file for restarting
   string libfile;
+  // Output file for multiple alignment of hits
+  string alifile;
+  // Output file for checkpointing
+  string checkpointfile;
   // BLAST output format
   int outformat;
   // Overall pseudocount admixture
@@ -104,14 +110,16 @@ class CSBlastApp : public Application {
 void CSBlastApp::parse_options(GetOpt_pp* options) {
   *options >> Option('i', "infile", opts_.infile, opts_.infile);
   *options >> Option('o', "outfile", opts_.outfile, opts_.outfile);
+  *options >> Option('C', "checkpoint", opts_.checkpointfile, opts_.checkpointfile);
   *options >> Option('m', "outformat", opts_.outformat, opts_.outformat);
   *options >> Option('x', "pc-admix", opts_.pc_admix, opts_.pc_admix);
   *options >> Option('D', "context-pc", opts_.libfile, opts_.libfile);
   *options >> Option('j', "iterations", opts_.iterations, opts_.iterations);
   *options >> Option('h', "inclusion", opts_.inclusion, opts_.inclusion);
-  *options >> OptionPresent(' ', "global-weights", opts_.global_weights);
+  *options >> Option(' ', "alignhits", opts_.alifile, opts_.alifile);
   *options >> Option(' ', "blast-path", opts_.blast_path, opts_.blast_path);
   *options >> Option(' ', "BLAST_PATH", opts_.blast_path, opts_.blast_path);
+  *options >> OptionPresent(' ', "global-weights", opts_.global_weights);
 
   // Put remaining arguments into PSI-BLAST options map
   for(GetOpt_pp::short_iterator it = options->begin(); it != options->end(); ++it) {
@@ -136,11 +144,11 @@ void CSBlastApp::print_banner() const {
 }
 
 void CSBlastApp::print_options() const {
-  fprintf(stream(), "  %-30s %s\n", "-i, --infile <filename>",
+  fprintf(stream(), "  %-30s %s\n", "-i, --infile <file>",
           "Input file with query sequence");
-  fprintf(stream(), "  %-30s %s\n", "-D, --context-pc <library>",
+  fprintf(stream(), "  %-30s %s\n", "-D, --context-pc <file>",
           "Path to library with context profiles for cs pseudocounts");
-  fprintf(stream(), "  %-30s %s\n", "-o, --outfile <filename>",
+  fprintf(stream(), "  %-30s %s\n", "-o, --outfile <file>",
           "Output file with search results (def=stdout)");
   fprintf(stream(), "  %-30s %s\n", "-d, --database <dbname>",
           "Protein database to search against (def=nr)");
@@ -153,9 +161,11 @@ void CSBlastApp::print_options() const {
           "Maximum number of iterations to use in  CSI-BLAST", opts_.iterations);
   fprintf(stream(), "  %-30s %s (def=%-.3f)\n", "-h, --inclusion [0,inf[",
           "E-value threshold for inclusion in  CSI-BLAST", opts_.inclusion);
+  fprintf(stream(), "  %-30s %s\n", "    --alignhits <file>",
+          "Write FASTA multiple alignment of hits to file");
   fprintf(stream(), "  %-30s %s\n", "    --global-weights",
           "Use global instead of position-specific sequence weighting");
-  fprintf(stream(), "  %-30s %s\n", "    --blast-path",
+  fprintf(stream(), "  %-30s %s\n", "    --blast-path <path>",
           "Set path to directory with PSI-BLAST executable");
 }
 
@@ -193,15 +203,30 @@ int CSBlastApp::run() {
     csblast->set_exec_path(opts_.blast_path);
 
   CSBlastIteration itr(opts_.iterations);
-  FILE* fout = opts_.outfile.empty() ? stream() : fopen(opts_.outfile.c_str(), "w");
 
   while (itr) {
+    LOG(INFO) << strprintf("Starting iteration %i ...", itr.IterationNumber());
+
+    // Write checkpointfile
+    if (!opts_.checkpointfile.empty()) {
+      FILE* fchk = fopen(opts_.checkpointfile.c_str(), "wb");
+      if (!fchk)
+        throw Exception("Unable to write file '%s'!", opts_.checkpointfile.c_str());
+      pssm->Write(fchk);
+      fclose(fchk);
+    }
+
     // Run one iteration of CS-BLAST
+    FILE* fout = opts_.outfile.empty() ? stream() : fopen(opts_.outfile.c_str(), "w");
+    if (!fout) throw Exception("Unable to write file '%s'!", opts_.outfile.c_str());
     BlastHits hits;
-    status = csblast->Run(fout, hits);
+    status = csblast->Run(fout, &hits);
+    if (!opts_.outfile.empty()) fclose(fout);
     if (status != 0 || hits.empty()) break;
 
     hits.Filter(opts_.inclusion);
+    LOG(INFO) << strprintf("Found %i sequences in iteration %i (E-value < %5.0E)",
+                           hits.num_hits(), itr.IterationNumber(), opts_.inclusion);
     itr.Advance(hits);
 
     if (itr) {
@@ -212,7 +237,13 @@ int CSBlastApp::run() {
       pssm->set_profile(ali_profile);
     }
   }
-  if (!opts_.outfile.empty()) fclose(fout);
+
+  if (!opts_.alifile.empty()) {
+    FILE* fali = fopen(opts_.alifile.c_str(), "w");
+    if (!fali) throw Exception("Unable to write file '%s'!", opts_.alifile.c_str());
+    ali.write(fali, Alignment<AminoAcid>::FASTA);
+    fclose(fali);
+  }
 
   return status;
 }
@@ -220,5 +251,5 @@ int CSBlastApp::run() {
 }  // namespace cs
 
 int main(int argc, char* argv[]) {
-  return cs::CSBlastApp().main(argc, argv, stdout, "cblast");
+  return cs::CSBlastApp().main(argc, argv, stdout, "csblast");
 }

@@ -181,9 +181,9 @@ void CSClustApp<AminoAcid>::print_substitution_matrix_options() const {
 
 template<class Alphabet>
 void CSClustApp<Alphabet>::print_options() const {
-  fprintf(stream(), "  %-30s %s\n", "-i, --infile <filename>",
+  fprintf(stream(), "  %-30s %s\n", "-i, --infile <file>",
           "Path to input file with profile windows");
-  fprintf(stream(), "  %-30s %s\n", "-o, --outfile <filename>",
+  fprintf(stream(), "  %-30s %s\n", "-o, --outfile <file>",
           "Path for output file with profile library");
   fprintf(stream(), "  %-30s %s (def=%s)\n", "-d, --directory <directory>",
           "Directory for temporary and output files",
@@ -193,7 +193,7 @@ void CSClustApp<Alphabet>::print_options() const {
   fprintf(stream(), "  %-30s %s (def=%3.1g)\n", "-l, --likelihood [0,inf[",
           "Maximal likelihood change per column for convergence",
           opts_.log_likelihood_change);
-  fprintf(stream(), "  %-30s %s\n", "-j, --jumpstart <filename>",
+  fprintf(stream(), "  %-30s %s\n", "-j, --jumpstart <file>",
           "Jumpstart the clustering with a profile library");
   fprintf(stream(), "  %-30s %s\n", "-B, --blocks [0,N]",
           "Number of blocks for online training (def: B=N^3/8)");

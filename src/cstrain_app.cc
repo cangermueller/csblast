@@ -208,9 +208,9 @@ void CSTrainApp<AminoAcid>::print_substitution_matrix_options() const {
 
 template<class Alphabet>
 void CSTrainApp<Alphabet>::print_options() const {
-  fprintf(stream(), "  %-30s %s\n", "-i, --infile <filename>",
+  fprintf(stream(), "  %-30s %s\n", "-i, --infile <file>",
           "Path to input file with training alignments or profiles");
-  fprintf(stream(), "  %-30s %s\n", "-o, --outfile <filename>",
+  fprintf(stream(), "  %-30s %s\n", "-o, --outfile <file>",
           "Path for output file with trained HMM");
   fprintf(stream(), "  %-30s %s (def=%s)\n", "-d, --directory <directory>",
           "Directory for temporary and output files",
@@ -236,7 +236,7 @@ void CSTrainApp<Alphabet>::print_options() const {
   fprintf(stream(), "  %-30s %s (def=%3.1f)\n", "-s, --sample-rate [0,1]",
           "Fraction of profile windows sampled per subject",
           opts_.sample_rate);
-  fprintf(stream(), "  %-30s %s\n", "-j, --jumpstart <filename>",
+  fprintf(stream(), "  %-30s %s\n", "-j, --jumpstart <file>",
           "Jumpstart the HMM training with a serialized HMM.");
   fprintf(stream(), "  %-30s %s\n", "-B, --blocks [0,N]",
           "Number of blocks for online training (def: B=N^3/8)");

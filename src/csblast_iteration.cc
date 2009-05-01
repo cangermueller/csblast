@@ -18,7 +18,9 @@ CSBlastIteration::CSBlastIteration(int num_iterations)
     : iterations_todo_(num_iterations), iterations_done_(0) {}
 
 bool CSBlastIteration::HasConverged() const {
-  if (previous_data_.size() != current_data_.size()) return false;
+  if ((previous_data_.empty() && current_data_.empty()) ||
+      previous_data_.size() != current_data_.size())
+    return false;
 
   bool retval = true;
   SeqIds::const_iterator end  = previous_data_.end();
@@ -42,6 +44,7 @@ void CSBlastIteration::Advance(const BlastHits& hits) {
     current_data_.push_back(it->definition);
   }
   sort(current_data_.begin(), current_data_.end());
+  ++iterations_done_;
 }
 
 }  // namespace cs

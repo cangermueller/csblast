@@ -94,7 +94,7 @@ void Application::print_usage() const {
   if (kDebug) {
     fprintf(stream(), "  %-30s %s (def=%s)\n", "    --log-level <level>",
             "Maximal reporting level for logging", log_level_.c_str());
-    fprintf(stream(), "  %-30s %s (def=%s)\n", "    --log-file <filename>",
+    fprintf(stream(), "  %-30s %s (def=%s)\n", "    --log-file <file>",
             "Output file for logging", log_file_name_.c_str());
   }
 }

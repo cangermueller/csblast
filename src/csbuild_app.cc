@@ -132,9 +132,9 @@ void CSBuildApp<Alphabet>::print_banner() const {
 
 template<class Alphabet>
 void CSBuildApp<Alphabet>::print_options() const {
-  fprintf(stream(), "  %-30s %s\n", "-i, --infile <filename>",
+  fprintf(stream(), "  %-30s %s\n", "-i, --infile <file>",
           "Input file with alignment or sequence");
-  fprintf(stream(), "  %-30s %s\n", "-o, --outfile <filename>",
+  fprintf(stream(), "  %-30s %s\n", "-o, --outfile <file>",
           "Output file with serialized profile (def: <basename>.prf)");
   fprintf(stream(), "  %-30s %s (def=%s)\n", "-I, --informat seq|fas|...",
           "Input format: seq, fas, a2m, or a3m", opts_.informat.c_str());

@@ -29,6 +29,7 @@ BlastHits::BlastHits(FILE* fin) {
 void BlastHits::Read(FILE* fin) {
   char buffer[KB];
   const char* ptr;
+  hits_.clear();
 
   // Advance to hitlist and parse query length on the way
   while (fgetline(buffer, KB, fin)) {

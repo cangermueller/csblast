@@ -112,9 +112,9 @@ void CSSampleApp<Alphabet>::print_banner() const {
 
 template<class Alphabet>
 void CSSampleApp<Alphabet>::print_options() const {
-  fprintf(stream(), "  %-30s %s\n", "-i, --infile <filename>",
+  fprintf(stream(), "  %-30s %s\n", "-i, --infile <file>",
           "Path to input file with profile database");
-  fprintf(stream(), "  %-30s %s\n", "-o, --outfile <filename>",
+  fprintf(stream(), "  %-30s %s\n", "-o, --outfile <file>",
           "Path for output file with sampled profiles");
   fprintf(stream(), "  %-30s %s\n", "-N, --num-profiles [0,inf[",
           "Maximal number of profiles to sample (def=inf)");
