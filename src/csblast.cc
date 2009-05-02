@@ -26,7 +26,7 @@ const char* CSBlast::kPsiBlastExec = "blastpgp.exe";
 const char* CSBlast::kPsiBlastExec = "blastpgp";
 #endif
 
-const char* CSBlast::kIgnoreOptions = "ioR";
+const char* CSBlast::kIgnoreOptions = "o";
 
 const char* CSBlast::kCSBlastReference =
   "Reference for sequence context-specific profiles:\n"
@@ -53,13 +53,12 @@ int CSBlast::Run(FILE* fout, BlastHits* hits) {
   const string checkpointfile = basename + ".chk";
   const string resultsfile    = basename + ".out";
 
-  // Write PSI-BLAST input files
   WriteQuery(queryfile);
-  if (pssm_) WriteCheckpoint(checkpointfile);
-
-  // Run PSI-BLAST with provided options
+  WriteCheckpoint(checkpointfile);
   FILE* fres = fopen(resultsfile.c_str(),"w+");
   if (!fres) throw Exception("Unable to open file '%s'!", resultsfile.c_str());
+
+  // Run PSI-BLAST with provided options
   string command(ComposeCommandString(queryfile, checkpointfile));
   FILE* blast_out = popen(command.c_str(), "r");
   if (!blast_out) throw Exception("Error executing '%s'", command.c_str());
@@ -67,12 +66,10 @@ int CSBlast::Run(FILE* fout, BlastHits* hits) {
   // Read PSI-BLAST output and print to stdout
   const int kLF = 0x0A;
   int c;
-  bool print_reference =
-    (opts_.find('m') == opts_.end() || opts_['m'] == "0") &&
-    (opts_.find('T') == opts_.end() || opts_['T'] == "F");
+  bool print_reference = ((opts_.find('m') == opts_.end() || opts_['m'] == "0") &&
+                          (opts_.find('T') == opts_.end() || opts_['T'] == "F"));
   while (!feof(blast_out)) {
     if ((c = fgetc(blast_out)) != EOF && fout) {
-      // Print CS-BLAST reference before BLAST reference
       if (print_reference && c == kLF) {
         fputs("\n\n", fout);
         fputs(kCSBlastReference, fout);
@@ -95,7 +92,7 @@ int CSBlast::Run(FILE* fout, BlastHits* hits) {
   // Cleanup temporary files
   remove(queryfile.c_str());
   remove(resultsfile.c_str());
-  if (pssm_) remove(checkpointfile.c_str());
+  remove(checkpointfile.c_str());
 
   return status;
 }
@@ -108,20 +105,21 @@ void CSBlast::WriteQuery(string filepath) const {
 }
 
 void CSBlast::WriteCheckpoint(string filepath) const {
-  FILE* fout = fopen(filepath.c_str(), "wb");
-  if (!fout) throw Exception("Unable to write to file '%s'!", filepath.c_str());
-  pssm_->Write(fout);
-  fclose(fout);
+  if (pssm_) {
+    FILE* fout = fopen(filepath.c_str(), "wb");
+    if (!fout) throw Exception("Unable to write to file '%s'!", filepath.c_str());
+    pssm_->Write(fout);
+    fclose(fout);
+  }
 }
 
-string CSBlast::ComposeCommandString(string queryfile,
-                                     string checkpointfile) const {
-  string rv(exec_path_);
-  rv = rv + kPsiBlastExec + " ";
-  rv += " -i " + queryfile;
-  if (pssm_) rv += " -R " + checkpointfile;
+string CSBlast::ComposeCommandString(string queryfile, string checkpointfile) const {
+  string rv(exec_path_ + kPsiBlastExec);
+  Options full_opts(opts_);
+  full_opts['i'] = queryfile;
+  if (pssm_) full_opts['R'] = checkpointfile;
 
-  for (Options::const_iterator it = opts_.begin(); it != opts_.end(); ++it) {
+  for (Options::const_iterator it = full_opts.begin(); it != full_opts.end(); ++it) {
     if (!strchr(kIgnoreOptions, it->first))
       rv = rv + " -" + it->first + " " + it->second;
   }

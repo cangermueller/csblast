@@ -77,14 +77,14 @@ struct CSBlastAppOptions : public EmissionOptions {
   float pc_ali;
   // Use global instead of position specific weights for sequence weighting.
   bool global_weights;
-  // PSI-BLAST options map
-  PsiBlastOptions psiblast_opts;
   // Path to PSI-BLAST executable
   string blast_path;
   // Maximum number of iterations to use in CSI-BLAST
   int iterations;
   // E-value threshold for inclusion in CSI-BLAST
   float inclusion;
+  // PSI-BLAST options map
+  PsiBlastOptions psiblast_opts;
 };  // struct CSBlastAppOptions
 
 
@@ -100,9 +100,27 @@ class CSBlastApp : public Application {
   virtual void print_description() const;
   // Prints usage banner to stream.
   virtual void print_banner() const;
+  // Initializes all class members for CSI-BLAST searches
+  void Init();
+  // Writes current PSSM as PSI-BLAST checkpoint to checkpointfile
+  void SavePssm() const;
+  // Writes multiple alignment of hits to file
+  void SaveAlignment() const;
 
   // Parameter wrapper
   CSBlastAppOptions opts_;
+  // Query sequence
+  scoped_ptr< Sequence<AminoAcid> > query_;
+  // Profile library for pseudocounts
+  scoped_ptr< ProfileLibrary<AminoAcid> > lib_;
+  // Pseudocount factory
+  scoped_ptr< LibraryPseudocounts<AminoAcid> > pc_;
+  // PSI-BLAST engine
+  scoped_ptr<CSBlast> csblast_;
+  // PSSM for PSI-BLAST jumpstarting
+  scoped_ptr<PsiBlastPssm> pssm_;
+  // Alignment of included sequences
+  scoped_ptr< Alignment<AminoAcid> > ali_;
 };  // class CSBlastApp
 
 
@@ -113,6 +131,7 @@ void CSBlastApp::parse_options(GetOpt_pp* options) {
   *options >> Option('C', "checkpoint", opts_.checkpointfile, opts_.checkpointfile);
   *options >> Option('m', "outformat", opts_.outformat, opts_.outformat);
   *options >> Option('x', "pc-admix", opts_.pc_admix, opts_.pc_admix);
+  *options >> Option('c', "pc-ali", opts_.pc_ali, opts_.pc_ali);
   *options >> Option('D', "context-pc", opts_.libfile, opts_.libfile);
   *options >> Option('j', "iterations", opts_.iterations, opts_.iterations);
   *options >> Option('h', "inclusion", opts_.inclusion, opts_.inclusion);
@@ -154,13 +173,16 @@ void CSBlastApp::print_options() const {
           "Protein database to search against (def=nr)");
   fprintf(stream(), "  %-30s %s (def=%i)\n", "-m, --outformat [0,11]",
           "Alignment view option", opts_.outformat);
-  fprintf(stream(), "  %-30s %s (def=%-.2f)\n", "-x, --pc-admix [0,1]",
-          "Pseudocount admix for context-specific pseudocounts",
-          opts_.pc_admix);
   fprintf(stream(), "  %-30s %s (def=%i)\n", "-j, --iterations [1,inf[",
           "Maximum number of iterations to use in  CSI-BLAST", opts_.iterations);
   fprintf(stream(), "  %-30s %s (def=%-.3f)\n", "-h, --inclusion [0,inf[",
           "E-value threshold for inclusion in  CSI-BLAST", opts_.inclusion);
+  fprintf(stream(), "  %-30s %s (def=%-.2f)\n", "-x, --pc-admix [0,1]",
+          "Pseudocount admix for context-specific pseudocounts",
+          opts_.pc_admix);
+  fprintf(stream(), "  %-30s %s (def=%-.1f)\n", "-c, --pc-ali [0,inf[",
+          "Constant for alignment pseudocounts in CSI-BLAST",
+          opts_.pc_ali);
   fprintf(stream(), "  %-30s %s\n", "    --alignhits <file>",
           "Write FASTA multiple alignment of hits to file");
   fprintf(stream(), "  %-30s %s\n", "    --global-weights",
@@ -172,80 +194,95 @@ void CSBlastApp::print_options() const {
 int CSBlastApp::run() {
   int status = 0;
 
-  // Read query sequence
-  FILE* fin = fopen(opts_.infile.c_str(), "r");
-  if (!fin) throw Exception("Unable to read file '%s'!", opts_.infile.c_str());
-  scoped_ptr< Sequence<AminoAcid> > query(new Sequence<AminoAcid>(fin));
-  fclose(fin);
-
-  // Read profile library
-  fin = fopen(opts_.libfile.c_str(), "r");
-  if (!fin) throw Exception("Unable to read file '%s'!", opts_.libfile.c_str());
-  scoped_ptr< ProfileLibrary<AminoAcid> > lib(new ProfileLibrary<AminoAcid>(fin));
-  fclose(fin);
-
-  // Setup context-specific pseudocounts generator
-  scoped_ptr< LibraryPseudocounts<AminoAcid> >
-    pc(new LibraryPseudocounts<AminoAcid>(lib.get(), opts_));
-
-  // Setup PSSM of query profile with context-specific pseudocounts
-  CountProfile<AminoAcid> profile(*query);
-  pc->add_to_sequence(*query, ConstantAdmixture(opts_.pc_admix), &profile);
-  scoped_ptr<PsiBlastPssm> pssm(new PsiBlastPssm(query->ToString(), profile));
-
-  // Setup alignment of included sequences
-  Alignment<AminoAcid> ali(*query);
-
-  // Setup CS-BLAST engine
-  scoped_ptr<CSBlast> csblast(
-      new CSBlast(query.get(), pssm.get(), opts_.psiblast_opts));
-  if (!opts_.blast_path.empty())
-    csblast->set_exec_path(opts_.blast_path);
-
+  Init();
   CSBlastIteration itr(opts_.iterations);
 
   while (itr) {
     LOG(INFO) << strprintf("Starting iteration %i ...", itr.IterationNumber());
 
-    // Write checkpointfile
-    if (!opts_.checkpointfile.empty()) {
-      FILE* fchk = fopen(opts_.checkpointfile.c_str(), "wb");
-      if (!fchk)
-        throw Exception("Unable to write file '%s'!", opts_.checkpointfile.c_str());
-      pssm->Write(fchk);
-      fclose(fchk);
-    }
+    SavePssm();
 
     // Run one iteration of CS-BLAST
     FILE* fout = opts_.outfile.empty() ? stream() : fopen(opts_.outfile.c_str(), "w");
     if (!fout) throw Exception("Unable to write file '%s'!", opts_.outfile.c_str());
     BlastHits hits;
-    status = csblast->Run(fout, &hits);
+    status = csblast_->Run(fout, &hits);
     if (!opts_.outfile.empty()) fclose(fout);
     if (status != 0 || hits.empty()) break;
 
     hits.Filter(opts_.inclusion);
     LOG(INFO) << strprintf("Found %i sequences in iteration %i (E-value < %5.0E)",
                            hits.num_hits(), itr.IterationNumber(), opts_.inclusion);
+    ali_->Merge(Alignment<AminoAcid>(hits));
     itr.Advance(hits);
 
     if (itr) {
-      ali.Merge(Alignment<AminoAcid>(hits));
-      CountProfile<AminoAcid> ali_profile(ali, !opts_.global_weights);
-      pc->add_to_profile(DivergenceDependentAdmixture(opts_.pc_admix, opts_.pc_ali),
+      CountProfile<AminoAcid> ali_profile(*ali_, !opts_.global_weights);
+      pc_->add_to_profile(DivergenceDependentAdmixture(opts_.pc_admix, opts_.pc_ali),
                          &ali_profile);
-      pssm->set_profile(ali_profile);
+      pssm_.reset(new PsiBlastPssm(query_->ToString(), ali_profile));
+      csblast_->set_pssm(pssm_.get());
     }
   }
 
+  SaveAlignment();
+
+  return status;
+}
+
+void CSBlastApp::Init() {
+  // Read query sequence
+  FILE* fin = fopen(opts_.infile.c_str(), "r");
+  if (!fin) throw Exception("Unable to read file '%s'!", opts_.infile.c_str());
+  query_.reset(new Sequence<AminoAcid>(fin));
+  fclose(fin);
+
+  // Read profile library
+  fin = fopen(opts_.libfile.c_str(), "r");
+  if (!fin) throw Exception("Unable to read file '%s'!", opts_.libfile.c_str());
+  lib_.reset(new ProfileLibrary<AminoAcid>(fin));
+  fclose(fin);
+
+  // Setup context-specific pseudocounts generator
+  pc_.reset(new LibraryPseudocounts<AminoAcid>(lib_.get(), opts_));
+
+  // Setup PSSM of query profile with context-specific pseudocounts if no
+  // restart file is provided
+  if (opts_.psiblast_opts.find('R') == opts_.psiblast_opts.end()) {
+    CountProfile<AminoAcid> profile(*query_);
+    pc_->add_to_sequence(*query_, ConstantAdmixture(opts_.pc_admix), &profile);
+    pssm_.reset(new PsiBlastPssm(query_->ToString(), profile));
+  }
+
+  // Setup CS-BLAST engine
+  if (opts_.psiblast_opts.find('R') == opts_.psiblast_opts.end())
+    csblast_.reset(new CSBlast(query_.get(), pssm_.get(), opts_.psiblast_opts));
+  else
+    csblast_.reset(new CSBlast(query_.get(), opts_.psiblast_opts));
+  if (!opts_.blast_path.empty())
+    csblast_->set_exec_path(opts_.blast_path);
+
+  // Setup alignment of included sequences
+  ali_.reset(new Alignment<AminoAcid>(*query_));
+}
+
+void CSBlastApp::SavePssm() const {
+  if (!opts_.checkpointfile.empty() && pssm_) {
+    FILE* fchk = fopen(opts_.checkpointfile.c_str(), "wb");
+    if (!fchk)
+      throw Exception("Unable to write file '%s'!", opts_.checkpointfile.c_str());
+    pssm_->Write(fchk);
+    fclose(fchk);
+  }
+}
+
+void CSBlastApp::SaveAlignment() const {
   if (!opts_.alifile.empty()) {
     FILE* fali = fopen(opts_.alifile.c_str(), "w");
     if (!fali) throw Exception("Unable to write file '%s'!", opts_.alifile.c_str());
-    ali.write(fali, Alignment<AminoAcid>::FASTA);
+    ali_->write(fali, Alignment<AminoAcid>::FASTA);
     fclose(fali);
   }
-
-  return status;
 }
 
 }  // namespace cs
