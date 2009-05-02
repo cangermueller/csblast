@@ -211,9 +211,10 @@ int CSBlastApp::run() {
     if (status != 0 || hits.empty()) break;
 
     hits.Filter(opts_.inclusion);
+    if (!hits.empty())
+      ali_->Merge(Alignment<AminoAcid>(hits));
     LOG(INFO) << strprintf("Found %i sequences in iteration %i (E-value < %5.0E)",
                            hits.num_hits(), itr.IterationNumber(), opts_.inclusion);
-    ali_->Merge(Alignment<AminoAcid>(hits));
     itr.Advance(hits);
 
     if (itr) {

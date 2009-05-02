@@ -75,7 +75,7 @@ template<class Alphabet>
 void Alignment<Alphabet>::init(const std::vector<std::string>& headers,
                                const std::vector<std::string>& seqs) {
   if (seqs.empty())
-    throw Exception("Bad alignment: no aligned sequences found!");
+    throw Exception("Bad alignment: initialization with empty sequence vector!");
   if (headers.size() != seqs.size())
     throw Exception("Bad alignment: unequal number of headers and sequences!");
 

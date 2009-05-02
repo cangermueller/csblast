@@ -18,8 +18,12 @@ CSBlastIteration::CSBlastIteration(int num_iterations)
     : iterations_todo_(num_iterations), iterations_done_(0) {}
 
 bool CSBlastIteration::HasConverged() const {
-  if ((previous_data_.empty() && current_data_.empty()) ||
-      previous_data_.size() != current_data_.size())
+  // For an object that hasn't been 'advanced' or one that only has performed
+  // one iteration it doesn't make sense to have converged
+  if (iterations_done_ <= 1)
+    return false;
+  // If the size differs, we obviously have not converged
+  if (previous_data_.size() != current_data_.size())
     return false;
 
   bool retval = true;
