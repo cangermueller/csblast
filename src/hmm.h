@@ -11,13 +11,15 @@
 #include <vector>
 
 #include "globals.h"
-#include "profile.h"
+#include "co_emission.h"
 #include "context_profile.h"
 #include "count_profile.h"
+#include "profile.h"
 #include "profile_library.h"
 #include "pseudocounts.h"
 #include "shared_ptr.h"
 #include "sparse_matrix.h"
+#include "substitution_matrix.h"
 #include "state.h"
 #include "transition.h"
 
@@ -64,8 +66,8 @@ class HMM {
   HMM(int num_states, int num_cols);
   // Constructs context HMM from serialized HMM read from input stream.
   explicit HMM(FILE* fin);
-  // Constructs context HMM with the help of a state- and a
-  // transition-initializer.
+  // Constructs context HMM with the help of a state- and a transition-
+  // initializer. State profiles are initially set to lin-space.
   HMM(int num_states,
       int num_cols,
       const StateInitializer<Alphabet>& st_init,
@@ -313,19 +315,15 @@ class RandomTransitionInitializer : public TransitionInitializer<Alphabet> {
 };
 
 template<class Alphabet>
-class RelEntropyTransitionInitializer : public TransitionInitializer<Alphabet> {
+class CoEmissionTransitionInitializer : public TransitionInitializer<Alphabet> {
  public:
-  RelEntropyTransitionInitializer() {}
-  virtual ~RelEntropyTransitionInitializer() {}
+  CoEmissionTransitionInitializer(const SubstitutionMatrix<Alphabet>* sm,
+                                  float score_min) {}
+  virtual ~CoEmissionTransitionInitializer() {}
   virtual void init(HMM<Alphabet>& hmm) const;
 
  private:
-  // Calculates column normalized relative entropy between two profiles.
-  float CalculateRelativeEntropy(const Profile<Alphabet>& p,
-                                 const Profile<Alphabet>& q,
-                                 int i,
-                                 int j,
-                                 int ncols) const;
+  const CoEmission<Alphabet>* co_emission_;
 };
 
 }  // namespace cs

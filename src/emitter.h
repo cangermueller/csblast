@@ -35,7 +35,7 @@ struct EmissionOptions {
 template< class Alphabet>
 class Emitter {
  public:
-  // Constructs a profile matcher with positional window weights.
+  // Constructs an emitter with positional window weights.
   Emitter(int num_cols, const EmissionOptions& opts);
 
   ~Emitter() {}
@@ -66,7 +66,7 @@ class Emitter {
   std::valarray<float> weights_;
 
   DISALLOW_COPY_AND_ASSIGN(Emitter);
-};
+};  // class Emitter
 
 }  // namespace cs
 

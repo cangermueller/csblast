@@ -467,6 +467,8 @@ void LibraryStateInitializer<Alphabet>::init(HMM<Alphabet>& hmm) const {
     hmm.AddState(**it);
   }
   hmm.set_states_logspace(lib_->logspace());
+  hmm.transform_states_to_linspace();
+
   if (!hmm.full())
     throw Exception("Could not fully initialize all %i HMM states. "
                     "Context library contains too few profiles!",

@@ -29,7 +29,8 @@ Todo:
 * Move kLogScale to globals
 * replace kBufferSize by KB constants.
 * remove inline from constructors
-* Allow checkpoint restarting for CS-BLAST
+* Look into Emitter class (remove Options?, rename to MultEmission, positional weights)
+* Replace init method in Initializers with Init
 
 Someday:
 * Rename 'from' and 'to' members in Transition to 'source' and 'target'

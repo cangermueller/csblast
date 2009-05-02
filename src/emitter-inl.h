@@ -17,7 +17,7 @@
 namespace cs {
 
 template<class Alphabet>
-inline Emitter<Alphabet>::Emitter(int num_cols, const EmissionOptions& opts)
+Emitter<Alphabet>::Emitter(int num_cols, const EmissionOptions& opts)
     : opts_(opts),
       num_cols_(num_cols),
       center_((num_cols - 1) / 2),
