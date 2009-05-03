@@ -151,7 +151,7 @@ void CSBuildApp<Alphabet>::print_options() const {
           "Pseudocount admixture for context-specific pseudocounts",
           opts_.pc_admix);
   fprintf(stream(), "  %-30s %s\n", "    --global-weights",
-          "Use global instead of position-specific sequence weighting");
+          "Use global instead of position-specific sequence weights (def=off)");
 }
 
 template<class Alphabet>

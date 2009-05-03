@@ -34,24 +34,25 @@ Alignment<Alphabet>::Alignment(const Sequence<Alphabet>& seq) {
 }
 
 template<class Alphabet>
-Alignment<Alphabet>::Alignment(const BlastHits& hits) {
-  // Alignment in character encoding
+Alignment<Alphabet>::Alignment(const BlastHits& hits, bool best) {
   std::vector<std::string> headers;
   std::vector<std::string> seqs;
-  // Add all hits that meet E-value threshold to alignment
+
   typedef typename BlastHits::ConstHitIter HitIter;
-  for (HitIter it = hits.begin(); it != hits.end(); ++it) {
-    if (!it->hsps.empty()) {
-      const BlastHits::HSP& hsp = it->hsps.front();
+  typedef typename BlastHits::ConstHspIter HspIter;
+  for (HitIter hit = hits.begin(); hit != hits.end(); ++hit) {
+    for (HspIter hsp = hit->hsps.begin(); hsp != hit->hsps.end(); ++hsp) {
       // Construct query anchored alignment string
-      std::string seq(hsp.query_start - 1, '-');
-      for (int i =  0; i < hsp.length; ++i)
-        if (hsp.query_seq[i] != '-')
-          seq += hsp.subject_seq[i];
+      std::string seq(hsp->query_start - 1, '-');
+      for (int i =  0; i < hsp->length; ++i)
+        if (hsp->query_seq[i] != '-')
+          seq += hsp->subject_seq[i];
       seq.append(hits.query_length() - seq.length(), '-');
-      // Add hit to alignment
-      headers.push_back(it->definition);
+
+      headers.push_back(hit->definition);
       seqs.push_back(seq);
+
+      if (best) break;
     }
   }
   init(headers, seqs);
@@ -463,7 +464,7 @@ void Alignment<Alphabet>::Merge(const Alignment<Alphabet>& ali) {
   remove_insert_columns();
 
   // Copy and keep track of headers that are not already contained in master
-  // alignment
+  // alignment.
   std::vector<bool> include_seq(ali.num_seqs(), false);
   std::vector<std::string> headers_merged(headers_);
   for (int k = 0; k < ali.num_seqs(); ++k) {

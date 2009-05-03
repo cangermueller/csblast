@@ -20,8 +20,8 @@ namespace cs {
 class BlastHits {
  public:
   // Simple struct for data associated with a HSP.
-  struct HSP {
-    HSP() : bit_score(0.0),
+  struct Hsp {
+    Hsp() : bit_score(0.0),
             evalue(0.0),
             query_start(0),
             query_end(0),
@@ -61,11 +61,13 @@ class BlastHits {
     // Highest bit score for HSPs of this hit.
     double bit_score;
     // List of HSP's for one database sequence.
-    std::vector<HSP> hsps;
+    std::vector<Hsp> hsps;
   };
 
   typedef std::vector<Hit>::iterator HitIter;
   typedef std::vector<Hit>::const_iterator ConstHitIter;
+  typedef std::vector<Hsp>::iterator HspIter;
+  typedef std::vector<Hsp>::const_iterator ConstHspIter;
 
   // Constructs an empty hits object that can be filled by calling Read
   BlastHits();

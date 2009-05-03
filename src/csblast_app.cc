@@ -51,6 +51,7 @@ struct CSBlastAppOptions : public EmissionOptions {
     blast_path          = "";
     iterations          = 1;
     inclusion           = 0.002;
+    best                = false;
   }
 
   // Validates parameter settings and throws exception if needed.
@@ -83,6 +84,8 @@ struct CSBlastAppOptions : public EmissionOptions {
   int iterations;
   // E-value threshold for inclusion in CSI-BLAST
   float inclusion;
+  // Include only the best HSP per hit in alignment
+  bool best;
   // PSI-BLAST options map
   PsiBlastOptions psiblast_opts;
 };  // struct CSBlastAppOptions
@@ -139,6 +142,7 @@ void CSBlastApp::parse_options(GetOpt_pp* options) {
   *options >> Option(' ', "blast-path", opts_.blast_path, opts_.blast_path);
   *options >> Option(' ', "BLAST_PATH", opts_.blast_path, opts_.blast_path);
   *options >> OptionPresent(' ', "global-weights", opts_.global_weights);
+  *options >> OptionPresent(' ', "best", opts_.best);
 
   // Put remaining arguments into PSI-BLAST options map
   for(GetOpt_pp::short_iterator it = options->begin(); it != options->end(); ++it) {
@@ -174,7 +178,7 @@ void CSBlastApp::print_options() const {
   fprintf(stream(), "  %-30s %s (def=%i)\n", "-m, --outformat [0,11]",
           "Alignment view option", opts_.outformat);
   fprintf(stream(), "  %-30s %s (def=%i)\n", "-j, --iterations [1,inf[",
-          "Maximum number of iterations to use in  CSI-BLAST", opts_.iterations);
+          "Maximum number of iterations to use in CSI-BLAST", opts_.iterations);
   fprintf(stream(), "  %-30s %s (def=%-.3f)\n", "-h, --inclusion [0,inf[",
           "E-value threshold for inclusion in  CSI-BLAST", opts_.inclusion);
   fprintf(stream(), "  %-30s %s (def=%-.2f)\n", "-x, --pc-admix [0,1]",
@@ -186,7 +190,9 @@ void CSBlastApp::print_options() const {
   fprintf(stream(), "  %-30s %s\n", "    --alignhits <file>",
           "Write FASTA multiple alignment of hits to file");
   fprintf(stream(), "  %-30s %s\n", "    --global-weights",
-          "Use global instead of position-specific sequence weighting");
+          "Use global instead of position-specific sequence weights (def=off)");
+  fprintf(stream(), "  %-30s %s\n", "    --best",
+          "Include only the best HSP per hit in alignment (def=off)");
   fprintf(stream(), "  %-30s %s\n", "    --blast-path <path>",
           "Set path to directory with PSI-BLAST executable");
 }
@@ -212,7 +218,7 @@ int CSBlastApp::run() {
 
     hits.Filter(opts_.inclusion);
     if (!hits.empty())
-      ali_->Merge(Alignment<AminoAcid>(hits));
+      ali_->Merge(Alignment<AminoAcid>(hits, opts_.best));
     LOG(INFO) << strprintf("Found %i sequences in iteration %i (E-value < %5.0E)",
                            hits.num_hits(), itr.IterationNumber(), opts_.inclusion);
     itr.Advance(hits);

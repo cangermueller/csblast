@@ -1,17 +1,17 @@
 BLASTP 2.2.17 [Aug-26-2007]
 
 
-Reference: Altschul, Stephen F., Thomas L. Madden, Alejandro A. Schaffer, 
-Jinghui Zhang, Zheng Zhang, Webb Miller, and David J. Lipman (1997), 
+Reference: Altschul, Stephen F., Thomas L. Madden, Alejandro A. Schaffer,
+Jinghui Zhang, Zheng Zhang, Webb Miller, and David J. Lipman (1997),
 "Gapped BLAST and PSI-BLAST: a new generation of protein database search
 programs",  Nucleic Acids Res. 25:3389-3402.
 
 
 Reference for composition-based statistics:
 Schaffer, Alejandro A., L. Aravind, Thomas L. Madden,
-Sergei Shavirin, John L. Spouge, Yuri I. Wolf,  
-Eugene V. Koonin, and Stephen F. Altschul (2001), 
-"Improving the accuracy of PSI-BLAST protein database searches with 
+Sergei Shavirin, John L. Spouge, Yuri I. Wolf,
+Eugene V. Koonin, and Stephen F. Altschul (2001),
+"Improving the accuracy of PSI-BLAST protein database searches with
 composition-based statistics and other refinements",  Nucleic Acids Res. 29:2994-3005.
 
 Query= d1a6ma_ a.1.1.2 (A:) Myoglobin {Sperm whale (Physeter catodon)
@@ -39,7 +39,7 @@ d1j7ya_ d2av0a1 d1o1la1 d3sdha_ d1nxfa_ d1scta_ d1jzla_ d1jwna_
 d1d8ua_ d7hbia_ d5hbia_ d2d5xb1
          (151 letters)
 
-Database: SCOP 1.73 filtered for 20% seq-ID (benchmark set) 
+Database: SCOP 1.73 filtered for 20% seq-ID (benchmark set)
            5287 sequences; 932,154 total letters
 
 Searching..................................................done
@@ -52,19 +52,19 @@ Sequences producing significant alignments:                      (bits) Value
 d1a6ma_ a.1.1.2 (A:) Myoglobin {Sperm whale (Physeter catodon) [...   264   9e-73
 d1mbaa_ a.1.1.2 (A:) Myoglobin {Sea hare (Aplysia limacina) [Tax...    40   3e-05
 d1ecoa_ a.1.1.2 (A:) Erythrocruorin {Midge (Chironomus thummi th...    29   0.096
-d1h97a_ a.1.1.2 (A:) Trematode hemoglobin/myoglobin {Paramphisto...    28   0.15 
-d1x9fa_ a.1.1.2 (A:) Extracellular dodecameric hemoglobin (eryth...    27   0.31 
-d1nh1a_ e.45.1.1 (A:) Type III effector AvrB {Pseudomonas syring...    25   0.99 
-d1a9xa1 a.92.1.1 (A:403-555) Carbamoyl phosphate synthetase, lar...    23   4.2  
-d2ixma1 a.268.1.1 (A:23-322) Serine/threonine-protein phosphatas...    23   6.4  
-d1h6da1 c.2.1.3 (A:51-212,A:375-433) Glucose-fructose oxidoreduc...    23   6.5  
-d1rwta_ f.43.1.1 (A:) Chlorophyll a-b binding protein {Spinach (...    22   7.3  
-d1df7a_ c.71.1.1 (A:) Dihydrofolate reductase, prokaryotic type ...    22   8.2  
-d2j0111 d.325.1.1 (1:8-96) Ribosomal protein L28 (L28p) {Thermus...    22   8.5  
-d1fiua_ c.52.1.10 (A:) Restriction endonuclease NgoIV {Neisseria...    22   9.2  
-d2p54a1 a.123.1.1 (A:202-468) Peroxisome proliferator activated ...    22   9.3  
-d2bsya2 b.85.4.1 (A:121-256) Monomeric viral dUTPase {Epstein-ba...    22   9.5  
-d1qmga1 a.100.1.2 (A:308-595) Class II ketol-acid reductoisomera...    22   9.8  
+d1h97a_ a.1.1.2 (A:) Trematode hemoglobin/myoglobin {Paramphisto...    28   0.15
+d1x9fa_ a.1.1.2 (A:) Extracellular dodecameric hemoglobin (eryth...    27   0.31
+d1nh1a_ e.45.1.1 (A:) Type III effector AvrB {Pseudomonas syring...    25   0.99
+d1a9xa1 a.92.1.1 (A:403-555) Carbamoyl phosphate synthetase, lar...    23   4.2
+d2ixma1 a.268.1.1 (A:23-322) Serine/threonine-protein phosphatas...    23   6.4
+d1h6da1 c.2.1.3 (A:51-212,A:375-433) Glucose-fructose oxidoreduc...    23   6.5
+d1rwta_ f.43.1.1 (A:) Chlorophyll a-b binding protein {Spinach (...    22   7.3
+d1df7a_ c.71.1.1 (A:) Dihydrofolate reductase, prokaryotic type ...    22   8.2
+d2j0111 d.325.1.1 (1:8-96) Ribosomal protein L28 (L28p) {Thermus...    22   8.5
+d1fiua_ c.52.1.10 (A:) Restriction endonuclease NgoIV {Neisseria...    22   9.2
+d2p54a1 a.123.1.1 (A:202-468) Peroxisome proliferator activated ...    22   9.3
+d2bsya2 b.85.4.1 (A:121-256) Monomeric viral dUTPase {Epstein-ba...    22   9.5
+d1qmga1 a.100.1.2 (A:308-595) Class II ketol-acid reductoisomera...    22   9.8
 d1tv8a_ c.1.28.3 (A:) Molybdenum cofactor biosynthesis protein A...    22      10
 d1vkna1 c.2.1.3 (A:1-144,A:308-339) N-acetyl-gamma-glutamyl-phos...    22      14
 d2djia3 c.36.1.9 (A:364-592) Pyruvate oxidase {Aerococcus virida...    22      15
@@ -619,7 +619,7 @@ Sbjct: 61 RDVSSRIFTRLNEFVNNAANAGKMSAMLSQFAKEH 95
  Identities = 23/95 (24%), Positives = 42/95 (44%), Gaps = 5/95 (5%)
 
 Query: 2  LSEGEWQLVLHVWAKVEADVAGHGQDILIRLFKSHPETLEKFDRFKHLKTEAEMKASEDL 61
-          LS  +   V   + KV+ D  G    IL  +FK+ P  + KF +F     E+ +K +   
+          LS  +   V   + KV+ D  G    IL  +FK+ P  + KF +F     E+ +K +
 Sbjct: 1  LSADQISTVQASFDKVKGDPVG----ILYAVFKADPSIMAKFTQFAGKDLES-IKGTAPF 55
 
 Query: 62 KKHGVTVLTALGAILKKKGHHEAELKPLAQSHATK 96
@@ -636,7 +636,7 @@ Sbjct: 56 ETHANRIVGFFSKIIGELPNIEADVNTFVASHKPR 90
  Identities = 20/66 (30%), Positives = 36/66 (54%), Gaps = 2/66 (3%)
 
 Query: 32 LFKSHPETLEKFDRFKHLKTEAEMKASEDLKKHGVTVLTALGAILKKKGHHEAELKPLAQ 91
-          LF +HP+ +  F R +    E  M+ SE +K +  T+  A+  +LK+   ++AE+K +A 
+          LF +HP+ +  F R +    E  M+ SE +K +  T+  A+  +LK+   ++AE+K +A
 Sbjct: 35 LFTAHPQYISHFSRLEGHTIENVMQ-SEGIKHYARTLTEAIVHMLKEIS-NDAEVKKIAA 92
 
 Query: 92 SHATKH 97
@@ -645,7 +645,7 @@ Sbjct: 93 QYGKDH 98
 
 
 
- Score = 17.7 bits (34), Expect =   184,   Method: Composition-based stats.
+ Score = 17.7 bits (34), Expect = 0.18,   Method: Composition-based stats.
  Identities = 10/30 (33%), Positives = 17/30 (56%), Gaps = 5/30 (16%)
 
 Query: 86  LKPLAQSHATKHKIPIKYLEFISEAIIHVL 115
@@ -789,7 +789,7 @@ Sbjct: 5  IWAQATSGVIGRGGDIPWRL 24
  Identities = 17/39 (43%), Positives = 21/39 (53%), Gaps = 3/39 (7%)
 
 Query: 16 KVEADVAGHGQDILIRLFKSH-PETLEKFDRFKHLKTEA 53
-          KV   VAG  Q+I  R+  SH P+  E  +R K LK E 
+          KV   VAG  Q+I  R+  SH P+  E  +R K LK E
 Sbjct: 41 KVRVRVAG--QEITFRVAASHIPKVYELVERAKGLKLEG 77
 
 
@@ -1036,7 +1036,7 @@ Sbjct: 55  IGGGAGE---------IDLQILSKVQAQYPG------VCINNEVVEPSAEQIA-KYKEL 97
  Identities = 17/70 (24%), Positives = 27/70 (38%), Gaps = 10/70 (14%)
 
 Query: 28  ILIRLFKSHPETLEKFDRFKHL----------KTEAEMKASEDLKKHGVTVLTALGAILK 77
-           IL    +  PE L  FD + H+          +  A ++  + L +    VL  L A L 
+           IL    +  PE L  FD + H+          +  A ++  + L +    VL  L A L
 Sbjct: 82  ILKTFLRELPEPLLTFDLYPHVVGFLNIDESQRVPATLQVLQTLPEENYQVLRFLTAFLV 141
 
 Query: 78  KKGHHEAELK 87
@@ -1085,7 +1085,7 @@ Sbjct: 101 ETAEKY 106
  Identities = 19/75 (25%), Positives = 32/75 (42%), Gaps = 13/75 (17%)
 
 Query: 60  DLKKHGVTVLTALGAILKKKGH----------HEAELKPLAQSHATKHKIPIKYLEFISE 109
-           DLK     V  AL   L+++G           HE  L PL +++  ++ +P    + ++ 
+           DLK     V  AL   L+++G           HE  L PL +++  ++ +P    + ++
 Sbjct: 18  DLKALSRAVGAALLPWLRERGFRHILLYHPLPHELNLLPLMEAYPARYYLPKVAGKGLT- 76
 
 Query: 110 AIIHVLHSRHPGDFG 124
@@ -1300,7 +1300,7 @@ Sbjct: 132 AEPYG 136
  Identities = 25/89 (28%), Positives = 40/89 (44%), Gaps = 21/89 (23%)
 
 Query: 24  HGQD-ILIRLFKSHPETLEKFDRFKHLKTEAEMKASEDLKKHGVTVLTALGAIL-----K 77
-           HG D I IR     PE         +LK  +    +E  + H +  L AL A++      
+           HG D I IR     PE         +LK  +    +E  + H +  L AL A++
 Sbjct: 26  HGYDYIEIRTMDKLPE---------YLKDHSLDDLAEYFQTHHIKPL-ALNALVFFNNRD 75
 
 Query: 78  KKGHHE--AELKPLAQSHATKHKIPIKYL 104
@@ -1504,7 +1504,7 @@ Sbjct: 320 FLRLYLDHPEASKRF 334
  Identities = 3/9 (33%), Positives = 6/9 (66%)
 
 Query: 81  HHEAELKPL 89
-           +H+  L+P 
+           +H+  L+P
 Sbjct: 170 YHDPLLEPF 178
 
 
@@ -1723,7 +1723,7 @@ Sbjct: 45  GLDGLGALGDA 55
  Identities = 14/52 (26%), Positives = 23/52 (44%), Gaps = 5/52 (9%)
 
 Query: 19  ADVAGHGQDILIRLF-----KSHPETLEKFDRFKHLKTEAEMKASEDLKKHG 65
-           A  A   QD  +R F     KS+ E  E + +  HL+  + +    D+K + 
+           A  A   QD  +R F     KS+ E  E + +  HL+  + +    D+K +
 Sbjct: 82  ATAATCAQDETLREFFKAKAKSYDEYNETYHQTWHLREASGLIPGTDIKDYA 133
 
 
@@ -2132,7 +2132,7 @@ Sbjct: 556 QSEVKPILEKLTQDQDVDVKY--FAQEAL 582
  Identities = 8/37 (21%), Positives = 17/37 (45%)
 
 Query: 38  ETLEKFDRFKHLKTEAEMKASEDLKKHGVTVLTALGA 74
-           ET+ +    + L+  +   +  DL+ H V ++  L  
+           ET+ +    + L+  +   +  DL+ H V ++  L
 Sbjct: 100 ETVVRDKAVESLRAISHEHSPSDLEAHFVPLVKRLAG 136
 
 
@@ -2246,7 +2246,7 @@ Sbjct: 76 AHAEILALSLAQAKLDTHDL 95
  Identities = 7/19 (36%), Positives = 12/19 (63%)
 
 Query: 72 LGAILKKKGHHEAELKPLA 90
-          +  +L++KGH E  +K L 
+          +  +L++KGH E  +K L
 Sbjct: 55 INKLLREKGHWEVRIKELG 73
 
 
@@ -2258,7 +2258,7 @@ Sbjct: 55 INKLLREKGHWEVRIKELG 73
  Identities = 18/69 (26%), Positives = 31/69 (44%), Gaps = 9/69 (13%)
 
 Query: 59  EDLKKHGVTVLTALGAILKKKGHHEAELKPLAQSHATKHKIPIK---YLE--FISEAIIH 113
-           + ++  G+ VL    A L  + H    + P  +  AT H I I    +++  FISE ++ 
+           + ++  G+ VL    A L  + H    + P  +  AT H I I    +++  FISE ++
 Sbjct: 9   DGIQSKGIIVL----AELLSEEHEVFVVAPDKERSATGHSITIHVPLWMKKVFISERVVA 64
 
 Query: 114 VLHSRHPGD 122
@@ -2306,7 +2306,7 @@ Sbjct: 116 MHVYAKEEAD 125
  Identities = 6/23 (26%), Positives = 12/23 (52%)
 
 Query: 102 KYLEFISEAIIHVLHSRHPGDFG 124
-           K+L+F+ +    + H R  G + 
+           K+L+F+ +    + H R  G +
 Sbjct: 59  KFLKFLLDRDALISHLRMEGRYA 81
 
 
@@ -2674,7 +2674,7 @@ Sbjct: 747 GALSAMLDFFQALVVTGTNNLGY 769
  Identities = 19/75 (25%), Positives = 30/75 (40%), Gaps = 19/75 (25%)
 
 Query: 28   ILIRLFKSHPET-LEKFDRF------------KHLKTEAEMKASEDLKKHGVTVLTALGA 74
-            +L+RL    P   L++ DR             K    + E +  ++LK+  +  + AL  
+            +L+RL    P   L++ DR             K    + E +  ++LK+  +  + AL
 Sbjct: 1123 MLVRLSTLCPSAVLQRLDRLVEPLRATCTTKVKANSVKQEFEKQDELKRSAMRAVAALLT 1182
 
 Query: 75   ILKKKGHHEAELKPL 89
@@ -2799,7 +2799,7 @@ Sbjct: 82 IENAIGGSGNDILV 95
  Identities = 6/11 (54%), Positives = 8/11 (72%)
 
 Query: 64 HGVTVLTALGA 74
-          HGVT+  A+G 
+          HGVT+  A+G
 Sbjct: 78 HGVTIENAIGG 88
 
 
@@ -2811,7 +2811,7 @@ Sbjct: 78 HGVTIENAIGG 88
  Identities = 9/19 (47%), Positives = 12/19 (63%), Gaps = 5/19 (26%)
 
 Query: 132 NKALELFRKDIAAKYKELG 150
-           NK +ELF+     KY+EL 
+           NK +ELF+     KY+EL
 Sbjct: 248 NKNMELFK-----KYRELA 261
 
 
@@ -3206,7 +3206,7 @@ Sbjct: 51  GRNCNGVITKDEAEKLFNQDVAAAVR 76
  Identities = 19/84 (22%), Positives = 31/84 (36%), Gaps = 16/84 (19%)
 
 Query: 33  FKSHPETLEKFDRFKHLKTEAEMKASEDLKKHGVTVLTALGAILKKKGHHEAEL------ 86
-            K + + + K D         +    E+ + HG+  LT L  ++K+    EA+L      
+            K + + + K D         +    E+ + HG+  LT L  ++K+    EA+L
 Sbjct: 25  LKQYTQVVHKLDDMLEDIQSGQANREENSEFHGI--LTHLEQLIKRS---EAQLRVYFIS 79
 
 Query: 87  -----KPLAQSHATKHKIPIKYLE 105
@@ -3344,7 +3344,7 @@ Sbjct: 183 VRHEEFFANLVTHCL 197
  Identities = 10/25 (40%), Positives = 16/25 (64%)
 
 Query: 56  KASEDLKKHGVTVLTALGAILKKKG 80
-           K SE+ ++  +  LT  GA+LK+K 
+           K SE+ ++  +  LT  GA+LK+K
 Sbjct: 80  KRSEEDERSVLISLTEDGALLKEKA 104
 
 
@@ -3583,7 +3583,7 @@ Sbjct: 27  VSDVLKLFEDGEMAKYVQGDAIGY 50
  Identities = 20/74 (27%), Positives = 31/74 (41%), Gaps = 12/74 (16%)
 
 Query: 67  TVLTALGAILKKKGHHEAELKPLAQSHATKHKIPIKYLEFISEAIIHVLHSRHPGDFGAD 126
-           T +T   A++ KK    AE KPL         IP+    +    +    HS  PG     
+           T +T   A++ KK    AE KPL         IP+    +    +    HS  PG
 Sbjct: 127 TEMTDFTAVVGKKF---AEGKPL--------DIPVISQPYGKRVVAFAEHSVIPGK-EKQ 174
 
 Query: 127 AQGAMNKALELFRK 140
@@ -3777,7 +3777,7 @@ Sbjct: 24  GTITTKELGTVMRSLGQNPTEAELQDMINEVDADGNGTIDFPEFLS 69
  Identities = 5/9 (55%), Positives = 6/9 (66%)
 
 Query: 18  EADVAGHGQ 26
-           EAD+ G G 
+           EAD+ G G
 Sbjct: 126 EADIDGDGH 134
 
 
@@ -3901,7 +3901,7 @@ Sbjct: 174 AKIVVSSCGH 183
  Identities = 9/22 (40%), Positives = 12/22 (54%)
 
 Query: 44 DRFKHLKTEAEMKASEDLKKHG 65
-          DR   LK E  +KAS  + +H 
+          DR   LK E  +KAS  + +H
 Sbjct: 1  DRIDVLKGEKALKASGLVPEHA 22
 
 
@@ -3939,7 +3939,7 @@ Sbjct: 109 AHGLQLWVNL-RSSEKMVEP--QYQELKSEEIPKPSKD----GVTVAVISGEALGIK 158
  Identities = 16/68 (23%), Positives = 28/68 (41%), Gaps = 1/68 (1%)
 
 Query: 53  AEMKASEDLKKHGVTVLTALGAILKKKGHHEAELKPLAQSHATKHKIPIKYLEFISEAII 112
-           AEM  SE+   HG+ +   L +  K       ELK       +K  + +  +   +  I 
+           AEM  SE+   HG+ +   L +  K       ELK       +K  + +  +   +  I
 Sbjct: 100 AEMPCSEE-PAHGLQLWVNLRSSEKMVEPQYQELKSEEIPKPSKDGVTVAVISGEALGIK 158
 
 Query: 113 HVLHSRHP 120
@@ -4016,7 +4016,7 @@ Sbjct: 22 MSESEYPFEVFLWEGSAPPVTHEIVLQQTGHGQD 55
  Identities = 23/72 (31%), Positives = 32/72 (44%), Gaps = 2/72 (2%)
 
 Query: 22  AGHGQDILIRLFKSHPETLEKFDRFKHLKTEAEMKASEDLKKHGVTVLTALGAILKKKGH 81
-           A HG  I I   +SH   +  + R + LK  AE     +LK++   VLT+ G  L  +  
+           A HG  I I   +SH   +  + R + LK  AE     +LK++   VLT+ G  L  +
 Sbjct: 200 AVHGYYIQISRGQSHLAPI-NYMRRQTLKN-AERYIIPELKEYEDKVLTSKGKALALEKQ 257
 
 Query: 82  HEAELKPLAQSH 93
@@ -4114,7 +4114,7 @@ Sbjct: 183 DTFAHL 188
  Identities = 19/78 (24%), Positives = 36/78 (46%), Gaps = 17/78 (21%)
 
 Query: 40  LEKFDRFKHLKTEAEMKAS--EDLKKHGVTVLTALGAILKKKGHHEAELKPLAQSHATKH 97
-           L+  + F+ ++TE+E   S  E  +K+G  ++T           ++ ELK      A + 
+           L+  + F+ ++TE+E   S  E  +K+G  ++T           ++ ELK      A +
 Sbjct: 63  LKLLEHFEVVETESEGDPSLIEAAEKYGCILIT-----------NDKELK----RKAKQR 107
 
 Query: 98  KIPIKYLEFISEAIIHVL 115
@@ -4444,7 +4444,7 @@ Sbjct: 87 SKGEW 91
  Identities = 10/27 (37%), Positives = 13/27 (48%), Gaps = 1/27 (3%)
 
 Query: 99  IPIKYLEFISEAIIHVLHSRHPGDFGA 125
-           IP+   EF+S        S HP D+G 
+           IP+   EF+S        S HP D+G
 Sbjct: 33  IPVLSFEFLSLPSFSEKLS-HPEDYGG 58
 
 
@@ -4465,7 +4465,7 @@ Sbjct: 15  LKPVQQS---KEK---TYYEVTMEECTHQLHRDLP 43
  Identities = 5/14 (35%), Positives = 7/14 (50%)
 
 Query: 81  HHEAELKPLAQSHA 94
-           H E E+K +   H 
+           H E E+K +   H
 Sbjct: 94  HEEPEVKTVVHLHG 107
 
 
@@ -4578,7 +4578,7 @@ Sbjct: 9  PETLQ 13
  Identities = 26/86 (30%), Positives = 36/86 (41%), Gaps = 8/86 (9%)
 
 Query: 70  TALGAILKKKGHHEAELKPLAQSHATKHKIPIKYLEFISEAIIHVLHSRHPGDFGADAQ- 128
-           TA   +L +KG  E E        A    I  K    IS ++I +L S H  D     Q 
+           TA   +L +KG  E E        A    I  K    IS ++I +L S H  D     Q
 Sbjct: 560 TASRRLLPEKGTPEYEEMINNHEKAYLRTITSKLPTLISLSVIEIL-STHASDEVYLGQR 618
 
 Query: 129 -----GAMNKALELFRKDIAAKYKEL 149
@@ -4607,7 +4607,7 @@ Sbjct: 84  DRIGGIKTLKE----RGIKAHS----TALTAELAKKNGYEEPLGDL 121
  Identities = 5/11 (45%), Positives = 5/11 (45%)
 
 Query: 16  KVEADVAGHGQ 26
-           KVE    G G 
+           KVE    G G
 Sbjct: 133 KVETFYPGKGH 143
 
 
@@ -4794,7 +4794,7 @@ Sbjct: 25  KPLFVRHRTKKEID-------QEAAVEVSQLRDP 51
  Identities = 4/5 (80%), Positives = 4/5 (80%)
 
 Query: 121 GDFGA 125
-           GDFG 
+           GDFG
 Sbjct: 82  GDFGG 86
 
 
@@ -5463,7 +5463,7 @@ Sbjct: 42 ILVDMAKMRPTTVENVKR 59
  Identities = 13/44 (29%), Positives = 20/44 (45%), Gaps = 5/44 (11%)
 
 Query: 44  DRFKHLKTEAEM-KASEDLKKHGVT----VLTALGAILKKKGHH 82
-           D F+HL   A M +    L K G      ++  L  I+ +KG+ 
+           D F+HL   A M +    L K G      ++  L  I+ +KG+
 Sbjct: 256 DAFEHLLCGATMLQIGTALHKEGPAIFDRIIKELEEIMNQKGYQ 299
 
 
@@ -5496,7 +5496,7 @@ Sbjct: 145 VEGAGGGHAPDIMA--MAGHPNVL 166
  Identities = 6/18 (33%), Positives = 9/18 (50%)
 
 Query: 107 ISEAIIHVLHSRHPGDFG 124
-           I++ I H + S   G F 
+           I++ I H + S   G F
 Sbjct: 285 IAQGIAHEVGSIEEGKFA 302
 
 
@@ -5822,7 +5822,7 @@ Sbjct: 292 HIIETLHPG 300
  Identities = 4/7 (57%), Positives = 5/7 (71%)
 
 Query: 3   SEGEWQL 9
-           +EGEW  
+           +EGEW
 Sbjct: 413 TEGEWSF 419
 
 
@@ -5865,7 +5865,7 @@ Sbjct: 235 VANSWHPENWGEDS 248
  Identities = 4/7 (57%), Positives = 5/7 (71%)
 
 Query: 88  PLAQSHA 94
-           P+A SH 
+           P+A SH
 Sbjct: 158 PIAVSHG 164
 
 
@@ -6570,7 +6570,7 @@ Sbjct: 16  AINVAVHVFRK 26
  Identities = 5/11 (45%), Positives = 6/11 (54%)
 
 Query: 9   LVLHVWAKVEA 19
-           L LH+W   E 
+           L LH+W   E
 Sbjct: 110 LTLHMWPDTEG 120
 
 
@@ -6911,7 +6911,7 @@ Sbjct: 260 KYDLVKH 266
  Identities = 14/62 (22%), Positives = 24/62 (38%), Gaps = 4/62 (6%)
 
 Query: 85  ELKPLAQSHATKHKIPIKYLEFISEAIIHVLHSRHPGDFGADAQGAMNKALELFRKDIAA 144
-           E+K +  S     K P   ++   E  +  LH     D+G +A     +  E  R +   
+           E+K +  S     K P   ++   E  +  LH     D+G +A     +  E  R +
 Sbjct: 56  EVKTVGDSFMIASKSPFAAVQLAQELQLCFLHH----DWGTNALDDSYREFEEQRAEGEC 111
 
 Query: 145 KY 146
@@ -6980,7 +6980,7 @@ Sbjct: 140 RHFGPF 145
  Identities = 5/6 (83%), Positives = 5/6 (83%)
 
 Query: 10 VLHVWA 15
-          VLHVW 
+          VLHVW
 Sbjct: 94 VLHVWG 99
 
 
@@ -7004,7 +7004,7 @@ Sbjct: 14 LGAVIGPRGEVKAEI 28
  Identities = 18/80 (22%), Positives = 31/80 (38%), Gaps = 15/80 (18%)
 
 Query: 46  FKHLKTEAEMKASEDLKK--HGVTVLTALGAILKKKGHHEAELKPLAQSH---------- 93
-           F    +EAE+  S+  +   +G T L   G +  + G H+  +      +          
+           F    +EAE+  S+  +   +G T L   G +  + G H+  +      +
 Sbjct: 212 FMRQDSEAEIITSKSQENVYYGNTYLNCQGTMNFRHGDHQVAINNFYIGNDQRFGYGGMF 271
 
 Query: 94  --ATKHKIPIKYLEFISEAI 111
@@ -7132,7 +7132,7 @@ Sbjct: 89  LHVYHSLHRAGF 100
  Identities = 19/68 (27%), Positives = 32/68 (47%), Gaps = 11/68 (16%)
 
 Query: 30  IRLFKSH-----PETLEKFDRFKHLKTEAEMKASEDLKKHGVTVLTALGAILKKKGHHEA 84
-           ++LF+SH     P+   KF          ++KA   L++ G+  +  +  I  K GH   
+           ++LF+SH     P+   KF          ++KA   L++ G+  +  +  I  K GH
 Sbjct: 204 LQLFESHAGHLGPQLFNKFALPYIRDVAKQVKAR--LREAGLAPVPMI--IFAKDGHF-- 257
 
 Query: 85  ELKPLAQS 92
@@ -7341,7 +7341,7 @@ Sbjct: 39  DLFLKDLGVSPTE 51
  Identities = 4/13 (30%), Positives = 6/13 (46%)
 
 Query: 7  WQLVLHVWAKVEA 19
-          W L+     K+E 
+          W L+     K+E
 Sbjct: 4  WSLIRDCSGKLEG 16
 
 
@@ -8049,7 +8049,7 @@ Sbjct: 187 AEIQQVTQQH 196
  Identities = 16/43 (37%), Positives = 19/43 (44%), Gaps = 14/43 (32%)
 
 Query: 62  KKHGVTVL-------TALGAILK-------KKGHHEAELKPLA 90
-           KKH VTV          LG +L+       KKG  +AE K L 
+           KKH VTV          LG +L+       KKG  +AE K L
 Sbjct: 84  KKHWVTVTLDGTVPAELLGELLRGSYLLVTKKGFTKAERKELG 126
 
 
@@ -8472,7 +8472,7 @@ Sbjct: 101 RPLWRQAEAEHKIDLR-LKPALETLDELLAAGEAGTF 136
  Identities = 10/31 (32%), Positives = 16/31 (51%), Gaps = 6/31 (19%)
 
 Query: 13  VWAKVEADVAGHGQDILIRLFKSHPETLEKF 43
-           +W + EA+       I +RL K   ETL++ 
+           +W + EA+       I +RL K   ETL++
 Sbjct: 103 LWRQAEAE-----HKIDLRL-KPALETLDEL 127
 
 
@@ -8818,7 +8818,7 @@ Sbjct: 11 GHDDAIAIMMAAKHP 25
  Identities = 4/7 (57%), Positives = 4/7 (57%)
 
 Query: 121 GDFGADA 127
-           GD G D 
+           GD G D
 Sbjct: 81  GDTGLDG 87
 
 
@@ -8843,7 +8843,7 @@ Sbjct: 70  HGEIKSMRTSASHLRKGVAKQVLQHIIEEAEKRGYERL 107
  Identities = 6/29 (20%), Positives = 15/29 (51%)
 
 Query: 122 DFGADAQGAMNKALELFRKDIAAKYKELG 150
-           DFG+  +  +    ++ + D+A +  E+ 
+           DFG+  +  +    ++ + D+A +  E+
 Sbjct: 131 DFGSRCEIPLEYINKIMKTDLATRMFEIA 159
 
 
@@ -9674,7 +9674,7 @@ Sbjct: 25 ARGLWEREGEVWAFFPAPV 43
  Identities = 7/15 (46%), Positives = 8/15 (53%)
 
 Query: 29 LIRLFKSHPETLEKF 43
-          L+RL K  P T E  
+          L+RL K  P T E
 Sbjct: 32 LVRLSKIAPPTYESL 46
 
 
@@ -9792,7 +9792,7 @@ Sbjct: 41 AKVDSIEVAHG 51
  Identities = 11/34 (32%), Positives = 13/34 (38%), Gaps = 8/34 (23%)
 
 Query: 18  EADVAGH--------GQDILIRLFKSHPETLEKF 43
-           EADV+          G D +  L  SH    EK 
+           EADV+          G D +  L  SH    EK
 Sbjct: 117 EADVSKQHIEYARNLGMDTVGFLMMSHMIPAEKL 150
 
 
@@ -9872,7 +9872,7 @@ Sbjct: 112 AIIHV 116
  Identities = 18/62 (29%), Positives = 24/62 (38%), Gaps = 10/62 (16%)
 
 Query: 24 HGQDILIRLFKSHPETLEKF-----DRFKHLKTEAEMKASEDLKKHGVTVLTALGAILKK 78
-          H  D  +R+  + PE    F     D    +   A M  S D+   GV +LT  G   K 
+          H  D  +R+  + PE    F     D    +   A M  S D+   GV +LT  G   K
 Sbjct: 27 HVDDATVRVAFNRPEVRNAFRPHTVDELYRVLDHARM--SPDV---GVVLLTGNGPSPKD 81
 
 Query: 79 KG 80
@@ -9918,7 +9918,7 @@ Sbjct: 122 HGQDI 126
  Identities = 8/23 (34%), Positives = 11/23 (47%)
 
 Query: 31  RLFKSHPETLEKFDRFKHLKTEA 53
-           RL K   E    FD+++ L  E 
+           RL K   E    FD+++ L  E
 Sbjct: 91  RLRKLEVEANNAFDQYRDLYFEG 113
 
 
@@ -10319,7 +10319,7 @@ Sbjct: 417 FVSTDRGALHKAISL 431
  Identities = 7/28 (25%), Positives = 14/28 (50%), Gaps = 1/28 (3%)
 
 Query: 98  KIPIKYLEFISEAIIHVLHSRHPGDFGA 125
-           ++ ++Y EF+   +I  +     GD G 
+           ++ ++Y EF+   +I  +     GD G
 Sbjct: 214 EVSVEY-EFVFRVLIPRIARVCKGDQGG 240
 
 
@@ -10736,7 +10736,7 @@ Sbjct: 97  KVQVVNLGCGSDLRMLPLLQMF 118
  Identities = 18/67 (26%), Positives = 27/67 (40%), Gaps = 14/67 (20%)
 
 Query: 26 QDILIRLFKSHP------------ETLEKFDRFKHLKTEAEMKASEDLKKHGVTVLTALG 73
-          ++ILI    S+P            + L KFD  K+L    E   +      G+ + T   
+          ++ILI    S+P            + L KFD  K+L    E   +      G+ + T
 Sbjct: 6  KEILIEAISSYPPAIRILTLLEDGQHLTKFDLGKNLGFSGESGFTS--LPEGILLDTLAN 63
 
 Query: 74 AILKKKG 80
@@ -10776,7 +10776,7 @@ Sbjct: 28  EFLEEKGIHAAH 39
  Identities = 6/27 (22%), Positives = 14/27 (51%)
 
 Query: 64 HGVTVLTALGAILKKKGHHEAELKPLA 90
-          +G  ++  +   L++KG H A +  + 
+          +G  ++  +   L++KG H A +  +
 Sbjct: 18 YGKDLVRQIEEFLEEKGIHAAHISAIG 44
 
 
@@ -10881,7 +10881,7 @@ Sbjct: 115 ELEATLVYEVGKNWVEASADVA 136
  Identities = 6/21 (28%), Positives = 11/21 (52%), Gaps = 3/21 (14%)
 
 Query: 101 IKYLEFISEAIIHVLHSRHPG 121
-           I ++E+ + A    L  R+P 
+           I ++E+ + A    L  R+P
 Sbjct: 139 IDFIEYYARA---ALRYRYPA 156
 
 
@@ -11091,7 +11091,7 @@ Sbjct: 119 IHLVHPEDVGLKVTSDDREAVE 140
  Identities = 5/12 (41%), Positives = 7/12 (58%)
 
 Query: 4  EGEWQLVLHVWA 15
-          E E QL+  +W 
+          E E QL+  +W
 Sbjct: 59 ENEGQLIAFIWG 70
 
 
@@ -11446,7 +11446,7 @@ Sbjct: 106 IGVGDKIRSILHRTHS 121
  Identities = 8/26 (30%), Positives = 13/26 (50%), Gaps = 2/26 (7%)
 
 Query: 24  HGQDILIRLFKSHPETLEKFDRFKHL 49
-           H  D+ + +  S  E  +K+  FKH 
+           H  D+ + +  S  E  +K+  FKH
 Sbjct: 155 HQLDMAVEVVGSSREVCKKY--FKHF 178
 
 
@@ -11516,7 +11516,7 @@ Sbjct: 406 HVAANPQVDREGH 418
  Identities = 22/97 (22%), Positives = 34/97 (35%), Gaps = 16/97 (16%)
 
 Query: 19  ADVAGHGQDILIRLF---KSHPETLEKFDRFKHLKTEAEMKASEDLKKHGVTVLTALGAI 75
-           AD   H +    R F    +H     + DR  H+    E + +  L          +G  
+           AD   H +    R F    +H     + DR  H+    E + +  L          +G
 Sbjct: 386 ADPKDHSKPSFYRFFLVPGTHVAANPQVDREGHVVPGFEGRPTAPL----------VGGT 435
 
 Query: 76  LKKKGHHEAELKPLAQSHATKHKIPIKYLEFISEAII 112
@@ -11674,7 +11674,7 @@ Sbjct: 45 DNFKHL 50
  Identities = 16/67 (23%), Positives = 32/67 (47%), Gaps = 5/67 (7%)
 
 Query: 36 HPETLEKFDRFKHLKTEAEMKASEDL----KKHGVTVLTALGAILKKKGHHEAELKPLAQ 91
-           P + + +DR  ++  E  ++ S+D+    +K  +T  + LG     K  +E +L     
+           P + + +DR  ++  E  ++ S+D+    +K  +T  + LG     K  +E +L
 Sbjct: 2  QPASAKWYDRRDYVFIEFCVEDSKDVNVNFEKSKLT-FSCLGGSDNFKHLNEIDLFHCID 60
 
 Query: 92 SHATKHK 98
@@ -11748,7 +11748,7 @@ Sbjct: 25 LRELFEADPERFNNF 39
  Identities = 5/7 (71%), Positives = 5/7 (71%)
 
 Query: 37  PETLEKF 43
-           PE LEK 
+           PE LEK
 Sbjct: 455 PEDLEKL 461
 
 
@@ -11835,7 +11835,7 @@ Sbjct: 27  PVIGGHAGKTIIPL 40
  Identities = 18/64 (28%), Positives = 26/64 (40%), Gaps = 14/64 (21%)
 
 Query: 75  ILKKKGHHEAELKPLAQSHATKHKIPIKYLEFISEAIIHVLHSRHPGDFGADAQGAMNKA 134
-           I  K+G   A  KPL   H T+          ++   ++  H RH  D    A+GA    
+           I  K+G   A  KPL   H T+          ++   ++  H RH  D    A+GA
 Sbjct: 132 IAVKRGQRPA--KPLLLMHITQG---------VAGEEVNTAHYRHHLDL---AEGAEATV 177
 
 Query: 135 LELF 138
@@ -12061,7 +12061,7 @@ Sbjct: 4   HMSLLRFLEVVSEHI 18
  Identities = 12/39 (30%), Positives = 18/39 (46%), Gaps = 1/39 (2%)
 
 Query: 5   GEWQLVLHVWAKVEADVAGHGQDILIRLFKSHPETLEKF 43
-           G W L+    + V    A +G+D L   FK H + L+  
+           G W L+    + V    A +G+D L   FK H + L+
 Sbjct: 357 GVWGLLQVELSPVGFGFADYGRDRLSLYFK-HKQLLKNL 394
 
 
@@ -12177,7 +12177,7 @@ Sbjct: 136 KNIGIYPEIKAPWFHHQEGKDIAAKTLEVLKKYGY 170
  Identities = 16/64 (25%), Positives = 27/64 (42%), Gaps = 2/64 (3%)
 
 Query: 69  LTALGAILKKKGHHEAELKPLAQSHATKHKIPIKYLEFISEAIIHVLHSRHPGDFGADAQ 128
-           +T +   +K  G  E  L+PL  ++   +   I Y   ++    ++   RH  D    A 
+           +T +   +K  G  E  L+PL  ++   +   I Y   ++    ++   RH  D    A
 Sbjct: 80  ITRMAQDMKAYGK-EIWLRPLHAANGDWYPWAIGYSSRVNTNETYIAAFRHIVDI-FRAN 137
 
 Query: 129 GAMN 132
@@ -12216,7 +12216,7 @@ Sbjct: 7  AIAAIMQKG---DTNIKPILQ 24
  Identities = 5/15 (33%), Positives = 10/15 (66%)
 
 Query: 29 LIRLFKSHPETLEKF 43
-          L+R+  +H E +E+ 
+          L+R+  +H E +E+
 Sbjct: 73 LLRMHANHREEVEEL 87
 
 
@@ -12438,7 +12438,7 @@ Sbjct: 65  ALRRQVPVRY 74
  Identities = 5/9 (55%), Positives = 6/9 (66%)
 
 Query: 4  EGEWQLVLH 12
-          EG WQ+ L 
+          EG WQ+ L
 Sbjct: 14 EGLWQIHLQ 22
 
 
@@ -12452,7 +12452,7 @@ Sbjct: 14 EGLWQIHLQ 22
  Identities = 10/32 (31%), Positives = 16/32 (50%), Gaps = 1/32 (3%)
 
 Query: 119 HPGDFGADAQGAMNKALELFRKDIAAKYKELG 150
-           HP    A + G  +   ELF K++  + K+L 
+           HP    A + G  +   ELF K++  + K+L
 Sbjct: 300 HPEPEKALSDGKQSLDFELF-KELVQEMKKLA 330
 
 
@@ -12744,7 +12744,7 @@ Sbjct: 243 HGERVRELLRTLIAHP 258
  Identities = 6/23 (26%), Positives = 10/23 (43%)
 
 Query: 64  HGVTVLTALGAILKKKGHHEAEL 86
-           HG  V   L  ++   GH  ++ 
+           HG  V   L  ++   GH  ++
 Sbjct: 243 HGERVRELLRTLIAHPGHESSQF 265
 
 
@@ -12971,7 +12971,7 @@ Sbjct: 22 LFQEGEFSEQAFDLF 36
  Identities = 17/65 (26%), Positives = 26/65 (40%), Gaps = 14/65 (21%)
 
 Query: 38  ETLEKFDRFKHLKTEAEMKASEDLKKHGVTVLTALGAILKKKGHHEAELKPLAQ--SHAT 95
-           ET+E       L+    ++   +L K G+      G++ K KG       PL    SH  
+           ET+E       L+    ++   +L K G+      G++ K KG       PL    SH
 Sbjct: 35  ETVEVISEMFDLQEPTCLQTRLELYKQGLR-----GSLTKLKG-------PLTMMASHYK 82
 
 Query: 96  KHKIP 100
@@ -13012,7 +13012,7 @@ Sbjct: 69 RLVLINPELLEK 80
  Identities = 4/9 (44%), Positives = 6/9 (66%)
 
 Query: 38  ETLEKFDRF 46
-           + +EK DR 
+           + +EK DR
 Sbjct: 156 QKVEKLDRL 164
 
 
@@ -13075,7 +13075,7 @@ Sbjct: 170 KGHVEAE 176
  Identities = 7/17 (41%), Positives = 8/17 (47%)
 
 Query: 30  IRLFKSHPETLEKFDRF 46
-           IRLF +     E  DR 
+           IRLF +     E  DR
 Sbjct: 134 IRLFDAGIRHREAIDRL 150
 
 
@@ -13648,7 +13648,7 @@ Sbjct: 217 ETMNNSEDLNHL 228
  Identities = 7/29 (24%), Positives = 12/29 (41%)
 
 Query: 99  IPIKYLEFISEAIIHVLHSRHPGDFGADA 127
-           IP K+LE ++          +  D G + 
+           IP K+LE ++          +  D G +
 Sbjct: 220 IPAKFLEGLTLRTNQTFRDTYAADGGRNG 248
 
 
@@ -13905,7 +13905,7 @@ Sbjct: 105 DLSGHAFGAMAKKGDEQKLRSAGELELQFRRVKCKYPE 142
  Identities = 4/6 (66%), Positives = 5/6 (83%)
 
 Query: 120 PGDFGA 125
-           PG+FG 
+           PG+FG
 Sbjct: 40  PGEFGG 45
 
 
@@ -14209,7 +14209,7 @@ Sbjct: 87 YGSDPDTRESF 97
  Identities = 22/93 (23%), Positives = 37/93 (39%), Gaps = 11/93 (11%)
 
 Query: 57  ASEDLKKHGVTVLTALGAILKKKGHHEAELKPLAQSHATKHKIPIKYLEFISEAIIHVLH 116
-            ++DLK H      + G I +      A   P + + +   KI +++L+   + I   L 
+            ++DLK H      + G I +      A   P + + +   KI +++L+   + I   L
 Sbjct: 183 GAQDLKGH-----ESFGYIFRAVRGLGAFYSPSSDAESWT-KIHVRHLKDTKDMI--TLE 234
 
 Query: 117 SRHPGDFGADAQGAMNKALELFRK---DIAAKY 146
@@ -14313,11 +14313,11 @@ Sbjct: 75 YKPHPE 80
  Identities = 34/160 (21%), Positives = 58/160 (36%), Gaps = 42/160 (26%)
 
 Query: 2   LSEGEWQLVLHVWAKVE------------ADVAGHGQDILIRLFKSHPE----TLEK--- 42
-           L EG W+ ++    KV+            A   G G+D   R+ K  P+      EK   
+           L EG W+ ++    KV+            A   G G+D   R+ K  P+      EK
 Sbjct: 83  LEEGIWKCLVRPGQKVKKGTELVIDEDLSAVCLGRGED-GTRILKFQPQDDRLIFEKGRT 141
 
 Query: 43  -----------FDRFKHLKTEAEMKASEDLKKHGVTVLTALGAILKKKGHHEAEL----- 86
-                       +R++ +  + E   S      G+     L   LKKKG   AE+     
+                       +R++ +  + E   S      G+     L   LKKKG   AE+
 Sbjct: 142 PLPPYIKNEVPLERYQTVYAKEE--GSVAAPTAGLHFTPELIEKLKKKGVQFAEVVLHVG 199
 
 Query: 87  ----KPLAQSHATKHKIPIKYLEFISEAIIHVLHSRHPGD 122
@@ -14395,7 +14395,7 @@ Sbjct: 50 SDVEGH 55
  Identities = 18/68 (26%), Positives = 26/68 (38%), Gaps = 7/68 (10%)
 
 Query: 74  AILKKKGHHEAELKPLAQSHATKHKIPIKYLEFISEAIIHVLHSRHPGDFGADAQGAMNK 133
-           AI+KK   H  EL           K+ +   E +    I V + R   DFG      +  
+           AI+KK   H  EL           K+ +   E +    I V + R   DFG      +
 Sbjct: 33  AIVKKALEHGIEL-------GEPEKVEVIAGEGVVADGILVGNKRLMEDFGVAVSNEVEL 85
 
 Query: 134 ALELFRKD 141
@@ -14923,7 +14923,7 @@ Sbjct: 36  PIAGRHAVVVGRSKIVGAPMHDLLLWNNATVTTCHSK 72
  Identities = 6/9 (66%), Positives = 7/9 (77%)
 
 Query: 108 SEAIIHVLH 116
-           +EAI HVL 
+           +EAI HVL
 Sbjct: 17  TEAIRHVLQ 25
 
 
@@ -15340,7 +15340,7 @@ Sbjct: 121 WAMDFADWPQLTGALTAHMTNV 142
  Identities = 6/15 (40%), Positives = 7/15 (46%)
 
 Query: 113 HVLHSRHPGDFGADA 127
-           HV     PG+ G D 
+           HV     PG+ G D
 Sbjct: 57  HVFVIAGPGNNGGDG 71
 
 
@@ -15421,7 +15421,7 @@ Sbjct: 35 WAKLCKDCKVADGKAVTGTDVDIVFSKVKAKSARVINYEEFKKALEELATK 85
  Identities = 6/11 (54%), Positives = 6/11 (54%)
 
 Query: 120 PGDFGADAQGA 130
-           PGD    AQG 
+           PGD    AQG
 Sbjct: 9   PGDILVYAQGG 19
 
 
@@ -15519,7 +15519,7 @@ Sbjct: 197 VGEGETHAKFHVADYIE 213
  Identities = 9/25 (36%), Positives = 12/25 (48%)
 
 Query: 126 DAQGAMNKALELFRKDIAAKYKELG 150
-           DA+     A  L  KD+ A+Y  L 
+           DA+     A  L  KD+ A+Y  L
 Sbjct: 10  DAKKDEMVAFCLRHKDVLARYPLLA 34
 
 
@@ -15803,7 +15803,7 @@ Sbjct: 351 LYELSQAQMAREIFPKAPLKYM 372
  Identities = 6/29 (20%), Positives = 14/29 (48%)
 
 Query: 25 GQDILIRLFKSHPETLEKFDRFKHLKTEA 53
-          G+D+     +SH  T  +   F ++ ++ 
+          G+D+     +SH  T  +   F ++ ++
 Sbjct: 58 GKDLAKSRLQSHWSTFYQEQDFANIASQG 86
 
 
@@ -15872,7 +15872,7 @@ Sbjct: 15  ETLRRAVVHGVRLYNSGEF 33
  Identities = 10/32 (31%), Positives = 14/32 (43%), Gaps = 6/32 (18%)
 
 Query: 12  HVWAKVEADVAGHGQDILIRLFKSHPETLEKF 43
-           H+WA       G   D++I    +  E LEK 
+           H+WA       G   D++I    +  E LEK
 Sbjct: 213 HLWA------TGLIDDVIIGNAYASEEELEKL 238
 
 
@@ -15908,7 +15908,7 @@ Sbjct: 103 GFMRAMHKPVILVPFTEH 120
  Identities = 10/39 (25%), Positives = 17/39 (43%)
 
 Query: 42  KFDRFKHLKTEAEMKASEDLKKHGVTVLTALGAILKKKG 80
-           KFD +      A+  +S++     VTV +  G+    K 
+           KFD +      A+  +S++     VTV +  G+    K
 Sbjct: 124 KFDSYLDTHLTAQQVSSKERVILKVTVPSGKGSTTPTKA 162
 
 
@@ -15921,7 +15921,7 @@ Sbjct: 124 KFDSYLDTHLTAQQVSSKERVILKVTVPSGKGSTTPTKA 162
  Identities = 6/17 (35%), Positives = 9/17 (52%)
 
 Query: 122 DFGADAQGAMNKALELF 138
-           D G   Q A+N  ++L 
+           D G   Q A+N  ++L
 Sbjct: 119 DVGVFVQFAINNCIKLL 135
 
 
@@ -15943,7 +15943,7 @@ Sbjct: 43  LEMFDPDLA 51
  Identities = 4/9 (44%), Positives = 6/9 (66%)
 
 Query: 41  EKFDRFKHL 49
-           E+  RFK+ 
+           E+  RFK+
 Sbjct: 222 ERTKRFKNF 230
 
 
@@ -16149,7 +16149,7 @@ Sbjct: 138 VLEAVNLPLQARH 150
  Identities = 7/23 (30%), Positives = 11/23 (47%), Gaps = 5/23 (21%)
 
 Query: 1   VLSEGEWQLVLHVWAKVEADVAG 23
-           ++S G W      W+   +DVA 
+           ++S G W      W+   +DVA
 Sbjct: 126 IISVGGW-----TWSNRFSDVAA 143
 
 
@@ -16204,7 +16204,7 @@ Sbjct: 91  EYREKFAKEKGVKTSS 106
  Identities = 22/79 (27%), Positives = 30/79 (37%), Gaps = 8/79 (10%)
 
 Query: 22  AGHGQDILIRLFKSHPETLEKFDRFKHLKTEAEMKASEDLKKHGVTVLTALGAILKKK-- 79
-           AG  + I   + KS  E  E+F R   L    +    E L K     L AL     K   
+           AG  + I   + KS  E  E+F R   L    +    E L K     L AL     K
 Sbjct: 225 AGIRKSIAKSILKSKEEIYEEFVRKAILAAFPQGVGIESLAK-----LFALSTRFSKSYF 279
 
 Query: 80  -GHHEAELKPLAQSHATKH 97
@@ -16905,7 +16905,7 @@ Sbjct: 41 LFQALPET 48
  Identities = 6/21 (28%), Positives = 10/21 (47%)
 
 Query: 26 QDILIRLFKSHPETLEKFDRF 46
-          + I I   ++H   +EK D  
+          + I I   ++H   +EK D
 Sbjct: 21 ETITIDAIRTHRRLVEKADEL 41
 
 
@@ -17273,7 +17273,7 @@ Sbjct: 320 INGKYGQLGW 329
  Identities = 5/13 (38%), Positives = 7/13 (53%)
 
 Query: 82  HEAELKPLAQSHA 94
-           +EA L+   Q H 
+           +EA L+   Q H
 Sbjct: 276 YEALLEKYPQHHG 288
 
 
@@ -17331,7 +17331,7 @@ Sbjct: 1   KLPGKFLQY 9
  Identities = 16/68 (23%), Positives = 31/68 (45%), Gaps = 6/68 (8%)
 
 Query: 3   SEGEWQLVLHVWAKVEADVAGHGQ----DILIRLFKSHPETLEK--FDRFKHLKTEAEMK 56
-           S GE   +L ++   EA    +GQ      ++ L  +  E+  K   D+ K + + A+M 
+           S GE   +L ++   EA    +GQ      ++ L  +  E+  K   D+ K + + A+M
 Sbjct: 150 SHGETATLLQMFNPHEAIDWINGQPWVGSFVLSLLTTDFESPGKEFMDQIKLVASYAQMT 209
 
 Query: 57  ASEDLKKH 64
@@ -17393,7 +17393,7 @@ Sbjct: 5  KVLKEWKGHKVAVSVGGDHSFTGTLEDFD 33
  Identities = 5/10 (50%), Positives = 6/10 (60%)
 
 Query: 37 PETLEKFDRF 46
-          P T +KF R 
+          P T +KF R
 Sbjct: 45 PSTTDKFLRL 54
 
 
@@ -17741,7 +17741,7 @@ Sbjct: 62 PEQLEK 67
  Identities = 19/96 (19%), Positives = 36/96 (37%), Gaps = 19/96 (19%)
 
 Query: 48  HLKTEAEMKASEDLKKHGVTVLTALGAILKKKGHHEAELKPLAQSHATKHKIPIKYLEFI 107
-           +LK +  +  S+ L     +VLT   A+ +                  KH +  + +   
+           +LK +  +  S+ L     +VLT   A+ +                  KH +  + +
 Sbjct: 94  YLKDQYIVLISKGLIDFDNSVLTVPEAVWR-----------------LKHDLRERTVAIT 136
 
 Query: 108 SEAIIHVLHSRHPGD--FGADAQGAMNKALELFRKD 141
@@ -17964,7 +17964,7 @@ Sbjct: 93 FKQHPK 98
  Identities = 7/23 (30%), Positives = 10/23 (43%)
 
 Query: 43 FDRFKHLKTEAEMKASEDLKKHG 65
-          F R   L T+  +    D+ KH 
+          F R   L T+  +    D+ KH
 Sbjct: 34 FSRRATLDTKTPVFDVADVDKHA 56
 
 
@@ -18067,7 +18067,7 @@ Sbjct: 69  LELWRED 75
  Identities = 5/18 (27%), Positives = 7/18 (38%)
 
 Query: 2   LSEGEWQLVLHVWAKVEA 19
-           L +  WQ     W + E 
+           L +  WQ     W + E
 Sbjct: 258 LQDSAWQQATWHWLREEG 275
 
 
@@ -18341,7 +18341,7 @@ Sbjct: 196 LHKKYP 201
  Identities = 5/12 (41%), Positives = 6/12 (50%)
 
 Query: 119 HPGDFGADAQGA 130
-            PG    D+QG 
+            PG    D+QG
 Sbjct: 608 QPGAPAIDSQGG 619
 
 
@@ -18483,7 +18483,7 @@ Sbjct: 88  ELGLCGHIEDIAV 100
  Identities = 16/64 (25%), Positives = 24/64 (37%), Gaps = 1/64 (1%)
 
 Query: 37  PETLEKFDRFKHLKTEAEMKASEDLKKHGVTVLTALGAILKKKGHHEAELKPLAQSHATK 96
-           P+T     RFK+ +    +   + L     T+ T      K  G  E E K L  + A  
+           P+T     RFK+ +    +   + L     T+ T      K  G  E E K L  + A
 Sbjct: 271 PDTEHAVIRFKNDQVNYSLNTDDPLIFKS-TLDTDYQMTKKDMGFTEEEFKRLNINAAKS 329
 
 Query: 97  HKIP 100
@@ -18859,7 +18859,7 @@ Sbjct: 115 KFKPLSNRINVILSRTLKK 133
  Identities = 4/9 (44%), Positives = 6/9 (66%)
 
 Query: 82  HEAELKPLA 90
-             AE++PL 
+             AE++PL
 Sbjct: 126 QNAEMRPLG 134
 
 
@@ -18880,7 +18880,7 @@ Sbjct: 270 PLTRRWIVEHKRDIMRRYLE 289
  Identities = 4/10 (40%), Positives = 6/10 (60%)
 
 Query: 37  PETLEKFDRF 46
-           PE   +F+R 
+           PE   +F+R
 Sbjct: 162 PEMAGEFERL 171
 
 
@@ -19002,7 +19002,7 @@ Sbjct: 41  PGVIGCDA 48
  Identities = 5/13 (38%), Positives = 6/13 (46%)
 
 Query: 115 LHSRHPGDFGADA 127
-           +HS      GAD 
+           +HS      GAD
 Sbjct: 68  VHSSFQAVVGADG 80
 
 
@@ -19194,7 +19194,7 @@ Sbjct: 235 VMGEGSGMLVLESLEHAE 252
  Identities = 10/37 (27%), Positives = 18/37 (48%), Gaps = 9/37 (24%)
 
 Query: 119 HPGDFGA------DAQGAMNKALELFRKDIAAKYKEL 149
-           HP  FG       +A G+  +AL  +   + ++Y+E 
+           HP  FG       +A G+  +AL  +   + ++Y+E
 Sbjct: 66  HPRPFGQLRAFFEEADGSDAQALAPY---LQSQYREF 99
 
 
@@ -19258,12 +19258,12 @@ Sbjct: 31  ATFLVLAPEHP 41
     Posted date:  Apr 1, 2008  5:50 PM
   Number of letters in database: 932,154
   Number of sequences in database:  5287
-  
-Lambda     K      H
-   0.318    0.134    0.392 
 
 Lambda     K      H
-   0.267   0.0410    0.140 
+   0.318    0.134    0.392
+
+Lambda     K      H
+   0.267   0.0410    0.140
 
 
 Matrix: BLOSUM62

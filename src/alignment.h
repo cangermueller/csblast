@@ -53,10 +53,9 @@ class Alignment {
   Alignment(FILE* fin, Format format);
   // Constructs an alignment from a single sequence.
   Alignment(const Sequence<Alphabet>& seq);
-  // Constructs a query anchored alignment from BLAST results. If an E-value
-  // threshold is provided only hits with E-value better than the threshold
-  // are included in the alignment.
-  Alignment(const BlastHits& hits);
+  // Constructs a query anchored alignment from BLAST hits. If flag best is set
+  // to true only the best HSP of each hit is included in the alignment.
+  Alignment(const BlastHits& hits, bool best = false);
 
   ~Alignment() {}
 

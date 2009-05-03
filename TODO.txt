@@ -31,6 +31,7 @@ Todo:
 * remove inline from constructors
 * Look into Emitter class (remove Options?, rename to MultEmission, positional weights)
 * Replace init method in Initializers with Init
+* Implement -B option for CS-BLAST
 
 Someday:
 * Rename 'from' and 'to' members in Transition to 'source' and 'target'

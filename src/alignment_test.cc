@@ -48,6 +48,23 @@ TEST(AlignmentTest, ConstructionFromBlastHits) {
   EXPECT_EQ(2, ali.num_seqs());
 }
 
+TEST(AlignmentTest, ConstructionFromBlastHitsWithMultipleHSPs) {
+  FILE* fin = fopen("../data/blast_results.txt", "r");
+  BlastHits blast_hits(fin);
+  fclose(fin);
+
+  ASSERT_EQ(500, blast_hits.num_hits());
+  blast_hits.Filter(0.2);
+  ASSERT_EQ(4, blast_hits.num_hits());
+
+  Alignment<AminoAcid> ali(blast_hits, false);
+  EXPECT_EQ(5, ali.num_seqs());
+  LOG(INFO) << ali;
+
+  Alignment<AminoAcid> ali_best(blast_hits, true);
+  EXPECT_EQ(4, ali_best.num_seqs());
+}
+
 TEST(AlignmentTest, CalculationOfGlobalWeights) {
   FILE* fin = fopen("../data/nt_alignment2.fas", "r");
   Alignment<Nucleotide> alignment(fin, Alignment<Nucleotide>::FASTA);

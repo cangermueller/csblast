@@ -74,11 +74,11 @@ void BlastHits::Read(FILE* fin) {
       if (i >= static_cast<int>(hits_.size())) break;
 
     } else if (strstr(buffer, "Score =")) {
-      HSP hsp;
-      ptr = strchr(buffer, '=');
+      Hsp hsp;
+      ptr = strchr(buffer, '=') + 1;
       while (isspace(*ptr)) ++ptr;
       hsp.bit_score = atof(ptr);
-      ptr = strchr(buffer, '=');
+      ptr = strchr(ptr, '=') + 1;
       while (isspace(*ptr)) ++ptr;
       hsp.evalue = atof(ptr);
       hits_[i].hsps.push_back(hsp);
@@ -106,12 +106,23 @@ void BlastHits::Read(FILE* fin) {
 }
 
 void BlastHits::Filter(double evalue_threshold) {
-   for (HitIter it = begin(); it != end(); ++it) {
-     if (it->evalue > evalue_threshold) {
-       hits_.erase(it, end());
-       return;
-     }
-   }
+  // Delete hits below E-value threshold
+  for (HitIter hit = begin(); hit != end(); ++hit) {
+    if (hit->evalue > evalue_threshold) {
+      hits_.erase(hit, end());
+      break;
+    }
+  }
+
+  // Delete HSPs in remaining hits with E-value below threshold
+  for (HitIter hit = begin(); hit != end(); ++hit) {
+    for (HspIter hsp = hit->hsps.begin(); hsp != hit->hsps.end(); ++hsp) {
+      if (hsp->evalue > evalue_threshold) {
+        hit->hsps.erase(hsp, hit->hsps.end());
+        break;
+      }
+    }
+  }
 }
 
 }  // namespace cs
