@@ -59,7 +59,6 @@ TEST(AlignmentTest, ConstructionFromBlastHitsWithMultipleHSPs) {
 
   Alignment<AminoAcid> ali(blast_hits, false);
   EXPECT_EQ(5, ali.num_seqs());
-  LOG(INFO) << ali;
 
   Alignment<AminoAcid> ali_best(blast_hits, true);
   EXPECT_EQ(4, ali_best.num_seqs());
@@ -173,13 +172,11 @@ TEST(AlignmentTest, Merging) {
   Alignment<AminoAcid> ali_slim(fin, Alignment<AminoAcid>::FASTA);
   fclose(fin);
   ASSERT_EQ(5, ali_slim.num_seqs());
-  LOG(DEBUG) << ali_slim;
 
   fin = fopen("../data/MalT_diverse.fas", "r");
   Alignment<AminoAcid> ali_diverse(fin, Alignment<AminoAcid>::FASTA);
   fclose(fin);
   ASSERT_EQ(21, ali_diverse.num_seqs());
-  LOG(DEBUG) << ali_diverse;
 
   ali_slim.Merge(ali_diverse);
   EXPECT_EQ(23, ali_slim.num_seqs());

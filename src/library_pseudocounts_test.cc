@@ -29,8 +29,7 @@ TEST(LibraryPseudocountsTest, AddToDummySequence) {
 
   ASSERT_EQ(50, lib.num_profiles());
 
-  EmissionOptions opts;
-  LibraryPseudocounts<AminoAcid> pc(&lib, opts);
+  LibraryPseudocounts<AminoAcid> pc(&lib, 1.6f, 0.85f);
   pc.add_to_sequence(seq, DivergenceDependentAdmixture(1.0f, 10.0f), &profile);
 
   EXPECT_NEAR(0.0736f, profile[0][AminoAcid::instance().ctoi('V')], kFloatDelta);
@@ -52,8 +51,7 @@ TEST(LibraryPseudocountsTest, AddToSmallProfile) {
 
   ASSERT_EQ(50, lib.num_profiles());
 
-  EmissionOptions opts;
-  LibraryPseudocounts<AminoAcid> pc(&lib, opts);
+  LibraryPseudocounts<AminoAcid> pc(&lib, 1.6f, 0.85f);
   pc.add_to_profile(DivergenceDependentAdmixture(1.0f, 10.0f), &profile);
 
   EXPECT_NEAR(0.80f, profile[0][AminoAcid::instance().ctoi('C')], kFloatDelta);
@@ -71,8 +69,7 @@ TEST(LibraryPseudocountsTest, AddToZnFingerSequenceK50) {
   ProfileLibrary<AminoAcid> lib(fin);
   fclose(fin);
 
-  EmissionOptions opts;
-  LibraryPseudocounts<AminoAcid> pc(&lib, opts);
+  LibraryPseudocounts<AminoAcid> pc(&lib, 1.6f, 0.85f);
   for (int n = 0; n < 80; ++n)
     pc.add_to_sequence(seq, ConstantAdmixture(1.0f), &profile);
 
@@ -95,8 +92,7 @@ TEST(LibraryPseudocountsTest, AddToZnFingerSequenceK4000) {
   ASSERT_EQ(20, lib.alphabet_size());
   ASSERT_TRUE(lib.logspace());
 
-  EmissionOptions opts;
-  LibraryPseudocounts<AminoAcid> pc(&lib, opts);
+  LibraryPseudocounts<AminoAcid> pc(&lib, 1.6f, 0.85f);
   pc.add_to_sequence(seq, ConstantAdmixture(1.0f), &profile);
 
   EXPECT_NEAR(0.78696, profile[53][AminoAcid::instance().ctoi('C')], kFloatDelta);
@@ -118,8 +114,7 @@ TEST(LibraryPseudocountsTest, AddToZnFingerAlignmentK4000) {
   ASSERT_EQ(20, lib.alphabet_size());
   ASSERT_TRUE(lib.logspace());
 
-  EmissionOptions opts;
-  LibraryPseudocounts<AminoAcid> pc(&lib, opts);
+  LibraryPseudocounts<AminoAcid> pc(&lib, 1.6f, 0.85f);
   pc.add_to_profile(DivergenceDependentAdmixture(1.0f, 10.0f), &profile);
 
   EXPECT_NEAR(0.7612, profile[53][AminoAcid::instance().ctoi('C')], kFloatDelta);

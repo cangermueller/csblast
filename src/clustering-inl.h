@@ -28,7 +28,7 @@ Clustering<Alphabet, Subject>::Clustering(const ClusteringOptions& opts,
     : ExpectationMaximization<Alphabet, Subject>(data),
       opts_(opts),
       lib_(lib),
-      emitter_(lib.num_cols(), opts),
+      emitter_(lib.num_cols(), opts.weight_center, opts.weight_decay),
       profile_stats_(),
       profile_stats_block_() {
   init();
@@ -43,7 +43,7 @@ Clustering<Alphabet, Subject>::Clustering(const ClusteringOptions& opts,
     : ExpectationMaximization<Alphabet, Subject>(data),
       opts_(opts),
       lib_(lib),
-      emitter_(lib.num_cols(), opts),
+      emitter_(lib.num_cols(), opts.weight_center, opts.weight_decay),
       profile_stats_(),
       profile_stats_block_() {
   progress_table_ = new ClusteringProgressTable<Alphabet, Subject>(this, fout);
@@ -206,7 +206,7 @@ void Clustering<Alphabet, Subject>::init() {
     progress_table_->set_total_work(lib_.num_profiles() * data_.size());
 
   // Compute effective number of training data columns
-  num_eff_cols_ = emitter_.sum_weights() * data_.size();
+  num_eff_cols_ = emitter_.SumWeights() * data_.size();
 }
 
 

@@ -9,7 +9,7 @@
 #include <valarray>
 
 #include "count_profile-inl.h"
-#include "emitter-inl.h"
+#include "emitter.h"
 #include "hmm-inl.h"
 #include "matrix.h"
 #include "profile-inl.h"
@@ -22,7 +22,9 @@ namespace cs {
 template<class Alphabet>
 class HMMPseudocounts : public Pseudocounts<Alphabet> {
  public:
-  HMMPseudocounts(const HMM<Alphabet>* hmm, const EmissionOptions& opts);
+  HMMPseudocounts(const HMM<Alphabet>* hmm,
+                  float weight_center,
+                  float weight_decay);
   ~HMMPseudocounts() {}
 
   // Adds context-specific pseudocounts to sequence and stores resulting

@@ -14,7 +14,6 @@
 #include "count_profile-inl.h"
 #include "csblast.h"
 #include "csblast_iteration.h"
-#include "emitter.h"
 #include "exception.h"
 #include "getopt_pp.h"
 #include "library_pseudocounts-inl.h"
@@ -29,7 +28,7 @@ using std::map;
 
 namespace cs {
 
-struct CSBlastAppOptions : public EmissionOptions {
+struct CSBlastAppOptions {
   typedef map<char, string> PsiBlastOptions;
 
   CSBlastAppOptions() { SetDefaults(); }
@@ -85,6 +84,10 @@ struct CSBlastAppOptions : public EmissionOptions {
   float inclusion;
   // Include only the best HSP per hit in alignment
   bool best;
+  // Weight of central column in multinomial emission
+  float weight_center;
+  // Exponential decay of window weights
+  float weight_decay;
   // PSI-BLAST options map
   PsiBlastOptions psiblast_opts;
 };  // struct CSBlastAppOptions
@@ -256,7 +259,9 @@ void CSBlastApp::Init() {
   fclose(fin);
 
   // Setup context-specific pseudocounts generator
-  pc_.reset(new LibraryPseudocounts<AminoAcid>(lib_.get(), opts_));
+  pc_.reset(new LibraryPseudocounts<AminoAcid>(lib_.get(),
+                                               opts_.weight_center,
+                                               opts_.weight_decay));
 
   // Setup PSSM of query profile with context-specific pseudocounts if no
   // restart file is provided

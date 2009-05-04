@@ -12,31 +12,12 @@
 
 namespace cs {
 
-// Options for computation of emission probabilities.
-struct EmissionOptions {
-  EmissionOptions()
-      : ignore_context(false),
-        weight_center(1.6f),
-        weight_decay(0.85f) {}
-
-  EmissionOptions(const EmissionOptions& p)
-      : ignore_context(p.ignore_context),
-        weight_center(p.weight_center),
-        weight_decay(p.weight_decay) {}
-
-  virtual ~EmissionOptions() {}
-
-  bool ignore_context;
-  float weight_center;
-  float weight_decay;
-};
-
 // Encapsulation for computation of emitter probabilities for profiles.
 template< class Alphabet>
 class Emitter {
  public:
   // Constructs an emitter with positional window weights.
-  Emitter(int num_cols, const EmissionOptions& opts);
+  Emitter(int num_cols, float weight_center = 1.0f, float weight_decay = 1.0f);
 
   ~Emitter() {}
 
@@ -51,13 +32,11 @@ class Emitter {
                      const Sequence<Alphabet>& seq,
                      int index) const;
   // Calculates the sum of positional weights.
-  float sum_weights() const;
+  float SumWeights() const { return weights_.sum(); }
   // Initializes positional window weights.
-  void init_weights();
+  void InitWeights(float weight_center, float weight_decay);
 
  private:
-  // Paramter wrapper
-  const EmissionOptions& opts_;
   // Number of columns in context profiles.
   int num_cols_;
   // Index of central column in context profiles.

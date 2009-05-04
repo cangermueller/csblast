@@ -25,24 +25,29 @@ template< class Alphabet,
 class BaumWelchProgressTable;
 
 // Parameter wrapper for Baum-Welch training.
-struct BaumWelchOptions : public EmissionOptions,
-                         public ExpectationMaximizationOptions {
+struct BaumWelchOptions : public ExpectationMaximizationOptions {
   BaumWelchOptions()
-      : EmissionOptions(),
-        ExpectationMaximizationOptions(),
+      : ExpectationMaximizationOptions(),
         transition_pc(1.0f),
-        max_connectivity(0) {}
+        max_connectivity(0),
+        weight_center(1.3f),
+        weight_decay(0.9f) {}
 
   BaumWelchOptions(const BaumWelchOptions& opts)
-      : EmissionOptions(opts),
-        ExpectationMaximizationOptions(opts),
+      : ExpectationMaximizationOptions(opts),
         transition_pc(opts.transition_pc),
-        max_connectivity(opts.max_connectivity) {}
+        max_connectivity(opts.max_connectivity),
+        weight_center(opts.weight_center),
+        weight_decay(opts.weight_decay) {}
 
   // Pseudocounts added to transitions (values below 1 enforce sparsity).
   float transition_pc;
   // Maximum average connectivity for convergence.
   int max_connectivity;
+  // Weight of central column in multinomial emission
+  float weight_center;
+  // Exponential decay of window weights
+  float weight_decay;
 };
 
 // Encapsulation of Baum-Welch training for HMMs.

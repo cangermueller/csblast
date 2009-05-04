@@ -8,6 +8,7 @@
 #include <cassert>
 
 #include "amino_acid.h"
+#include "emitter-inl.h"
 #include "count_profile-inl.h"
 #include "log.h"
 #include "matrix.h"
@@ -22,9 +23,10 @@ namespace cs {
 template<class Alphabet>
 inline LibraryPseudocounts<Alphabet>::LibraryPseudocounts(
     const ProfileLibrary<Alphabet>* lib,
-    const EmissionOptions& opts)
+    float weight_center,
+    float weight_decay)
     : lib_(*lib),
-      emitter_(lib->num_cols(), opts) {
+      emitter_(lib->num_cols(), weight_center, weight_decay) {
   assert(lib_.logspace());
 }
 

@@ -5,6 +5,7 @@
 #include <cassert>
 
 #include "amino_acid.h"
+#include "emitter-inl.h"
 #include "count_profile-inl.h"
 #include "matrix.h"
 #include "profile-inl.h"

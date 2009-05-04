@@ -33,7 +33,7 @@ struct CSSampleAppOptions {
   virtual ~CSSampleAppOptions() {}
 
   // Validates the parameter settings and throws exception if needed.
-  void validate() {
+  void Validate() {
     if (infile.empty()) throw Exception("No input file provided!");
     if (outfile.empty()) throw Exception("No output file provided!");
   }
@@ -70,7 +70,7 @@ class CSSampleApp : public Application {
   // Prints usage banner to stream.
   virtual void print_banner() const;
   // Samples profiles from database of profiles.
-  void sample();
+  void Sample();
 
   // Parameter wrapper
   CSSampleAppOptions opts_;
@@ -93,7 +93,7 @@ void CSSampleApp<Alphabet>::parse_options(GetOpt_pp* options) {
   *options >> Option('s', "sample-rate", opts_.sample_rate,
                      opts_.sample_rate);
 
-  opts_.validate();
+  opts_.Validate();
 
   if (opts_.outfile.empty())
     opts_.outfile = get_file_basename(opts_.infile, false) + "prf";
@@ -126,7 +126,7 @@ void CSSampleApp<Alphabet>::print_options() const {
 }
 
 template<class Alphabet>
-void CSSampleApp<Alphabet>::sample() {
+void CSSampleApp<Alphabet>::Sample() {
   fprintf(stream(), "Sampling %i profiles from pool of %i profiles ...\n",
           opts_.sample_size, static_cast<int>(database_.size()));
   fflush(stream());
@@ -176,7 +176,7 @@ int CSSampleApp<Alphabet>::run() {
 
   // Sample profiles
   random_shuffle(database_.begin(), database_.end());
-  sample();
+  Sample();
 
   // Write sampled profiles to outfile
   FILE* fout = fopen(opts_.outfile.c_str(), "w");

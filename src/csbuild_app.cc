@@ -24,7 +24,7 @@ using std::string;
 
 namespace cs {
 
-struct CSBuildAppOptions : public EmissionOptions {
+struct CSBuildAppOptions {
   static const int kMatchColAssignByQuery = -1;
 
   CSBuildAppOptions() { SetDefaults(); }
@@ -41,6 +41,8 @@ struct CSBuildAppOptions : public EmissionOptions {
     pc_ali              = 10.0f;
     matchcol_assignment = kMatchColAssignByQuery;
     global_weights      = false;
+    weight_center       = 1.3f;
+    weight_decay        = 0.9f;
   }
 
   // Validates the parameter settings and throws exception if needed.
@@ -66,6 +68,10 @@ struct CSBuildAppOptions : public EmissionOptions {
   int matchcol_assignment;
   // Use global instead of position specific weights for sequence weighting.
   bool global_weights;
+  // Weight of central column in multinomial emission
+  float weight_center;
+  // Exponential decay of window weights
+  float weight_decay;
 };  // CSBuildAppOptions
 
 
@@ -222,7 +228,9 @@ int CSBuildApp<Alphabet>::run() {
     CountProfile<Alphabet> profile(seq);
 
     if (lib_) {
-      LibraryPseudocounts<Alphabet> pc(lib_.get(), opts_);
+      LibraryPseudocounts<Alphabet> pc(lib_.get(),
+                                       opts_.weight_center,
+                                       opts_.weight_decay);
       fprintf(stream(), "Adding context-specific pseudocounts (admix=%-.2f) ...\n",
               opts_.pc_admix);
       pc.add_to_sequence(seq, ConstantAdmixture(opts_.pc_admix), &profile);
@@ -245,7 +253,9 @@ int CSBuildApp<Alphabet>::run() {
     CountProfile<Alphabet> profile(ali, !opts_.global_weights);
 
     if (lib_) {
-      LibraryPseudocounts<Alphabet> pc(lib_.get(), opts_);
+      LibraryPseudocounts<Alphabet> pc(lib_.get(),
+                                       opts_.weight_center,
+                                       opts_.weight_decay);
       fprintf(stream(), "Adding context-specific pseudocounts (admix=%-.2f) ...\n",
               opts_.pc_admix);
       pc.add_to_profile(DivergenceDependentAdmixture(opts_.pc_admix,

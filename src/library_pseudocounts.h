@@ -6,7 +6,7 @@
 #include <valarray>
 
 #include "count_profile-inl.h"
-#include "emitter-inl.h"
+#include "emitter.h"
 #include "matrix.h"
 #include "profile-inl.h"
 #include "profile_library-inl.h"
@@ -21,7 +21,8 @@ template<class Alphabet>
 class LibraryPseudocounts : public Pseudocounts<Alphabet> {
  public:
   LibraryPseudocounts(const ProfileLibrary<Alphabet>* lib,
-                      const EmissionOptions& opts);
+                      float weight_center,
+                      float weight_decay);
   ~LibraryPseudocounts() {}
 
   // Adds context-specific pseudocounts to sequence and stores resulting

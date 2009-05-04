@@ -17,15 +17,13 @@
 namespace cs {
 
 template<class Alphabet>
-Emitter<Alphabet>::Emitter(int num_cols, const EmissionOptions& opts)
-    : opts_(opts),
-      num_cols_(num_cols),
+Emitter<Alphabet>::Emitter(int num_cols, float weight_center, float weight_decay)
+    : num_cols_(num_cols),
       center_((num_cols - 1) / 2),
       weights_(1.0f, num_cols) {
   if (num_cols_ % 2 != 1)
-    throw Exception("Number of columns for emitter should be odd but is %i!",
-                    num_cols_);
-  init_weights();
+    throw Exception("Number of emission columns should be odd but is %i!", num_cols_);
+  InitWeights(weight_center, weight_decay);
 }
 
 template<class Alphabet>
@@ -38,20 +36,14 @@ inline double Emitter<Alphabet>::operator() (
 
   const int alphabet_size = profile.alphabet_size();
   double rv = 0.0;
-  if (!opts_.ignore_context) {
-    const int beg = std::max(0, index - center_);
-    const int end = std::min(counts.num_cols() - 1, index + center_);
-    for(int i = beg; i <= end; ++i) {
-      const int j = i - index + center_;
-      double sum = 0.0;
-      for (int a = 0; a < alphabet_size; ++a)
-        sum += counts[i][a] * counts.neff(i) * profile[j][a];
-      rv += weights_[j] * sum;
-    }
-  } else {
+  const int beg = std::max(0, index - center_);
+  const int end = std::min(counts.num_cols() - 1, index + center_);
+  for(int i = beg; i <= end; ++i) {
+    const int j = i - index + center_;
+    double sum = 0.0;
     for (int a = 0; a < alphabet_size; ++a)
-      rv += counts[index][a] * profile[center_][a];
-    rv *= weights_[center_];
+      sum += counts[i][a] * counts.neff(i) * profile[j][a];
+    rv += weights_[j] * sum;
   }
   return rv;
 }
@@ -64,32 +56,23 @@ inline double Emitter<Alphabet>::operator() (
   assert(profile.logspace());
 
   double rv = 0.0;
-  if (!opts_.ignore_context) {
-    const int beg = std::max(0, index - center_);
-    const int end = std::min(seq.length() - 1, index + center_);
-    for(int i = beg; i <= end; ++i) {
-      const int j = i - index + center_;
-      rv += weights_[j] * profile[j][seq[i]];
-    }
-  } else {
-    rv = weights_[center_] * profile[center_][seq[index]];
+  const int beg = std::max(0, index - center_);
+  const int end = std::min(seq.length() - 1, index + center_);
+  for(int i = beg; i <= end; ++i) {
+    const int j = i - index + center_;
+    rv += weights_[j] * profile[j][seq[i]];
   }
   return rv;
 }
 
 template<class Alphabet>
-void Emitter<Alphabet>::init_weights() {
-  weights_[center_] = opts_.weight_center;
+void Emitter<Alphabet>::InitWeights(float weight_center, float weight_decay) {
+  weights_[center_] = weight_center;
   for (int i = 1; i <= center_; ++i) {
-    float weight = opts_.weight_center * pow(opts_.weight_decay, i);
+    float weight = weight_center * pow(weight_decay, i);
     weights_[center_ - i] = weight;
     weights_[center_ + i] = weight;
   }
-}
-
-template<class Alphabet>
-inline float Emitter<Alphabet>::sum_weights() const {
-  return opts_.ignore_context ? weights_[center_] : weights_.sum();
 }
 
 }  // namespace cs

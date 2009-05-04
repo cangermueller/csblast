@@ -20,15 +20,21 @@
 namespace cs {
 
 // Parameter wrapper for expectation-maximization clustering.
-struct ClusteringOptions : public EmissionOptions,
-                          public ExpectationMaximizationOptions {
+struct ClusteringOptions : public ExpectationMaximizationOptions {
   ClusteringOptions()
-      : EmissionOptions(),
-        ExpectationMaximizationOptions() {}
+      : ExpectationMaximizationOptions(),
+        weight_center(1.3f),
+        weight_decay(0.9f) {}
 
   ClusteringOptions(const ClusteringOptions& opts)
-      : EmissionOptions(opts),
-        ExpectationMaximizationOptions(opts) {}
+      : ExpectationMaximizationOptions(opts),
+        weight_center(opts.weight_center),
+        weight_decay(opts.weight_decay) {}
+
+  // Weight of central column in multinomial emission
+  float weight_center;
+  // Exponential decay of window weights
+  float weight_decay;
 };
 
 // Encapsulation of expectation-maximization clustering.

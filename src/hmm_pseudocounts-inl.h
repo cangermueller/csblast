@@ -9,6 +9,7 @@
 #include <cmath>
 
 #include "count_profile-inl.h"
+#include "emitter-inl.h"
 #include "forward_backward_algorithm.h"
 #include "hmm-inl.h"
 #include "log.h"
@@ -20,9 +21,10 @@ namespace cs {
 
 template<class Alphabet>
 inline HMMPseudocounts<Alphabet>::HMMPseudocounts(const HMM<Alphabet>* hmm,
-                                                  const EmissionOptions& opts)
+                                                  float weight_center,
+                                                  float weight_decay)
     : hmm_(*hmm),
-      emitter_(hmm->num_cols(), opts) {
+      emitter_(hmm->num_cols(), weight_center, weight_decay) {
   assert(hmm_.states_logspace());
   assert(!hmm_.transitions_logspace());
 }
