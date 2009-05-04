@@ -171,7 +171,7 @@ int CSSampleApp<Alphabet>::run() {
 
   CountProfile<Alphabet>::readall(fin, &database_);
 
-  fprintf(stream(), " %i profiles read\n", database_.size());
+  fprintf(stream(), " %i profiles read\n", static_cast<int>(database_.size()));
   fclose(fin);
 
   // Sample profiles
