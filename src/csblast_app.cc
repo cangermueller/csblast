@@ -139,6 +139,8 @@ void CSBlastApp::parse_options(GetOpt_pp* options) {
   *options >> Option('j', "iterations", opts_.iterations, opts_.iterations);
   *options >> Option('h', "inclusion", opts_.inclusion, opts_.inclusion);
   *options >> Option(' ', "alignhits", opts_.alifile, opts_.alifile);
+  *options >> Option(' ', "weight-center", opts_.weight_center, opts_.weight_center);
+  *options >> Option(' ', "weight-decay", opts_.weight_decay, opts_.weight_decay);
   *options >> Option(' ', "blast-path", opts_.blast_path, opts_.blast_path);
   *options >> Option(' ', "BLAST_PATH", opts_.blast_path, opts_.blast_path);
   *options >> OptionPresent(' ', "global-weights", opts_.global_weights);
@@ -188,7 +190,11 @@ void CSBlastApp::print_options() const {
           "Constant for alignment pseudocounts in CSI-BLAST",
           opts_.pc_ali);
   fprintf(stream(), "  %-30s %s\n", "    --alignhits <file>",
-          "Write FASTA multiple alignment of hits to file");
+          "Write multiple alignment of hits in PSI format to file");
+  fprintf(stream(), "  %-30s %s (def=%-.2f)\n", "    --weight-center [0,inf[",
+          "Weight of central profile column", opts_.weight_center);
+  fprintf(stream(), "  %-30s %s (def=%-.2f)\n", "    --weight-decay [0,inf[",
+          "Parameter for exponential decay of window weights", opts_.weight_decay);
   fprintf(stream(), "  %-30s %s\n", "    --global-weights",
           "Use global instead of position-specific sequence weights (def=off)");
   fprintf(stream(), "  %-30s %s\n", "    --best",
@@ -287,7 +293,7 @@ void CSBlastApp::SaveAlignment() const {
   if (!opts_.alifile.empty()) {
     FILE* fali = fopen(opts_.alifile.c_str(), "w");
     if (!fali) throw Exception("Unable to write file '%s'!", opts_.alifile.c_str());
-    ali_->write(fali, Alignment<AminoAcid>::FASTA);
+    ali_->write(fali, Alignment<AminoAcid>::PSI);
     fclose(fali);
   }
 }
