@@ -36,6 +36,9 @@ CXXFLAGS += -O3 -march=athlon64 --param large-function-growth=10000 --param inli
 ifdef STATIC
 	CXXFLAGS += -static-libgcc -static
 endif
+ifdef OPENMP
+	CXXFLAGS += -fopenmp
+endif
 ifndef NDEBUG
 	CXXFLAGS += -g
 else

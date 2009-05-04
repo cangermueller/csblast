@@ -3,6 +3,10 @@
 #ifndef SRC_GLOBALS_H_
 #define SRC_GLOBALS_H_
 
+#ifndef OPENMP
+#include <omp.h>
+#endif
+
 namespace cs {
 
 // Constants

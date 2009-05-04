@@ -67,17 +67,22 @@ template< class Alphabet,
 void BaumWelchTraining<Alphabet, Subject>::expectation_step(
     const data_vector& block) {
   // Run forward and backward algorithm on each subject in current block
-  for (typename data_vector::const_iterator bi = block.begin();
-       bi != block.end(); ++bi) {
-    ForwardBackwardMatrices fbm((*bi)->length(), hmm_.num_states());
-    forward_backward_algorithm(hmm_, **bi, emission_, &fbm);
-    add_contribution_to_priors(fbm);
-    add_contribution_to_transitions(fbm);
-    add_contribution_to_emissions(fbm, **bi);
-    log_likelihood_ += fbm.log_likelihood / num_eff_cols_;
+  const int block_size = block.size();
+#pragma omp parallel for schedule(static)
+  for (int n = 0; n < block_size; ++n) {
+    ForwardBackwardMatrices fbm(block[n]->length(), hmm_.num_states());
+    forward_backward_algorithm(hmm_, *block[n], emission_, &fbm);
 
-    if (progress_table_)
-      progress_table_->print_progress(hmm_.num_states() * (**bi).length());
+#pragma omp critical
+    {
+      add_contribution_to_priors(fbm);
+      add_contribution_to_transitions(fbm);
+      add_contribution_to_emissions(fbm, *block[n]);
+
+      log_likelihood_ += fbm.log_likelihood / num_eff_cols_;
+      if (progress_table_)
+        progress_table_->print_progress(hmm_.num_states() * block[n]->length());
+    }
   }
 
   update_sufficient_statistics();
@@ -147,9 +152,10 @@ void BaumWelchTraining<Alphabet, Subject>::add_contribution_to_priors(
     const ForwardBackwardMatrices& m) {
   const int num_states = hmm_.num_states();
 
-  for (int k = 0; k < num_states; ++k)
-    profile_stats_block_[k]->set_prior(profile_stats_block_[k]->prior()
-                                       + m.f[0][k] * m.b[0][k]);
+  for (int k = 0; k < num_states; ++k) {
+      profile_stats_block_[k]->set_prior(profile_stats_block_[k]->prior()
+                                         + m.f[0][k] * m.b[0][k]);
+  }
 }
 
 template< class Alphabet,
