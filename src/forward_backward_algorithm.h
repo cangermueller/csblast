@@ -114,11 +114,6 @@ void forward_algorithm(const HMM<Alphabet>& hmm,
   LOG(DEBUG1) << strprintf("i=%i", 0);
   for (int k = 0; k < num_states; ++k) {
     m.e[0][k] = fast_pow2(emission(hmm[k], subject, 0));
-    LOG(DEBUG1) << strprintf("%-7.2e  %i  %i  %7.3f",
-                             emission(hmm[k], subject, 0),
-                             hmm.states_logspace() ? 1 : 0,
-                             hmm[k].logspace() ? 1 : 0,
-                             hmm[k][0][0]);
     m.f[0][k] = hmm[k].prior() * m.e[0][k];
     LOG(DEBUG2) << strprintf("f[%i][%i] = %-7.2e", 0, k, m.f[0][k]);
   }
@@ -145,7 +140,7 @@ void forward_algorithm(const HMM<Alphabet>& hmm,
 
       m.e[i][l] = fast_pow2(emission(hmm[l], subject, i));
       f_il *= m.e[i][l];
-      LOG(DEBUG3) << strprintf("f[%i][%i] *= e[%i][%i]=%-7.5f",
+      LOG(DEBUG3) << strprintf("f[%i][%i] *= e[%i][%i]=%-7.2e",
                                i, l, i, l, m.e[i][l]);
 
       m.f[i][l] = f_il;
@@ -157,7 +152,7 @@ void forward_algorithm(const HMM<Alphabet>& hmm,
     value_type scale_fac = 1.0 / m.s[i];
     for (int l = 0; l < num_states; ++l)
       m.f[i][l] *= scale_fac;
-    m.log_likelihood += fast_log2(m.s[i]);
+    m.log_likelihood += log2(m.s[i]);
   }
 
   LOG(DEBUG) << strprintf("log(L) = %-7.2g", m.log_likelihood);

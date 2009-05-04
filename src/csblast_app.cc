@@ -173,7 +173,7 @@ void CSBlastApp::print_banner() const {
 void CSBlastApp::print_options() const {
   fprintf(stream(), "  %-30s %s\n", "-i, --infile <file>",
           "Input file with query sequence");
-  fprintf(stream(), "  %-30s %s\n", "-D, --context-pc <file>",
+  fprintf(stream(), "  %-30s %s\n", "-D, --context-library <file>",
           "Path to library with context profiles for cs pseudocounts");
   fprintf(stream(), "  %-30s %s\n", "-o, --outfile <file>",
           "Output file with search results (def=stdout)");

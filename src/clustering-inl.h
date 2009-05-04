@@ -78,7 +78,7 @@ void Clustering<Alphabet, Subject>::expectation_step(const data_vector& block) {
     p_zn /= sum;
     add_contribution_to_priors(p_zn);
     add_contribution_to_emissions(p_zn, **bi);
-    log_likelihood_ += fast_log2(sum) / num_eff_cols_;
+    log_likelihood_ += log2(sum) / num_eff_cols_;
     LOG(DEBUG1) << strprintf("log(L)=%-8.5g", log_likelihood_);
 
     if (progress_table_)

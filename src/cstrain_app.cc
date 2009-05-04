@@ -57,7 +57,7 @@ struct CSTrainAppOptions : public BaumWelchOptions {
     nucleotide_mismatch = -3.0f;
     weight_center       = 1.3f;
     weight_decay        = 0.9f;
-    tr_score_thresh     = 0.0f;
+    tr_score_min        = 0.0f;
   }
 
   virtual ~CSTrainAppOptions() {}
@@ -103,7 +103,7 @@ struct CSTrainAppOptions : public BaumWelchOptions {
   // Penalty for a nucleotide mismatch
   float nucleotide_mismatch;
   // Minimal co-emission score for inclusion in transition set
-  float tr_score_thresh;
+  float tr_score_min;
 };  // CSTrainAppOptions
 
 
@@ -178,6 +178,7 @@ void CSTrainApp<Alphabet>::parse_options(GetOpt_pp* options) {
   *options >> Option(' ', "weight-decay", opts_.weight_decay, opts_.weight_decay);
   *options >> Option(' ', "epsilon", opts_.epsilon_null, opts_.epsilon_null);
   *options >> Option(' ', "beta", opts_.beta, opts_.beta);
+  *options >> Option(' ', "score-min", opts_.tr_score_min, opts_.tr_score_min);
   *options >> OptionPresent(' ', "global-weights", opts_.global_weights);
 
   opts_.Validate();
@@ -250,6 +251,8 @@ void CSTrainApp<Alphabet>::print_options() const {
           opts_.sample_rate);
   fprintf(stream(), "  %-30s %s\n", "-j, --jumpstart <file>",
           "Jumpstart the HMM training with a serialized HMM.");
+  fprintf(stream(), "  %-30s %s\n", "-D, --context-library <file>",
+          "Initialize the HMM with profiles from given context library");
   fprintf(stream(), "  %-30s %s\n", "-B, --blocks [0,N]",
           "Number of blocks for online training (def: B=N^3/8)");
 
@@ -275,6 +278,9 @@ void CSTrainApp<Alphabet>::print_options() const {
   fprintf(stream(), "  %-30s %s (def=%4.2f)\n", "    --beta [0,1]",
           "Exponential decay of epsilon in online training",
           opts_.beta);
+fprintf(stream(), "  %-30s %s (def=%3.1f)\n", "    --score-min <float>",
+          "Minimal co-emission score for initiating state transitions",
+        opts_.tr_score_min);
   fprintf(stream(), "  %-30s %s\n", "    --global-weights",
           "Use global instead of position-specific weights for profiles");
 }
@@ -394,7 +400,7 @@ void CSTrainApp<Alphabet>::InitHMM() {
 
     LibraryStateInitializer<Alphabet> st_init(&profile_lib);
     CoEmissionTransitionInitializer<Alphabet> tr_init(subst_matrix_.get(),
-                                                      opts_.tr_score_thresh);
+                                                      opts_.tr_score_min);
     hmm_.reset(new HMM<Alphabet>(opts_.num_states,
                                  profile_lib.num_cols(),
                                  st_init,
@@ -412,7 +418,7 @@ void CSTrainApp<Alphabet>::InitHMM() {
                                                &pc,
                                                opts_.state_pc);
     CoEmissionTransitionInitializer<Alphabet> tr_init(subst_matrix_.get(),
-                                                      opts_.tr_score_thresh);
+                                                      opts_.tr_score_min);
     hmm_.reset(new HMM<Alphabet>(opts_.num_states,
                                  opts_.window_length,
                                  st_init,

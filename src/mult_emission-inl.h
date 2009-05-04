@@ -60,7 +60,6 @@ inline double MultEmission<AminoAcid>::operator() (
   assert(profile.logspace());
   assert(!counts.logspace());
 
-  const int alphabet_size = AminoAcid::instance().size();
   const int beg = std::max(0, index - center_);
   const int end = std::min(counts.num_cols() - 1, index + center_);
   double rv = 0.0;
