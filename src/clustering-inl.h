@@ -203,7 +203,8 @@ void Clustering<Alphabet, Subject>::init() {
 
   // Initialize total amount of work per scan
   if (progress_table_)
-    progress_table_->set_total_work(lib_.num_profiles() * data_.size());
+    progress_table_->set_total_work(static_cast<long>(lib_.num_profiles()) *
+                                    data_.size());
 
   // Compute effective number of training data columns
   num_eff_cols_ = emission_.SumWeights() * data_.size();

@@ -15,7 +15,7 @@ ExpectationMaximization<Alphabet, Subject>::ExpectationMaximization(
     const data_vector& data)
     : data_(data),
       progress_table_(NULL),
-      num_eff_cols_(0),
+      num_eff_cols_(0.0f),
       log_likelihood_(0.0f),
       log_likelihood_prev_(0.0f),
       iterations_(0),

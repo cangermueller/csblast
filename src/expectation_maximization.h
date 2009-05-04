@@ -99,7 +99,7 @@ class ExpectationMaximization {
   // Progress table object for output.
   ProgressTable* progress_table_;
   // Effective number of training columns.
-  int num_eff_cols_;
+  float num_eff_cols_;
   // Blocks of training data.
   blocks_vector blocks_;
   // Incremental likelihood in current iteration

@@ -24,11 +24,11 @@ class ProgressTable {
   // Ends the current row and prints likelihood.
   virtual void print_row_end() = 0;
   // Sets total work per scan.
-  void set_total_work(int work) { work_total_ = work; }
+  void set_total_work(long work) { work_total_ = work; }
   // Resets the progress bar to zero.
   void reset();
   // Advances the progress bar proportional to the amount of work done.
-  void print_progress(int work);
+  void print_progress(long work);
 
  protected:
 
@@ -39,9 +39,9 @@ class ProgressTable {
   // Currnt width of bar.
   int bar_;
   // Work done so far.
-  int work_done_;
+  long work_done_;
   // Total work to do.
-  int work_total_;
+  long work_total_;
 };
 
 }  // namespace cs

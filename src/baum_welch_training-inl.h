@@ -282,12 +282,12 @@ void BaumWelchTraining<Alphabet, Subject>::init() {
   }
 
   // Compute total number of data columns
-  int num_cols = 0;
+  long num_cols = 0;
   for (typename data_vector::const_iterator di = data_.begin();
        di != data_.end(); ++di)
     num_cols += (**di).length();
   if (progress_table_)
-    progress_table_->set_total_work(hmm_.num_states() * num_cols);
+    progress_table_->set_total_work(num_cols * hmm_.num_states());
 
   // Set number of effective columsn for log-likelihood calculation
   num_eff_cols_ = emission_.SumWeights() * num_cols;
