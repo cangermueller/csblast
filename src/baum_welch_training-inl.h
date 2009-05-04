@@ -68,7 +68,7 @@ void BaumWelchTraining<Alphabet, Subject>::expectation_step(
     const data_vector& block) {
   // Run forward and backward algorithm on each subject in current block
   const int block_size = block.size();
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static) num_threads(8)
   for (int n = 0; n < block_size; ++n) {
     ForwardBackwardMatrices fbm(block[n]->length(), hmm_.num_states());
     forward_backward_algorithm(hmm_, *block[n], emission_, &fbm);
