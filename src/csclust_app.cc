@@ -38,7 +38,7 @@ struct CSClustAppOptions : public ClusteringOptions {
   CSClustAppOptions()
       : num_profiles(0),
         lib_pseudocounts(1.0f),
-        data_pseudocounts(0.01f),
+        data_pc(0.01f),
         blosum_type("BLOSUM62"),
         nucleotide_match(1.0f),
         nucleotide_mismatch(-3.0f) {}
@@ -66,7 +66,7 @@ struct CSClustAppOptions : public ClusteringOptions {
   // Pseudocounts to be added to each library profile.
   float lib_pseudocounts;
   // Pseudocounts to be added to observed data counts.
-  float data_pseudocounts;
+  float data_pc;
   // BLOSUM matrix for pseudocount generation.
   string blosum_type;
   // Reward for a nucleotide match.
@@ -129,8 +129,8 @@ void CSClustApp<Alphabet>::parse_options(GetOpt_pp* options) {
                     opts_.nucleotide_mismatch);
   *options >> Option('r', "match-score", opts_.nucleotide_match,
                      opts_.nucleotide_match);
-  *options >> Option(' ', "data-pc", opts_.data_pseudocounts,
-                     opts_.data_pseudocounts);
+  *options >> Option(' ', "data-pc", opts_.data_pc,
+                     opts_.data_pc);
   *options >> Option(' ', "lib-pc", opts_.lib_pseudocounts,
                      opts_.lib_pseudocounts);
   *options >> Option(' ', "min-scans", opts_.min_scans, opts_.min_scans);
@@ -207,7 +207,7 @@ void CSClustApp<Alphabet>::print_options() const {
   fprintf(stream(), "  %-30s %s (def=%3.1f)\n", "    --lib-pc [0,1]",
           "Pseudocounts for library profiles", opts_.lib_pseudocounts);
   fprintf(stream(), "  %-30s %s (def=%4.2f)\n", "    --data-pc [0,1]",
-          "Pseudocounts for training data", opts_.data_pseudocounts);
+          "Pseudocounts for training data", opts_.data_pc);
   fprintf(stream(), "  %-30s %s (def=%4.2f)\n", "    --weight-center [0,1]",
           "Weight of central profile column in context window",
           opts_.weight_center);
@@ -290,11 +290,11 @@ int CSClustApp<Alphabet>::run() {
 
   // Add pseudocounts to training data
   fprintf(stream(), "Adding pseudocounts to training profiles (admix=%.2f) ...",
-          opts_.data_pseudocounts);
+          opts_.data_pc);
   fflush(stream());
   MatrixPseudocounts<Alphabet> pc(subst_matrix_.get());
   for (profile_iterator ci = data_.begin(); ci != data_.end(); ++ci) {
-    pc.add_to_profile(ConstantAdmixture(opts_.data_pseudocounts), ci->get());
+    pc.add_to_profile(ConstantAdmixture(opts_.data_pc), ci->get());
   }
   fputc('\n', stream());
 

@@ -116,7 +116,7 @@ void BaumWelchTraining<Alphabet, Subject>::maximization_step() {
     for (int l = 0; l < num_states; ++l) {
       if (transition_stats_.test(k,l)) {
         const float a_kl =
-          transition_stats_[k][l] + opts_.transition_pseudocounts - 1.0f;
+          transition_stats_[k][l] + opts_.transition_pc - 1.0f;
         if (a_kl > 0.0f) {
           transition_stats_[k][l] = a_kl;
           sum += a_kl;

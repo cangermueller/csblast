@@ -478,6 +478,20 @@ void LibraryStateInitializer<Alphabet>::init(HMM<Alphabet>& hmm) const {
   LOG(DEBUG) << hmm;
 }
 
+template<class Alphabet>
+void CoEmissionTransitionInitializer<Alphabet>::init(HMM<Alphabet>& hmm) const {
+  const int ncols = hmm.num_cols() - 1;
+
+  for (int k = 0; k < hmm.num_states(); ++k) {
+    for (int l = 0; l < hmm.num_states(); ++l) {
+      float score = co_emission_(hmm[k], hmm[l], 1, 0, ncols);
+      if (score > score_thresh_)
+        hmm(k,l) = score - score_thresh_;
+    }
+  }
+  normalize_transitions(hmm);
+}
+
 }  // namespace cs
 
 #endif  // SRC_HMM_INL_H_

@@ -11,7 +11,7 @@
 #include <vector>
 
 #include "globals.h"
-#include "co_emission.h"
+#include "co_emission-inl.h"
 #include "context_profile.h"
 #include "count_profile.h"
 #include "profile.h"
@@ -318,12 +318,17 @@ template<class Alphabet>
 class CoEmissionTransitionInitializer : public TransitionInitializer<Alphabet> {
  public:
   CoEmissionTransitionInitializer(const SubstitutionMatrix<Alphabet>* sm,
-                                  float score_min) {}
+                                  float score_thresh)
+      : co_emission_(sm), score_thresh_(score_thresh) {}
   virtual ~CoEmissionTransitionInitializer() {}
+
   virtual void init(HMM<Alphabet>& hmm) const;
 
  private:
-  const CoEmission<Alphabet>* co_emission_;
+  // Function object for calculation of co-emission scores
+  CoEmission<Alphabet> co_emission_;
+  // Minimal co-emission score for inclusion in transition set
+  float score_thresh_;
 };
 
 }  // namespace cs

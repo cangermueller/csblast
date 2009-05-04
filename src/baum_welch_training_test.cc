@@ -87,7 +87,7 @@ TEST_F(BaumWelchTrainingTest, ZincFingerSeqsTraining) {
 
 TEST_F(BaumWelchTrainingTest, ZincFingerAlisTraining) {
   BaumWelchOptions p;
-  p.transition_pseudocounts  = 0.8f;
+  p.transition_pc  = 0.8f;
   p.log_likelihood_change    = 0.02f;
   p.max_connectivity         = 5;
   p.num_blocks               = 1;
@@ -105,7 +105,7 @@ TEST_F(BaumWelchTrainingTest, ZincFingerAlisTraining) {
 
 TEST_F(BaumWelchTrainingTest, ZincFingerAlisOnlineTraining) {
   BaumWelchOptions p;
-  p.transition_pseudocounts  = 0.8f;
+  p.transition_pc  = 0.8f;
   p.log_likelihood_change    = 0.02f;
   p.max_connectivity         = 5;
   p.num_blocks               = 2;

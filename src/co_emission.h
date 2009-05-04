@@ -24,7 +24,7 @@ class CoEmission {
   // Calculates the normalized co-emission score of profile q and p over ncols
   // columns, starting at index qi in q and index pi in p. Both profiles must be
   // in lin-space.
-  double operator() (const Profile<Alphabet>& q,
+  float operator() (const Profile<Alphabet>& q,
                      const Profile<Alphabet>& p,
                      int qi,
                      int pi,

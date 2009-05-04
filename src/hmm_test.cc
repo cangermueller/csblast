@@ -173,8 +173,11 @@ TEST(HMMTestInitialization, LibraryInitialization) {
   ASSERT_EQ(13, profile_lib.num_cols());
 
   LibraryStateInitializer<AminoAcid> st_init(&profile_lib);
-  HomogeneousTransitionInitializer<AminoAcid> tr_init;
-  HMM<AminoAcid> hmm(50, 13, st_init, tr_init);
+  BlosumMatrix m;
+  CoEmissionTransitionInitializer<AminoAcid> tr_init(&m, 0.0f);
+  HMM<AminoAcid> hmm(50, profile_lib.num_cols(), st_init, tr_init);
+
+  EXPECT_EQ(892, hmm.num_transitions());
 }
 
 }  // namespace cs

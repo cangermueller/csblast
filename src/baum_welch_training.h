@@ -30,17 +30,17 @@ struct BaumWelchOptions : public EmissionOptions,
   BaumWelchOptions()
       : EmissionOptions(),
         ExpectationMaximizationOptions(),
-        transition_pseudocounts(1.0f),
+        transition_pc(1.0f),
         max_connectivity(0) {}
 
   BaumWelchOptions(const BaumWelchOptions& opts)
       : EmissionOptions(opts),
         ExpectationMaximizationOptions(opts),
-        transition_pseudocounts(opts.transition_pseudocounts),
+        transition_pc(opts.transition_pc),
         max_connectivity(opts.max_connectivity) {}
 
   // Pseudocounts added to transitions (values below 1 enforce sparsity).
-  float transition_pseudocounts;
+  float transition_pc;
   // Maximum average connectivity for convergence.
   int max_connectivity;
 };

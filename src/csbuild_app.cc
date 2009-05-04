@@ -83,7 +83,7 @@ class CSBuildApp : public Application {
   // Prints usage banner to stream.
   virtual void print_banner() const;
   // Prints output format options.
-  void print_output_format_options() const;
+  void PrintOutputFormatOptions() const;
   // Writes profile to outfile
   void WriteProfile(const CountProfile<Alphabet>& profile) const;
   // Writes PSI-BLAST checkpoint file
@@ -139,7 +139,7 @@ void CSBuildApp<Alphabet>::print_options() const {
   fprintf(stream(), "  %-30s %s (def=%s)\n", "-I, --informat seq|fas|...",
           "Input format: seq, fas, a2m, or a3m", opts_.informat.c_str());
 
-  print_output_format_options();
+  PrintOutputFormatOptions();
 
   fprintf(stream(), "  %-30s %s\n", "-M, --matchcol [0:100]",
           "Make all FASTA columns with less than X% gaps match columns");
@@ -155,12 +155,12 @@ void CSBuildApp<Alphabet>::print_options() const {
 }
 
 template<class Alphabet>
-void CSBuildApp<Alphabet>::print_output_format_options() const {
+void CSBuildApp<Alphabet>::PrintOutputFormatOptions() const {
   /* There is only one output format for nucleotides! */
 }
 
 template<>
-void CSBuildApp<AminoAcid>::print_output_format_options() const {
+void CSBuildApp<AminoAcid>::PrintOutputFormatOptions() const {
   fprintf(stream(), "  %-30s %s (def=%s)\n", "-O, --outformat prf|chk",
           "Output format: profile or PSI-BLAST checkpoint",
           opts_.outformat.c_str());

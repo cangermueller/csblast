@@ -35,7 +35,6 @@ struct CSBlastAppOptions : public EmissionOptions {
   CSBlastAppOptions() { SetDefaults(); }
   virtual ~CSBlastAppOptions() {}
 
-  // Set csbuild default parameters
   void SetDefaults() {
     infile              = "";
     outfile             = "";
@@ -135,7 +134,7 @@ void CSBlastApp::parse_options(GetOpt_pp* options) {
   *options >> Option('m', "outformat", opts_.outformat, opts_.outformat);
   *options >> Option('x', "pc-admix", opts_.pc_admix, opts_.pc_admix);
   *options >> Option('c', "pc-ali", opts_.pc_ali, opts_.pc_ali);
-  *options >> Option('D', "context-pc", opts_.libfile, opts_.libfile);
+  *options >> Option('D', "context-library", opts_.libfile, opts_.libfile);
   *options >> Option('j', "iterations", opts_.iterations, opts_.iterations);
   *options >> Option('h', "inclusion", opts_.inclusion, opts_.inclusion);
   *options >> Option(' ', "alignhits", opts_.alifile, opts_.alifile);
