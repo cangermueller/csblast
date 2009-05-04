@@ -4,7 +4,7 @@
 
 #include "amino_acid.h"
 #include "blosum_matrix.h"
-#include "emitter-inl.h"
+#include "mult_emission-inl.h"
 #include "forward_backward_algorithm.h"
 #include "hmm-inl.h"
 #include "log.h"
@@ -44,9 +44,9 @@ class ForwardBackwardAlgorithmTest : public testing::Test {
 
 TEST_F(ForwardBackwardAlgorithmTest, ZincFingerMotif) {
   Sequence<AminoAcid> seq("zinc finger motif", "GQKPFQCRICMRN\n");
-  Emitter<AminoAcid> emitter(1);
+  MultEmission<AminoAcid> emission(1);
   ForwardBackwardMatrices m(seq.length(), hmm_.num_states());
-  forward_backward_algorithm(hmm_, seq, emitter, &m);
+  forward_backward_algorithm(hmm_, seq, emission, &m);
 
   EXPECT_NEAR(0.9566, m.f[0][0] * m.b[0][0], kFloatDelta);
   EXPECT_NEAR(0.4920, m.f[1][1] * m.b[1][1], kFloatDelta);
@@ -72,9 +72,9 @@ TEST_F(ForwardBackwardAlgorithmTest, 1Q7L) {
   hmm.init_transitions(HomogeneousTransitionInitializer<AminoAcid>());
   hmm.transform_states_to_logspace();
 
-  Emitter<AminoAcid> emitter(1);
+  MultEmission<AminoAcid> emission(1);
   ForwardBackwardMatrices mat(profile.length(), hmm.num_states());
-  forward_backward_algorithm(hmm, profile, emitter, &mat);
+  forward_backward_algorithm(hmm, profile, emission, &mat);
 }
 
 }  // namespace cs

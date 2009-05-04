@@ -6,7 +6,7 @@
 #include <valarray>
 
 #include "context_profile-inl.h"
-#include "emitter-inl.h"
+#include "mult_emission-inl.h"
 #include "hmm-inl.h"
 #include "log.h"
 #include "shared_ptr.h"
@@ -48,7 +48,7 @@ struct ForwardBackwardMatrices {
     for (int i = 0; i < m.f.num_rows(); ++i) {
       out << strprintf("%6.2f  ", m.s[i]);
     }
-    out << "\nEmitter probabilities e[i][k]:" << std::endl;
+    out << "\nMultEmission probabilities e[i][k]:" << std::endl;
     for (int i = 0; i < m.f.num_rows(); ++i) {
       for (int k = 0; k < m.f.num_cols(); ++k) {
         out << strprintf("%6.4f  ", m.e[i][k]);
@@ -85,13 +85,13 @@ template< class Alphabet,
           template<class A> class Subject >
 void forward_backward_algorithm(const HMM<Alphabet>& hmm,
                                 const Subject<Alphabet>& subject,
-                                const Emitter<Alphabet>& emitter,
+                                const MultEmission<Alphabet>& emission,
                                 ForwardBackwardMatrices* fbm) {
   LOG(DEBUG) << "Running forward-backward algorithm ...";
   LOG(DEBUG1) << hmm;
   LOG(DEBUG1) << subject;
 
-  forward_algorithm(hmm, subject, emitter, fbm);
+  forward_algorithm(hmm, subject, emission, fbm);
   backward_algorithm(hmm, subject, fbm);
 }
 
@@ -99,7 +99,7 @@ template< class Alphabet,
           template<class A> class Subject >
 void forward_algorithm(const HMM<Alphabet>& hmm,
                        const Subject<Alphabet>& subject,
-                       const Emitter<Alphabet>& emitter,
+                       const MultEmission<Alphabet>& emission,
                        ForwardBackwardMatrices* fbm) {
   typedef typename ForwardBackwardMatrices::value_type value_type;
   typedef typename HMM<Alphabet>::const_state_iterator const_state_iterator;
@@ -113,9 +113,9 @@ void forward_algorithm(const HMM<Alphabet>& hmm,
   // Initialization
   LOG(DEBUG1) << strprintf("i=%i", 0);
   for (int k = 0; k < num_states; ++k) {
-    m.e[0][k] = fast_pow2(emitter(hmm[k], subject, 0));
+    m.e[0][k] = fast_pow2(emission(hmm[k], subject, 0));
     LOG(DEBUG1) << strprintf("%-7.2e  %i  %i  %7.3f",
-                             emitter(hmm[k], subject, 0),
+                             emission(hmm[k], subject, 0),
                              hmm.states_logspace() ? 1 : 0,
                              hmm[k].logspace() ? 1 : 0,
                              hmm[k][0][0]);
@@ -143,7 +143,7 @@ void forward_algorithm(const HMM<Alphabet>& hmm,
                     t_kl->state, l, t_kl->probability);
       }
 
-      m.e[i][l] = fast_pow2(emitter(hmm[l], subject, i));
+      m.e[i][l] = fast_pow2(emission(hmm[l], subject, i));
       f_il *= m.e[i][l];
       LOG(DEBUG3) << strprintf("f[%i][%i] *= e[%i][%i]=%-7.5f",
                                i, l, i, l, m.e[i][l]);

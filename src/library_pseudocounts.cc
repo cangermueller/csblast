@@ -5,7 +5,7 @@
 #include <cassert>
 
 #include "amino_acid.h"
-#include "emitter-inl.h"
+#include "mult_emission-inl.h"
 #include "count_profile-inl.h"
 #include "matrix.h"
 #include "profile-inl.h"
@@ -44,7 +44,7 @@ void LibraryPseudocounts<AminoAcid>::add_to_sequence(
   for (int i = 0; i < length; ++i) {
     // Calculate profile probabilities P(p_k|X_i)
     for (int k = 0; k < num_profiles; ++k) {
-      prob[k] = fast_pow2(emitter_(lib_[k], seq, i)) * lib_[k].prior();
+      prob[k] = fast_pow2(emission_(lib_[k], seq, i)) * lib_[k].prior();
     }
     prob /= prob.sum();  // normalization
 

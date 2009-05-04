@@ -1,7 +1,7 @@
 // Copyright 2009, Andreas Biegert
 
-#ifndef SRC_EMITTER_H_
-#define SRC_EMITTER_H_
+#ifndef SRC_MULT_EMISSION_H_
+#define SRC_MULT_EMISSION_H_
 
 #include <valarray>
 
@@ -12,14 +12,15 @@
 
 namespace cs {
 
-// Encapsulation for computation of emitter probabilities for profiles.
+// Function object for calculation of multinomial emission probabilities for
+// context profiles.
 template< class Alphabet>
-class Emitter {
+class MultEmission {
  public:
-  // Constructs an emitter with positional window weights.
-  Emitter(int num_cols, float weight_center = 1.0f, float weight_decay = 1.0f);
+  // Constructs an emission object with positional window weights.
+  MultEmission(int num_cols, float weight_center = 1.0f, float weight_decay = 1.0f);
 
-  ~Emitter() {}
+  ~MultEmission() {}
 
   // Calculates the log emission probability of profile window centered at given
   // index.
@@ -44,9 +45,9 @@ class Emitter {
   // Positional window weights
   std::valarray<float> weights_;
 
-  DISALLOW_COPY_AND_ASSIGN(Emitter);
-};  // class Emitter
+  DISALLOW_COPY_AND_ASSIGN(MultEmission);
+};  // class MultEmission
 
 }  // namespace cs
 
-#endif  // SRC_EMITTER_H_
+#endif  // SRC_MULT_EMISSION_H_

@@ -9,7 +9,7 @@
 #include <cmath>
 
 #include "count_profile-inl.h"
-#include "emitter-inl.h"
+#include "mult_emission-inl.h"
 #include "forward_backward_algorithm.h"
 #include "hmm-inl.h"
 #include "log.h"
@@ -24,7 +24,7 @@ inline HMMPseudocounts<Alphabet>::HMMPseudocounts(const HMM<Alphabet>* hmm,
                                                   float weight_center,
                                                   float weight_decay)
     : hmm_(*hmm),
-      emitter_(hmm->num_cols(), weight_center, weight_decay) {
+      emission_(hmm->num_cols(), weight_center, weight_decay) {
   assert(hmm_.states_logspace());
   assert(!hmm_.transitions_logspace());
 }
@@ -54,7 +54,7 @@ void HMMPseudocounts<Alphabet>::add_to_sequence(
 
   // Calculate posterior state probabilities with forward-backward algorithm
   ForwardBackwardMatrices fbm(length, hmm_.num_states());
-  forward_backward_algorithm(hmm_, seq, emitter_, &fbm);
+  forward_backward_algorithm(hmm_, seq, emission_, &fbm);
 
   for (int i = 0; i < length; ++i) {
     // Calculate pseudocount vector P(a|X_i)
@@ -99,7 +99,7 @@ void HMMPseudocounts<Alphabet>::add_to_profile(
 
   // Calculate posterior state probabilities with forward-backward algorithm
   ForwardBackwardMatrices fbm(length, hmm_.num_states());
-  forward_backward_algorithm(hmm_, p, emitter_, &fbm);
+  forward_backward_algorithm(hmm_, p, emission_, &fbm);
 
   for (int i = 0; i < length; ++i) {
     // Calculate pseudocount vector P(a|X_i)

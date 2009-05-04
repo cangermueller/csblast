@@ -10,7 +10,7 @@
 #include <vector>
 
 #include "context_profile-inl.h"
-#include "emitter-inl.h"
+#include "mult_emission-inl.h"
 #include "expectation_maximization-inl.h"
 #include "forward_backward_algorithm.h"
 #include "hmm-inl.h"
@@ -116,7 +116,7 @@ class BaumWelchTraining : public ExpectationMaximization<Alphabet, Subject> {
   // HMM to be trained
   HMM<Alphabet>& hmm_;
   // Profile matcher for calculation of emission probabilities.
-  Emitter<Alphabet> emitter_;
+  MultEmission<Alphabet> emission_;
   // Global expected sufficient statistics for transitions
   sparse_matrix<float> transition_stats_;
   // Global expeted sufficient statistics for emissions and state priors

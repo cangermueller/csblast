@@ -8,7 +8,7 @@
 #include <cassert>
 
 #include "amino_acid.h"
-#include "emitter-inl.h"
+#include "mult_emission-inl.h"
 #include "count_profile-inl.h"
 #include "log.h"
 #include "matrix.h"
@@ -26,7 +26,7 @@ inline LibraryPseudocounts<Alphabet>::LibraryPseudocounts(
     float weight_center,
     float weight_decay)
     : lib_(*lib),
-      emitter_(lib->num_cols(), weight_center, weight_decay) {
+      emission_(lib->num_cols(), weight_center, weight_decay) {
   assert(lib_.logspace());
 }
 
@@ -58,7 +58,7 @@ void LibraryPseudocounts<Alphabet>::add_to_sequence(
   for (int i = 0; i < length; ++i) {
     // Calculate profile probabilities P(p_k|X_i)
     for (int k = 0; k < num_profiles; ++k) {
-      prob[k] = fast_pow2(emitter_(lib_[k], seq, i)) * lib_[k].prior();
+      prob[k] = fast_pow2(emission_(lib_[k], seq, i)) * lib_[k].prior();
     }
     prob /= prob.sum();  // normalization
 
@@ -110,7 +110,7 @@ void LibraryPseudocounts<Alphabet>::add_to_profile(
   for (int i = 0; i < length; ++i) {
     // Calculate unscaled emission probs
     for (int k = 0; k < num_profiles; ++k) {
-      log_ep[k] = emitter_(lib_[k], p, i);
+      log_ep[k] = emission_(lib_[k], p, i);
     }
     double log_ep_average = log_ep.sum() / num_profiles;
     log_ep -= log_ep_average;  // scale logs

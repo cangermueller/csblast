@@ -29,7 +29,7 @@ BaumWelchTraining<Alphabet, Subject>::BaumWelchTraining(
     : ExpectationMaximization<Alphabet, Subject>(opts, data),
       opts_(opts),
       hmm_(hmm),
-      emitter_(hmm.num_cols(), opts.weight_center, opts.weight_decay),
+      emission_(hmm.num_cols(), opts.weight_center, opts.weight_decay),
       transition_stats_(hmm.num_states(), hmm.num_states()),
       profile_stats_(),
       transition_stats_block_(hmm.num_states(), hmm.num_states()),
@@ -47,7 +47,7 @@ BaumWelchTraining<Alphabet, Subject>::BaumWelchTraining(
     : ExpectationMaximization<Alphabet, Subject>(data),
       opts_(opts),
       hmm_(hmm),
-      emitter_(hmm.num_cols(), opts.weight_center, opts.weight_decay),
+      emission_(hmm.num_cols(), opts.weight_center, opts.weight_decay),
       transition_stats_(hmm.num_states(), hmm.num_states()),
       profile_stats_(),
       transition_stats_block_(hmm.num_states(), hmm.num_states()),
@@ -70,7 +70,7 @@ void BaumWelchTraining<Alphabet, Subject>::expectation_step(
   for (typename data_vector::const_iterator bi = block.begin();
        bi != block.end(); ++bi) {
     ForwardBackwardMatrices fbm((*bi)->length(), hmm_.num_states());
-    forward_backward_algorithm(hmm_, **bi, emitter_, &fbm);
+    forward_backward_algorithm(hmm_, **bi, emission_, &fbm);
     add_contribution_to_priors(fbm);
     add_contribution_to_transitions(fbm);
     add_contribution_to_emissions(fbm, **bi);
@@ -284,7 +284,7 @@ void BaumWelchTraining<Alphabet, Subject>::init() {
     progress_table_->set_total_work(hmm_.num_states() * num_cols);
 
   // Set number of effective columsn for log-likelihood calculation
-  num_eff_cols_ = emitter_.SumWeights() * num_cols;
+  num_eff_cols_ = emission_.SumWeights() * num_cols;
 }
 
 template< class Alphabet,

@@ -10,7 +10,7 @@
 #include "globals.h"
 #include "alignment-inl.h"
 #include "count_profile-inl.h"
-#include "emitter.h"
+#include "mult_emission.h"
 #include "exception.h"
 #include "getopt_pp.h"
 #include "library_pseudocounts-inl.h"

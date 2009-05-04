@@ -11,7 +11,7 @@
 #include <string>
 
 #include "context_profile-inl.h"
-#include "emitter-inl.h"
+#include "mult_emission-inl.h"
 #include "profile_library-inl.h"
 #include "log.h"
 #include "progress_table.h"
@@ -28,7 +28,7 @@ Clustering<Alphabet, Subject>::Clustering(const ClusteringOptions& opts,
     : ExpectationMaximization<Alphabet, Subject>(data),
       opts_(opts),
       lib_(lib),
-      emitter_(lib.num_cols(), opts.weight_center, opts.weight_decay),
+      emission_(lib.num_cols(), opts.weight_center, opts.weight_decay),
       profile_stats_(),
       profile_stats_block_() {
   init();
@@ -43,7 +43,7 @@ Clustering<Alphabet, Subject>::Clustering(const ClusteringOptions& opts,
     : ExpectationMaximization<Alphabet, Subject>(data),
       opts_(opts),
       lib_(lib),
-      emitter_(lib.num_cols(), opts.weight_center, opts.weight_decay),
+      emission_(lib.num_cols(), opts.weight_center, opts.weight_decay),
       profile_stats_(),
       profile_stats_block_() {
   progress_table_ = new ClusteringProgressTable<Alphabet, Subject>(this, fout);
@@ -68,12 +68,12 @@ void Clustering<Alphabet, Subject>::expectation_step(const data_vector& block) {
     double sum = 0.0f;
     for (int k = 0; k < num_profiles; ++k) {
       p_zn[k] = lib_[k].prior() *
-        fast_pow2(emitter_(lib_[k], **bi, lib_[k].center()));
+        fast_pow2(emission_(lib_[k], **bi, lib_[k].center()));
       sum += p_zn[k];
 
       LOG(DEBUG2) << strprintf("a(%i)=%-8.5g P(c_n|p_%i)=%-8.5g P(z_n=%-4i)=%-8.5g",
                                k, lib_[k].prior(), k,
-                               emitter_(lib_[k], **bi, lib_[k].center()), k, p_zn[k]);
+                               emission_(lib_[k], **bi, lib_[k].center()), k, p_zn[k]);
     }
     p_zn /= sum;
     add_contribution_to_priors(p_zn);
@@ -206,7 +206,7 @@ void Clustering<Alphabet, Subject>::init() {
     progress_table_->set_total_work(lib_.num_profiles() * data_.size());
 
   // Compute effective number of training data columns
-  num_eff_cols_ = emitter_.SumWeights() * data_.size();
+  num_eff_cols_ = emission_.SumWeights() * data_.size();
 }
 
 

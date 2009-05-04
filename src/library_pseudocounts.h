@@ -6,7 +6,7 @@
 #include <valarray>
 
 #include "count_profile-inl.h"
-#include "emitter.h"
+#include "mult_emission.h"
 #include "matrix.h"
 #include "profile-inl.h"
 #include "profile_library-inl.h"
@@ -38,7 +38,7 @@ class LibraryPseudocounts : public Pseudocounts<Alphabet> {
   // Profile library with context profiles.
   const ProfileLibrary<Alphabet>& lib_;
   // Needed to compute emission probabilities of context profiles.
-  const Emitter<Alphabet> emitter_;
+  const MultEmission<Alphabet> emission_;
 
   DISALLOW_COPY_AND_ASSIGN(LibraryPseudocounts);
 };  // LibraryPseudocounts

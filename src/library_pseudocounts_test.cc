@@ -5,7 +5,7 @@
 #include "amino_acid.h"
 #include "blosum_matrix.h"
 #include "count_profile-inl.h"
-#include "emitter-inl.h"
+#include "mult_emission-inl.h"
 #include "log.h"
 #include "matrix_pseudocounts-inl.h"
 #include "profile_library-inl.h"

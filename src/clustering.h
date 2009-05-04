@@ -11,7 +11,7 @@
 #include <vector>
 
 #include "context_profile-inl.h"
-#include "emitter-inl.h"
+#include "mult_emission-inl.h"
 #include "expectation_maximization-inl.h"
 #include "profile_library-inl.h"
 #include "progress_table.h"
@@ -94,7 +94,7 @@ class Clustering : public ExpectationMaximization<Alphabet, Subject> {
   // Profile library with context profiles
   ProfileLibrary<Alphabet> lib_;
   // Calculation of emission probabilities.
-  Emitter<Alphabet> emitter_;
+  MultEmission<Alphabet> emission_;
   // Global expected sufficient statistics for emissions and state priors.
   profiles_vector profile_stats_;
   // Expected sufficient statistics for emissions and state priors based on

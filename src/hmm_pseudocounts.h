@@ -9,7 +9,7 @@
 #include <valarray>
 
 #include "count_profile-inl.h"
-#include "emitter.h"
+#include "mult_emission.h"
 #include "hmm-inl.h"
 #include "matrix.h"
 #include "profile-inl.h"
@@ -40,7 +40,7 @@ class HMMPseudocounts : public Pseudocounts<Alphabet> {
   // Profile library with context profiles.
   const HMM<Alphabet>& hmm_;
   // Needed to compute emission probabi
-  const Emitter<Alphabet> emitter_;
+  const MultEmission<Alphabet> emission_;
 
   DISALLOW_COPY_AND_ASSIGN(HMMPseudocounts);
 };  // HMMPseudocounts
