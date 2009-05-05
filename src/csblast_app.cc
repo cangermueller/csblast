@@ -297,7 +297,7 @@ void CSBlastApp::SaveAlignment() const {
   if (!opts_.alifile.empty()) {
     FILE* fali = fopen(opts_.alifile.c_str(), "w");
     if (!fali) throw Exception("Unable to write file '%s'!", opts_.alifile.c_str());
-    ali_->write(fali, Alignment<AminoAcid>::PSI);
+    ali_->Write(fali, Alignment<AminoAcid>::PSI);
     fclose(fali);
   }
 }

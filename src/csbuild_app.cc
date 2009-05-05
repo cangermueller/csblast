@@ -179,7 +179,7 @@ void CSBuildApp<Alphabet>::WriteProfile(
   if (!fout)
     throw Exception("Unable to write profile to output file '%s'!",
                     opts_.outfile.c_str());
-  profile.write(fout);
+  profile.Write(fout);
   fprintf(stream(), "Wrote profile with %i columns to %s\n",
           profile.num_cols(), opts_.outfile.c_str());
   fclose(fout);

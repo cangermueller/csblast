@@ -311,7 +311,7 @@ int CSClustApp<Alphabet>::Run() {
   if (!fout)
     throw Exception("Unable to write profiles to output file '%s'!",
                     opts_.outfile.c_str());
-  lib_->write(fout);
+  lib_->Write(fout);
   fclose(fout);
   fprintf(stream(), "\nWrote profile library to %s\n", opts_.outfile.c_str());
 

@@ -23,7 +23,7 @@ class ContextProfile : public Profile<Alphabet> {
   using Profile<Alphabet>::num_cols;
   using Profile<Alphabet>::alphabet_size;
   using Profile<Alphabet>::logspace;
-  using Profile<Alphabet>::read;
+  using Profile<Alphabet>::Read;
 
   // Constructs a dummy context profile.
   ContextProfile();

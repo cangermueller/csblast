@@ -76,9 +76,9 @@ class Profile {
   // Returns a const iterator just past the end of the profile matrix.
   const_iterator end() const { return data_.end(); }
   // Initializes the profile object with a serialized profile read from stream.
-  void read(FILE* fin);
+  void Read(FILE* fin);
   // Writes the profile in serialization format to output stream.
-  void write(FILE*) const;
+  void Write(FILE*) const;
 
   // Prints profile in human-readable format for debugging.
   friend std::ostream& operator<< (std::ostream& out, const Profile& p) {

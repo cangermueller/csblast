@@ -461,7 +461,7 @@ int CSTrainApp<Alphabet>::Run() {
   if (!fout)
     throw Exception("Unable to write profiles to output file '%s'!",
                     opts_.outfile.c_str());
-  hmm_->write(fout);
+  hmm_->Write(fout);
   fclose(fout);
   fprintf(stream(), "\nWrote HMM to %s\n", opts_.outfile.c_str());
 

@@ -25,7 +25,7 @@ class CountProfile : public Profile<Alphabet> {
   // Needed to access names in templatized Profile base class
   using Profile<Alphabet>::num_cols;
   using Profile<Alphabet>::alphabet_size;
-  using Profile<Alphabet>::read;
+  using Profile<Alphabet>::Read;
   using Profile<Alphabet>::logspace;
   using Profile<Alphabet>::transform_to_logspace;
   using Profile<Alphabet>::transform_to_linspace;

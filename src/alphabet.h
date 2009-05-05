@@ -64,7 +64,7 @@ class Alphabet {
     return out;
   }
   // Write alphabet characters delimited by tabs.
-  void write(FILE* fout) const;
+  void Write(FILE* fout) const;
 
  protected:
   // Denotes invalid characters in ctoi array

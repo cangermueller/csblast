@@ -63,9 +63,9 @@ class Sequence {
   iterator end() { return begin() + length(); }
   // Initializes the sequence object with a sequence in FASTA format read from
   // file stream.
-  void read(FILE* in);
+  void Read(FILE* in);
   // Prints the sequence in FASTA format to output stream.
-  void write(FILE* fout, int width = 100) const;
+  void Write(FILE* fout, int width = 100) const;
   // Returns sequence as character string.
   std::string ToString() const;
 

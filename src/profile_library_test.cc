@@ -21,11 +21,11 @@ class ProfileLibraryTest : public testing::Test {
 
   virtual void SetUp() {
     FILE* fin = fopen("../data/hmm_profile.prf", "r");
-    p1_.read(fin);
+    p1_.Read(fin);
     rewind(fin);
-    p2_.read(fin);
+    p2_.Read(fin);
     rewind(fin);
-    p3_.read(fin);
+    p3_.Read(fin);
     fclose(fin);
   }
 

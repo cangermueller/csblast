@@ -38,7 +38,7 @@ void Alphabet::Init() {
   ctoi_['.']           = size_ + 1;  // INSERT GAP
 }
 
-void Alphabet::write(FILE* fout) const {
+void Alphabet::Write(FILE* fout) const {
   fputc(itoc_[0], fout);
   for (int a = 1; a < size_; ++a) {
     fputc('\t', fout);

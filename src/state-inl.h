@@ -23,7 +23,7 @@ inline State<Alphabet>::State(FILE* fin)
       num_states_(0),
       in_transitions_(0),
       out_transitions_(0) {
-  read(fin);
+  Read(fin);
 }
 
 template<class Alphabet>

@@ -25,7 +25,7 @@ inline Sequence<Alphabet>::Sequence(int length)
 
 template<class Alphabet>
 inline Sequence<Alphabet>::Sequence(FILE* in) {
-  read(in);
+  Read(in);
 }
 
 template<class Alphabet>
@@ -68,7 +68,7 @@ void Sequence<Alphabet>::Init(string header, string sequence) {
 }
 
 template<class Alphabet>
-void Sequence<Alphabet>::read(FILE* fin) {
+void Sequence<Alphabet>::Read(FILE* fin) {
   LOG(DEBUG1) << "Reading sequence from stream ...";
 
   char buffer[kBufferSize];
@@ -102,7 +102,7 @@ void Sequence<Alphabet>::read(FILE* fin) {
 }
 
 template<class Alphabet>
-void Sequence<Alphabet>::write(FILE* fout, int width) const {
+void Sequence<Alphabet>::Write(FILE* fout, int width) const {
   fprintf(fout, ">%s\n", header_.c_str());
   for (int i = 0; i < length(); ++i) {
     fputc(chr(i), fout);

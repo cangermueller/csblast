@@ -37,7 +37,7 @@ template<class Alphabet>
 inline Profile<Alphabet>::Profile(FILE* fin)
     : data_(),
       logspace_(false) {
-  read(fin);
+  Read(fin);
 }
 
 template<class Alphabet>
@@ -88,7 +88,7 @@ void Profile<Alphabet>::transform_to_linspace() {
 }
 
 template<class Alphabet>
-void Profile<Alphabet>::read(FILE* fin) {
+void Profile<Alphabet>::Read(FILE* fin) {
   LOG(DEBUG1) << "Reading profile from stream ...";
 
   // Check if stream actually contains a serialized profile
@@ -165,7 +165,7 @@ void Profile<Alphabet>::read_body(FILE* fin) {
 }
 
 template<class Alphabet>
-void Profile<Alphabet>::write(FILE* fout) const {
+void Profile<Alphabet>::Write(FILE* fout) const {
   fprintf(fout, "%s\n", class_id());
   write_header(fout);
   write_body(fout);
@@ -181,7 +181,7 @@ void Profile<Alphabet>::write_header(FILE* fout) const {
 template<class Alphabet>
 void Profile<Alphabet>::write_body(FILE* fout) const {
   fputs("PROF\t", fout);
-  Alphabet::instance().write(fout);
+  Alphabet::instance().Write(fout);
   fputc('\n', fout);
 
   for (int i = 0; i < num_cols(); ++i) {

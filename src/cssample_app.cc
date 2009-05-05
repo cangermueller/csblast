@@ -185,7 +185,7 @@ int CSSampleApp<Alphabet>::Run() {
                     opts_.outfile.c_str());
   int num_cols = 0;
   for (profile_iterator it = samples_.begin(); it != samples_.end(); ++it) {
-    (*it)->write(fout);
+    (*it)->Write(fout);
     num_cols += (*it)->num_cols();
   }
   fprintf(stream(), "Wrote %i profiles with a total number of %i columns to %s\n",

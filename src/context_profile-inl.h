@@ -47,7 +47,7 @@ inline ContextProfile<Alphabet>::ContextProfile(FILE* fin)
     : Profile<Alphabet>(),
       index_(0),
       prior_(0.0f) {
-  read(fin);
+  Read(fin);
   check();
 }
 

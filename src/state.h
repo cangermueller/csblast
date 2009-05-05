@@ -35,7 +35,7 @@ class State : public ContextProfile<Alphabet> {
   using ContextProfile<Alphabet>::set_prior;
   using ContextProfile<Alphabet>::index;
   using ContextProfile<Alphabet>::set_index;
-  using ContextProfile<Alphabet>::read;
+  using ContextProfile<Alphabet>::Read;
 
   // Constructs HMM state from serialized state read from input stream.
   explicit State(FILE* fin);

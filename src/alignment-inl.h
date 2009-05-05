@@ -21,7 +21,7 @@ namespace cs {
 
 template<class Alphabet>
 Alignment<Alphabet>::Alignment(FILE* fin, Format format) {
-  read(fin, format);
+  Read(fin, format);
 }
 
 template<class Alphabet>
@@ -126,7 +126,7 @@ void Alignment<Alphabet>::set_match_indexes() {
 }
 
 template<class Alphabet>
-void Alignment<Alphabet>::read(FILE* fin, Format format) {
+void Alignment<Alphabet>::Read(FILE* fin, Format format) {
   LOG(DEBUG4) << "Reading alignment from stream ...";
 
   std::vector<std::string> headers;
@@ -289,7 +289,7 @@ void Alignment<Alphabet>::read_a3m(FILE* fin,
 }
 
 template<class Alphabet>
-void Alignment<Alphabet>::write(FILE* fout,
+void Alignment<Alphabet>::Write(FILE* fout,
                                 Format format,
                                 int width) const {
   switch (format) {

@@ -21,7 +21,7 @@ const char* CountProfile<Alphabet>::kClassID = "CountProfile";
 template<class Alphabet>
 inline CountProfile<Alphabet>::CountProfile(FILE* fin)
     : neff_() {
-  read(fin);
+  Read(fin);
 }
 
 template<class Alphabet>
@@ -117,7 +117,7 @@ void CountProfile<Alphabet>::read_body(FILE* fin) {
 template<class Alphabet>
 void CountProfile<Alphabet>::write_body(FILE* fout) const {
   fputs("PROF\t", fout);
-  Alphabet::instance().write(fout);
+  Alphabet::instance().Write(fout);
   fputs("\tNEFF\n", fout);
 
   for (int i = 0; i < num_cols(); ++i) {

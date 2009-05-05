@@ -39,7 +39,7 @@ ProfileLibrary<Alphabet>::ProfileLibrary(FILE* fin)
       iterations_(0),
       profiles_(),
       logspace_(false) {
-  read(fin);
+  Read(fin);
 }
 
 template<class Alphabet>
@@ -99,7 +99,7 @@ inline void ProfileLibrary<Alphabet>::transform_to_linspace() {
 }
 
 template<class Alphabet>
-void ProfileLibrary<Alphabet>::read(FILE* fin) {
+void ProfileLibrary<Alphabet>::Read(FILE* fin) {
   LOG(DEBUG1) << "Reading profile library from stream ...";
 
   char buffer[kBufferSize];
@@ -155,7 +155,7 @@ void ProfileLibrary<Alphabet>::read(FILE* fin) {
 }
 
 template<class Alphabet>
-void ProfileLibrary<Alphabet>::write(FILE* fout) const {
+void ProfileLibrary<Alphabet>::Write(FILE* fout) const {
   // Write header
   fputs("ProfileLibrary\n", fout);
   fprintf(fout, "NPROF\t%i\n", num_profiles());
@@ -165,7 +165,7 @@ void ProfileLibrary<Alphabet>::write(FILE* fout) const {
 
   // Serialize profiles
   for (const_profile_iterator pi = profiles_.begin(); pi != profiles_.end(); ++pi)
-    (*pi)->write(fout);
+    (*pi)->Write(fout);
 }
 
 template<class Alphabet>

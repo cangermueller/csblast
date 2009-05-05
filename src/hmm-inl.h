@@ -49,7 +49,7 @@ HMM<Alphabet>::HMM(FILE* fin)
       transitions_(),
       transitions_logspace_(false),
       states_logspace_(false) {
-  read(fin);
+  Read(fin);
 }
 
 template<class Alphabet>
@@ -201,7 +201,7 @@ inline void HMM<Alphabet>::transform_states_to_linspace() {
 }
 
 template<class Alphabet>
-void HMM<Alphabet>::read(FILE* fin) {
+void HMM<Alphabet>::Read(FILE* fin) {
   LOG(DEBUG1) << "Reading HMM from stream ...";
 
   char buffer[kBufferSize];
@@ -291,7 +291,7 @@ void HMM<Alphabet>::read(FILE* fin) {
 }
 
 template<class Alphabet>
-void HMM<Alphabet>::write(FILE* fout) const {
+void HMM<Alphabet>::Write(FILE* fout) const {
   // Write header
   fputs("HMM\n", fout);
   fprintf(fout, "NSTATES\t%i\n", num_states());
@@ -303,7 +303,7 @@ void HMM<Alphabet>::write(FILE* fout) const {
 
   // Write states
   for (const_state_iterator si = states_begin(); si != states_end(); ++si)
-    (*si)->write(fout);
+    (*si)->Write(fout);
 
   // Write transitions
   fputs("TRANS\n", fout);

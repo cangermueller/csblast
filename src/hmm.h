@@ -153,7 +153,7 @@ class HMM {
     return transitions_.nonempty_end();
   }
   // Writes the HMM in serialization format to output stream.
-  void write(FILE* fout) const;
+  void Write(FILE* fout) const;
   // Returns true if transitions are in logspace.
   bool transitions_logspace() const { return transitions_logspace_; }
   // Returns true if state profiles are in logspace.
@@ -188,7 +188,7 @@ class HMM {
   // Prints the HMM in human-readable format to output stream.
   void print(std::ostream& out) const;
   // Initializes the HMM from a serialized HMM read from stream.
-  void read(FILE* fin);
+  void Read(FILE* fin);
   // Initializes the HMM.
   void Init();
 

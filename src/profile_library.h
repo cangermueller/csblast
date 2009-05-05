@@ -87,7 +87,7 @@ class ProfileLibrary {
   // states.
   const_profile_iterator end() const { return profiles_.end(); }
   // Writes the profile library in serialization format to output stream.
-  void write(FILE* fout) const;
+  void Write(FILE* fout) const;
   // Returns true if state profiles are in logspace.
   bool logspace() const { return logspace_; }
   // Transforms profiles to logspace.
@@ -110,7 +110,7 @@ class ProfileLibrary {
   // Prints the library in human-readable format to output stream.
   void print(std::ostream& out) const;
   // Initializes the library from serialized data read from stream.
-  void read(FILE* fin);
+  void Read(FILE* fin);
 
   // Number of profiles in the fully assembled library.
   int num_profiles_;

@@ -121,9 +121,9 @@ class Alignment {
   void assign_match_columns_by_gap_rule(int gap_threshold = 50);
   // Initializes object with an alignment in FASTA format read from given
   // stream.
-  void read(FILE* fin, Format format);
+  void Read(FILE* fin, Format format);
   // Writes the alignment in given format to ouput stream.
-  void write(FILE* fout, Format format, int width = 100) const;
+  void Write(FILE* fout, Format format, int width = 100) const;
   // Returns true if column i is a match column.
   bool match_column(int i) const { return match_column_[i]; }
   // Removes all insert columns from the alignment.

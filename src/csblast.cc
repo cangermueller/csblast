@@ -100,7 +100,7 @@ int CSBlast::Run(FILE* fout, BlastHits* hits) {
 void CSBlast::WriteQuery(string filepath) const {
   FILE* fout = fopen(filepath.c_str(), "w");
   if (!fout) throw Exception("Unable to write to file '%s'!", filepath.c_str());
-  query_->write(fout);
+  query_->Write(fout);
   fclose(fout);
 }
 
