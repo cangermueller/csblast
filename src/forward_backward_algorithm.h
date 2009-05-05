@@ -83,7 +83,7 @@ struct ForwardBackwardMatrices {
 // Forward-Backward algorithm encapsulation.
 template< class Alphabet,
           template<class A> class Subject >
-void forward_backward_algorithm(const HMM<Alphabet>& hmm,
+void ForwardBackwardAlgorithm(const HMM<Alphabet>& hmm,
                                 const Subject<Alphabet>& subject,
                                 const MultEmission<Alphabet>& emission,
                                 ForwardBackwardMatrices* fbm) {
@@ -91,13 +91,13 @@ void forward_backward_algorithm(const HMM<Alphabet>& hmm,
   LOG(DEBUG1) << hmm;
   LOG(DEBUG1) << subject;
 
-  forward_algorithm(hmm, subject, emission, fbm);
-  backward_algorithm(hmm, subject, fbm);
+  ForwardAlgorithm(hmm, subject, emission, fbm);
+  BackwardAlgorithm(hmm, subject, fbm);
 }
 
 template< class Alphabet,
           template<class A> class Subject >
-void forward_algorithm(const HMM<Alphabet>& hmm,
+void ForwardAlgorithm(const HMM<Alphabet>& hmm,
                        const Subject<Alphabet>& subject,
                        const MultEmission<Alphabet>& emission,
                        ForwardBackwardMatrices* fbm) {
@@ -160,7 +160,7 @@ void forward_algorithm(const HMM<Alphabet>& hmm,
 
 template< class Alphabet,
           template<class A> class Subject >
-void backward_algorithm(const HMM<Alphabet>& hmm,
+void BackwardAlgorithm(const HMM<Alphabet>& hmm,
                         const Subject<Alphabet>& subject,
                         ForwardBackwardMatrices* fbm) {
   typedef typename ForwardBackwardMatrices::value_type value_type;

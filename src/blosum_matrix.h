@@ -25,7 +25,7 @@ class BlosumMatrix : public SubstitutionMatrix<AminoAcid> {
 
  private:
   // Initializes the matrix from target frequencies in raw data array.
-  void init(const float* blosum_xx);
+  void Init(const float* blosum_xx);
 };
 
 // Converts a BLOSUM matrix string to a BLOSUM matrix type.

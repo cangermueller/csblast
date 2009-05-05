@@ -30,7 +30,7 @@ Alignment<Alphabet>::Alignment(const Sequence<Alphabet>& seq) {
   std::vector<std::string> seqs;
   headers.push_back(seq.header());
   seqs.push_back(seq.ToString());
-  init(headers, seqs);
+  Init(headers, seqs);
 }
 
 template<class Alphabet>
@@ -55,7 +55,7 @@ Alignment<Alphabet>::Alignment(const BlastHits& hits, bool best) {
       if (best) break;
     }
   }
-  init(headers, seqs);
+  Init(headers, seqs);
 }
 
 template<class Alphabet>
@@ -73,7 +73,7 @@ void Alignment<Alphabet>::readall(FILE* fin,
 }
 
 template<class Alphabet>
-void Alignment<Alphabet>::init(const std::vector<std::string>& headers,
+void Alignment<Alphabet>::Init(const std::vector<std::string>& headers,
                                const std::vector<std::string>& seqs) {
   if (seqs.empty())
     throw Exception("Bad alignment: initialization with empty sequence vector!");
@@ -144,7 +144,7 @@ void Alignment<Alphabet>::read(FILE* fin, Format format) {
     default:
       throw Exception("Unsupported alignment input format %i!", format);
   }
-  init(headers, seqs);
+  Init(headers, seqs);
 
   LOG(DEBUG4) << *this;
 }

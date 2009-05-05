@@ -31,7 +31,7 @@ Clustering<Alphabet, Subject>::Clustering(const ClusteringOptions& opts,
       emission_(lib.num_cols(), opts.weight_center, opts.weight_decay),
       profile_stats_(),
       profile_stats_block_() {
-  init();
+  Init();
 }
 
 template< class Alphabet,
@@ -47,7 +47,7 @@ Clustering<Alphabet, Subject>::Clustering(const ClusteringOptions& opts,
       profile_stats_(),
       profile_stats_block_() {
   progress_table_ = new ClusteringProgressTable<Alphabet, Subject>(this, fout);
-  init();
+  Init();
 }
 
 template< class Alphabet,
@@ -58,7 +58,7 @@ Clustering<Alphabet, Subject>::~Clustering() {
 
 template< class Alphabet,
           template<class A> class Subject >
-void Clustering<Alphabet, Subject>::expectation_step(const data_vector& block) {
+void Clustering<Alphabet, Subject>::ExpectationStep(const data_vector& block) {
   const int num_profiles = lib_.num_profiles();
   std::valarray<double> p_zn(0.0f, lib_.num_profiles());
 
@@ -90,7 +90,7 @@ void Clustering<Alphabet, Subject>::expectation_step(const data_vector& block) {
 
 template< class Alphabet,
           template<class A> class Subject >
-void Clustering<Alphabet, Subject>::maximization_step() {
+void Clustering<Alphabet, Subject>::MaximizationStep() {
   const int num_profiles  = lib_.num_profiles();
   const int num_cols      = lib_.num_cols();
   const int alphabet_size = lib_.alphabet_size();
@@ -114,7 +114,7 @@ void Clustering<Alphabet, Subject>::maximization_step() {
     }
   }
 
-  ++lib_;  // increment iteration counter
+  lib_.increment_iterations();
 }
 
 template< class Alphabet,
@@ -190,7 +190,7 @@ void Clustering<Alphabet, Subject>::update_sufficient_statistics() {
 
 template< class Alphabet,
           template<class A> class Subject >
-void Clustering<Alphabet, Subject>::init() {
+void Clustering<Alphabet, Subject>::Init() {
   // Create profiles for global and block-level sufficient statistics
   for (int k = 0; k < lib_.num_profiles(); ++k) {
     profile_stats_.push_back(

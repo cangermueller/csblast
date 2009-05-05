@@ -58,7 +58,7 @@ class ExpectationMaximization {
   typedef typename std::vector<data_vector> blocks_vector;
 
   // Runs EM algorithm until termination criterion is met.
-  void run();
+  void Run();
   // Returns number of current scan.
   int scan() const { return scan_; }
   // Returns number of completed EM iterations.
@@ -82,11 +82,11 @@ class ExpectationMaximization {
   virtual ~ExpectationMaximization() {}
 
   // Evaluates the responsibilities using the current parameter values.
-  virtual void expectation_step(const data_vector& block) = 0;
+  virtual void ExpectationStep(const data_vector& block) = 0;
   // Reestimate teh parameters using the current responsibilities.
-  virtual void maximization_step() = 0;
+  virtual void MaximizationStep() = 0;
   // Initializes members for running the EM algorithm.
-  virtual void init() = 0;
+  virtual void Init() = 0;
   // Returns parameter wrapper
   virtual const ExpectationMaximizationOptions& opts() const = 0;
   // Returns true if any termination condition is fullfilled.

@@ -83,7 +83,7 @@ class CSClustApp : public Application {
   typedef typename profile_vector::iterator profile_iterator;
 
   // Runs the csbuild application.
-  virtual int run();
+  virtual int Run();
   // Parses command line options.
   virtual void parse_options(GetOpt_pp* options);
   // Prints options summary to stream.
@@ -283,7 +283,7 @@ void CSClustApp<Alphabet>::init_profile_library() {
 }
 
 template<class Alphabet>
-int CSClustApp<Alphabet>::run() {
+int CSClustApp<Alphabet>::Run() {
   init_substitution_matrix();
   read_training_data();
   init_profile_library();
@@ -304,7 +304,7 @@ int CSClustApp<Alphabet>::run() {
   fflush(stream());
   fputs("\n\n", stream());
   Clustering<Alphabet, CountProfile> clust(opts_, data_, *lib_, stream());
-  clust.run();
+  clust.Run();
 
   // Write profile library to outfile
   FILE* fout = fopen(opts_.outfile.c_str(), "w");

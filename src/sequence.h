@@ -86,7 +86,7 @@ class Sequence {
   static const int kBufferSize = 16 * KB;
 
   // Convert the sequence in character representation to integer representation.
-  void init(std::string header, std::string sequence);
+  void Init(std::string header, std::string sequence);
 
   // The header without leading '>'.
   std::string header_;

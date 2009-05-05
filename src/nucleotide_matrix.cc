@@ -4,7 +4,7 @@
 
 namespace cs {
 
-void NucleotideMatrix::init(float match, float mismatch) {
+void NucleotideMatrix::Init(float match, float mismatch) {
   // Set background vector
   f_.assign(size_, 1.0f / size_);
 

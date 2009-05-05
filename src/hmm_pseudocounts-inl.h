@@ -54,7 +54,7 @@ void HMMPseudocounts<Alphabet>::add_to_sequence(
 
   // Calculate posterior state probabilities with forward-backward algorithm
   ForwardBackwardMatrices fbm(length, hmm_.num_states());
-  forward_backward_algorithm(hmm_, seq, emission_, &fbm);
+  ForwardBackwardAlgorithm(hmm_, seq, emission_, &fbm);
 
   for (int i = 0; i < length; ++i) {
     // Calculate pseudocount vector P(a|X_i)
@@ -99,7 +99,7 @@ void HMMPseudocounts<Alphabet>::add_to_profile(
 
   // Calculate posterior state probabilities with forward-backward algorithm
   ForwardBackwardMatrices fbm(length, hmm_.num_states());
-  forward_backward_algorithm(hmm_, p, emission_, &fbm);
+  ForwardBackwardAlgorithm(hmm_, p, emission_, &fbm);
 
   for (int i = 0; i < length; ++i) {
     // Calculate pseudocount vector P(a|X_i)

@@ -13,13 +13,13 @@ namespace cs {
 class NucleotideMatrix : public SubstitutionMatrix<Nucleotide> {
  public:
   NucleotideMatrix(float match, float mismatch) {
-    init(match, mismatch);
+    Init(match, mismatch);
   }
   virtual ~NucleotideMatrix() {}
 
  private:
   // Initializes all matrix data members.
-  virtual void init(float match, float mismatch);
+  virtual void Init(float match, float mismatch);
 };
 
 }  // namespace cs

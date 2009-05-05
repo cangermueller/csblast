@@ -60,7 +60,7 @@ class CSSampleApp : public Application {
   typedef typename vector<int>::const_iterator index_iterator;
 
   // Runs the csbuild application.
-  virtual int run();
+  virtual int Run();
   // Parses command line options.
   virtual void parse_options(GetOpt_pp* options);
   // Prints options summary to stream.
@@ -160,7 +160,7 @@ void CSSampleApp<Alphabet>::Sample() {
 }
 
 template<class Alphabet>
-int CSSampleApp<Alphabet>::run() {
+int CSSampleApp<Alphabet>::Run() {
   FILE* fin = fopen(opts_.infile.c_str(), "r");
   if (!fin)
     throw Exception("Unable to read from input file '%s'!",

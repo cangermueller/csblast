@@ -18,7 +18,7 @@ namespace cs {
 // Basic (abstract) application class.
 // Defines the high level behavior of an application. A new application is
 // written by deriving a class from Application and writing an implementation
-// of the run() and maybe some other (like parse_options() etc.) methods.
+// of the Run() and maybe some other (like parse_options() etc.) methods.
 class Application {
  public:
   // Register the application instance.
@@ -45,7 +45,7 @@ class Application {
 
   // Runs the application and return exit code. To be implemented by derived
   // classes.
-  virtual int run() = 0;
+  virtual int Run() = 0;
   // Parses command line options.
   virtual void parse_options(GetOpt_pp* /* options */) {};
   // Prints options summary to stream.

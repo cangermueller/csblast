@@ -75,7 +75,7 @@ class Alphabet {
   virtual ~Alphabet() {}
 
   // Initializes ctoi and itoc conversion arrays.
-  void init();
+  void Init();
   // Allows derived classes to set additional ctoi conversions.
   void set_ctoi(char letter, int i) { ctoi_[toupper(letter)] = i; }
 

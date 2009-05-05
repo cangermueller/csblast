@@ -26,7 +26,7 @@ class Nucleotide : public Alphabet {
   // IUPAC nucleotide code
   static const char nucleotides_[];
 
-  Nucleotide() : Alphabet(4, 'N') { init(); }
+  Nucleotide() : Alphabet(4, 'N') { Init(); }
   virtual ~Nucleotide() {}
 
   DISALLOW_COPY_AND_ASSIGN(Nucleotide);

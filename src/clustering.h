@@ -67,11 +67,11 @@ class Clustering : public ExpectationMaximization<Alphabet, Subject> {
   using ExpectationMaximization<Alphabet, Subject>::data_;
 
   // Evaluates the responsibilities using the current parameter values.
-  virtual void expectation_step(const data_vector& block);
+  virtual void ExpectationStep(const data_vector& block);
   // Reestimate teh parameters using the current responsibilities.
-  virtual void maximization_step();
+  virtual void MaximizationStep();
   // Prepares all members for clustering.
-  virtual void init();
+  virtual void Init();
   // Returns parameter wrapper
   virtual const ClusteringOptions& opts() const { return opts_; }
   // Adds the contribution of the responsibilities for a subject to sufficient

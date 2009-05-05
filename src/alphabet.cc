@@ -19,7 +19,7 @@ Alphabet::Alphabet(int size, char any)
       ctoi_(static_cast<int>(pow(2, 8*sizeof(char))), kInvalidChar),
       itoc_(size + 3, '\0') {}
 
-void Alphabet::init() {
+void Alphabet::Init() {
   const char* itoc = get_itoc();
   if (static_cast<int>(strlen(itoc)) != size_)
     throw Exception("Alphabet error: itoc array as length %i but should have %i!",

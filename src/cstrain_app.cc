@@ -114,7 +114,7 @@ class CSTrainApp : public Application {
   typedef typename profile_vector::iterator profile_iterator;
 
   // Runs the csbuild application.
-  virtual int run();
+  virtual int Run();
   // Parses command line options.
   virtual void parse_options(GetOpt_pp* options);
   // Prints options summary to stream.
@@ -430,7 +430,7 @@ void CSTrainApp<Alphabet>::InitHMM() {
 }
 
 template<class Alphabet>
-int CSTrainApp<Alphabet>::run() {
+int CSTrainApp<Alphabet>::Run() {
   InitSubstitutionMatrix();
   ReadTrainingData();
   InitHMM();
@@ -454,7 +454,7 @@ int CSTrainApp<Alphabet>::run() {
   fflush(stream());
   fputs("\n\n", stream());
   BaumWelchTraining<Alphabet, CountProfile> bw(opts_, data_, *hmm_, stream());
-  bw.run();
+  bw.Run();
 
   // Write HMM to outfile
   FILE* fout = fopen(opts_.outfile.c_str(), "w");

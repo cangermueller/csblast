@@ -37,7 +37,7 @@ class StateInitializer {
  public:
   StateInitializer() {}
   virtual ~StateInitializer() {}
-  virtual void init(HMM<Alphabet>& hmm) const = 0;
+  virtual void Init(HMM<Alphabet>& hmm) const = 0;
 };
 
 template<class Alphabet>
@@ -45,7 +45,7 @@ class TransitionInitializer {
  public:
   TransitionInitializer() {}
   virtual ~TransitionInitializer() {}
-  virtual void init(HMM<Alphabet>& hmm) const = 0;
+  virtual void Init(HMM<Alphabet>& hmm) const = 0;
 };
 
 
@@ -171,10 +171,7 @@ class HMM {
   // Transforms state profiles to linspace.
   void transform_states_to_linspace();
   // Increments the training iteration counter.
-  HMM& operator++() {
-    ++iterations_;
-    return *this;
-  }
+  void increment_iterations() { ++iterations_; }
 
   // Prints HMM in human-readable format for debugging.
   friend std::ostream& operator<< (std::ostream& out, const HMM& hmm) {
@@ -193,7 +190,7 @@ class HMM {
   // Initializes the HMM from a serialized HMM read from stream.
   void read(FILE* fin);
   // Initializes the HMM.
-  void init();
+  void Init();
 
   // Number states in the fully assembled HMM
   int num_states_;
@@ -250,7 +247,7 @@ class SamplingStateInitializer : public StateInitializer<Alphabet> {
   }
 
   virtual ~SamplingStateInitializer() {};
-  virtual void init(HMM<Alphabet>& hmm) const;
+  virtual void Init(HMM<Alphabet>& hmm) const;
 
  private:
   // Pool of full length sequence profiles to sample from.
@@ -275,7 +272,7 @@ class LibraryStateInitializer : public StateInitializer<Alphabet> {
       : lib_(lib) {}
 
   virtual ~LibraryStateInitializer() {};
-  virtual void init(HMM<Alphabet>& hmm) const;
+  virtual void Init(HMM<Alphabet>& hmm) const;
 
  private:
   // Profile library of context profiles.
@@ -288,7 +285,7 @@ class HomogeneousTransitionInitializer : public TransitionInitializer<Alphabet> 
   HomogeneousTransitionInitializer() {}
   virtual ~HomogeneousTransitionInitializer() {}
 
-  virtual void init(HMM<Alphabet>& hmm) const {
+  virtual void Init(HMM<Alphabet>& hmm) const {
     float prob = 1.0f / hmm.num_states();
     for (int k = 0; k < hmm.num_states(); ++k) {
       for (int l = 0; l < hmm.num_states(); ++l) {
@@ -304,7 +301,7 @@ class RandomTransitionInitializer : public TransitionInitializer<Alphabet> {
   RandomTransitionInitializer() {}
   virtual ~RandomTransitionInitializer() {}
 
-  virtual void init(HMM<Alphabet>& hmm) const {
+  virtual void Init(HMM<Alphabet>& hmm) const {
     srand(static_cast<unsigned int>(clock()));
     for (int k = 0; k < hmm.num_states(); ++k)
       for (int l = 0; l < hmm.num_states(); ++l)
@@ -322,7 +319,7 @@ class CoEmissionTransitionInitializer : public TransitionInitializer<Alphabet> {
       : co_emission_(sm), score_thresh_(score_thresh) {}
   virtual ~CoEmissionTransitionInitializer() {}
 
-  virtual void init(HMM<Alphabet>& hmm) const;
+  virtual void Init(HMM<Alphabet>& hmm) const;
 
  private:
   // Function object for calculation of co-emission scores

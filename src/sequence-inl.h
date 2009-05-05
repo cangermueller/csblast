@@ -31,7 +31,7 @@ inline Sequence<Alphabet>::Sequence(FILE* in) {
 template<class Alphabet>
 Sequence<Alphabet>::Sequence(const string& header,
                              const string& sequence) {
-  init(header, sequence);
+  Init(header, sequence);
 }
 
 template<class Alphabet>
@@ -44,7 +44,7 @@ inline void Sequence<Alphabet>::readall(FILE* fin,
 }
 
 template<class Alphabet>
-void Sequence<Alphabet>::init(string header, string sequence) {
+void Sequence<Alphabet>::Init(string header, string sequence) {
   // Init header
   string().swap(header_);
   header_.append(header.begin() + (header[0] == '>' ? 1 : 0), header.end());
@@ -96,7 +96,7 @@ void Sequence<Alphabet>::read(FILE* fin) {
     ungetc(c, fin);
     if (static_cast<char>(c) == '>') break;
   }
-  init(header, sequence);
+  Init(header, sequence);
 
   LOG(DEBUG1) << *this;
 }

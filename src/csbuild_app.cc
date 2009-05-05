@@ -79,7 +79,7 @@ template<class Alphabet>
 class CSBuildApp : public Application {
  private:
   // Runs the csbuild application.
-  virtual int run();
+  virtual int Run();
   // Parses command line options.
   virtual void parse_options(GetOpt_pp* options);
   // Prints options summary to stream.
@@ -208,7 +208,7 @@ void CSBuildApp<AminoAcid>::WriteCheckpoint(
 }
 
 template<class Alphabet>
-int CSBuildApp<Alphabet>::run() {
+int CSBuildApp<Alphabet>::Run() {
   FILE* fin = fopen(opts_.infile.c_str(), "r");
   if (!fin) throw Exception("Unable to read from input file '%s'!",
                             opts_.infile.c_str());

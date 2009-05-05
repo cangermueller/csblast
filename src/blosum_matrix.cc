@@ -83,20 +83,20 @@ namespace cs {
 BlosumMatrix::BlosumMatrix(Type matrix) {
   switch (matrix) {
     case BLOSUM45:
-      init(g_blosum45);
+      Init(g_blosum45);
       break;
     case BLOSUM62:
-      init(g_blosum62);
+      Init(g_blosum62);
       break;
     case BLOSUM80:
-      init(g_blosum80);
+      Init(g_blosum80);
       break;
     default:
       throw Exception("Unsupported BLOSUM matrix!");
   }
 }
 
-void BlosumMatrix::init(const float* blosum_xx) {
+void BlosumMatrix::Init(const float* blosum_xx) {
   // Read raw BLOSUM data vector
   int n = 0;
   for (int a = 0; a < size_; ++a)

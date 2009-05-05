@@ -96,7 +96,7 @@ struct CSBlastAppOptions {
 class CSBlastApp : public Application {
  private:
   // Runs the csbuild application.
-  virtual int run();
+  virtual int Run();
   // Parses command line options.
   virtual void parse_options(GetOpt_pp* options);
   // Prints options summary to stream.
@@ -205,7 +205,7 @@ void CSBlastApp::print_options() const {
           "Set path to directory with PSI-BLAST executable");
 }
 
-int CSBlastApp::run() {
+int CSBlastApp::Run() {
   int status = 0;
 
   Init();

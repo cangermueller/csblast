@@ -27,7 +27,7 @@ class AminoAcid : public Alphabet {
   static const char amino_acids_[];
 
   AminoAcid() : Alphabet(20, 'X') {
-    init();
+    Init();
     // Conversion of non-standard amino acids to integers
     set_ctoi('O', any());
     set_ctoi('J', any());

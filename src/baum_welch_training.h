@@ -84,11 +84,11 @@ class BaumWelchTraining : public ExpectationMaximization<Alphabet, Subject> {
   using ExpectationMaximization<Alphabet, Subject>::scan_;
 
   // Runs forward backward algorithm on provided data.
-  virtual void expectation_step(const data_vector& block);
+  virtual void ExpectationStep(const data_vector& block);
   // Calculates and assigns new HMM parameters by Maxmimum-Likelihood estimation.
-  virtual void maximization_step();
+  virtual void MaximizationStep();
   // Prepares all members for HMM training.
-  virtual void init();
+  virtual void Init();
   // Returns true if any termination condition is fullfilled.
   virtual bool terminate() const;
   // Returns parameter wrapper

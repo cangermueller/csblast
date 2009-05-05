@@ -24,14 +24,14 @@ ExpectationMaximization<Alphabet, Subject>::ExpectationMaximization(
 
 template< class Alphabet,
           template<class A> class Subject >
-void ExpectationMaximization<Alphabet, Subject>::run() {
+void ExpectationMaximization<Alphabet, Subject>::Run() {
   setup_blocks(true);
   if (progress_table_) progress_table_->print_header();
 
   // Calculate log-likelihood baseline by batch EM without blocks
   if (progress_table_) progress_table_->print_row_begin();
-  expectation_step(blocks_.front());
-  maximization_step();
+  ExpectationStep(blocks_.front());
+  MaximizationStep();
   ++iterations_;
   if (progress_table_) progress_table_->print_row_end();
 
@@ -46,8 +46,8 @@ void ExpectationMaximization<Alphabet, Subject>::run() {
 
     if (progress_table_) progress_table_->print_row_begin();
     for (int b = 0; b < static_cast<int>(blocks_.size()); ++b) {
-      expectation_step(blocks_[b]);
-      maximization_step();
+      ExpectationStep(blocks_[b]);
+      MaximizationStep();
       ++iterations_;
     }
     if (progress_table_) progress_table_->print_row_end();

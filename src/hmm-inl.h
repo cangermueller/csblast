@@ -37,7 +37,7 @@ HMM<Alphabet>::HMM(int num_states, int num_cols)
       transitions_(num_states, num_states),
       transitions_logspace_(false),
       states_logspace_(false)  {
-  init();
+  Init();
 }
 
 template<class Alphabet>
@@ -64,13 +64,13 @@ HMM<Alphabet>::HMM(int num_states,
       transitions_(num_states, num_states),
       transitions_logspace_(false),
       states_logspace_(false) {
-  init();
-  st_init.init(*this);
-  tr_init.init(*this);
+  Init();
+  st_init.Init(*this);
+  tr_init.Init(*this);
 }
 
 template<class Alphabet>
-void HMM<Alphabet>::init() {
+void HMM<Alphabet>::Init() {
   states_.reserve(num_states());
   transitions_.resize(num_states(), num_states());
 }
@@ -78,14 +78,14 @@ void HMM<Alphabet>::init() {
 template<class Alphabet>
 void HMM<Alphabet>::init_states(const StateInitializer<Alphabet>& st_init) {
   clear();
-  st_init.init(*this);
+  st_init.Init(*this);
 }
 
 template<class Alphabet>
 void HMM<Alphabet>::init_transitions(
     const TransitionInitializer<Alphabet>& tr_init) {
   clear_transitions();
-  tr_init.init(*this);
+  tr_init.Init(*this);
 }
 
 template<class Alphabet>
@@ -117,7 +117,7 @@ template<class Alphabet>
 inline void HMM<Alphabet>::clear() {
   states_.clear();
   transitions_.clear();
-  init();
+  Init();
 }
 
 template<class Alphabet>
@@ -257,7 +257,7 @@ void HMM<Alphabet>::read(FILE* fin) {
     throw Exception("Bad format: HMM does not contain 'STLOG' record!");
   }
 
-  init();
+  Init();
 
   // Read HMM states
   while (!full() && !feof(fin)) {
@@ -397,7 +397,7 @@ void sparsify(HMM<Alphabet>& hmm, float threshold) {
 
 
 template<class Alphabet>
-void SamplingStateInitializer<Alphabet>::init(HMM<Alphabet>& hmm) const {
+void SamplingStateInitializer<Alphabet>::Init(HMM<Alphabet>& hmm) const {
   LOG(DEBUG) << "Initializing HMM with " << hmm.num_states()
              << " profile windows randomly sampled from "
              << profiles_.size() << " training profiles ...";
@@ -453,7 +453,7 @@ bool PriorCompare(const shared_ptr< ContextProfile<Alphabet> >& lhs,
 }
 
 template<class Alphabet>
-void LibraryStateInitializer<Alphabet>::init(HMM<Alphabet>& hmm) const {
+void LibraryStateInitializer<Alphabet>::Init(HMM<Alphabet>& hmm) const {
   assert(lib_->num_cols() == hmm.num_cols());
   LOG(DEBUG) << "Initializing HMM states with profile library ...";
 
@@ -479,7 +479,7 @@ void LibraryStateInitializer<Alphabet>::init(HMM<Alphabet>& hmm) const {
 }
 
 template<class Alphabet>
-void CoEmissionTransitionInitializer<Alphabet>::init(HMM<Alphabet>& hmm) const {
+void CoEmissionTransitionInitializer<Alphabet>::Init(HMM<Alphabet>& hmm) const {
   const int ncols = hmm.num_cols() - 1;
 
   for (int k = 0; k < hmm.num_states(); ++k) {

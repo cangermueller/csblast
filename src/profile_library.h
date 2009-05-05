@@ -27,7 +27,7 @@ class ProfileInitializer {
  public:
   ProfileInitializer() {}
   virtual ~ProfileInitializer() {}
-  virtual void init(ProfileLibrary<Alphabet>& lib) const = 0;
+  virtual void Init(ProfileLibrary<Alphabet>& lib) const = 0;
 };
 
 
@@ -95,10 +95,7 @@ class ProfileLibrary {
   // Transforms profiles to linspace.
   void transform_to_linspace();
   // Increments the EM-clustering iteration counter.
-  ProfileLibrary& operator++() {
-    ++iterations_;
-    return *this;
-  }
+  void increment_iterations() { ++iterations_; }
 
   // Prints the library in human-readable format for debugging.
   friend std::ostream& operator<< (std::ostream& out, const ProfileLibrary& lib) {
@@ -144,7 +141,7 @@ class SamplingProfileInitializer : public ProfileInitializer<Alphabet> {
     random_shuffle(profiles_.begin(), profiles_.end());
   }
   virtual ~SamplingProfileInitializer() {}
-  virtual void init(ProfileLibrary<Alphabet>& lib) const;
+  virtual void Init(ProfileLibrary<Alphabet>& lib) const;
 
  private:
   // Pool of profile windows to sample from.

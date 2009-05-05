@@ -75,7 +75,7 @@ TEST_F(ClusteringTest, ZincFingerAlisClustering) {
   p.beta         = 0.0f;
   p.min_scans    = 5;
   Clustering<AminoAcid, CountProfile> em_clust(p, counts_, lib_, stdout);
-  em_clust.run();
+  em_clust.Run();
 
   lib_.transform_to_linspace();
   EXPECT_NEAR(0.9948, lib_[0][0][AminoAcid::instance().ctoi('C')], kFloatDelta);
@@ -89,7 +89,7 @@ TEST_F(ClusteringTest, ZincFingerAlisOnlineClustering) {
   p.beta         = 0.5f;
   p.min_scans    = 5;
   Clustering<AminoAcid, CountProfile> em_clust(p, counts_, lib_, stdout);
-  em_clust.run();
+  em_clust.Run();
 
   lib_.transform_to_linspace();
   EXPECT_NEAR(0.9948, lib_[0][0][AminoAcid::instance().ctoi('C')], kFloatDelta);

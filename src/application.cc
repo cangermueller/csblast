@@ -72,7 +72,7 @@ int Application::main(int argc,
     parse_options(&options);
 
     // Run application
-    status = run();
+    status = Run();
 
   } catch(const std::exception& e) {
     LOG(ERROR) << e.what();

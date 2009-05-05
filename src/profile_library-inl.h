@@ -53,7 +53,7 @@ ProfileLibrary<Alphabet>::ProfileLibrary(
       profiles_(),
       logspace_(false) {
   profiles_.reserve(num_profiles);
-  profile_init.init(*this);
+  profile_init.Init(*this);
 }
 
 template<class Alphabet>
@@ -181,7 +181,7 @@ void ProfileLibrary<Alphabet>::print(std::ostream& out) const {
 
 
 template<class Alphabet>
-void SamplingProfileInitializer<Alphabet>::init(
+void SamplingProfileInitializer<Alphabet>::Init(
     ProfileLibrary<Alphabet>& lib) const {
   LOG(DEBUG) << "Initializing profile library with " << lib.num_profiles()
              << " profile windows randomly sampled from "

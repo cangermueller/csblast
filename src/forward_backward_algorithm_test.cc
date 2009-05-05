@@ -46,7 +46,7 @@ TEST_F(ForwardBackwardAlgorithmTest, ZincFingerMotif) {
   Sequence<AminoAcid> seq("zinc finger motif", "GQKPFQCRICMRN\n");
   MultEmission<AminoAcid> emission(1);
   ForwardBackwardMatrices m(seq.length(), hmm_.num_states());
-  forward_backward_algorithm(hmm_, seq, emission, &m);
+  ForwardBackwardAlgorithm(hmm_, seq, emission, &m);
 
   EXPECT_NEAR(0.9566, m.f[0][0] * m.b[0][0], kFloatDelta);
   EXPECT_NEAR(0.4920, m.f[1][1] * m.b[1][1], kFloatDelta);
@@ -74,7 +74,7 @@ TEST_F(ForwardBackwardAlgorithmTest, 1Q7L) {
 
   MultEmission<AminoAcid> emission(1);
   ForwardBackwardMatrices mat(profile.length(), hmm.num_states());
-  forward_backward_algorithm(hmm, profile, emission, &mat);
+  ForwardBackwardAlgorithm(hmm, profile, emission, &mat);
 }
 
 }  // namespace cs

@@ -34,7 +34,7 @@ BaumWelchTraining<Alphabet, Subject>::BaumWelchTraining(
       profile_stats_(),
       transition_stats_block_(hmm.num_states(), hmm.num_states()),
       profile_stats_block_() {
-  init();
+  Init();
 }
 
 template< class Alphabet,
@@ -53,7 +53,7 @@ BaumWelchTraining<Alphabet, Subject>::BaumWelchTraining(
       transition_stats_block_(hmm.num_states(), hmm.num_states()),
       profile_stats_block_() {
   progress_table_ = new BaumWelchProgressTable<Alphabet, Subject>(this, fout);
-  init();
+  Init();
 }
 
 template< class Alphabet,
@@ -64,7 +64,7 @@ BaumWelchTraining<Alphabet, Subject>::~BaumWelchTraining() {
 
 template< class Alphabet,
           template<class A> class Subject >
-void BaumWelchTraining<Alphabet, Subject>::expectation_step(
+void BaumWelchTraining<Alphabet, Subject>::ExpectationStep(
     const data_vector& block) {
 
   const int block_size = block.size();
@@ -77,7 +77,7 @@ void BaumWelchTraining<Alphabet, Subject>::expectation_step(
     int th_id = 0;
     LOG(INFO) << strprintf("Thread %d: start forward backward", th_id);
     ForwardBackwardMatrices fbm(block[n]->length(), hmm_.num_states());
-    forward_backward_algorithm(hmm_, *block[n], emission_, &fbm);
+    ForwardBackwardAlgorithm(hmm_, *block[n], emission_, &fbm);
     LOG(INFO) << strprintf("Thread %d: end forward backward", th_id);
 
     LOG(INFO) << strprintf("Thread %d: start adding contributions", th_id);
@@ -88,7 +88,7 @@ void BaumWelchTraining<Alphabet, Subject>::expectation_step(
 #pragma omp atomic
     log_likelihood_ += fbm.log_likelihood / num_eff_cols_;
     if (progress_table_) {
-#pragma omp critical (progress)
+#pragma omp critical (print_progress)
       progress_table_->print_progress(hmm_.num_states() * block[n]->length());
     }
   }
@@ -111,7 +111,7 @@ void BaumWelchTraining<Alphabet, Subject>::AddContributionToTransitions(
     }
 
     if (w_kl != 0.0) {
-#pragma omp critical (transition)
+#pragma omp critical (add_contribution_to_transition)
       if (!transition_stats_block_.test(ti->from, ti->to)) {
         transition_stats_block_[ti->from][ti->to] = w_kl;
       } else {
@@ -133,7 +133,7 @@ inline void BaumWelchTraining<Alphabet, Subject>::AddContributionToStates(
   for (int k = 0; k < num_states; ++k) {
     ContextProfile<Alphabet>& p_k = *profile_stats_block_[k];
 
-#pragma omp critical (prior)
+#pragma omp critical (add_contribution_to_prior)
     p_k.set_prior(p_k.prior() + m.f[0][k] * m.b[0][k]);
 
     const int ci = p_k.center();
@@ -164,7 +164,7 @@ void BaumWelchTraining<Alphabet, Subject>::AddContributionToStates(
   for (int k = 0; k < num_states; ++k) {
     ContextProfile<Alphabet>& p_k = *profile_stats_block_[k];
 
-#pragma omp critical (prior)
+#pragma omp critical (add_contribution_to_prior)
     p_k.set_prior(p_k.prior() + m.f[0][k] * m.b[0][k]);
 
     const int ci = p_k.center();
@@ -203,6 +203,7 @@ void BaumWelchTraining<Alphabet, Subject>::UpdateSufficientStatistics() {
   transition_stats_block_.clear();
 
   // Update priors and emissions statistics
+#pragma omp parallel for schedule(static)
   for (int k = 0; k < num_states; ++k) {
     ContextProfile<Alphabet>& p_block = *profile_stats_block_[k];
     ContextProfile<Alphabet>& p       = *profile_stats_[k];
@@ -210,7 +211,8 @@ void BaumWelchTraining<Alphabet, Subject>::UpdateSufficientStatistics() {
     p.set_prior(p.prior() * gamma + p_block.prior());
     for (int j = 0; j < num_cols; ++j) {
       for (int a = 0; a < alphabet_size; ++a) {
-        p[j][a] = gamma * p[j][a]  + p_block[j][a];
+#pragma omp critical (update_profile_statistics)
+        p[j][a] = gamma * p[j][a] + p_block[j][a];
       }
     }
     reset(&p_block);
@@ -219,21 +221,22 @@ void BaumWelchTraining<Alphabet, Subject>::UpdateSufficientStatistics() {
 
 template< class Alphabet,
           template<class A> class Subject >
-void BaumWelchTraining<Alphabet, Subject>::maximization_step() {
+void BaumWelchTraining<Alphabet, Subject>::MaximizationStep() {
   const int num_states    = hmm_.num_states();
   const int num_cols      = hmm_.num_cols();
   const int alphabet_size = hmm_.alphabet_size();
 
   // Calculate normalization factor for priors
-  float sum = 0.0f;
-  for (int k = 0; k < num_states; ++k) sum += profile_stats_[k]->prior();
-  float fac = 1.0f / sum;
+  float prior_sum = 0.0f;
+  for (int k = 0; k < num_states; ++k) prior_sum += profile_stats_[k]->prior();
+  float prior_fac = 1.0f / prior_sum;
 
   // Assign new priors and emission probabilities
+#pragma omp parallel for schedule(static)
   for (int k = 0; k < num_states; ++k) {
     ContextProfile<Alphabet>& p_k = *profile_stats_[k];
 
-    hmm_[k].set_prior(p_k.prior() * fac);
+    hmm_[k].set_prior(p_k.prior() * prior_fac);
     ContextProfile<Alphabet> tmp(p_k);
     if (normalize(&tmp)) {  // don't update profiles that did'n get evidence
       tmp.transform_to_logspace();
@@ -246,24 +249,24 @@ void BaumWelchTraining<Alphabet, Subject>::maximization_step() {
   // Calculate and assign new transition probabilities
   hmm_.clear_transitions();
   for (int k = 0; k < num_states; ++k) {
-    sum = 0.0f;
+    float tr_sum = 0.0f;
     for (int l = 0; l < num_states; ++l) {
       if (transition_stats_.test(k,l)) {
         const float a_kl =
           transition_stats_[k][l] + opts_.transition_pc - 1.0f;
         if (a_kl > 0.0f) {
           transition_stats_[k][l] = a_kl;
-          sum += a_kl;
+          tr_sum += a_kl;
         } else {
           transition_stats_.erase(k,l);
         }
       }
     }
-    if (sum != 0.0f) {
-      fac = 1.0f / sum;
+    if (tr_sum != 0.0f) {
+      float tr_fac = 1.0f / tr_sum;
       for (int l = 0; l < num_states; ++l) {
         if (transition_stats_.test(k,l)) {
-          hmm_(k,l) = transition_stats_[k][l] * fac;
+          hmm_(k,l) = transition_stats_[k][l] * tr_fac;
           LOG(DEBUG2) << strprintf("tr[%i][%i]=%-8.5f",
                                    k, l, static_cast<float>(hmm_(k,l)));
         }
@@ -271,13 +274,12 @@ void BaumWelchTraining<Alphabet, Subject>::maximization_step() {
     }
   }
 
-  // Increment iteration counter in HMM
-  ++hmm_;
+  hmm_.increment_iterations();
 }
 
 template< class Alphabet,
           template<class A> class Subject >
-void BaumWelchTraining<Alphabet, Subject>::init() {
+void BaumWelchTraining<Alphabet, Subject>::Init() {
   // Create profiles for global and block-level sufficient statistics
   for (int k = 0; k < hmm_.num_states(); ++k) {
     profile_stats_.push_back(

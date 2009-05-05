@@ -148,7 +148,7 @@ class Alignment {
   void operator=(const Alignment&);
 
   // Initializes alignment with given headers and sequences.
-  void init(const std::vector<std::string>& headers,
+  void Init(const std::vector<std::string>& headers,
             const std::vector<std::string>& seqs);
   // Resize the sequence matrix and header vector to given dimensions.
   void resize(int num_seqs, int num_cols);
