@@ -13,6 +13,8 @@
 #include "mult_emission.h"
 #include "exception.h"
 #include "getopt_pp.h"
+#include "pseudocounts.h"
+#include "hmm_pseudocounts-inl.h"
 #include "library_pseudocounts-inl.h"
 #include "profile_library-inl.h"
 #include "psiblast_pssm.h"
@@ -34,11 +36,12 @@ struct CSBuildAppOptions {
   void SetDefaults() {
     infile              = "";
     outfile             = "";
-    libfile             = "";
+    contextfile         = "";
     informat            = "auto";
     outformat           = "prf";
     pc_admix            = 1.0f;
     pc_ali              = 10.0f;
+    pc_engine           = "auto";
     matchcol_assignment = kMatchColAssignByQuery;
     global_weights      = false;
     weight_center       = 1.3f;
@@ -54,8 +57,8 @@ struct CSBuildAppOptions {
   string infile;
   // The output file for the trained HMM.
   string outfile;
-  // Library input file for restarting
-  string libfile;
+  // Input file with context profile library or HMM
+  string contextfile;
   // Input file format
   string informat;
   // Output file format
@@ -64,6 +67,8 @@ struct CSBuildAppOptions {
   float pc_admix;
   // Constant in pseudocount calculation for alignments
   float pc_ali;
+  // Pseudocount engine
+  string pc_engine;
   // Match column assignment for FASTA alignments
   int matchcol_assignment;
   // Use global instead of position specific weights for sequence weighting.
@@ -100,6 +105,10 @@ class CSBuildApp : public Application {
   CSBuildAppOptions opts_;
   // Profile library for pseudocounts
   scoped_ptr< ProfileLibrary<Alphabet> > lib_;
+  // HMM for pseudocounts
+  scoped_ptr< HMM<Alphabet> > hmm_;
+  // Pseudocount engine
+  scoped_ptr< Pseudocounts<Alphabet> > pc_;
 };  // class CSBuildApp
 
 
@@ -113,7 +122,8 @@ void CSBuildApp<Alphabet>::parse_options(GetOpt_pp* options) {
   *options >> Option('M', "matchcol", opts_.matchcol_assignment,
                      opts_.matchcol_assignment);
   *options >> Option('x', "pc-admix", opts_.pc_admix, opts_.pc_admix);
-  *options >> Option('D', "context-pc", opts_.libfile, opts_.libfile);
+  *options >> Option('D', "context-data", opts_.contextfile, opts_.contextfile);
+  *options >> Option('p', "pc-engine", opts_.pc_engine, opts_.pc_engine);
   *options >> OptionPresent(' ', "global-weights", opts_.global_weights);
 
   opts_.Validate();
@@ -122,18 +132,20 @@ void CSBuildApp<Alphabet>::parse_options(GetOpt_pp* options) {
     opts_.outfile = get_file_basename(opts_.infile, false) + "prf";
   if (opts_.informat == "auto")
     opts_.informat = get_file_ext(opts_.infile);
+  if (opts_.pc_engine == "auto" && !opts_.contextfile.empty())
+    opts_.pc_engine = get_file_ext(opts_.contextfile);
 }
 
 template<class Alphabet>
 void CSBuildApp<Alphabet>::print_description() const {
-  fputs("Build a profile, PSSM, or HMM from an alignment or sequence.\n",
+  fputs("Build a profile or PSSM from an alignment or sequence.\n",
         stream());
 }
 
 template<class Alphabet>
 void CSBuildApp<Alphabet>::print_banner() const {
   fputs("Usage: csbuild -i <infile> [options]\n", stream());
-  fputs("       csbuild -i <infile> -D <library> [options]\n", stream());
+  fputs("       csbuild -i <infile> -D <context data> [options]\n", stream());
 }
 
 template<class Alphabet>
@@ -151,8 +163,10 @@ void CSBuildApp<Alphabet>::print_options() const {
           "Make all FASTA columns with less than X% gaps match columns");
   fprintf(stream(), "  %-30s %s\n", "", "(def: make columns with residue in "
           "first sequence match columns)");
-  fprintf(stream(), "  %-30s %s (def=off)\n", "-D, --context-pc <library>",
-          "Add context-specific pseudocounts with profile library");
+  fprintf(stream(), "  %-30s %s (def=off)\n", "-D, --context-data <file>",
+          "Add context-specific pseudocounts with profile library or HMM");
+  fprintf(stream(), "  %-30s %s (def=%s)\n", "-p, --pc-engine lib|hmm",
+          "Specify engine for pseudocount generation", opts_.pc_engine.c_str());
   fprintf(stream(), "  %-30s %s (def=%-.2f)\n", "-x, --pc-admix [0,1]",
           "Pseudocount admixture for context-specific pseudocounts",
           opts_.pc_admix);
@@ -213,34 +227,45 @@ int CSBuildApp<Alphabet>::Run() {
   if (!fin) throw Exception("Unable to read from input file '%s'!",
                             opts_.infile.c_str());
 
-  // Iniialize profile library if needed
-  if (!opts_.libfile.empty()) {
-    FILE* fin = fopen(opts_.libfile.c_str(), "r");
+  // Iniialize profile library and library pseudocounts if needed
+  if (!opts_.contextfile.empty() && opts_.pc_engine == "lib") {
+    FILE* fin = fopen(opts_.contextfile.c_str(), "r");
     if (!fin) throw Exception("Unable to read from jumpstart file '%s'!",
-                              opts_.libfile.c_str());
+                              opts_.contextfile.c_str());
     lib_.reset(new ProfileLibrary<Alphabet>(fin));
+    pc_.reset(new LibraryPseudocounts<Alphabet>(lib_.get(),
+                                                opts_.weight_center,
+                                                opts_.weight_decay));
+    fclose(fin);
+
+    // Iniialize HMM and HMM pseudocounts if needed
+  } else if (!opts_.contextfile.empty() && opts_.pc_engine == "hmm") {
+    FILE* fin = fopen(opts_.contextfile.c_str(), "r");
+    if (!fin) throw Exception("Unable to read from jumpstart file '%s'!",
+                              opts_.contextfile.c_str());
+    hmm_.reset(new HMM<Alphabet>(fin));
+    pc_.reset(new HMMPseudocounts<Alphabet>(hmm_.get(),
+                                            opts_.weight_center,
+                                            opts_.weight_decay));
     fclose(fin);
   }
 
-  // Read input sequence/alignment
-  if (opts_.informat == "seq") {  // build profile from sequence
+  // Build profile from sequence
+  if (opts_.informat == "seq") {
     Sequence<Alphabet> seq(fin);
     CountProfile<Alphabet> profile(seq);
 
-    if (lib_) {
-      LibraryPseudocounts<Alphabet> pc(lib_.get(),
-                                       opts_.weight_center,
-                                       opts_.weight_decay);
+    if (pc_) {
       fprintf(stream(), "Adding context-specific pseudocounts (admix=%-.2f) ...\n",
               opts_.pc_admix);
-      pc.add_to_sequence(seq, ConstantAdmixture(opts_.pc_admix), &profile);
+      pc_->add_to_sequence(seq, ConstantAdmixture(opts_.pc_admix), &profile);
     }
     if (opts_.outformat == "chk")
       WriteCheckpoint(seq, profile);
     else
       WriteProfile(profile);
 
-  } else {  // build profile from alignment
+  } else {  // Build profile from alignment
     typename Alignment<Alphabet>::Format f =
       alignment_format_from_string<Alphabet>(opts_.informat);
     Alignment<Alphabet> ali(fin, f);
@@ -252,14 +277,11 @@ int CSBuildApp<Alphabet>::Run() {
     }
     CountProfile<Alphabet> profile(ali, !opts_.global_weights);
 
-    if (lib_) {
-      LibraryPseudocounts<Alphabet> pc(lib_.get(),
-                                       opts_.weight_center,
-                                       opts_.weight_decay);
+    if (pc_) {
       fprintf(stream(), "Adding context-specific pseudocounts (admix=%-.2f) ...\n",
               opts_.pc_admix);
-      pc.add_to_profile(DivergenceDependentAdmixture(opts_.pc_admix,
-                                                     opts_.pc_ali), &profile);
+      pc_->add_to_profile(DivergenceDependentAdmixture(opts_.pc_admix,
+                                                       opts_.pc_ali), &profile);
     }
     if (opts_.outformat == "chk")
       WriteCheckpoint(ali.GetSequence(0), profile);

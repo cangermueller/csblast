@@ -163,7 +163,7 @@ void CSTrainApp<Alphabet>::parse_options(GetOpt_pp* options) {
                      opts_.transition_pc);
   *options >> Option('s', "sample-rate", opts_.sample_rate, opts_.sample_rate);
   *options >> Option('j', "jumpstart", opts_.hmmfile, opts_.hmmfile);
-  *options >> Option('D', "context-library", opts_.libfile, opts_.libfile);
+  *options >> Option('D', "context-data", opts_.libfile, opts_.libfile);
   *options >> Option('B', "blocks", opts_.num_blocks, opts_.num_blocks);
   *options >> Option('m', "matrix", opts_.blosum_type, opts_.blosum_type);
   *options >> Option('q', "mismatch-score", opts_.nucleotide_mismatch,
@@ -251,7 +251,7 @@ void CSTrainApp<Alphabet>::print_options() const {
           opts_.sample_rate);
   fprintf(stream(), "  %-30s %s\n", "-j, --jumpstart <file>",
           "Jumpstart the HMM training with a serialized HMM.");
-  fprintf(stream(), "  %-30s %s\n", "-D, --context-library <file>",
+  fprintf(stream(), "  %-30s %s\n", "-D, --context-data <file>",
           "Initialize the HMM with profiles from given context library");
   fprintf(stream(), "  %-30s %s\n", "-B, --blocks [0,N]",
           "Number of blocks for online training (def: B=N^3/8)");
