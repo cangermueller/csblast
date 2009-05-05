@@ -37,7 +37,7 @@ ifdef STATIC
 	CXXFLAGS += -static-libgcc -static
 endif
 ifdef OPENMP
-	CXXFLAGS += -fopenmp
+	CXXFLAGS += -fopenmp -DOPENMP=1
 endif
 ifndef NDEBUG
 	CXXFLAGS += -g

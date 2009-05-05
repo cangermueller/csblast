@@ -592,7 +592,7 @@ float global_weights_and_diversity(const Alignment<Alphabet>& alignment,
     for (int a = 0; a < alphabet_size; ++a)
       if (fj[a] > kZero) neff -= fj[a] * fast_log2(fj[a]);
   }
-  neff = fast_pow2(neff / num_cols);
+  neff = pow(2.0, neff / num_cols);
 
   LOG(DEBUG) << "neff=" << neff;
 

@@ -27,8 +27,8 @@ void ProgressTable::reset() {
 void ProgressTable::print_progress(long work) {
   if (work_total_ == 0) return;
 
-  const int incr = round(static_cast<float>(work_done_ + work) /
-                         work_total_ * (width_ - 2)) - bar_;
+  const int incr = round(static_cast<float>(work_done_ + work) / work_total_ *
+                         static_cast<long>(width_ - 2)) - bar_;
 
   if (work_done_ == 0) fputc('[', fout_);
   fputs(std::string(incr, '=').c_str(), fout_);
@@ -37,8 +37,6 @@ void ProgressTable::print_progress(long work) {
 
   bar_       += incr;
   work_done_ += work;
-
-  LOG(INFO) << strprintf("%i of total work %i done", work_done_, work_total_);
 }
 
 };  // namespace cs

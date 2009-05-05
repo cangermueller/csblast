@@ -3,7 +3,7 @@
 #ifndef SRC_GLOBALS_H_
 #define SRC_GLOBALS_H_
 
-#ifndef OPENMP
+#ifdef OPENMP
 #include <omp.h>
 #endif
 

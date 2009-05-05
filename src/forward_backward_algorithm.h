@@ -113,7 +113,7 @@ void forward_algorithm(const HMM<Alphabet>& hmm,
   // Initialization
   LOG(DEBUG1) << strprintf("i=%i", 0);
   for (int k = 0; k < num_states; ++k) {
-    m.e[0][k] = fast_pow2(emission(hmm[k], subject, 0));
+    m.e[0][k] = pow(2.0, emission(hmm[k], subject, 0));
     m.f[0][k] = hmm[k].prior() * m.e[0][k];
     LOG(DEBUG2) << strprintf("f[%i][%i] = %-7.2e", 0, k, m.f[0][k]);
   }
@@ -138,7 +138,7 @@ void forward_algorithm(const HMM<Alphabet>& hmm,
                     t_kl->state, l, t_kl->probability);
       }
 
-      m.e[i][l] = fast_pow2(emission(hmm[l], subject, i));
+      m.e[i][l] = pow(2.0, emission(hmm[l], subject, i));
       f_il *= m.e[i][l];
       LOG(DEBUG3) << strprintf("f[%i][%i] *= e[%i][%i]=%-7.2e",
                                i, l, i, l, m.e[i][l]);

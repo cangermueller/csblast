@@ -93,23 +93,20 @@ class BaumWelchTraining : public ExpectationMaximization<Alphabet, Subject> {
   virtual bool terminate() const;
   // Returns parameter wrapper
   virtual const BaumWelchOptions& opts() const { return opts_; }
-  // Adds the contribution of a subject's forward-backward matrices to prior
-  // probabilities of states.
-  void add_contribution_to_priors(const ForwardBackwardMatrices& m);
   // Adds the contribution of a subject's forward-backward matrices to
   // transition counts.
-  void add_contribution_to_transitions(const ForwardBackwardMatrices& m);
+  void AddContributionToTransitions(const ForwardBackwardMatrices& m);
   // Adds the contribution of a count profile's forward-backward matrices to
-  // emission counts.
-  void add_contribution_to_emissions(const ForwardBackwardMatrices& m,
-                                     const CountProfile<Alphabet>& c);
+  // emission counts and priors.
+  void AddContributionToStates(const ForwardBackwardMatrices& m,
+                               const CountProfile<Alphabet>& c);
   // Adds the contribution of a sequence's forward-backward matrices to emission
   // counts.
-  void add_contribution_to_emissions(const ForwardBackwardMatrices& m,
-                                     const Sequence<Alphabet>& s);
+  void AddContributionToStates(const ForwardBackwardMatrices& m,
+                               const Sequence<Alphabet>& s);
   // Updates global sufficient statistics with sufficient statistics calculated
   // on current block.
-  void update_sufficient_statistics();
+  void UpdateSufficientStatistics();
 
   // Parameter wrapper for clustering.
   const BaumWelchOptions& opts_;

@@ -68,7 +68,7 @@ void Clustering<Alphabet, Subject>::expectation_step(const data_vector& block) {
     double sum = 0.0f;
     for (int k = 0; k < num_profiles; ++k) {
       p_zn[k] = lib_[k].prior() *
-        fast_pow2(emission_(lib_[k], **bi, lib_[k].center()));
+        pow(2.0, emission_(lib_[k], **bi, lib_[k].center()));
       sum += p_zn[k];
 
       LOG(DEBUG2) << strprintf("a(%i)=%-8.5g P(c_n|p_%i)=%-8.5g P(z_n=%-4i)=%-8.5g",

@@ -5,7 +5,8 @@
 
 #include "substitution_matrix.h"
 
-#include <iomanip>
+#include <cmath>
+
 #include <iostream>
 
 #include "log.h"
@@ -59,7 +60,7 @@ void SubstitutionMatrix<Alphabet>::init_from_scores_and_background_frequencies()
   // Calculate target frequencies
   for (int a = 0; a < size_; ++a)
     for (int b = 0; b < size_; ++b)
-      p_[a][b] = fast_pow2(s_[a][b]) * f_[a] * f_[b];
+      p_[a][b] = pow(2.0, s_[a][b]) * f_[a] * f_[b];
 
   // Check transition probability matrix, renormalize P
   float sumab = 0.0f;
@@ -78,36 +79,34 @@ void SubstitutionMatrix<Alphabet>::init_from_scores_and_background_frequencies()
 
 template<class Alphabet>
 void SubstitutionMatrix<Alphabet>::print(std::ostream& out) const {
-  std::ios_base::fmtflags flags = out.flags();  // save flags
-
   out << "Background frequencies:\n";
   out << Alphabet::instance() << std::endl;
   for (int a = 0; a < size_; ++a)
-    out << std::fixed << std::setprecision(1) << 100 * f_[a] << "\t";
+    out << strprintf("%-.1f\t", 100.0f * f_[a]);
+
   out << "\nSubstitution trix log2( P(a,b) / p(a)*p(b) ) (in bits):\n";
   out << Alphabet::instance() << std::endl;
   for (int b = 0; b < size_; ++b) {
     for (int a = 0; a < size_; ++a)
-      out << std::fixed << std::setprecision(1) << std::showpos
-          << s_[a][b] << std::noshowpos << "\t";
+      out << strprintf("%-.1f\t", s_[a][b]);
     out << std::endl;
   }
+
   out << "Probability matrix P(a,b) (in %):\n";
   out << Alphabet::instance() << std::endl;
   for (int b = 0; b < size_; ++b) {
     for (int a = 0; a < size_; ++a)
-      out << std::fixed << std::setprecision(1) << 100 * p_[b][a] << "\t";
+      out << strprintf("%-.1f\t", 100.0f * p_[b][a]);
     out << std::endl;
   }
+
   out << "Matrix of conditional probabilities P(a|b) = P(a,b)/p(b) (in %):\n";
   out << Alphabet::instance() << std::endl;
   for (int b = 0; b < size_; ++b) {
     for (int a = 0; a < size_; ++a)
-      out << std::fixed << std::setprecision(1) << 100 * r_[b][a] << "\t";
+      out << strprintf("%-.1f\t", 100.0f * r_[b][a]);
     out << std::endl;
   }
-
-  out.flags(flags);
 }
 
 }  // namespace cs
