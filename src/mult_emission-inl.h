@@ -8,6 +8,7 @@
 #include <cassert>
 #include <cmath>
 
+#include "amino_acid.h"
 #include "exception.h"
 #include "context_profile-inl.h"
 #include "count_profile-inl.h"
