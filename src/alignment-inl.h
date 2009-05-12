@@ -59,7 +59,7 @@ Alignment<Alphabet>::Alignment(const BlastHits& hits, bool best) {
 }
 
 template<class Alphabet>
-void Alignment<Alphabet>::readall(FILE* fin,
+void Alignment<Alphabet>::ReadAll(FILE* fin,
                                   Format format,
                                   std::vector< shared_ptr<Alignment> >* v) {
   while (!feof(fin)) {
@@ -75,8 +75,6 @@ void Alignment<Alphabet>::readall(FILE* fin,
 template<class Alphabet>
 void Alignment<Alphabet>::Init(const std::vector<std::string>& headers,
                                const std::vector<std::string>& seqs) {
-  if (seqs.empty())
-    throw Exception("Bad alignment: initialization with empty sequence vector!");
   if (headers.size() != seqs.size())
     throw Exception("Bad alignment: unequal number of headers and sequences!");
 
@@ -90,12 +88,12 @@ void Alignment<Alphabet>::Init(const std::vector<std::string>& headers,
   // Validate characters and convert to integer representation
   const Alphabet& alphabet = Alphabet::instance();
   headers_.resize(num_seqs);
-  resize(seqs.size(), seqs[0].length());
+  Resize(seqs.size(), seqs[0].length());
   for (int k = 0; k < num_seqs; ++k) {
     headers_[k] = headers[k];
     for (int i = 0; i < num_cols; ++i) {
       const char c = seqs[k][i];
-      column_indexes_[i] = i;
+      column_indices_[i] = i;
       match_column_[i] = match_chr(c);
       if (alphabet.valid(c, true))
         seqs_[i][k] = alphabet.ctoi(c);
@@ -114,15 +112,15 @@ void Alignment<Alphabet>::Init(const std::vector<std::string>& headers,
   }
 
   // Initialize index array for match columns
-  set_match_indexes();
+  SetMatchIndices();
 }
 
 template<class Alphabet>
-void Alignment<Alphabet>::set_match_indexes() {
+void Alignment<Alphabet>::SetMatchIndices() {
   const int match_cols = std::count(&match_column_[0],
                                     &match_column_[0] + num_cols(), true);
-  match_indexes.resize(match_cols);
-  match_indexes = column_indexes_[match_column_];
+  match_indices.resize(match_cols);
+  match_indices = column_indices_[match_column_];
 }
 
 template<class Alphabet>
@@ -133,13 +131,16 @@ void Alignment<Alphabet>::Read(FILE* fin, Format format) {
   std::vector<std::string> seqs;
   switch (format) {
     case FASTA:
-      read_fasta(fin, &headers, &seqs);
+      ReadFasta(fin, &headers, &seqs);
       break;
     case A2M:
-      read_a2m(fin, &headers, &seqs);
+      ReadA2M(fin, &headers, &seqs);
       break;
     case A3M:
-      read_a3m(fin, &headers, &seqs);
+      ReadA3M(fin, &headers, &seqs);
+      break;
+    case PSI:
+      ReadPsi(fin, &headers, &seqs);
       break;
     default:
       throw Exception("Unsupported alignment input format %i!", format);
@@ -150,7 +151,7 @@ void Alignment<Alphabet>::Read(FILE* fin, Format format) {
 }
 
 template<class Alphabet>
-void Alignment<Alphabet>::read_fasta_flavors(FILE* fin,
+void Alignment<Alphabet>::ReadFastaFlavors(FILE* fin,
                                              std::vector<std::string>* headers,
                                              std::vector<std::string>* seqs) {
   headers->clear();
@@ -183,8 +184,8 @@ void Alignment<Alphabet>::read_fasta_flavors(FILE* fin,
       if (static_cast<char>(c) == '>') break;
     }
     // Remove whitespace
-    seqs->back().erase(remove_if(seqs->back().begin(), seqs->back().end(), isspace),
-                       seqs->back().end());
+    seqs->back().erase(remove_if(seqs->back().begin(), seqs->back().end(),
+                                 isspace), seqs->back().end());
 
     LOG(DEBUG2) << headers->back();
   }
@@ -192,12 +193,68 @@ void Alignment<Alphabet>::read_fasta_flavors(FILE* fin,
     throw Exception("Bad alignment: no alignment data found in stream!");
 }
 
+template<class Alphabet>
+void Alignment<Alphabet>::ReadPsi(FILE* fin,
+                                  std::vector<std::string>* headers,
+                                  std::vector<std::string>* seqs) {
+  headers->clear();
+  seqs->clear();
+
+  char buffer[kBufferSize];
+  const char* ptr;
+  int block = 1;  // number of block currently read
+  int n = 0;      // sequence number of first block
+  int k = 0;      // sequence index to zero for first block
+
+  while (fgetline(buffer, kBufferSize, fin)) {
+    if (buffer[0] == '/' && buffer[1] == '/') break;
+
+    // Start of new block
+    if (!strscn(buffer)) {
+      if (k > 0) {
+        if (n > 0 && n != k)
+          throw Exception("Error: different number of sequences in blocks "
+                          "1 and %i.", block);
+        ++block;
+        n = k;
+        k = 0;
+      }
+      continue;
+    }
+
+    // Parse name and sequence characters
+    ptr = strchr(buffer, ' ');
+    if (!ptr)
+      throw Exception("Error: Missing whitespace between identifier and "
+                      "sequence characters of sequence %i in block %i.",
+                      k+1, block);
+    std::string name(buffer, ptr - buffer);
+    ptr = strscn(ptr);
+    if (!ptr)
+      throw Exception("Error: Missing sequence characters in sequence %i of "
+                      "block %i.", k+1, block);
+    std::string seq(ptr);
+
+    if (block == 1) {
+      headers->push_back(name);
+      seqs->push_back(seq);
+    } else {
+      assert(name == (*headers)[k]);
+      (*seqs)[k].append(seq);
+    }
+
+    ++k;
+  }
+  if (k > 0 && n > 0 && n != k)
+    throw Exception("Error: different number of sequences in blocks "
+                    "1 and %i.", block);
+}
 
 template<class Alphabet>
-void Alignment<Alphabet>::read_fasta(FILE* fin,
+void Alignment<Alphabet>::ReadFasta(FILE* fin,
                                      std::vector<std::string>* headers,
                                      std::vector<std::string>* seqs) {
-  read_fasta_flavors(fin, headers, seqs);
+  ReadFastaFlavors(fin, headers, seqs);
   // convert all characters to match characters
   for (std::vector<std::string>::iterator it = seqs->begin();
        it != seqs->end(); ++it)
@@ -205,17 +262,17 @@ void Alignment<Alphabet>::read_fasta(FILE* fin,
 }
 
 template<class Alphabet>
-void Alignment<Alphabet>::read_a2m(FILE* fin,
+void Alignment<Alphabet>::ReadA2M(FILE* fin,
                                    std::vector<std::string>* headers,
                                    std::vector<std::string>* seqs) {
-  read_fasta_flavors(fin, headers, seqs);
+  ReadFastaFlavors(fin, headers, seqs);
 }
 
 template<class Alphabet>
-void Alignment<Alphabet>::read_a3m(FILE* fin,
+void Alignment<Alphabet>::ReadA3M(FILE* fin,
                                    std::vector<std::string>* headers,
                                    std::vector<std::string>* sequences) {
-  read_fasta_flavors(fin, headers, sequences);
+  ReadFastaFlavors(fin, headers, sequences);
 
   // Check number of match states
   std::vector<std::string>& seqs    = *sequences;
@@ -296,11 +353,11 @@ void Alignment<Alphabet>::Write(FILE* fout,
     case FASTA:
     case A2M:
     case A3M:
-      write_fasta_flavors(fout, format, width);
+      WriteFastaFlavors(fout, format, width);
       break;
     case CLUSTAL:
     case PSI:
-      write_clustal_flavors(fout, format, width);
+      WriteClustalFlavors(fout, format, width);
       break;
     default:
       throw Exception("Unsupported alignment output format %i!", format);
@@ -308,7 +365,7 @@ void Alignment<Alphabet>::Write(FILE* fout,
 }
 
 template<class Alphabet>
-void Alignment<Alphabet>::write_fasta_flavors(FILE* fout,
+void Alignment<Alphabet>::WriteFastaFlavors(FILE* fout,
                                               Format format,
                                               int width) const {
   for (int k = 0; k < num_seqs(); ++k) {
@@ -347,9 +404,9 @@ void Alignment<Alphabet>::write_fasta_flavors(FILE* fout,
 }
 
 template<class Alphabet>
-void Alignment<Alphabet>::write_clustal_flavors(FILE* fout,
-                                                Format format,
-                                                int width) const {
+void Alignment<Alphabet>::WriteClustalFlavors(FILE* fout,
+                                              Format format,
+                                              int width) const {
   const int kHeaderWidth = 18;
 
   // Convert alignment to character representation
@@ -384,33 +441,72 @@ void Alignment<Alphabet>::write_clustal_flavors(FILE* fout,
 }
 
 template<class Alphabet>
-void Alignment<Alphabet>::resize(int num_seqs, int num_cols) {
+void Alignment<Alphabet>::Resize(int num_seqs, int num_cols) {
   if (num_seqs == 0 || num_cols == 0)
     throw Exception("Bad alignment dimensions: num_seqs=%i num_cols=%i",
                     num_seqs, num_cols);
 
   seqs_.resize(num_cols, num_seqs);
-  column_indexes_.resize(num_cols);
-  match_indexes.resize(num_cols);
+  column_indices_.resize(num_cols);
+  match_indices.resize(num_cols);
   match_column_.resize(num_cols);
   headers_.resize(num_seqs);
 }
 
 template<class Alphabet>
-void Alignment<Alphabet>::assign_match_columns_by_sequence(int k) {
-  for (int i = 0; i < num_cols(); ++i)
-    match_column_[i] = seqs_[i][k] < Alphabet::instance().gap();
-  set_match_indexes();
+void Alignment<Alphabet>::AssignMatchColumnsBySequence(int k) {
+  if (num_insert_cols() == 0) {
+    // For alignemnts WITHOUT inserts simply assign columns in which the
+    // reference sequence has no residue to be inserts
+    for (int i = 0; i < num_cols(); ++i)
+      match_column_[i] = (seqs_[i][k] < Alphabet::instance().gap());
+
+  } else {
+    // For alignments WITH inserts we remove all columns in which the
+    // reference sequence has no residue and remove all inserts in the other
+    // sequences.
+    const int ref_seq_length = GetSequence(k).length();
+    matrix<char> new_seqs(ref_seq_length, num_seqs());
+    int j = 0;  // column index in new alignment
+
+    for (int i = 0; i < num_cols(); ++i) {
+      if (seqs_[i][k] < Alphabet::instance().gap()) {
+        for (int n = 0; n < num_seqs(); ++n) {
+          if (n != k && !IsMatchColumn(i))
+            new_seqs[j][n] = Alphabet::instance().gap();
+          else
+            new_seqs[j][n] = seqs_[i][n];
+        }
+        ++j;
+      }
+    }
+    seqs_.resize(ref_seq_length, num_seqs());
+    seqs_ = new_seqs;
+
+    // Update match indices
+    column_indices_.resize(ref_seq_length);
+    match_indices.resize(ref_seq_length);
+    match_column_.resize(ref_seq_length);
+    for (int i = 0; i < ref_seq_length; ++i) {
+      column_indices_[i] = i;
+      match_column_[i]   = true;
+    }
+  }
+
+  SetMatchIndices();
 }
 
 template<class Alphabet>
-void Alignment<Alphabet>::assign_match_columns_by_gap_rule(int gap_threshold) {
+void Alignment<Alphabet>::AssignMatchColumnsByGapRule(int gap_threshold) {
+  // FIXME: handle inserts in assignment of match columns by gap rule
+  if (num_insert_cols() > 0) return;
+
   LOG(DEBUG) << "Marking columns with more than " << gap_threshold
              << "% of gaps as insert columns ...";
 
   // Global weights are sufficient for calculation of gap percentage
   std::vector<float> wg;
-  global_weights_and_diversity(*this, wg);
+  GlobalWeightsAndDiversity(*this, wg);
   for (int i = 0; i < num_cols(); ++i) {
     float gap = 0.0f;
     float res = 0.0f;
@@ -422,46 +518,40 @@ void Alignment<Alphabet>::assign_match_columns_by_gap_rule(int gap_threshold) {
         gap += wg[k];
 
     float percent_gaps = 100.0f * gap / (res + gap);
-
-    LOG(DEBUG3) << "percent gaps[" << i << "]=" << percent_gaps;
-
     match_column_[i] = percent_gaps <= static_cast<float>(gap_threshold);
   }
-  set_match_indexes();
-
-  LOG(DEBUG) << "num_cols=" << num_cols() << "  num_match_cols="
-             << num_match_cols() << "  num_insert_cols=" << num_insert_cols();
+  SetMatchIndices();
 }
 
 template<class Alphabet>
-void Alignment<Alphabet>::remove_insert_columns() {
+void Alignment<Alphabet>::RemoveInsertColumns() {
   // Create new sequence matrix
   const int match_cols = num_match_cols();
   matrix<char> new_seqs(match_cols, num_seqs());
   for (int i = 0; i < match_cols; ++i) {
     for (int k = 0; k < num_seqs(); ++k) {
-      new_seqs[i][k] = seqs_[match_indexes[i]][k];
+      new_seqs[i][k] = seqs_[match_indices[i]][k];
     }
   }
   seqs_.resize(match_cols, num_seqs());
   seqs_ = new_seqs;
 
-  // Update match indexes
-  column_indexes_.resize(match_cols);
-  match_indexes.resize(match_cols);
+  // Update match indices
+  column_indices_.resize(match_cols);
+  match_indices.resize(match_cols);
   match_column_.resize(match_cols);
   for (int i = 0; i < match_cols; ++i) {
-    column_indexes_[i] = i;
+    column_indices_[i] = i;
     match_column_[i]   = true;
   }
-  set_match_indexes();
+  SetMatchIndices();
 }
 
 template<class Alphabet>
 void Alignment<Alphabet>::Merge(const Alignment<Alphabet>& ali) {
   if (num_match_cols() != ali.num_match_cols()) return;
   // FIXME: Keep insert columns when merging two alignments
-  remove_insert_columns();
+  RemoveInsertColumns();
 
   // Copy and keep track of headers that are not already contained in master
   // alignment.
@@ -478,12 +568,12 @@ void Alignment<Alphabet>::Merge(const Alignment<Alphabet>& ali) {
   matrix<char> seqs_merged(num_match_cols(), headers_merged.size());
   for (int i = 0; i < num_match_cols(); ++i) {
     for (int k = 0; k < num_seqs(); ++k) {
-      seqs_merged[i][k] = seqs_[match_indexes[i]][k];
+      seqs_merged[i][k] = seqs_[match_indices[i]][k];
     }
     int l = num_seqs(); // index of sequence k in merged alignment
     for (int k = 0; k < ali.num_seqs(); ++k) {
       if (include_seq[k]) {
-        seqs_merged[i][l] = ali.seqs_[ali.match_indexes[i]][k];
+        seqs_merged[i][l] = ali.seqs_[ali.match_indices[i]][k];
         ++l;
       }
     }
@@ -492,9 +582,6 @@ void Alignment<Alphabet>::Merge(const Alignment<Alphabet>& ali) {
   // Apply the merging
   headers_ = headers_merged;
   seqs_    = seqs_merged;
-
-  LOG(DEBUG) << "Merged alignment:";
-  LOG(DEBUG) << *this;
 }
 
 template<class Alphabet>
@@ -532,7 +619,8 @@ std::ostream& operator<< (std::ostream& out, const Alignment<Alphabet>& ali) {
       else
         out << header.substr(0, kHeaderWidth) << ' ';
 
-      out << seqs[k].substr(0, std::min(kLineLen, static_cast<int>(seqs[k].length())))
+      out << seqs[k].substr(0,
+                            std::min(kLineLen, static_cast<int>(seqs[k].length())))
           << std::endl;
       seqs[k].erase(0, std::min(kLineLen, static_cast<int>(seqs[k].length())));
     }
@@ -544,7 +632,7 @@ std::ostream& operator<< (std::ostream& out, const Alignment<Alphabet>& ali) {
 
 
 template<class Alphabet>
-float global_weights_and_diversity(const Alignment<Alphabet>& alignment,
+float GlobalWeightsAndDiversity(const Alignment<Alphabet>& alignment,
                                    std::vector<float>& wg) {
   const float kZero = 1E-10;  // for calculation of entropy
   const int num_seqs = alignment.num_seqs();
@@ -600,7 +688,7 @@ float global_weights_and_diversity(const Alignment<Alphabet>& alignment,
 }
 
 template<class Alphabet>
-std::vector<float> position_specific_weights_and_diversity(
+std::vector<float> PositionSpecificWeightsAndDiversity(
     const Alignment<Alphabet>& alignment, matrix<float>& w) {
   // Maximal fraction of sequences with an endgap
   const float kMaxEndgapFraction = 0.1;
@@ -635,7 +723,7 @@ std::vector<float> position_specific_weights_and_diversity(
   std::vector<int> nseqi_debug(num_cols, 0);   // debugging
   std::vector<int> ncoli_debug(num_cols, 0);   // debugging
 
-  global_weights_and_diversity(alignment, wg);
+  GlobalWeightsAndDiversity(alignment, wg);
 
   LOG(INFO) << "Calculation of position-specific weights ...";
   LOG(DEBUG2) << "i      ncol   nseq   neff";
@@ -716,7 +804,7 @@ std::vector<float> position_specific_weights_and_diversity(
 }
 
 template<class Alphabet>
-typename Alignment<Alphabet>::Format alignment_format_from_string(
+typename Alignment<Alphabet>::Format AlignmentFormatFromString(
     const std::string& s) {
   if (s == "fas")
     return Alignment<Alphabet>::FASTA;

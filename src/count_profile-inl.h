@@ -43,14 +43,14 @@ CountProfile<Alphabet>::CountProfile(const Alignment<Alphabet>& alignment,
 
   if (position_specific_weights) {
     matrix<float> w;  // position-specific sequence weights
-    neff_ = position_specific_weights_and_diversity(alignment, w);
+    neff_ = PositionSpecificWeightsAndDiversity(alignment, w);
     for (int i = 0; i < num_cols; ++i)
       for (int k = 0; k < num_seqs; ++k)
         if (alignment[i][k] < any)
           data_[i][alignment[i][k]] += w[i][k];
   } else {
     std::vector<float> wg;  // global sequence weights
-    neff_.assign(num_cols, global_weights_and_diversity(alignment, wg));
+    neff_.assign(num_cols, GlobalWeightsAndDiversity(alignment, wg));
     for (int i = 0; i < num_cols; ++i)
       for (int k = 0; k < num_seqs; ++k)
         if (alignment[i][k] < any)
@@ -70,7 +70,7 @@ inline CountProfile<Alphabet>::CountProfile(const CountProfile& other,
 }
 
 template<class Alphabet>
-void CountProfile<Alphabet>::readall(
+void CountProfile<Alphabet>::ReadAll(
     FILE* fin,
     std::vector< shared_ptr<CountProfile> >* v) {
   while (!feof(fin)) {

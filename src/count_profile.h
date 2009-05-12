@@ -46,7 +46,7 @@ class CountProfile : public Profile<Alphabet> {
 
   // Reads all available profiles from the input stream and returns them in a
   // vector.
-  static void readall(FILE* in, std::vector< shared_ptr<CountProfile> >* v);
+  static void ReadAll(FILE* in, std::vector< shared_ptr<CountProfile> >* v);
   // Returns the number of effective sequences in alignment column i
   float neff(int i) const { return neff_[i]; }
 

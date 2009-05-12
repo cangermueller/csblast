@@ -61,16 +61,16 @@ class Alignment {
 
   // Reads all available alignments from the input stream and returns them in a
   // vector.
-  static void readall(FILE* fin,
+  static void ReadAll(FILE* fin,
                       Format format,
                       std::vector< shared_ptr<Alignment> >* v);
 
   // Accessors for integer representation of character in MATCH column i of
   // sequence k.
-  col_type operator[](int i) { return seqs_[match_indexes[i]]; }
-  const_col_type operator[](int i) const { return seqs_[match_indexes[i]]; }
-  char& at(int i, int k) { return seqs_[match_indexes[i]][k]; }
-  const char& at(int i, int k) const { return seqs_[match_indexes[i]][k]; }
+  col_type operator[](int i) { return seqs_[match_indices[i]]; }
+  const_col_type operator[](int i) const { return seqs_[match_indices[i]]; }
+  char& at(int i, int k) { return seqs_[match_indices[i]][k]; }
+  const char& at(int i, int k) const { return seqs_[match_indices[i]][k]; }
   // Accessors for integer representation of the character at position i
   // (NOT match column i) of sequence k.
   char& seq(int k, int i) { return seqs_[i][k]; }
@@ -84,7 +84,7 @@ class Alignment {
   // Returns the total number of alignment columns.
   int num_cols() const { return seqs_.num_rows(); }
   // Returns the number of match columns.
-  int num_match_cols() const { return match_indexes.size(); }
+  int num_match_cols() const { return match_indices.size(); }
   // Returns the number of insert columns.
   int num_insert_cols() const { return num_cols() - num_match_cols(); }
   // Returns the total number of characters in the alignment (incl. inserts).
@@ -116,18 +116,18 @@ class Alignment {
   // Sets the header of sequence k.
   void set_header(int k, const std::string& header) { headers_[k] = header; }
   // Makes all columns with a residue in sequence k match columns.
-  void assign_match_columns_by_sequence(int k = 0);
+  void AssignMatchColumnsBySequence(int k = 0);
   // Makes all columns with less than X% gaps match columns.
-  void assign_match_columns_by_gap_rule(int gap_threshold = 50);
+  void AssignMatchColumnsByGapRule(int gap_threshold = 50);
   // Initializes object with an alignment in FASTA format read from given
   // stream.
   void Read(FILE* fin, Format format);
   // Writes the alignment in given format to ouput stream.
   void Write(FILE* fout, Format format, int width = 100) const;
   // Returns true if column i is a match column.
-  bool match_column(int i) const { return match_column_[i]; }
+  bool IsMatchColumn(int i) const { return match_column_[i]; }
   // Removes all insert columns from the alignment.
-  void remove_insert_columns();
+  void RemoveInsertColumns();
   // Merges the provided alignment with this alignment considering only sequences
   // that are not already included in this alignment. Warning: Inserts in current
   // alignment are lost!
@@ -151,36 +151,40 @@ class Alignment {
   void Init(const std::vector<std::string>& headers,
             const std::vector<std::string>& seqs);
   // Resize the sequence matrix and header vector to given dimensions.
-  void resize(int num_seqs, int num_cols);
-  // Fills match_indexes_ with the indexes of all match columns.
-  void set_match_indexes();
+  void Resize(int num_seqs, int num_cols);
+  // Fills match_indices_ with the indices of all match columns.
+  void SetMatchIndices();
   // Reads an alignment in FASTA format.
-  void read_fasta(FILE* fin,
-                  std::vector<std::string>* headers,
-                  std::vector<std::string>* seqs);
+  void ReadFasta(FILE* fin,
+                 std::vector<std::string>* headers,
+                 std::vector<std::string>* seqs);
   // Reads an alignment in A2M format from given stream.
-  void read_a2m(FILE* fin,
-                std::vector<std::string>* headers,
-                std::vector<std::string>* seqs);
+  void ReadA2M(FILE* fin,
+               std::vector<std::string>* headers,
+               std::vector<std::string>* seqs);
   // Reads an alignment in A3M format from given stream.
-  void read_a3m(FILE* fin,
-                std::vector<std::string>* headers,
-                std::vector<std::string>* sequences);
+  void ReadA3M(FILE* fin,
+               std::vector<std::string>* headers,
+               std::vector<std::string>* sequences);
   // Helper method that reads a FASTA, A2M, or A3M formatted alignment.
-  void read_fasta_flavors(FILE* fin,
-                          std::vector<std::string>* headers,
-                          std::vector<std::string>* seqs);
+  void ReadFastaFlavors(FILE* fin,
+                        std::vector<std::string>* headers,
+                        std::vector<std::string>* seqs);
+  // Reads an alignment in PSI format.
+  void ReadPsi(FILE* fin,
+               std::vector<std::string>* headers,
+               std::vector<std::string>* seqs);
   // Writes the alignment in FASTA, A2M, or A3M format to output stream.
-  void write_fasta_flavors(FILE* fout, Format format, int width = 100) const;
+  void WriteFastaFlavors(FILE* fout, Format format, int width = 100) const;
   // Writes the alignment in CLUSTAL or PSI format to output stream.
-  void write_clustal_flavors(FILE* fout, Format format, int width = 100) const;
+  void WriteClustalFlavors(FILE* fout, Format format, int width = 100) const;
 
   // Row major matrix with sequences in integer representation.
   matrix<char> seqs_;
   // Array with indices of all columns [0,1,2,...,num_cols-1].
-  std::valarray<int> column_indexes_;
+  std::valarray<int> column_indices_;
   // Array with indices of match columns.
-  std::valarray<int> match_indexes;
+  std::valarray<int> match_indices;
   // Array mask indicating match and insert columns.
   std::valarray<bool> match_column_;
   // Headers of sequences in the alignment.
@@ -192,18 +196,18 @@ class Alignment {
 // Calculates global sequence weights by maximum entropy weighting
 // (Henikoff&Henikoff '94).
 template<class Alphabet>
-float global_weights_and_diversity(const Alignment<Alphabet>& alignment,
+float GlobalWeightsAndDiversity(const Alignment<Alphabet>& alignment,
                                    std::vector<float>& wg);
 
 // Calculates position-dependent sequence weights and number of effective
 // sequences on subalignments.
 template<class Alphabet>
-std::vector<float> position_specific_weights_and_diversity(
+std::vector<float> PositionSpecificWeightsAndDiversity(
     const Alignment<Alphabet>& alignment, matrix<float>& w);
 
 // Returns the alignment format corresponding to provided filename extension
 template<class Alphabet>
-typename Alignment<Alphabet>::Format alignment_format_from_string(
+typename Alignment<Alphabet>::Format AlignmentFormatFromString(
     const std::string& s);
 
 

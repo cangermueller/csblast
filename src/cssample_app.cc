@@ -169,7 +169,7 @@ int CSSampleApp<Alphabet>::Run() {
           get_file_basename(opts_.infile).c_str());
   fflush(stream());
 
-  CountProfile<Alphabet>::readall(fin, &database_);
+  CountProfile<Alphabet>::ReadAll(fin, &database_);
 
   fprintf(stream(), " %i profiles read\n", static_cast<int>(database_.size()));
   fclose(fin);

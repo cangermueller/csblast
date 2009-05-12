@@ -35,7 +35,7 @@ Sequence<Alphabet>::Sequence(const string& header,
 }
 
 template<class Alphabet>
-inline void Sequence<Alphabet>::readall(FILE* fin,
+inline void Sequence<Alphabet>::ReadAll(FILE* fin,
                                         std::vector< shared_ptr<Sequence> >* v) {
   while (!feof(fin)) {
     shared_ptr<Sequence> p(new Sequence(fin));

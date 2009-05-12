@@ -37,7 +37,7 @@ TEST(SequenceTest, ConstructionFromInputStream) {
 TEST(SequenceTest, ConstructionOfMultipleSequencesFromInputStream) {
   FILE* fin = fopen("../data/nt_seqs.fas", "r");
   std::vector< shared_ptr<Sequence<Nucleotide> > > seqs;
-  Sequence<Nucleotide>::readall(fin, &seqs);
+  Sequence<Nucleotide>::ReadAll(fin, &seqs);
   fclose(fin);
 
   EXPECT_EQ(2, static_cast<int>(seqs.size()));

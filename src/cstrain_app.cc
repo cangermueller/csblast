@@ -310,7 +310,7 @@ void CSTrainApp<Alphabet>::ReadTrainingData() {
             get_file_basename(opts_.infile).c_str());
     fflush(stream());
 
-    CountProfile<Alphabet>::readall(fin, &data_);
+    CountProfile<Alphabet>::ReadAll(fin, &data_);
     fprintf(stream(), " %i profiles read\n", static_cast<int>(data_.size()));
 
   } else if (opts_.informat == "seq") {
@@ -343,15 +343,15 @@ void CSTrainApp<Alphabet>::ReadTrainingData() {
             get_file_basename(opts_.infile).c_str());
 
     typename Alignment<Alphabet>::Format f =
-      alignment_format_from_string<Alphabet>(opts_.informat);
+      AlignmentFormatFromString(<Alphabet>(opts_.informat);
     int i = 0;
     while (!feof(fin)) {
       Alignment<Alphabet> ali(fin, f);
       if (f == Alignment<Alphabet>::FASTA) {
         if (opts_.matchcol_assignment < 0)
-          ali.assign_match_columns_by_sequence();
+          ali.AssignMatchColumnsBySequence();
         else
-          ali.assign_match_columns_by_gap_rule(opts_.matchcol_assignment);
+          ali.AssignMatchColumnsByGapRule(opts_.matchcol_assignment);
       }
       shared_ptr< CountProfile<Alphabet> > cp_ptr(
           new CountProfile<Alphabet>(ali, !opts_.global_weights));

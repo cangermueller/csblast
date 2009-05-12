@@ -267,13 +267,13 @@ int CSBuildApp<Alphabet>::Run() {
 
   } else {  // Build profile from alignment
     typename Alignment<Alphabet>::Format f =
-      alignment_format_from_string<Alphabet>(opts_.informat);
+      AlignmentFormatFromString(<Alphabet>(opts_.informat);
     Alignment<Alphabet> ali(fin, f);
     if (f == Alignment<Alphabet>::FASTA) {
       if (opts_.matchcol_assignment == CSBuildAppOptions::kMatchColAssignByQuery)
-        ali.assign_match_columns_by_sequence(0);
+        ali.AssignMatchColumnsBySequence(0);
       else
-        ali.assign_match_columns_by_gap_rule(opts_.matchcol_assignment);
+        ali.AssignMatchColumnsByGapRule(opts_.matchcol_assignment);
     }
     CountProfile<Alphabet> profile(ali, !opts_.global_weights);
 

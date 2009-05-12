@@ -47,7 +47,7 @@ class ClusteringTest : public testing::Test {
     // Read zinc finger alignments
     std::vector< shared_ptr< Alignment<AminoAcid> > > alis;
     FILE* ali_in = fopen("../data/zinc_finger_alignments.fas", "r");
-    Alignment<AminoAcid>::readall(ali_in, Alignment<AminoAcid>::FASTA, &alis);
+    Alignment<AminoAcid>::ReadAll(ali_in, Alignment<AminoAcid>::FASTA, &alis);
     fclose(ali_in);
 
     // Convert alignments to counts and add pseudocounts

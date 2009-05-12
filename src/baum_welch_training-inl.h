@@ -73,17 +73,11 @@ void BaumWelchTraining<Alphabet, Subject>::ExpectationStep(
   // Run forward and backward algorithm on each subject in current block
 #pragma omp parallel for schedule(static)
   for (int n = 0; n < block_size; ++n) {
-    //    int th_id = omp_get_thread_num();
-    int th_id = 0;
-    LOG(INFO) << strprintf("Thread %d: start forward backward", th_id);
     ForwardBackwardMatrices fbm(block[n]->length(), hmm_.num_states());
     ForwardBackwardAlgorithm(hmm_, *block[n], emission_, &fbm);
-    LOG(INFO) << strprintf("Thread %d: end forward backward", th_id);
 
-    LOG(INFO) << strprintf("Thread %d: start adding contributions", th_id);
     AddContributionToTransitions(fbm);
     AddContributionToStates(fbm, *block[n]);
-    LOG(INFO) << strprintf("Thread %d: end adding contributions", th_id);
 
 #pragma omp atomic
     log_likelihood_ += fbm.log_likelihood / num_eff_cols_;

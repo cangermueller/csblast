@@ -57,7 +57,7 @@ TEST_F(ForwardBackwardAlgorithmTest, 1Q7L) {
   FILE* fin = fopen("../data/1Q7L.fas", "r");
   Alignment<AminoAcid> ali(fin, Alignment<AminoAcid>::FASTA);
   fclose(fin);
-  ali.assign_match_columns_by_gap_rule();
+  ali.AssignMatchColumnsByGapRule();
   CountProfile<AminoAcid> profile(ali, true);
 
   BlosumMatrix m;

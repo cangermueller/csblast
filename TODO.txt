@@ -33,7 +33,7 @@ Todo:
 * Replace init method in Initializers with Init and HMM ref to HMM*
 * Implement -B option for CS-BLAST
 * Rename ProfileLibrary in ContextLibary
-* Replace ++hmm with IncrementIteration function
+* Replace # with // in FASTA alignment reading
 
 Someday:
 * Rename 'from' and 'to' members in Transition to 'source' and 'target'

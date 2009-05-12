@@ -38,7 +38,7 @@ class Profile {
 
   // Reads all available profiles from the input stream and returns them in a
   // vector.
-  static void readall(FILE* in, std::vector< shared_ptr<Profile> >* v);
+  static void ReadAll(FILE* in, std::vector< shared_ptr<Profile> >* v);
 
   // Access methods to get the (i,j) element
   col_type operator[](int i) { return data_[i]; }

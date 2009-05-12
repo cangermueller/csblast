@@ -245,7 +245,7 @@ void CSClustApp<Alphabet>::read_training_data() {
   fprintf(stream(), "Reading training profiles from %s ...",
           get_file_basename(opts_.infile).c_str());
   fflush(stream());
-  CountProfile<Alphabet>::readall(fin, &data_);
+  CountProfile<Alphabet>::ReadAll(fin, &data_);
   fprintf(stream(), " %i profiles read\n", static_cast<int>(data_.size()));
 
   fclose(fin);

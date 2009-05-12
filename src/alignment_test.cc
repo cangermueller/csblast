@@ -12,7 +12,7 @@
 
 namespace cs {
 
-TEST(AlignmentTest, ConstructionFromInputStream) {
+TEST(AlignmentTest, ConstructionFromSimpleFastaInput) {
   FILE* fin = fopen("../data/nt_alignment1.fas", "r");
   Alignment<Nucleotide> alignment(fin, Alignment<Nucleotide>::FASTA);
   fclose(fin);
@@ -23,6 +23,22 @@ TEST(AlignmentTest, ConstructionFromInputStream) {
   EXPECT_EQ(Nucleotide::instance().ctoi('C'), alignment[1][1]);
   EXPECT_EQ(Nucleotide::instance().gap(), alignment[4][1]);
   EXPECT_EQ(Nucleotide::instance().endgap(), alignment[78][1]);
+}
+
+TEST(AlignmentTest, ConstructionFromPsiInput) {
+  FILE* fin = fopen("../data/26SPS9.psi", "r");
+  Alignment<AminoAcid> alignment(fin, Alignment<AminoAcid>::PSI);
+  fclose(fin);
+
+  EXPECT_EQ(14, alignment.num_seqs());
+  EXPECT_EQ(263, alignment.num_cols());
+
+  alignment.AssignMatchColumnsBySequence();
+
+  EXPECT_EQ(176, alignment.num_cols());
+  EXPECT_EQ(0, alignment.num_insert_cols());
+  EXPECT_EQ(AminoAcid::instance().ctoi('D'), alignment[23][0]);
+  EXPECT_EQ(AminoAcid::instance().gap(), alignment[23][1]);
 }
 
 TEST(AlignmentTest, ConstructionFromSequence) {
@@ -73,7 +89,7 @@ TEST(AlignmentTest, CalculationOfGlobalWeights) {
   EXPECT_EQ(80, alignment.num_cols());
 
   std::vector<float> wg;
-  float neff = global_weights_and_diversity(alignment, wg);
+  float neff = GlobalWeightsAndDiversity(alignment, wg);
 
   EXPECT_EQ(4, static_cast<int>(wg.size()));
   EXPECT_FLOAT_EQ(0.25, wg[0]);
@@ -89,7 +105,7 @@ TEST(AlignmentTest, CalculationOfPositionSpecificWeights) {
   EXPECT_EQ(80, alignment.num_cols());
 
   matrix<float> w;
-  position_specific_weights_and_diversity(alignment, w);
+  PositionSpecificWeightsAndDiversity(alignment, w);
 
   EXPECT_FLOAT_EQ(0.5, w[0][0]);
 }
@@ -110,7 +126,7 @@ TEST(AlignmentTest, RemoveColumnsWithGapInFirst) {
   ASSERT_EQ(2, alignment.num_seqs());
   ASSERT_EQ(80, alignment.num_cols());
 
-  alignment.assign_match_columns_by_sequence(0);
+  alignment.AssignMatchColumnsBySequence(0);
 
   EXPECT_EQ(76, alignment.num_match_cols());
   EXPECT_EQ(Nucleotide::instance().gap(), alignment.seq(0,1));
@@ -125,7 +141,7 @@ TEST(AlignmentTest, RemoveColumnsByGapRule) {
   ASSERT_EQ(3, alignment.num_seqs());
   ASSERT_EQ(80, alignment.num_cols());
 
-  alignment.assign_match_columns_by_gap_rule();
+  alignment.AssignMatchColumnsByGapRule();
 
   EXPECT_EQ(76, alignment.num_match_cols());
   EXPECT_EQ(Nucleotide::instance().ctoi('G'), alignment[4][0]);
@@ -154,16 +170,16 @@ TEST(AlignmentTest, RemoveInsertColumns) {
 
   ASSERT_EQ(3, alignment.num_seqs());
   ASSERT_EQ(80, alignment.num_cols());
-  ASSERT_TRUE(alignment.match_column(3));
-  ASSERT_FALSE(alignment.match_column(4));
+  ASSERT_TRUE(alignment.IsMatchColumn(3));
+  ASSERT_FALSE(alignment.IsMatchColumn(4));
   ASSERT_EQ('A', alignment.chr(0,4));
 
-  alignment.remove_insert_columns();
+  alignment.RemoveInsertColumns();
 
   ASSERT_EQ(3, alignment.num_seqs());
   ASSERT_EQ(78, alignment.num_cols());
-  ASSERT_TRUE(alignment.match_column(3));
-  ASSERT_TRUE(alignment.match_column(4));
+  ASSERT_TRUE(alignment.IsMatchColumn(3));
+  ASSERT_TRUE(alignment.IsMatchColumn(4));
   ASSERT_EQ('G', alignment.chr(0,4));
 }
 

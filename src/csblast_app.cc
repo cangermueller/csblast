@@ -38,7 +38,8 @@ struct CSBlastAppOptions {
     infile              = "";
     outfile             = "";
     libfile             = "";
-    alifile             = "";
+    ali_infile          = "";
+    ali_outfile         = "";
     checkpointfile      = "";
     outformat           = 0;
     pc_admix            = 0.95f;
@@ -64,8 +65,10 @@ struct CSBlastAppOptions {
   string outfile;
   // Library input file for restarting
   string libfile;
+  // Alignment file for starting from existing alignment
+  string ali_infile;
   // Output file for multiple alignment of hits
-  string alifile;
+  string ali_outfile;
   // Output file for checkpointing
   string checkpointfile;
   // BLAST output format
@@ -112,6 +115,11 @@ class CSBlastApp : public Application {
   // Writes multiple alignment of hits to file
   void SaveAlignment() const;
 
+  // Default number of one-line descriptions and alignments in BLAST output.
+  // This should be large enough to ensure that the BLAST output parser can
+  // extract all relevant sequences for inclusion in next CSI-BLAST iteration.
+  static const int kNumOutputAlis = 5000;
+
   // Parameter wrapper
   CSBlastAppOptions opts_;
   // Query sequence
@@ -133,6 +141,7 @@ class CSBlastApp : public Application {
 void CSBlastApp::parse_options(GetOpt_pp* options) {
   *options >> Option('i', "infile", opts_.infile, opts_.infile);
   *options >> Option('o', "outfile", opts_.outfile, opts_.outfile);
+  *options >> Option('B', "alifile", opts_.ali_infile, opts_.ali_infile);
   *options >> Option('C', "checkpoint", opts_.checkpointfile, opts_.checkpointfile);
   *options >> Option('m', "outformat", opts_.outformat, opts_.outformat);
   *options >> Option('x', "pc-admix", opts_.pc_admix, opts_.pc_admix);
@@ -140,8 +149,9 @@ void CSBlastApp::parse_options(GetOpt_pp* options) {
   *options >> Option('D', "context-data", opts_.libfile, opts_.libfile);
   *options >> Option('j', "iterations", opts_.iterations, opts_.iterations);
   *options >> Option('h', "inclusion", opts_.inclusion, opts_.inclusion);
-  *options >> Option(' ', "alignhits", opts_.alifile, opts_.alifile);
-  *options >> Option(' ', "weight-center", opts_.weight_center, opts_.weight_center);
+  *options >> Option(' ', "alignhits", opts_.ali_outfile, opts_.ali_outfile);
+  *options >> Option(' ', "weight-center", opts_.weight_center,
+                     opts_.weight_center);
   *options >> Option(' ', "weight-decay", opts_.weight_decay, opts_.weight_decay);
   *options >> Option(' ', "blast-path", opts_.blast_path, opts_.blast_path);
   *options >> Option(' ', "BLAST_PATH", opts_.blast_path, opts_.blast_path);
@@ -153,6 +163,19 @@ void CSBlastApp::parse_options(GetOpt_pp* options) {
     if (!it.extracted())
       opts_.psiblast_opts[it.option()] = it.args().front();
   }
+
+  // Set number of output one-line descriptions and alignments for CSI-BLAST
+  if (opts_.iterations > 1) {
+    if (opts_.psiblast_opts.find('v') == opts_.psiblast_opts.end() ||
+        atoi(opts_.psiblast_opts['v'].c_str()) < kNumOutputAlis)
+      opts_.psiblast_opts['v']  = strprintf("%i", kNumOutputAlis);
+    if (opts_.psiblast_opts.find('b') == opts_.psiblast_opts.end() ||
+        atoi(opts_.psiblast_opts['b'].c_str()) < kNumOutputAlis)
+      opts_.psiblast_opts['b']  = strprintf("%i", kNumOutputAlis);
+  }
+  // Force alignment view option to -m 0
+  // FIXME: Handle alignment view options other than -m 0 in CS-BLAST
+  opts_.psiblast_opts['m'] = "0";
 
   opts_.Validate();
 }
@@ -177,10 +200,12 @@ void CSBlastApp::print_options() const {
           "Path to library with context profiles for cs pseudocounts");
   fprintf(stream(), "  %-30s %s\n", "-o, --outfile <file>",
           "Output file with search results (def=stdout)");
+  fprintf(stream(), "  %-30s %s\n", "-B, --alifile <file>",
+          "Input alignment file for CSI-BLAST restart");
   fprintf(stream(), "  %-30s %s\n", "-d, --database <dbname>",
           "Protein database to search against (def=nr)");
-  fprintf(stream(), "  %-30s %s (def=%i)\n", "-m, --outformat [0,11]",
-          "Alignment view option", opts_.outformat);
+  // fprintf(stream(), "  %-30s %s (def=%i)\n", "-m, --outformat [0,11]",
+  //         "Alignment view option", opts_.outformat);
   fprintf(stream(), "  %-30s %s (def=%i)\n", "-j, --iterations [1,inf[",
           "Maximum number of iterations to use in CSI-BLAST", opts_.iterations);
   fprintf(stream(), "  %-30s %s (def=%-.3f)\n", "-h, --inclusion [0,inf[",
@@ -225,7 +250,7 @@ int CSBlastApp::Run() {
     if (status != 0 || hits.empty()) break;
 
     hits.Filter(opts_.inclusion);
-    if (!hits.empty())
+    if (!hits.empty() && !hits[0].hsps.empty())
       ali_->Merge(Alignment<AminoAcid>(hits, opts_.best));
     LOG(INFO) << strprintf("Found %i sequences in iteration %i (E-value < %5.0E)",
                            hits.num_hits(), itr.IterationNumber(), opts_.inclusion);
@@ -266,9 +291,22 @@ void CSBlastApp::Init() {
   // Setup PSSM of query profile with context-specific pseudocounts if no
   // restart file is provided
   if (opts_.psiblast_opts.find('R') == opts_.psiblast_opts.end()) {
-    CountProfile<AminoAcid> profile(*query_);
-    pc_->add_to_sequence(*query_, ConstantAdmixture(opts_.pc_admix), &profile);
-    pssm_.reset(new PsiBlastPssm(query_->ToString(), profile));
+    if (opts_.ali_infile.empty()) {
+      CountProfile<AminoAcid> profile(*query_);
+      pc_->add_to_sequence(*query_, ConstantAdmixture(opts_.pc_admix), &profile);
+      pssm_.reset(new PsiBlastPssm(query_->ToString(), profile));
+
+    } else {
+      FILE* fin = fopen(opts_.ali_infile.c_str(), "r");
+      Alignment<AminoAcid> input_alignment(fin, Alignment<AminoAcid>::PSI);
+      input_alignment.AssignMatchColumnsBySequence(0);
+      fclose(fin);
+
+      CountProfile<AminoAcid> profile(input_alignment, !opts_.global_weights);
+      pc_->add_to_profile(DivergenceDependentAdmixture(opts_.pc_admix, opts_.pc_ali),
+                          &profile);
+      pssm_.reset(new PsiBlastPssm(query_->ToString(), profile));
+    }
   }
 
   // Setup CS-BLAST engine
@@ -294,9 +332,10 @@ void CSBlastApp::SavePssm() const {
 }
 
 void CSBlastApp::SaveAlignment() const {
-  if (!opts_.alifile.empty()) {
-    FILE* fali = fopen(opts_.alifile.c_str(), "w");
-    if (!fali) throw Exception("Unable to write file '%s'!", opts_.alifile.c_str());
+  if (!opts_.ali_outfile.empty()) {
+    FILE* fali = fopen(opts_.ali_outfile.c_str(), "w");
+    if (!fali) throw Exception("Unable to write file '%s'!",
+                               opts_.ali_outfile.c_str());
     ali_->Write(fali, Alignment<AminoAcid>::PSI);
     fclose(fali);
   }

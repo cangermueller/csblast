@@ -46,7 +46,7 @@ TEST(CountProfileTest, AlignmentBpdS) {
   Alignment<AminoAcid> alignment(fin, Alignment<AminoAcid>::FASTA);
   fclose(fin);
 
-  alignment.assign_match_columns_by_gap_rule();
+  alignment.AssignMatchColumnsByGapRule();
   CountProfile<AminoAcid> profile(alignment, true);
 
   EXPECT_NEAR(0.0f, profile[10][AminoAcid::instance().ctoi('H')], kFloatDelta);
@@ -59,7 +59,7 @@ TEST(CountProfileTest, Alignment1Q7L) {
   Alignment<AminoAcid> alignment(fin, Alignment<AminoAcid>::FASTA);
   fclose(fin);
 
-  alignment.assign_match_columns_by_gap_rule();
+  alignment.AssignMatchColumnsByGapRule();
   CountProfile<AminoAcid> profile(alignment, true);
 
   EXPECT_NEAR(0.05f, profile[10][AminoAcid::instance().ctoi('G')], kFloatDelta);

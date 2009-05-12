@@ -146,7 +146,7 @@ TEST(HMMTestInitialization, RandomSampleInitializer) {
   FILE* fin = fopen("../data/1Q7L.fas", "r");
   Alignment<AminoAcid> ali(fin, Alignment<AminoAcid>::FASTA);
   fclose(fin);
-  ali.assign_match_columns_by_gap_rule();
+  ali.AssignMatchColumnsByGapRule();
 
   typedef shared_ptr< CountProfile<AminoAcid> > profile_ptr;
   profile_ptr p(new CountProfile<AminoAcid>(ali, true));

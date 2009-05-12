@@ -38,7 +38,7 @@ class Sequence {
 
   // Reads all available sequences from the input stream and returns them in a
   // vector.
-  static void readall(FILE* fin, std::vector< shared_ptr<Sequence> >* v);
+  static void ReadAll(FILE* fin, std::vector< shared_ptr<Sequence> >* v);
 
   // Accessors for integer at position i of the sequence.
   char& operator[](int i) { return seq_[i]; }

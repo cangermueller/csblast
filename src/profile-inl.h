@@ -55,7 +55,7 @@ inline Profile<Alphabet>::Profile(const Profile& other,
 }
 
 template<class Alphabet>
-inline void Profile<Alphabet>::readall(FILE* fin,
+inline void Profile<Alphabet>::ReadAll(FILE* fin,
                                        std::vector< shared_ptr<Profile> >* v) {
   while (!feof(fin)) {
     shared_ptr<Profile> p(new Profile(fin));

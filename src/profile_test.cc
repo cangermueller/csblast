@@ -23,7 +23,7 @@ TEST(ProfileTest, ConstructionFromInputStream) {
 TEST(ProfileTest, ConstructionOfMultipleProfilesFromInputStream) {
   FILE* fin = fopen("../data/nt_profiles.prf", "r");
   std::vector< shared_ptr<Profile<Nucleotide> > > profiles;
-  Profile<Nucleotide>::readall(fin, &profiles);
+  Profile<Nucleotide>::ReadAll(fin, &profiles);
   fclose(fin);
 
   EXPECT_EQ(2, static_cast<int>(profiles.size()));
