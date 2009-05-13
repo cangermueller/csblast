@@ -343,7 +343,7 @@ void CSTrainApp<Alphabet>::ReadTrainingData() {
             get_file_basename(opts_.infile).c_str());
 
     typename Alignment<Alphabet>::Format f =
-      AlignmentFormatFromString(<Alphabet>(opts_.informat);
+      AlignmentFormatFromString<Alphabet>(opts_.informat);
     int i = 0;
     while (!feof(fin)) {
       Alignment<Alphabet> ali(fin, f);

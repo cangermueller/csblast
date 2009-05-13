@@ -267,7 +267,7 @@ int CSBuildApp<Alphabet>::Run() {
 
   } else {  // Build profile from alignment
     typename Alignment<Alphabet>::Format f =
-      AlignmentFormatFromString(<Alphabet>(opts_.informat);
+      AlignmentFormatFromString<Alphabet>(opts_.informat);
     Alignment<Alphabet> ali(fin, f);
     if (f == Alignment<Alphabet>::FASTA) {
       if (opts_.matchcol_assignment == CSBuildAppOptions::kMatchColAssignByQuery)
