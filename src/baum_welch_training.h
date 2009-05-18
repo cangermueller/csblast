@@ -60,6 +60,7 @@ class BaumWelchTraining : public ExpectationMaximization<Alphabet, Subject> {
   typedef typename HMM<Alphabet>::const_transition_iterator const_transition_iterator;
 
   // Needed to access names in templatized base class
+  using ExpectationMaximization<Alphabet, Subject>::log_likelihood;
   using ExpectationMaximization<Alphabet, Subject>::log_likelihood_change;
 
   // Initializes a new training object without output.

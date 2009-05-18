@@ -240,6 +240,11 @@ void BaumWelchTraining<Alphabet, Subject>::MaximizationStep() {
     }
   }
 
+  LOG(INFO) << strprintf("num_states = %i", hmm_.num_states());
+  LOG(INFO) << strprintf("num_transitions = %i", hmm_.num_transitions());
+  LOG(INFO) << strprintf("Mean connectivity BEFORE maximization step: %.2f",
+                         hmm_.connectivity());
+
   // Calculate and assign new transition probabilities
   hmm_.clear_transitions();
   for (int k = 0; k < num_states; ++k) {
@@ -265,8 +270,15 @@ void BaumWelchTraining<Alphabet, Subject>::MaximizationStep() {
                                    k, l, static_cast<float>(hmm_(k,l)));
         }
       }
+    } else {
+      LOG(INFO) << strprintf("State %i has no out-transitions.", k);
     }
   }
+  LOG(INFO) << strprintf("Mean connectivity AFTER maximization step: %.2f",
+                         hmm_.connectivity());
+  LOG(INFO) << strprintf("Log-likelihood: %9.5f", log_likelihood());
+  LOG(INFO) << strprintf("Log-likelihood change: %+8.5f",
+                         log_likelihood_change());
 
   hmm_.increment_iterations();
 }
