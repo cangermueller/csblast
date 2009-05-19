@@ -36,5 +36,4 @@ Todo:
 * Replace # with // in FASTA alignment reading
 
 Someday:
-* Rename 'from' and 'to' members in Transition to 'source' and 'target'
 * Unified validation "framework" for Option classes

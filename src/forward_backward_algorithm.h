@@ -103,7 +103,7 @@ void ForwardAlgorithm(const HMM<Alphabet>& hmm,
                        ForwardBackwardMatrices* fbm) {
   typedef typename ForwardBackwardMatrices::value_type value_type;
   typedef typename HMM<Alphabet>::const_state_iterator const_state_iterator;
-  typedef typename State<Alphabet>::const_transition_iterator const_transition_iterator;
+  typedef typename HMMState<Alphabet>::const_transition_iterator const_transition_iterator;
 
   LOG(DEBUG1) << "Forward algorithm ...";
   const int length     = subject.length();
@@ -130,12 +130,12 @@ void ForwardAlgorithm(const HMM<Alphabet>& hmm,
 
       for (const_transition_iterator t_kl = hmm[l].in_transitions_begin();
            t_kl != hmm[l].in_transitions_end(); ++t_kl) {
-        f_il += m.f[i-1][t_kl->state] * t_kl->probability;
+        f_il += m.f[i-1][t_kl->state] * t_kl->weight;
 
         LOG(DEBUG3) <<
           strprintf("f[%i][%i] += f[%i][%i]=%-7.2e * tr[%i][%i]=%-7.5f",
                     i, l, i-1, t_kl->state, m.f[i-1][t_kl->state],
-                    t_kl->state, l, t_kl->probability);
+                    t_kl->state, l, t_kl->weight);
       }
 
       m.e[i][l] = pow(2.0, emission(hmm[l], subject, i));
@@ -165,7 +165,7 @@ void BackwardAlgorithm(const HMM<Alphabet>& hmm,
                         ForwardBackwardMatrices* fbm) {
   typedef typename ForwardBackwardMatrices::value_type value_type;
   typedef typename HMM<Alphabet>::const_state_iterator const_state_iterator;
-  typedef typename State<Alphabet>::const_transition_iterator const_transition_iterator;
+  typedef typename HMMState<Alphabet>::const_transition_iterator const_transition_iterator;
 
   LOG(DEBUG1) << "Backward algorithm ...";
   const int length     = subject.length();
@@ -188,11 +188,11 @@ void BackwardAlgorithm(const HMM<Alphabet>& hmm,
 
       for (const_transition_iterator t_kl = hmm[k].out_transitions_begin();
            t_kl != hmm[k].out_transitions_end(); ++t_kl) {
-        b_ik += t_kl->probability * m.e[i+1][t_kl->state] * m.b[i+1][t_kl->state];
+        b_ik += t_kl->weight * m.e[i+1][t_kl->state] * m.b[i+1][t_kl->state];
 
         LOG(DEBUG3) << strprintf("b[%i][%i] += tr[%i][%i]=%-7.5f *"
                                  " e[%i][%i]=%-7.5f * f[%i][%i]=%-7.2e",
-                                 i, k, t_kl->state, k, t_kl->probability,
+                                 i, k, t_kl->state, k, t_kl->weight,
                                  i+1, t_kl->state, m.e[i+1][t_kl->state],
                                  i+1, t_kl->state, m.b[i+1][t_kl->state]);
       }

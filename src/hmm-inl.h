@@ -22,7 +22,7 @@
 #include "profile_library-inl.h"
 #include "pseudocounts.h"
 #include "shared_ptr.h"
-#include "state-inl.h"
+#include "hmm_state-inl.h"
 #include "transition.h"
 #include "utils-inl.h"
 
@@ -55,7 +55,7 @@ HMM<Alphabet>::HMM(FILE* fin)
 template<class Alphabet>
 HMM<Alphabet>::HMM(int num_states,
                    int num_cols,
-                   const StateInitializer<Alphabet>& st_init,
+                   const HMMStateInitializer<Alphabet>& st_init,
                    const TransitionInitializer<Alphabet>& tr_init)
     : num_states_(num_states),
       num_cols_(num_cols),
@@ -76,7 +76,7 @@ void HMM<Alphabet>::Init() {
 }
 
 template<class Alphabet>
-void HMM<Alphabet>::init_states(const StateInitializer<Alphabet>& st_init) {
+void HMM<Alphabet>::init_states(const HMMStateInitializer<Alphabet>& st_init) {
   clear();
   st_init.Init(*this);
 }
@@ -93,11 +93,11 @@ inline void HMM<Alphabet>::set_transition(int k, int l, float prob) {
   if (transitions_.test(k,l)) {
     // Transitions already set -> modify in place
     Transition* tr = &transitions_[k][l];
-    tr->probability = prob;
+    tr->weight = prob;
     AnchoredTransition* out_tr = &states_[k]->out_transitions_[l];
-    out_tr->probability = prob;
+    out_tr->weight = prob;
     AnchoredTransition* in_tr = &states_[l]->in_transitions_[k];
-    in_tr->probability = prob;
+    in_tr->weight = prob;
   } else {
     // Transitions unset -> insert into matrix and tables
     transitions_.set(k, l, Transition(k, l, prob));
@@ -136,7 +136,7 @@ inline int HMM<Alphabet>::AddState(const Profile<Alphabet>& profile) {
     throw Exception("Profile to add as state has %i columns but should have %i!",
                     profile.num_cols(), num_cols());
 
-  shared_ptr< State<Alphabet> > state_ptr(new State<Alphabet>(states_.size(),
+  shared_ptr< HMMState<Alphabet> > state_ptr(new HMMState<Alphabet>(states_.size(),
                                                               profile,
                                                               num_states()));
   state_ptr->set_prior(1.0f / num_states());
@@ -154,7 +154,7 @@ inline int HMM<Alphabet>::AddState(const ContextProfile<Alphabet>& profile) {
     throw Exception("Profile to add as state has %i columns but should have %i!",
                     profile.num_cols(), num_cols());
 
-  shared_ptr< State<Alphabet> > state(new State<Alphabet>(states_.size(),
+  shared_ptr< HMMState<Alphabet> > state(new HMMState<Alphabet>(states_.size(),
                                                           profile,
                                                           num_states()));
   states_.push_back(state);
@@ -167,7 +167,7 @@ inline void HMM<Alphabet>::transform_transitions_to_logspace() {
   if (!transitions_logspace()) {
     for (transition_iterator ti = transitions_begin();
          ti != transitions_end(); ++ti)
-      ti->probability = fast_log2(ti->probability);
+      ti->weight = fast_log2(ti->weight);
     transitions_logspace_ = true;
   }
 }
@@ -177,7 +177,7 @@ inline void HMM<Alphabet>::transform_transitions_to_linspace() {
   if (transitions_logspace()) {
     for (transition_iterator ti = transitions_begin();
          ti != transitions_end(); ++ti)
-      ti->probability = fast_pow2(ti->probability);
+      ti->weight = fast_pow2(ti->weight);
     transitions_logspace_ = false;
   }
 }
@@ -261,7 +261,7 @@ void HMM<Alphabet>::Read(FILE* fin) {
 
   // Read HMM states
   while (!full() && !feof(fin)) {
-    shared_ptr< State<Alphabet> > state_ptr(new State<Alphabet>(fin));
+    shared_ptr< HMMState<Alphabet> > state_ptr(new HMMState<Alphabet>(fin));
     states_.push_back(state_ptr);
   }
   if (!full())
@@ -310,9 +310,9 @@ void HMM<Alphabet>::Write(FILE* fout) const {
   for (const_transition_iterator ti = transitions_begin();
        ti != transitions_end(); ++ti) {
     fprintf(fout, "%i\t%i\t",
-            static_cast<int>(ti->from), static_cast<int>(ti->to));
+            static_cast<int>(ti->source), static_cast<int>(ti->target));
     float log_p =
-      transitions_logspace() ? ti->probability : fast_log2(ti->probability);
+      transitions_logspace() ? ti->weight : fast_log2(ti->weight);
     if (log_p == -INFINITY)
       fputs("*\n", fout);
     else
@@ -397,7 +397,7 @@ void sparsify(HMM<Alphabet>& hmm, float threshold) {
 
 
 template<class Alphabet>
-void SamplingStateInitializer<Alphabet>::Init(HMM<Alphabet>& hmm) const {
+void SamplingHMMStateInitializer<Alphabet>::Init(HMM<Alphabet>& hmm) const {
   LOG(DEBUG) << "Initializing HMM with " << hmm.num_states()
              << " profile windows randomly sampled from "
              << profiles_.size() << " training profiles ...";
@@ -453,7 +453,7 @@ bool PriorCompare(const shared_ptr< ContextProfile<Alphabet> >& lhs,
 }
 
 template<class Alphabet>
-void LibraryStateInitializer<Alphabet>::Init(HMM<Alphabet>& hmm) const {
+void LibraryHMMStateInitializer<Alphabet>::Init(HMM<Alphabet>& hmm) const {
   assert(lib_->num_cols() == hmm.num_cols());
   LOG(DEBUG) << "Initializing HMM states with profile library ...";
 

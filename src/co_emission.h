@@ -25,10 +25,10 @@ class CoEmission {
   // columns, starting at index qi in q and index pi in p. Both profiles must be
   // in lin-space.
   float operator() (const Profile<Alphabet>& q,
-                     const Profile<Alphabet>& p,
-                     int qi,
-                     int pi,
-                     int ncols) const;
+                    const Profile<Alphabet>& p,
+                    int qi,
+                    int pi,
+                    int ncols) const;
 
  private:
   // Substition matrix needed for background frequencies

@@ -154,7 +154,7 @@ TEST(HMMTestInitialization, RandomSampleInitializer) {
 
   BlosumMatrix m;
   MatrixPseudocounts<AminoAcid> pc(&m);
-  SamplingStateInitializer<AminoAcid> st_init(profiles, 0.2f, &pc, 0.2f);
+  SamplingHMMStateInitializer<AminoAcid> st_init(profiles, 0.2f, &pc, 0.2f);
   HomogeneousTransitionInitializer<AminoAcid> tr_init;
   HMM<AminoAcid> hmm(10, 5, st_init, tr_init);
 
@@ -172,7 +172,7 @@ TEST(HMMTestInitialization, LibraryInitialization) {
   ASSERT_EQ(50, profile_lib.num_profiles());
   ASSERT_EQ(13, profile_lib.num_cols());
 
-  LibraryStateInitializer<AminoAcid> st_init(&profile_lib);
+  LibraryHMMStateInitializer<AminoAcid> st_init(&profile_lib);
   BlosumMatrix m;
   CoEmissionTransitionInitializer<AminoAcid> tr_init(&m, 0.0f);
   HMM<AminoAcid> hmm(50, profile_lib.num_cols(), st_init, tr_init);

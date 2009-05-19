@@ -398,7 +398,7 @@ void CSTrainApp<Alphabet>::InitHMM() {
     ProfileLibrary<Alphabet> profile_lib(fin);
     fclose(fin);
 
-    LibraryStateInitializer<Alphabet> st_init(&profile_lib);
+    LibraryHMMStateInitializer<Alphabet> st_init(&profile_lib);
     CoEmissionTransitionInitializer<Alphabet> tr_init(subst_matrix_.get(),
                                                       opts_.tr_score_min);
     hmm_.reset(new HMM<Alphabet>(opts_.num_states,
@@ -413,7 +413,7 @@ void CSTrainApp<Alphabet>::InitHMM() {
     fflush(stream());
 
     MatrixPseudocounts<Alphabet> pc(subst_matrix_.get());
-    SamplingStateInitializer<Alphabet> st_init(data_,
+    SamplingHMMStateInitializer<Alphabet> st_init(data_,
                                                opts_.sample_rate,
                                                &pc,
                                                opts_.state_pc);

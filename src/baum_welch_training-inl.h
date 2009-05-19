@@ -100,17 +100,17 @@ void BaumWelchTraining<Alphabet, Subject>::AddContributionToTransitions(
        ti != hmm_.transitions_end(); ++ti) {
     double w_kl = 0.0;
     for (int i = 0; i < slen-1; ++i) {
-      w_kl += m.f[i][ti->from] * m.b[i+1][ti->to] * ti->probability
-        * m.e[i+1][ti->to] / m.s[i+1];
+      w_kl += m.f[i][ti->source] * m.b[i+1][ti->target] * ti->weight
+        * m.e[i+1][ti->target] / m.s[i+1];
     }
 
     if (w_kl != 0.0) {
 #pragma omp critical (add_contribution_to_transition)
-      if (!transition_stats_block_.test(ti->from, ti->to)) {
-        transition_stats_block_[ti->from][ti->to] = w_kl;
+      if (!transition_stats_block_.test(ti->source, ti->target)) {
+        transition_stats_block_[ti->source][ti->target] = w_kl;
       } else {
-        transition_stats_block_[ti->from][ti->to] =
-          transition_stats_block_[ti->from][ti->to] + w_kl;
+        transition_stats_block_[ti->source][ti->target] =
+          transition_stats_block_[ti->source][ti->target] + w_kl;
       }
     }
   }
@@ -186,12 +186,12 @@ void BaumWelchTraining<Alphabet, Subject>::UpdateSufficientStatistics() {
   // Update transition statistics
   for (const_transition_iterator ti = hmm_.transitions_begin();
        ti != hmm_.transitions_end(); ++ti) {
-    if (transition_stats_block_.test(ti->from, ti->to)) {
-      if (!transition_stats_.test(ti->from, ti->to))
-        transition_stats_[ti->from][ti->to] = 0.0f;
-      transition_stats_[ti->from][ti->to] =
-        gamma * transition_stats_[ti->from][ti->to] +
-        transition_stats_block_[ti->from][ti->to];
+    if (transition_stats_block_.test(ti->source, ti->target)) {
+      if (!transition_stats_.test(ti->source, ti->target))
+        transition_stats_[ti->source][ti->target] = 0.0f;
+      transition_stats_[ti->source][ti->target] =
+        gamma * transition_stats_[ti->source][ti->target] +
+        transition_stats_block_[ti->source][ti->target];
     }
   }
   transition_stats_block_.clear();

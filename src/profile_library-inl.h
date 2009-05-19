@@ -63,7 +63,7 @@ inline void ProfileLibrary<Alphabet>::clear() {
 }
 
 template<class Alphabet>
-inline int ProfileLibrary<Alphabet>::AddState(
+inline int ProfileLibrary<Alphabet>::AddProfile(
     const Profile<Alphabet>& profile) {
   if (full())
     throw Exception("Profile library contains already %i profiles!",
@@ -197,7 +197,7 @@ void SamplingProfileInitializer<Alphabet>::Init(
 
     CountProfile<Alphabet> p(**pi);
     if (pc_) pc_->add_to_profile(ConstantAdmixture(pc_admixture_), &p);
-    lib.AddState(p);
+    lib.AddProfile(p);
   }
   if (!lib.full())
     throw Exception("Could not fully initialize all %i library profiles. "

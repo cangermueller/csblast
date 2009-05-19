@@ -1,7 +1,7 @@
 // Copyright 2009, Andreas Biegert
 
-#ifndef SRC_STATE_H_
-#define SRC_STATE_H_
+#ifndef SRC_HMM_STATE_H_
+#define SRC_HMM_STATE_H_
 
 #include <cstdio>
 
@@ -22,7 +22,7 @@ class HMM;
 
 // A class representing a context state in a context HMM.
 template<class Alphabet>
-class State : public ContextProfile<Alphabet> {
+class HMMState : public ContextProfile<Alphabet> {
  public:
   typedef typename
   sparsetable<AnchoredTransition>::const_nonempty_iterator const_transition_iterator;
@@ -38,15 +38,15 @@ class State : public ContextProfile<Alphabet> {
   using ContextProfile<Alphabet>::Read;
 
   // Constructs HMM state from serialized state read from input stream.
-  explicit State(FILE* fin);
+  explicit HMMState(FILE* fin);
   // Constructs HMM state with given profile and all transitions initialized to
   // zero.
-  State(int index, const Profile<Alphabet>& profile, int num_states);
+  HMMState(int index, const Profile<Alphabet>& profile, int num_states);
   // Constructs HMM state with given context profile and all transitions
   // initialized to zero.
-  State(int index, const ContextProfile<Alphabet>& profile, int num_states);
+  HMMState(int index, const ContextProfile<Alphabet>& profile, int num_states);
 
-  virtual ~State() {}
+  virtual ~HMMState() {}
 
   // Returns number of in-transitions.
   int num_in_transitions() const
@@ -110,38 +110,38 @@ class State : public ContextProfile<Alphabet> {
   sparsetable<AnchoredTransition> in_transitions_;
   // List of out-transitions.
   sparsetable<AnchoredTransition> out_transitions_;
-};  // State
+};  // HMMState
 
 // Comparison functor that compares the index of two states.
 template<class Alphabet>
-struct StateIndexCompare : public std::binary_function< State<Alphabet>,
-                                                        State<Alphabet>,
+struct HMMStateIndexCompare : public std::binary_function< HMMState<Alphabet>,
+                                                        HMMState<Alphabet>,
                                                         bool > {
-  bool operator()(const State<Alphabet>& lhs, const State<Alphabet>& rhs) const {
+  bool operator()(const HMMState<Alphabet>& lhs, const HMMState<Alphabet>& rhs) const {
     return lhs.index() < rhs.index();
   }
 };
 
 // Comparison functor that compares the number of in-transitions of two states.
 template<class Alphabet>
-struct NumInTransitionsCompare : public std::binary_function< State<Alphabet>,
-                                                              State<Alphabet>,
+struct NumInTransitionsCompare : public std::binary_function< HMMState<Alphabet>,
+                                                              HMMState<Alphabet>,
                                                               bool > {
-  bool operator()(const State<Alphabet>& lhs, const State<Alphabet>& rhs) const {
+  bool operator()(const HMMState<Alphabet>& lhs, const HMMState<Alphabet>& rhs) const {
     return lhs.num_in_transitions() < rhs.num_in_transitions();
   }
 };
 
 // Comparison functor that compares the number of out-transitions of two states.
 template<class Alphabet>
-struct NumOutTransitionsCompare : public std::binary_function< State<Alphabet>,
-                                                               State<Alphabet>,
+struct NumOutTransitionsCompare : public std::binary_function< HMMState<Alphabet>,
+                                                               HMMState<Alphabet>,
                                                                bool > {
-  bool operator()(const State<Alphabet>& lhs, const State<Alphabet>& rhs) const {
+  bool operator()(const HMMState<Alphabet>& lhs, const HMMState<Alphabet>& rhs) const {
     return lhs.num_out_transitions() < rhs.num_out_transitions();
   }
 };
 
 }  // namespace cs
 
-#endif  // SRC_STATE_H_
+#endif  // SRC_HMM_STATE_H_

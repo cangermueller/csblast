@@ -5,35 +5,35 @@
 
 namespace cs {
 
-// Simple struct for transitions between HMM states.
+// Simple struct for transitions between HMM or CRF states.
 struct Transition {
   // Simple Constructors
-  Transition() : from(0), to(0), probability(0.0f) {}
-  Transition(int f, int t, float p) : from(f), to(t), probability(p) {}
+  Transition() : source(0), target(0), weight(0.0f) {}
+  Transition(int f, int t, float p) : source(f), target(t), weight(p) {}
   ~Transition() {}
 
-  operator float() const { return probability; }
+  operator float() const { return weight; }
 
-  // Index of state from which the transition connects.
-  const int from;
-  // Index of state to which the transition connects.
-  const int to;
-  // Transition probability.
-  float probability;
+  // Index of source state of the transition
+  const int source;
+  // Index of target state of the transition
+  const int target;
+  // Transition weight.
+  float weight;
 };  // Transition
 
 struct AnchoredTransition {
   // Simple Constructors
-  AnchoredTransition() : state(0), probability(0.0f) {}
-  AnchoredTransition(int i, float p) : state(i), probability(p) {}
+  AnchoredTransition() : state(0), weight(0.0f) {}
+  AnchoredTransition(int i, float p) : state(i), weight(p) {}
   ~AnchoredTransition() {}
 
-  operator float() const { return probability; }
+  operator float() const { return weight; }
 
-  // Index of state to/from which the transition connects.
+  // Index of the source/target state of the transition.
   const int state;
-  // Transition probability.
-  float probability;
+  // Transition weight.
+  float weight;
 };  // AnchoredTransition
 
 }  // namespace cs

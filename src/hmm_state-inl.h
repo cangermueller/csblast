@@ -1,9 +1,9 @@
 // Copyright 2009, Andreas Biegert
 
-#ifndef SRC_STATE_INL_H_
-#define SRC_STATE_INL_H_
+#ifndef SRC_HMM_STATE_INL_H_
+#define SRC_HMM_STATE_INL_H_
 
-#include "state.h"
+#include "hmm_state.h"
 
 #include <cstdio>
 #include <cstring>
@@ -15,10 +15,10 @@
 namespace cs {
 
 template<class Alphabet>
-const char* State<Alphabet>::kClassID = "State";
+const char* HMMState<Alphabet>::kClassID = "HMMState";
 
 template<class Alphabet>
-inline State<Alphabet>::State(FILE* fin)
+inline HMMState<Alphabet>::HMMState(FILE* fin)
     : ContextProfile<Alphabet>(),
       num_states_(0),
       in_transitions_(0),
@@ -27,7 +27,7 @@ inline State<Alphabet>::State(FILE* fin)
 }
 
 template<class Alphabet>
-inline State<Alphabet>::State(int index,
+inline HMMState<Alphabet>::HMMState(int index,
                               const Profile<Alphabet>& profile,
                               int num_states)
     : ContextProfile<Alphabet>(index, profile),
@@ -36,7 +36,7 @@ inline State<Alphabet>::State(int index,
       out_transitions_(num_states) {}
 
 template<class Alphabet>
-inline State<Alphabet>::State(int index,
+inline HMMState<Alphabet>::HMMState(int index,
                               const ContextProfile<Alphabet>& profile,
                               int num_states)
     : ContextProfile<Alphabet>(profile),
@@ -47,30 +47,30 @@ inline State<Alphabet>::State(int index,
 }
 
 template<class Alphabet>
-inline float State<Alphabet>::to(int k) const {
-  return out_transitions_.test(k) ? out_transitions_.get(k).probability : 0.0f;
+inline float HMMState<Alphabet>::to(int k) const {
+  return out_transitions_.test(k) ? out_transitions_.get(k).weight : 0.0f;
 }
 
 template<class Alphabet>
-inline float State<Alphabet>::from(int k) const {
-  return in_transitions_.test(k) ? in_transitions_.get(k).probability : 0.0f;
+inline float HMMState<Alphabet>::from(int k) const {
+  return in_transitions_.test(k) ? in_transitions_.get(k).weight : 0.0f;
 }
 
 template<class Alphabet>
-void State<Alphabet>::clear_transitions() {
+void HMMState<Alphabet>::clear_transitions() {
   in_transitions_.clear();
   out_transitions_.clear();
 }
 
 template<class Alphabet>
-void State<Alphabet>::resize(int num_states) {
+void HMMState<Alphabet>::resize(int num_states) {
   clear_transitions();
   in_transitions_.resize(num_states);
   out_transitions_.resize(num_states);
 }
 
 template<class Alphabet>
-void State<Alphabet>::read_header(FILE* fin) {
+void HMMState<Alphabet>::read_header(FILE* fin) {
   ContextProfile<Alphabet>::read_header(fin);
 
   // Read HMM size
@@ -88,11 +88,11 @@ void State<Alphabet>::read_header(FILE* fin) {
 }
 
 template<class Alphabet>
-void State<Alphabet>::write_header(FILE* fout) const {
+void HMMState<Alphabet>::write_header(FILE* fout) const {
   ContextProfile<Alphabet>::write_header(fout);
   fprintf(fout, "NSTATES\t%i\n", num_states_);
 }
 
 }  // namespace cs
 
-#endif  // SRC_STATE_INL_H_
+#endif  // SRC_HMM_STATE_INL_H_

@@ -20,7 +20,7 @@
 #include "shared_ptr.h"
 #include "sparse_matrix.h"
 #include "substitution_matrix.h"
-#include "state.h"
+#include "hmm_state.h"
 #include "transition.h"
 
 namespace cs {
@@ -33,10 +33,10 @@ template<class Alphabet>
 class TransitionAdaptor;
 
 template<class Alphabet>
-class StateInitializer {
+class HMMStateInitializer {
  public:
-  StateInitializer() {}
-  virtual ~StateInitializer() {}
+  HMMStateInitializer() {}
+  virtual ~HMMStateInitializer() {}
   virtual void Init(HMM<Alphabet>& hmm) const = 0;
 };
 
@@ -55,7 +55,7 @@ template<class Alphabet>
 class HMM {
  public:
   // Public typedefs
-  typedef std::vector< shared_ptr< State<Alphabet> > > state_vector;
+  typedef std::vector< shared_ptr< HMMState<Alphabet> > > state_vector;
   typedef sparse_matrix<Transition> transition_matrix;
   typedef typename state_vector::iterator state_iterator;
   typedef typename state_vector::const_iterator const_state_iterator;
@@ -70,13 +70,13 @@ class HMM {
   // initializer. State profiles are initially set to lin-space.
   HMM(int num_states,
       int num_cols,
-      const StateInitializer<Alphabet>& st_init,
+      const HMMStateInitializer<Alphabet>& st_init,
       const TransitionInitializer<Alphabet>& tr_init);
 
   virtual ~HMM() {}
 
   // Initializes HMM states with the provided initializer.
-  void init_states(const StateInitializer<Alphabet>& st_init);
+  void init_states(const HMMStateInitializer<Alphabet>& st_init);
   // Initializes HMM transitions with the provided initializer.
   void init_transitions(const TransitionInitializer<Alphabet>& tr_init);
   // Returns true if all states have been fully assembled.
@@ -100,20 +100,20 @@ class HMM {
     return static_cast<float>(num_transitions()) / num_states();
   }
   // Accessor methods for state i, where i is from interval [0,num_states].
-  State<Alphabet>& operator[](int i) { return *states_[i]; }
-  const State<Alphabet>& operator[](int i) const { return *states_[i]; }
+  HMMState<Alphabet>& operator[](int i) { return *states_[i]; }
+  const HMMState<Alphabet>& operator[](int i) const { return *states_[i]; }
   // Accessor methods for transition probability (k,l)
   TransitionAdaptor<Alphabet> operator() (int k, int l) {
     return TransitionAdaptor<Alphabet>(this, k, l);
   }
   float operator() (int k, int l) const {
-    return transitions_.get(k,l).probability;
+    return transitions_.get(k,l).weight;
   }
   // Sets the transition probability from state k to state l.
   void set_transition(int k, int l, float prob);
   // Returns the transition probability from state k to state l.
   float transition_probability(int k, int l) const {
-    return transitions_.get(k,l).probability;
+    return transitions_.get(k,l).weight;
   }
   // Removes the transition between state k and state l from the HMM.
   void erase_transition(int k, int l);
@@ -199,7 +199,7 @@ class HMM {
   // Number of training iterations performed on this HMM.
   int iterations_;
   // HMM states ordered by index.
-  std::vector< shared_ptr< State<Alphabet> > > states_;
+  std::vector< shared_ptr< HMMState<Alphabet> > > states_;
   // Sparse matrix with state transitions.
   sparse_matrix<Transition> transitions_;
   // Flag indicating if HMM transitions are log- or linspace
@@ -229,13 +229,13 @@ class TransitionAdaptor {
 };
 
 template<class Alphabet>
-class SamplingStateInitializer : public StateInitializer<Alphabet> {
+class SamplingHMMStateInitializer : public HMMStateInitializer<Alphabet> {
  public:
   typedef typename
   std::vector< shared_ptr< CountProfile<Alphabet> > > profile_vector;
   typedef typename profile_vector::const_iterator profile_iterator;
 
-  SamplingStateInitializer(profile_vector profiles,
+  SamplingHMMStateInitializer(profile_vector profiles,
                            float sample_rate,
                            const Pseudocounts<Alphabet>* pc = NULL,
                            float pc_admixture = 1.0f)
@@ -246,7 +246,7 @@ class SamplingStateInitializer : public StateInitializer<Alphabet> {
     random_shuffle(profiles_.begin(), profiles_.end());
   }
 
-  virtual ~SamplingStateInitializer() {};
+  virtual ~SamplingHMMStateInitializer() {};
   virtual void Init(HMM<Alphabet>& hmm) const;
 
  private:
@@ -266,12 +266,12 @@ bool PriorCompare(const shared_ptr< ContextProfile<Alphabet> >& lhs,
                   const shared_ptr< ContextProfile<Alphabet> >& rhs);
 
 template<class Alphabet>
-class LibraryStateInitializer : public StateInitializer<Alphabet> {
+class LibraryHMMStateInitializer : public HMMStateInitializer<Alphabet> {
  public:
-  LibraryStateInitializer(const ProfileLibrary<Alphabet>* lib)
+  LibraryHMMStateInitializer(const ProfileLibrary<Alphabet>* lib)
       : lib_(lib) {}
 
-  virtual ~LibraryStateInitializer() {};
+  virtual ~LibraryHMMStateInitializer() {};
   virtual void Init(HMM<Alphabet>& hmm) const;
 
  private:
