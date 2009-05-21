@@ -75,6 +75,7 @@ void BaumWelchTraining<Alphabet, Subject>::ExpectationStep(
   for (int n = 0; n < block_size; ++n) {
     ForwardBackwardMatrices fbm(block[n]->length(), hmm_.num_states());
     ForwardBackwardAlgorithm(hmm_, *block[n], emission_, &fbm);
+    LOG(INFO) << strprintf("log(L) = %-7.2g", fbm.log_likelihood);
 
     AddContributionToTransitions(fbm);
     AddContributionToStates(fbm, *block[n]);
@@ -205,7 +206,7 @@ void BaumWelchTraining<Alphabet, Subject>::UpdateSufficientStatistics() {
     p.set_prior(p.prior() * gamma + p_block.prior());
     for (int j = 0; j < num_cols; ++j) {
       for (int a = 0; a < alphabet_size; ++a) {
-#pragma omp critical (update_profile_statistics)
+        //#pragma omp critical (update_profile_statistics)
         p[j][a] = gamma * p[j][a] + p_block[j][a];
       }
     }
@@ -240,20 +241,28 @@ void BaumWelchTraining<Alphabet, Subject>::MaximizationStep() {
     }
   }
 
-  LOG(INFO) << strprintf("num_states = %i", hmm_.num_states());
-  LOG(INFO) << strprintf("num_transitions = %i", hmm_.num_transitions());
+  LOG(INFO) << strprintf("num_states in HMM= %i", hmm_.num_states());
+  LOG(INFO) << strprintf("num_transitions in HMM = %i", hmm_.num_transitions());
+  LOG(INFO) << strprintf("num_transitions in suff. statistics= %i",
+                         static_cast<int>(transition_stats_.num_nonempty()));
   LOG(INFO) << strprintf("Mean connectivity BEFORE maximization step: %.2f",
                          hmm_.connectivity());
 
   // Calculate and assign new transition probabilities
   hmm_.clear_transitions();
   for (int k = 0; k < num_states; ++k) {
-    float tr_sum = 0.0f;
+    double tr_sum = 0.0;
+    int count    = 0;
+    int count_pc = 0;
+
     for (int l = 0; l < num_states; ++l) {
       if (transition_stats_.test(k,l)) {
-        const float a_kl =
-          transition_stats_[k][l] + opts_.transition_pc - 1.0f;
+        ++count;
+
+        float a_kl = transition_stats_[k][l];
+        if (opts_.transition_pc != 1.0)  a_kl += opts_.transition_pc - 1.0f;
         if (a_kl > 0.0f) {
+          ++count_pc;
           transition_stats_[k][l] = a_kl;
           tr_sum += a_kl;
         } else {
@@ -261,8 +270,13 @@ void BaumWelchTraining<Alphabet, Subject>::MaximizationStep() {
         }
       }
     }
-    if (tr_sum != 0.0f) {
-      float tr_fac = 1.0f / tr_sum;
+
+    LOG(INFO) << strprintf("state %i has %i out transitions (%i without sparseness)",
+                           k, count_pc, count);
+    LOG(INFO) << strprintf("tr_sum = %-7.2g", tr_sum);
+
+    if (tr_sum != 0.0) {
+      float tr_fac = 1.0f / static_cast<float>(tr_sum);
       for (int l = 0; l < num_states; ++l) {
         if (transition_stats_.test(k,l)) {
           hmm_(k,l) = transition_stats_[k][l] * tr_fac;
