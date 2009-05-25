@@ -85,9 +85,11 @@ int CSBlast::Run(FILE* fout, BlastHits* hits) {
   int status = pclose(blast_out);
 
   // Parse hits from PSI-BLAST results
-  rewind(fres);
-  hits->Read(fres);
-  fclose(fres);
+  if (hits && (opts_.find('m') == opts_.end() || opts_['m'] == "0")) {
+    rewind(fres);
+    hits->Read(fres);
+    fclose(fres);
+  }
 
   // Cleanup temporary files
   remove(queryfile.c_str());

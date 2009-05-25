@@ -25,7 +25,8 @@ MultEmission<Alphabet>::MultEmission(int num_cols,
       center_((num_cols - 1) / 2),
       weights_(1.0f, num_cols) {
   if (num_cols_ % 2 != 1)
-    throw Exception("Number of emission columns should be odd but is %i!", num_cols_);
+    throw Exception("Number of emission columns should be odd but is %i!",
+                    num_cols_);
   InitWeights(weight_center, weight_decay);
 }
 

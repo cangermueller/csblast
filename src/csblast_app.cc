@@ -41,7 +41,6 @@ struct CSBlastAppOptions {
     ali_infile          = "";
     ali_outfile         = "";
     checkpointfile      = "";
-    outformat           = 0;
     pc_admix            = 0.95f;
     pc_ali              = 12.0f;
     global_weights      = false;
@@ -71,8 +70,6 @@ struct CSBlastAppOptions {
   string ali_outfile;
   // Output file for checkpointing
   string checkpointfile;
-  // BLAST output format
-  int outformat;
   // Overall pseudocount admixture
   float pc_admix;
   // Constant in pseudocount calculation for alignments
@@ -143,7 +140,6 @@ void CSBlastApp::parse_options(GetOpt_pp* options) {
   *options >> Option('o', "outfile", opts_.outfile, opts_.outfile);
   *options >> Option('B', "alifile", opts_.ali_infile, opts_.ali_infile);
   *options >> Option('C', "checkpoint", opts_.checkpointfile, opts_.checkpointfile);
-  *options >> Option('m', "outformat", opts_.outformat, opts_.outformat);
   *options >> Option('x', "pc-admix", opts_.pc_admix, opts_.pc_admix);
   *options >> Option('c', "pc-ali", opts_.pc_ali, opts_.pc_ali);
   *options >> Option('D', "context-data", opts_.libfile, opts_.libfile);
@@ -172,10 +168,8 @@ void CSBlastApp::parse_options(GetOpt_pp* options) {
     if (opts_.psiblast_opts.find('b') == opts_.psiblast_opts.end() ||
         atoi(opts_.psiblast_opts['b'].c_str()) < kNumOutputAlis)
       opts_.psiblast_opts['b']  = strprintf("%i", kNumOutputAlis);
+    opts_.psiblast_opts['m'] = "0";  // force -m 0 format needed for parsing
   }
-  // Force alignment view option to -m 0
-  // FIXME: Handle alignment view options other than -m 0 in CS-BLAST
-  opts_.psiblast_opts['m'] = "0";
 
   opts_.Validate();
 }
@@ -204,8 +198,6 @@ void CSBlastApp::print_options() const {
           "Input alignment file for CSI-BLAST restart");
   fprintf(stream(), "  %-30s %s\n", "-d, --database <dbname>",
           "Protein database to search against (def=nr)");
-  // fprintf(stream(), "  %-30s %s (def=%i)\n", "-m, --outformat [0,11]",
-  //         "Alignment view option", opts_.outformat);
   fprintf(stream(), "  %-30s %s (def=%i)\n", "-j, --iterations [1,inf[",
           "Maximum number of iterations to use in CSI-BLAST", opts_.iterations);
   fprintf(stream(), "  %-30s %s (def=%-.3f)\n", "-h, --inclusion [0,inf[",
@@ -247,7 +239,7 @@ int CSBlastApp::Run() {
     BlastHits hits;
     status = csblast_->Run(fout, &hits);
     if (!opts_.outfile.empty()) fclose(fout);
-    if (status != 0 || hits.empty()) break;
+    if (status != 0 || opts_.iterations == 1 || hits.empty()) break;
 
     hits.Filter(opts_.inclusion);
     if (!hits.empty() && !hits[0].hsps.empty())
@@ -265,7 +257,10 @@ int CSBlastApp::Run() {
     }
   }
 
-  SaveAlignment();
+  // Save alignments of hits if results were in -m0 format
+  if (opts_.psiblast_opts.find('R') == opts_.psiblast_opts.end() ||
+      opts_.psiblast_opts['m'] == "0")
+    SaveAlignment();
 
   return status;
 }
