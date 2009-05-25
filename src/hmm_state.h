@@ -25,7 +25,7 @@ template<class Alphabet>
 class HMMState : public ContextProfile<Alphabet> {
  public:
   typedef typename
-  sparsetable<AnchoredTransition>::const_nonempty_iterator const_transition_iterator;
+  sparsetable<AnchoredTransition>::const_nonempty_iterator ConstTransitionIter;
 
   // Needed to access names in templatized Profile base class
   using ContextProfile<Alphabet>::num_cols;
@@ -65,19 +65,19 @@ class HMMState : public ContextProfile<Alphabet> {
 
   // Returns a const iterator to start of list with non-null in-transition
   // pointers.
-  const_transition_iterator in_transitions_begin() const
+  ConstTransitionIter in_transitions_begin() const
   { return in_transitions_.nonempty_begin(); }
   // Returns a const iterator past the end of list with non-null
   // in-transition pointers.
-  const_transition_iterator in_transitions_end() const
+  ConstTransitionIter in_transitions_end() const
   { return in_transitions_.nonempty_end(); }
   // Returns a const iterator to start of list with non-null out-transition
   // pointers.
-  const_transition_iterator out_transitions_begin() const
+  ConstTransitionIter out_transitions_begin() const
   { return out_transitions_.nonempty_begin(); }
   // Returns a const iterator past the end of list with non-null out-transition
   // pointers.
-  const_transition_iterator out_transitions_end() const
+  ConstTransitionIter out_transitions_end() const
   { return out_transitions_.nonempty_end(); }
 
  protected:

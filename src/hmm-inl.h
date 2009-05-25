@@ -123,7 +123,7 @@ inline void HMM<Alphabet>::clear() {
 template<class Alphabet>
 void HMM<Alphabet>::clear_transitions() {
   transitions_.clear();
-  for (state_iterator si = states_begin(); si != states_end(); ++si)
+  for (StateIter si = states_begin(); si != states_end(); ++si)
     (*si)->clear_transitions();
 }
 
@@ -165,7 +165,7 @@ inline int HMM<Alphabet>::AddState(const ContextProfile<Alphabet>& profile) {
 template<class Alphabet>
 inline void HMM<Alphabet>::transform_transitions_to_logspace() {
   if (!transitions_logspace()) {
-    for (transition_iterator ti = transitions_begin();
+    for (TransitionIter ti = transitions_begin();
          ti != transitions_end(); ++ti)
       ti->weight = fast_log2(ti->weight);
     transitions_logspace_ = true;
@@ -175,7 +175,7 @@ inline void HMM<Alphabet>::transform_transitions_to_logspace() {
 template<class Alphabet>
 inline void HMM<Alphabet>::transform_transitions_to_linspace() {
   if (transitions_logspace()) {
-    for (transition_iterator ti = transitions_begin();
+    for (TransitionIter ti = transitions_begin();
          ti != transitions_end(); ++ti)
       ti->weight = fast_pow2(ti->weight);
     transitions_logspace_ = false;
@@ -185,7 +185,7 @@ inline void HMM<Alphabet>::transform_transitions_to_linspace() {
 template<class Alphabet>
 inline void HMM<Alphabet>::transform_states_to_logspace() {
   if (!states_logspace()) {
-    for (state_iterator si = states_begin(); si != states_end(); ++si)
+    for (StateIter si = states_begin(); si != states_end(); ++si)
       (*si)->transform_to_logspace();
     states_logspace_ = true;
   }
@@ -194,7 +194,7 @@ inline void HMM<Alphabet>::transform_states_to_logspace() {
 template<class Alphabet>
 inline void HMM<Alphabet>::transform_states_to_linspace() {
   if (states_logspace()) {
-    for (state_iterator si = states_begin(); si != states_end(); ++si)
+    for (StateIter si = states_begin(); si != states_end(); ++si)
       (*si)->transform_to_linspace();
     states_logspace_ = false;
   }
@@ -302,12 +302,12 @@ void HMM<Alphabet>::Write(FILE* fout) const {
   fprintf(fout, "STLOG\t%i\n", states_logspace() ? 1 : 0);
 
   // Write states
-  for (const_state_iterator si = states_begin(); si != states_end(); ++si)
+  for (ConstStateIter si = states_begin(); si != states_end(); ++si)
     (*si)->Write(fout);
 
   // Write transitions
   fputs("TRANS\n", fout);
-  for (const_transition_iterator ti = transitions_begin();
+  for (ConstTransitionIter ti = transitions_begin();
        ti != transitions_end(); ++ti) {
     fprintf(fout, "%i\t%i\t",
             static_cast<int>(ti->source), static_cast<int>(ti->target));
@@ -331,7 +331,7 @@ void HMM<Alphabet>::print(std::ostream& out) const {
   out << "Context profile columns:     " << num_cols() << std::endl;
   out << "Training iterations:         " << iterations() << std::endl;
 
-  for (const_state_iterator si = states_begin(); si != states_end(); ++si)
+  for (ConstStateIter si = states_begin(); si != states_end(); ++si)
     out << **si;
 
   out << "Transition matrix:" << std::endl;

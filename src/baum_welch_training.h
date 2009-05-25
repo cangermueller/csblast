@@ -57,7 +57,7 @@ class BaumWelchTraining : public ExpectationMaximization<Alphabet, Subject> {
  public:
   typedef typename std::vector< shared_ptr< Subject<Alphabet> > > data_vector;
   typedef typename std::vector< shared_ptr< ContextProfile<Alphabet> > > profiles_vector;
-  typedef typename HMM<Alphabet>::const_transition_iterator const_transition_iterator;
+  typedef typename HMM<Alphabet>::ConstTransitionIter ConstTransitionIter;
 
   // Needed to access names in templatized base class
   using ExpectationMaximization<Alphabet, Subject>::log_likelihood;

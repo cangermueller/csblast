@@ -16,8 +16,6 @@ namespace cs {
 
 // POD with forward backward matrices, emission probs, and log-likelihood.
 struct ForwardBackwardMatrices {
-  typedef double value_type;
-
   ForwardBackwardMatrices()
       : log_likelihood(0.0) {}
 
@@ -58,7 +56,7 @@ struct ForwardBackwardMatrices {
     out << "Posterior probability matrix p[i][k]:" << std::endl;
     for (int i = 0; i < m.f.num_rows(); ++i) {
       for (int k = 0; k < m.f.num_cols(); ++k) {
-        value_type p = 100.0 * m.f[i][k] * m.b[i][k];
+        double p = 100.0 * m.f[i][k] * m.b[i][k];
         out << strprintf("%6.2f  ", p);
       }
       out << std::endl;
@@ -68,15 +66,15 @@ struct ForwardBackwardMatrices {
   }
 
   // forward matrix
-  matrix<value_type> f;
+  matrix<double> f;
   // backward matrix
-  matrix<value_type> b;
+  matrix<double> b;
   // emission probability matrix
-  matrix<value_type> e;
+  matrix<double> e;
   // forward matrix column sum s(n) before normalization
-  std::valarray<value_type> s;
+  std::valarray<double> s;
   // likelihood P(x)
-  value_type log_likelihood;
+  double log_likelihood;
 };
 
 
@@ -101,9 +99,8 @@ void ForwardAlgorithm(const HMM<Alphabet>& hmm,
                        const Subject<Alphabet>& subject,
                        const MultEmission<Alphabet>& emission,
                        ForwardBackwardMatrices* fbm) {
-  typedef typename ForwardBackwardMatrices::value_type value_type;
-  typedef typename HMM<Alphabet>::const_state_iterator const_state_iterator;
-  typedef typename HMMState<Alphabet>::const_transition_iterator const_transition_iterator;
+  typedef typename HMM<Alphabet>::ConstStateIter ConstStateIter;
+  typedef typename HMMState<Alphabet>::ConstTransitionIter ConstTransitionIter;
 
   LOG(DEBUG1) << "Forward algorithm ...";
   const int length     = subject.length();
@@ -125,17 +122,16 @@ void ForwardAlgorithm(const HMM<Alphabet>& hmm,
     m.s[i] = 0.0;
 
     for (int l = 0; l < num_states; ++l) {
-      value_type f_il = 0.0;
+      double f_il = 0.0;
       LOG(DEBUG2) << strprintf("f[%i][%i] = 0", i, l);
 
-      for (const_transition_iterator t_kl = hmm[l].in_transitions_begin();
+      for (ConstTransitionIter t_kl = hmm[l].in_transitions_begin();
            t_kl != hmm[l].in_transitions_end(); ++t_kl) {
         f_il += m.f[i-1][t_kl->state] * t_kl->weight;
 
-        LOG(DEBUG3) <<
-          strprintf("f[%i][%i] += f[%i][%i]=%-7.2e * tr[%i][%i]=%-7.5f",
-                    i, l, i-1, t_kl->state, m.f[i-1][t_kl->state],
-                    t_kl->state, l, t_kl->weight);
+        LOG(DEBUG3) << strprintf("f[%i][%i] += f[%i][%i]=%-7.2e * tr[%i][%i]=%-7.5f",
+                                 i, l, i-1, t_kl->state, m.f[i-1][t_kl->state],
+                                 t_kl->state, l, t_kl->weight);
       }
 
       m.e[i][l] = pow(2.0, emission(hmm[l], subject, i));
@@ -149,13 +145,16 @@ void ForwardAlgorithm(const HMM<Alphabet>& hmm,
     }
 
     // Rescale forward values
-    value_type scale_fac = 1.0 / m.s[i];
+    double scale_fac = 1.0 / m.s[i];
     for (int l = 0; l < num_states; ++l)
       m.f[i][l] *= scale_fac;
     m.log_likelihood += log2(m.s[i]);
+
+    LOG(INFO) << strprintf("s[%i] = %-7.2g   log2(s[%i]) = %-7.2g",
+                           i, m.s[i], i, log2(m.s[i]));
   }
 
-  LOG(DEBUG) << strprintf("log(L) = %-7.2g", m.log_likelihood);
+  LOG(INFO) << strprintf("log(L) = %-7.2g", m.log_likelihood);
 }
 
 template< class Alphabet,
@@ -163,9 +162,8 @@ template< class Alphabet,
 void BackwardAlgorithm(const HMM<Alphabet>& hmm,
                         const Subject<Alphabet>& subject,
                         ForwardBackwardMatrices* fbm) {
-  typedef typename ForwardBackwardMatrices::value_type value_type;
-  typedef typename HMM<Alphabet>::const_state_iterator const_state_iterator;
-  typedef typename HMMState<Alphabet>::const_transition_iterator const_transition_iterator;
+  typedef typename HMM<Alphabet>::ConstStateIter ConstStateIter;
+  typedef typename HMMState<Alphabet>::ConstTransitionIter ConstTransitionIter;
 
   LOG(DEBUG1) << "Backward algorithm ...";
   const int length     = subject.length();
@@ -183,10 +181,10 @@ void BackwardAlgorithm(const HMM<Alphabet>& hmm,
   for (int i = length-2; i >= 0; --i) {
     LOG(DEBUG1) << strprintf("i=%i", i);
     for (int k = 0; k < num_states; ++k) {
-      value_type b_ik = 0.0;
+      double b_ik = 0.0;
       LOG(DEBUG2) << strprintf("b[%i][%i] = 0", i, k);
 
-      for (const_transition_iterator t_kl = hmm[k].out_transitions_begin();
+      for (ConstTransitionIter t_kl = hmm[k].out_transitions_begin();
            t_kl != hmm[k].out_transitions_end(); ++t_kl) {
         b_ik += t_kl->weight * m.e[i+1][t_kl->state] * m.b[i+1][t_kl->state];
 

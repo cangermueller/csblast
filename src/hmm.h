@@ -57,10 +57,10 @@ class HMM {
   // Public typedefs
   typedef std::vector< shared_ptr< HMMState<Alphabet> > > state_vector;
   typedef sparse_matrix<Transition> transition_matrix;
-  typedef typename state_vector::iterator state_iterator;
-  typedef typename state_vector::const_iterator const_state_iterator;
-  typedef typename transition_matrix::nonempty_iterator transition_iterator;
-  typedef typename transition_matrix::const_nonempty_iterator const_transition_iterator;
+  typedef typename state_vector::iterator StateIter;
+  typedef typename state_vector::const_iterator ConstStateIter;
+  typedef typename transition_matrix::nonempty_iterator TransitionIter;
+  typedef typename transition_matrix::const_nonempty_iterator ConstTransitionIter;
 
   // Constructs an empty HMM of given size without any states or transitions.
   HMM(int num_states, int num_cols);
@@ -130,26 +130,26 @@ class HMM {
   // of the state.
   int AddState(const ContextProfile<Alphabet>& profile);
   // Returns an iterator to a list of pointers of states.
-  state_iterator states_begin() { return states_.begin(); }
+  StateIter states_begin() { return states_.begin(); }
   // Returns an iterator pointing past the end of a list of pointers of states.
-  state_iterator states_end() { return states_.end(); }
+  StateIter states_end() { return states_.end(); }
   // Returns a const iterator to a list of pointers of states.
-  const_state_iterator states_begin() const { return states_.begin(); }
+  ConstStateIter states_begin() const { return states_.begin(); }
   // Returns a const iterator pointing past the end of a list of pointers of
   // states.
-  const_state_iterator states_end() const { return states_.end(); }
+  ConstStateIter states_end() const { return states_.end(); }
   // Returns an iterator to a list of transitions.
-  transition_iterator transitions_begin() {
+  TransitionIter transitions_begin() {
     return transitions_.nonempty_begin();
   }
   // Returns an iterator pointing past the end of a list of transitions.
-  transition_iterator transitions_end() { return transitions_.nonempty_end(); }
+  TransitionIter transitions_end() { return transitions_.nonempty_end(); }
   // Returns a const iterator to a list of transitions.
-  const_transition_iterator transitions_begin() const {
+  ConstTransitionIter transitions_begin() const {
     return transitions_.nonempty_begin();
   }
   // Returns a const iterator pointing past the end of a list of transitions.
-  const_transition_iterator transitions_end() const {
+  ConstTransitionIter transitions_end() const {
     return transitions_.nonempty_end();
   }
   // Writes the HMM in serialization format to output stream.

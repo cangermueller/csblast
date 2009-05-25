@@ -75,7 +75,6 @@ void BaumWelchTraining<Alphabet, Subject>::ExpectationStep(
   for (int n = 0; n < block_size; ++n) {
     ForwardBackwardMatrices fbm(block[n]->length(), hmm_.num_states());
     ForwardBackwardAlgorithm(hmm_, *block[n], emission_, &fbm);
-    LOG(INFO) << strprintf("log(L) = %-7.2g", fbm.log_likelihood);
 
     AddContributionToTransitions(fbm);
     AddContributionToStates(fbm, *block[n]);
@@ -97,7 +96,7 @@ void BaumWelchTraining<Alphabet, Subject>::AddContributionToTransitions(
     const ForwardBackwardMatrices& m) {
   const int slen = m.f.num_rows();
 
-  for (const_transition_iterator ti = hmm_.transitions_begin();
+  for (ConstTransitionIter ti = hmm_.transitions_begin();
        ti != hmm_.transitions_end(); ++ti) {
     double w_kl = 0.0;
     for (int i = 0; i < slen-1; ++i) {
@@ -185,7 +184,7 @@ void BaumWelchTraining<Alphabet, Subject>::UpdateSufficientStatistics() {
   const int alphabet_size = hmm_.alphabet_size();
 
   // Update transition statistics
-  for (const_transition_iterator ti = hmm_.transitions_begin();
+  for (ConstTransitionIter ti = hmm_.transitions_begin();
        ti != hmm_.transitions_end(); ++ti) {
     if (transition_stats_block_.test(ti->source, ti->target)) {
       if (!transition_stats_.test(ti->source, ti->target))
