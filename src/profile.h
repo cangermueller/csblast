@@ -54,9 +54,9 @@ class Profile {
   // Returns the total number of elements in the profile.
   int size() const { return data_.size(); }
   // Transforms profile to logspace
-  virtual void transform_to_logspace();
+  virtual void TransformToLogSpace();
   // Transforms profile to linspace
-  virtual void transform_to_linspace();
+  virtual void TransformToLinSpace();
   // Returns true if the profile is in logspace
   bool logspace() const { return logspace_; }
   // Returns an iterator to the first element in profile column i.
@@ -82,7 +82,7 @@ class Profile {
 
   // Prints profile in human-readable format for debugging.
   friend std::ostream& operator<< (std::ostream& out, const Profile& p) {
-    p.print(out);
+    p.Print(out);
     return out;
   }
 
@@ -93,17 +93,17 @@ class Profile {
   static const int kBufferSize = KB;
 
   // Reads and initializes serialized scalar data members from stream.
-  virtual void read_header(FILE* fin);
+  virtual void ReadHeader(FILE* fin);
   // Reads and initializes array data members from stream.
-  virtual void read_body(FILE* fin);
+  virtual void ReadBody(FILE* fin);
   // Writes serialized scalar data members to stream.
-  virtual void write_header(FILE* fout) const;
+  virtual void WriteHeader(FILE* fout) const;
   // Writes serialized array data members to stream.
-  virtual void write_body(FILE* fout) const;
+  virtual void WriteBody(FILE* fout) const;
   // Prints the profile in human-readable format to output stream.
-  virtual void print(std::ostream& out) const;
+  virtual void Print(std::ostream& out) const;
   // Resize the profile matrix to given dimensions.
-  void resize(int num_cols, int alphabet_size);
+  void Resize(int num_cols, int alphabet_size);
 
   // Profile matrix in row major format
   matrix<float> data_;
@@ -121,11 +121,11 @@ class Profile {
 
 // Resets all entries in given profile to the given value or zero if none is given.
 template<class Alphabet>
-void reset(Profile<Alphabet>* p, float value = 0.0f);
+void Reset(Profile<Alphabet>* p, float value = 0.0f);
 
 // Normalize profile columns to value or to one if none provided.
 template<class Alphabet>
-bool normalize(Profile<Alphabet>* p, float value = 1.0f);
+bool Normalize(Profile<Alphabet>* p, float value = 1.0f);
 
 }  // namespace cs
 

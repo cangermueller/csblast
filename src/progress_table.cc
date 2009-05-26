@@ -19,7 +19,7 @@ ProgressTable::ProgressTable(FILE* fout, int width)
       work_done_(0),
       work_total_(0) {}
 
-void ProgressTable::reset() {
+void ProgressTable::Reset() {
   work_done_ = 0;
   bar_       = 0;
 }

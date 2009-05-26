@@ -68,7 +68,7 @@ inline void Profile<Alphabet>::ReadAll(FILE* fin,
 }
 
 template<class Alphabet>
-void Profile<Alphabet>::transform_to_logspace() {
+void Profile<Alphabet>::TransformToLogSpace() {
   if (!logspace_) {
     for (int i = 0; i < num_cols(); ++i)
       for (int a = 0; a < alphabet_size(); ++a)
@@ -78,7 +78,7 @@ void Profile<Alphabet>::transform_to_logspace() {
 }
 
 template<class Alphabet>
-void Profile<Alphabet>::transform_to_linspace() {
+void Profile<Alphabet>::TransformToLinSpace() {
   if (logspace_) {
     for (int i = 0; i < num_cols(); ++i)
       for (int a = 0; a < alphabet_size(); ++a)
@@ -99,14 +99,14 @@ void Profile<Alphabet>::Read(FILE* fin) {
     throw Exception("Bad format: profile does not start with '%s'!",
                     class_id());
 
-  read_header(fin);
-  read_body(fin);
+  ReadHeader(fin);
+  ReadBody(fin);
 
   LOG(DEBUG1) << *this;
 }
 
 template<class Alphabet>
-void Profile<Alphabet>::read_header(FILE* fin) {
+void Profile<Alphabet>::ReadHeader(FILE* fin) {
   char buffer[kBufferSize];
   const char* ptr = buffer;
 
@@ -137,11 +137,11 @@ void Profile<Alphabet>::read_header(FILE* fin) {
     throw Exception("Bad format: profile does not contain 'LOG' record!");
   }
 
-  resize(num_cols, alphabet_size);
+  Resize(num_cols, alphabet_size);
 }
 
 template<class Alphabet>
-void Profile<Alphabet>::read_body(FILE* fin) {
+void Profile<Alphabet>::ReadBody(FILE* fin) {
   const int alph_size = alphabet_size();
   char buffer[kBufferSize];
   const char* ptr = buffer;
@@ -167,19 +167,19 @@ void Profile<Alphabet>::read_body(FILE* fin) {
 template<class Alphabet>
 void Profile<Alphabet>::Write(FILE* fout) const {
   fprintf(fout, "%s\n", class_id());
-  write_header(fout);
-  write_body(fout);
+  WriteHeader(fout);
+  WriteBody(fout);
 }
 
 template<class Alphabet>
-void Profile<Alphabet>::write_header(FILE* fout) const {
+void Profile<Alphabet>::WriteHeader(FILE* fout) const {
   fprintf(fout, "NCOLS\t%i\n", num_cols());
   fprintf(fout, "ALPH\t%i\n", alphabet_size());
   fprintf(fout, "LOG\t%i\n", logspace() ? 1 : 0);
 }
 
 template<class Alphabet>
-void Profile<Alphabet>::write_body(FILE* fout) const {
+void Profile<Alphabet>::WriteBody(FILE* fout) const {
   fputs("PROF\t", fout);
   Alphabet::instance().Write(fout);
   fputc('\n', fout);
@@ -199,7 +199,7 @@ void Profile<Alphabet>::write_body(FILE* fout) const {
 }
 
 template<class Alphabet>
-void Profile<Alphabet>::print(std::ostream& out) const {
+void Profile<Alphabet>::Print(std::ostream& out) const {
   out << "\t" << Alphabet::instance() << std::endl;
 
   for (int i = 0; i < num_cols(); ++i) {
@@ -212,7 +212,7 @@ void Profile<Alphabet>::print(std::ostream& out) const {
 }
 
 template<class Alphabet>
-void Profile<Alphabet>::resize(int num_cols, int alphabet_size) {
+void Profile<Alphabet>::Resize(int num_cols, int alphabet_size) {
   if (num_cols == 0 || alphabet_size == 0)
     throw Exception("Bad profile dimensions: num_cols=%i alphabet_size=%i",
                     num_cols, alphabet_size);
@@ -220,7 +220,7 @@ void Profile<Alphabet>::resize(int num_cols, int alphabet_size) {
 }
 
 template<class Alphabet>
-inline void reset(Profile<Alphabet>* p) {
+inline void Reset(Profile<Alphabet>* p) {
   Profile<Alphabet>& profile = *p;
   const int num_cols = profile.num_cols();
   const int alphabet_size = profile.alphabet_size();
@@ -230,10 +230,10 @@ inline void reset(Profile<Alphabet>* p) {
 }
 
 template<class Alphabet>
-bool normalize(Profile<Alphabet>* p, float value) {
+bool Normalize(Profile<Alphabet>* p, float value) {
   Profile<Alphabet>& profile = *p;
   const bool logspace = profile.logspace();
-  if (logspace) profile.transform_to_linspace();
+  if (logspace) profile.TransformToLinSpace();
 
   const int num_cols       = profile.num_cols();
   const int alphabet_size  = profile.alphabet_size();
@@ -250,7 +250,7 @@ bool normalize(Profile<Alphabet>* p, float value) {
     }
   }
 
-  if (logspace) profile.transform_to_logspace();
+  if (logspace) profile.TransformToLogSpace();
   return rv;
 }
 

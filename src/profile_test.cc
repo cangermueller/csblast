@@ -58,7 +58,7 @@ TEST(ProfileTest, Log2LinSpace) {
   ASSERT_EQ(4, profile.alphabet_size());
   EXPECT_FLOAT_EQ(0.0f, profile[0][0]);
 
-  profile.transform_to_linspace();
+  profile.TransformToLinSpace();
 
   EXPECT_FLOAT_EQ(1.0f, profile[0][0]);
 }
@@ -73,11 +73,11 @@ TEST(ProfileTest, Lin2LogSpace) {
   EXPECT_FLOAT_EQ(1.0f, profile[0][0]);
   EXPECT_FLOAT_EQ(0.0f, profile[0][1]);
 
-  profile.transform_to_logspace();
+  profile.TransformToLogSpace();
 
   EXPECT_FLOAT_EQ(0.0f, profile[0][0]);
 
-  profile.transform_to_linspace();
+  profile.TransformToLinSpace();
 
   EXPECT_FLOAT_EQ(1.0f, profile[0][0]);
   EXPECT_FLOAT_EQ(0.0f, profile[0][1]);

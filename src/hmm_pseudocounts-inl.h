@@ -73,7 +73,7 @@ void HMMPseudocounts<Alphabet>::add_to_sequence(
       p[i][a] = p.logspace() ? fast_log2(pa) : pa;
     }
   }
-  normalize(profile);
+  Normalize(profile);
 
   LOG(DEBUG2) << *profile;
 }
@@ -117,7 +117,7 @@ void HMMPseudocounts<Alphabet>::add_to_profile(
       p[i][a] = (1.0f - tau) * p[i][a] + tau * pc[a];
     }
   }
-  normalize(profile);
+  Normalize(profile);
 
   LOG(DEBUG2) << *profile;
 }

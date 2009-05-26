@@ -265,7 +265,7 @@ void CSClustApp<Alphabet>::init_profile_library() {
         new ProfileLibrary<Alphabet>(opts_.num_profiles,
                                      data_[0]->num_cols(),
                                      profile_init));
-    lib_->transform_to_logspace();
+    lib_->TransformToLogSpace();
     fputc('\n', stream());
 
   } else {  // read profile library from jumpstart file

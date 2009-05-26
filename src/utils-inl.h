@@ -238,7 +238,7 @@ inline double normalize_to_one(double* array, int length,
 }
 
 // Reset all entries in a float array to given value or zero if none provided.
-inline void reset(float* array, int length, float value = 0.0f) {
+inline void Reset(float* array, int length, float value = 0.0f) {
   for (int i = 0; i < length; ++i) array[i] = value;
 }
 

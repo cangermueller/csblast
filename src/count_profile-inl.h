@@ -57,7 +57,7 @@ CountProfile<Alphabet>::CountProfile(const Alignment<Alphabet>& alignment,
           data_[i][alignment[i][k]] += wg[k];
   }
 
-  normalize(this);
+  Normalize(this);
 }
 
 template<class Alphabet>
@@ -84,13 +84,13 @@ void CountProfile<Alphabet>::ReadAll(
 }
 
 template<class Alphabet>
-void CountProfile<Alphabet>::read_header(FILE* fin) {
-  Profile<Alphabet>::read_header(fin);
+void CountProfile<Alphabet>::ReadHeader(FILE* fin) {
+  Profile<Alphabet>::ReadHeader(fin);
   neff_.resize(num_cols());
 }
 
 template<class Alphabet>
-void CountProfile<Alphabet>::read_body(FILE* fin) {
+void CountProfile<Alphabet>::ReadBody(FILE* fin) {
   const int alph_size = alphabet_size();
   char buffer[kBufferSize];
   const char* ptr = buffer;
@@ -115,7 +115,7 @@ void CountProfile<Alphabet>::read_body(FILE* fin) {
 }
 
 template<class Alphabet>
-void CountProfile<Alphabet>::write_body(FILE* fout) const {
+void CountProfile<Alphabet>::WriteBody(FILE* fout) const {
   fputs("PROF\t", fout);
   Alphabet::instance().Write(fout);
   fputs("\tNEFF\n", fout);
@@ -135,7 +135,7 @@ void CountProfile<Alphabet>::write_body(FILE* fout) const {
 }
 
 template<class Alphabet>
-void CountProfile<Alphabet>::print(std::ostream& out) const {
+void CountProfile<Alphabet>::Print(std::ostream& out) const {
   out << "\t" << Alphabet::instance() << "\tNeff" << std::endl;
 
   for (int i = 0; i < num_cols(); ++i) {

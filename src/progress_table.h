@@ -26,7 +26,7 @@ class ProgressTable {
   // Sets total work per scan.
   void set_total_work(long work) { work_total_ = work; }
   // Resets the progress bar to zero.
-  void reset();
+  void Reset();
   // Advances the progress bar proportional to the amount of work done.
   void print_progress(long work);
 

@@ -78,13 +78,13 @@ TEST_F(ProfileLibraryTest, LinLogTransformation) {
   lib.AddProfile(p2_);
   lib.AddProfile(p3_);
 
-  lib.transform_to_logspace();
+  lib.TransformToLogSpace();
 
   EXPECT_FLOAT_EQ(0.0f, lib[0][0][0]);
   EXPECT_FLOAT_EQ(0.0f, lib[1][0][0]);
   EXPECT_FLOAT_EQ(0.0f, lib[2][0][0]);
 
-  lib.transform_to_linspace();
+  lib.TransformToLinSpace();
 
   EXPECT_FLOAT_EQ(1.0f, lib[0][0][0]);
   EXPECT_FLOAT_EQ(0.0f, lib[0][1][0]);

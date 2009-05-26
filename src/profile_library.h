@@ -91,15 +91,15 @@ class ProfileLibrary {
   // Returns true if state profiles are in logspace.
   bool logspace() const { return logspace_; }
   // Transforms profiles to logspace.
-  void transform_to_logspace();
+  void TransformToLogSpace();
   // Transforms profiles to linspace.
-  void transform_to_linspace();
+  void TransformToLinSpace();
   // Increments the EM-clustering iteration counter.
   void increment_iterations() { ++iterations_; }
 
   // Prints the library in human-readable format for debugging.
   friend std::ostream& operator<< (std::ostream& out, const ProfileLibrary& lib) {
-    lib.print(out);
+    lib.Print(out);
     return out;
   }
 
@@ -108,7 +108,7 @@ class ProfileLibrary {
   static const int kBufferSize = KB;
 
   // Prints the library in human-readable format to output stream.
-  void print(std::ostream& out) const;
+  void Print(std::ostream& out) const;
   // Initializes the library from serialized data read from stream.
   void Read(FILE* fin);
 

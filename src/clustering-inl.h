@@ -106,8 +106,8 @@ void Clustering<Alphabet, Subject>::MaximizationStep() {
 
     lib_[k].set_prior(p_k.prior() * fac);
     ContextProfile<Alphabet> tmp(p_k);
-    if (normalize(&tmp)) {  // don't update profiles that did'n get evidence
-      tmp.transform_to_logspace();
+    if (Normalize(&tmp)) {  // don't update profiles that did'n get evidence
+      tmp.TransformToLogSpace();
       for (int i = 0; i < num_cols; ++i)
         for (int a = 0; a < alphabet_size; ++a)
           lib_[k][i][a] = tmp[i][a];
@@ -184,7 +184,7 @@ void Clustering<Alphabet, Subject>::update_sufficient_statistics() {
         p[j][a] = gamma * p[j][a] + p_block[j][a];
       }
     }
-    reset(&p_block);
+    Reset(&p_block);
   }
 }
 
@@ -233,7 +233,7 @@ void ClusteringProgressTable<Alphabet, Subject>::print_header() {
 template< class Alphabet,
           template<class A> class Subject >
 void ClusteringProgressTable<Alphabet, Subject>::print_row_begin() {
-  reset();
+  Reset();
   fprintf(fout_, "%-4i %4i %4i %7.4f  ", clustering_->scan(),
           clustering_->iterations(), clustering_->num_blocks(),
           clustering_->epsilon());

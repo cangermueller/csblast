@@ -81,19 +81,19 @@ inline int ProfileLibrary<Alphabet>::AddProfile(
 }
 
 template<class Alphabet>
-inline void ProfileLibrary<Alphabet>::transform_to_logspace() {
+inline void ProfileLibrary<Alphabet>::TransformToLogSpace() {
   if (!logspace()) {
     for (profile_iterator pi = profiles_.begin(); pi != profiles_.end(); ++pi)
-      (*pi)->transform_to_logspace();
+      (*pi)->TransformToLogSpace();
     logspace_ = true;
   }
 }
 
 template<class Alphabet>
-inline void ProfileLibrary<Alphabet>::transform_to_linspace() {
+inline void ProfileLibrary<Alphabet>::TransformToLinSpace() {
   if (logspace()) {
     for (profile_iterator pi = profiles_.begin(); pi != profiles_.end(); ++pi)
-      (*pi)->transform_to_linspace();
+      (*pi)->TransformToLinSpace();
     logspace_ = false;
   }
 }
@@ -169,7 +169,7 @@ void ProfileLibrary<Alphabet>::Write(FILE* fout) const {
 }
 
 template<class Alphabet>
-void ProfileLibrary<Alphabet>::print(std::ostream& out) const {
+void ProfileLibrary<Alphabet>::Print(std::ostream& out) const {
   out << "ProfileLibrary" << std::endl;
   out << "Total number of profiles: " << num_profiles() << std::endl;
   out << "Context profile columns:  " << num_cols() << std::endl;

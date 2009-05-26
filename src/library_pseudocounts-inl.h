@@ -79,7 +79,7 @@ void LibraryPseudocounts<Alphabet>::add_to_sequence(
       p[i][a] = p.logspace() ? fast_log2(pa) : pa;
     }
   }
-  normalize(profile);
+  Normalize(profile);
 
   LOG(DEBUG1) << *profile;
 }
@@ -139,7 +139,7 @@ void LibraryPseudocounts<Alphabet>::add_to_profile(
       p[i][a] = (1.0f - tau) * p[i][a] + tau * pc[i][a];
     }
   }
-  normalize(profile);
+  Normalize(profile);
 
   LOG(DEBUG2) << *profile;
 }

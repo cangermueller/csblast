@@ -72,7 +72,7 @@ HMM<Alphabet>::HMM(int num_states,
 template<class Alphabet>
 void HMM<Alphabet>::Init() {
   states_.reserve(num_states());
-  transitions_.resize(num_states(), num_states());
+  transitions_.Resize(num_states(), num_states());
 }
 
 template<class Alphabet>
@@ -186,7 +186,7 @@ template<class Alphabet>
 inline void HMM<Alphabet>::transform_states_to_logspace() {
   if (!states_logspace()) {
     for (StateIter si = states_begin(); si != states_end(); ++si)
-      (*si)->transform_to_logspace();
+      (*si)->TransformToLogSpace();
     states_logspace_ = true;
   }
 }
@@ -195,7 +195,7 @@ template<class Alphabet>
 inline void HMM<Alphabet>::transform_states_to_linspace() {
   if (states_logspace()) {
     for (StateIter si = states_begin(); si != states_end(); ++si)
-      (*si)->transform_to_linspace();
+      (*si)->TransformToLinSpace();
     states_logspace_ = false;
   }
 }
@@ -322,7 +322,7 @@ void HMM<Alphabet>::Write(FILE* fout) const {
 }
 
 template<class Alphabet>
-void HMM<Alphabet>::print(std::ostream& out) const {
+void HMM<Alphabet>::Print(std::ostream& out) const {
   out << "HMM" << std::endl;
   out << "Total number of states:      " << num_states() << std::endl;
   out << "Total number of transitions: " << num_transitions() << std::endl;

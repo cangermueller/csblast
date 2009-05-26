@@ -40,7 +40,7 @@ void MatrixPseudocounts<Alphabet>::add_to_sequence(
       p[i][a] = p.logspace() ? fast_log2(pa) : pa;
     }
   }
-  normalize(profile);
+  Normalize(profile);
 
   LOG(DEBUG2) << *profile;
 }
@@ -53,7 +53,7 @@ void MatrixPseudocounts<Alphabet>::add_to_profile(
 
   CountProfile<Alphabet>& p = *profile;
   const bool logspace = p.logspace();
-  if (logspace) p.transform_to_linspace();
+  if (logspace) p.TransformToLinSpace();
 
   // copy original frequencies to matrix f
   matrix<float> f(p.num_cols(), p.alphabet_size(), 0.0f);
@@ -72,8 +72,8 @@ void MatrixPseudocounts<Alphabet>::add_to_profile(
     }
   }
 
-  if (logspace) p.transform_to_logspace();
-  normalize(profile);
+  if (logspace) p.TransformToLogSpace();
+  Normalize(profile);
 
   LOG(DEBUG2) << *profile;
 }

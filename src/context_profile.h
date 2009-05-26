@@ -54,11 +54,11 @@ class ContextProfile : public Profile<Alphabet> {
   using Profile<Alphabet>::kBufferSize;
 
   // Reads and initializes serialized scalar data members from stream.
-  virtual void read_header(FILE* fin);
+  virtual void ReadHeader(FILE* fin);
   // Writes serialized scalar data members to stream.
-  virtual void write_header(FILE* fout) const;
+  virtual void WriteHeader(FILE* fout) const;
   // Prints the profile in human-readable format to output stream.
-  virtual void print(std::ostream& out) const;
+  virtual void Print(std::ostream& out) const;
 
   // Index of context-profile.
   int index_;

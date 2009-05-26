@@ -252,7 +252,7 @@ int CSBlastApp::Run() {
       CountProfile<AminoAcid> ali_profile(*ali_, !opts_.global_weights);
       pc_->add_to_profile(DivergenceDependentAdmixture(opts_.pc_admix, opts_.pc_ali),
                          &ali_profile);
-      pssm_.reset(new PsiBlastPssm(query_->ToString(), ali_profile));
+      pssm_.Reset(new PsiBlastPssm(query_->ToString(), ali_profile));
       csblast_->set_pssm(pssm_.get());
     }
   }

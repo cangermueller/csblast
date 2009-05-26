@@ -54,14 +54,10 @@ class HMMState : public ContextProfile<Alphabet> {
   // Returns number of out-transitions.
   int num_out_transitions() const
   { return out_transitions_.num_nonempty(); }
-  // Returns the transition probability from this state to state k.
-  float to(int k) const;
-  // Returns the transition probability from state k to this state.
-  float from(int k) const;
   // Clears all in- and out-transitions.
-  void clear_transitions();
+  void ClearTransitions();
   // Resizes the transition tables to new HMM size.
-  void resize(int num_states);
+  void Resize(int num_states);
 
   // Returns a const iterator to start of list with non-null in-transition
   // pointers.
@@ -86,16 +82,16 @@ class HMMState : public ContextProfile<Alphabet> {
 
   // Needed to access names in templatized Profile base class
   using ContextProfile<Alphabet>::kBufferSize;
-  using ContextProfile<Alphabet>::read_header;
-  using ContextProfile<Alphabet>::read_body;
-  using ContextProfile<Alphabet>::write_header;
-  using ContextProfile<Alphabet>::write_body;
+  using ContextProfile<Alphabet>::ReadHeader;
+  using ContextProfile<Alphabet>::ReadBody;
+  using ContextProfile<Alphabet>::WriteHeader;
+  using ContextProfile<Alphabet>::WriteBody;
   using ContextProfile<Alphabet>::index_;
 
   // Reads and initializes serialized scalar data members from stream.
-  virtual void read_header(FILE* in);
+  virtual void ReadHeader(FILE* in);
   // Writes serialized scalar data members to stream.
-  virtual void write_header(FILE* fout) const;
+  virtual void WriteHeader(FILE* fout) const;
 
  private:
   // Class identifier
@@ -110,37 +106,7 @@ class HMMState : public ContextProfile<Alphabet> {
   sparsetable<AnchoredTransition> in_transitions_;
   // List of out-transitions.
   sparsetable<AnchoredTransition> out_transitions_;
-};  // HMMState
-
-// Comparison functor that compares the index of two states.
-template<class Alphabet>
-struct HMMStateIndexCompare : public std::binary_function< HMMState<Alphabet>,
-                                                        HMMState<Alphabet>,
-                                                        bool > {
-  bool operator()(const HMMState<Alphabet>& lhs, const HMMState<Alphabet>& rhs) const {
-    return lhs.index() < rhs.index();
-  }
-};
-
-// Comparison functor that compares the number of in-transitions of two states.
-template<class Alphabet>
-struct NumInTransitionsCompare : public std::binary_function< HMMState<Alphabet>,
-                                                              HMMState<Alphabet>,
-                                                              bool > {
-  bool operator()(const HMMState<Alphabet>& lhs, const HMMState<Alphabet>& rhs) const {
-    return lhs.num_in_transitions() < rhs.num_in_transitions();
-  }
-};
-
-// Comparison functor that compares the number of out-transitions of two states.
-template<class Alphabet>
-struct NumOutTransitionsCompare : public std::binary_function< HMMState<Alphabet>,
-                                                               HMMState<Alphabet>,
-                                                               bool > {
-  bool operator()(const HMMState<Alphabet>& lhs, const HMMState<Alphabet>& rhs) const {
-    return lhs.num_out_transitions() < rhs.num_out_transitions();
-  }
-};
+};  // class HMMState
 
 }  // namespace cs
 

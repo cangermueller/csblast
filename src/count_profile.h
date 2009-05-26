@@ -27,8 +27,8 @@ class CountProfile : public Profile<Alphabet> {
   using Profile<Alphabet>::alphabet_size;
   using Profile<Alphabet>::Read;
   using Profile<Alphabet>::logspace;
-  using Profile<Alphabet>::transform_to_logspace;
-  using Profile<Alphabet>::transform_to_linspace;
+  using Profile<Alphabet>::TransformToLogSpace;
+  using Profile<Alphabet>::TransformToLinSpace;
 
   // Constructs profile from serialized profile read from input stream.
   explicit CountProfile(FILE* fin);
@@ -57,13 +57,13 @@ class CountProfile : public Profile<Alphabet> {
   using Profile<Alphabet>::kBufferSize;
 
   // Reads and initializes serialized scalar data members from stream.
-  virtual void read_header(FILE* fin);
+  virtual void ReadHeader(FILE* fin);
   // Reads and initializes array data members from stream.
-  virtual void read_body(FILE* fin);
+  virtual void ReadBody(FILE* fin);
   // Writes serialized array data members to stream.
-  virtual void write_body(FILE* fout) const;
+  virtual void WriteBody(FILE* fout) const;
   // Prints the profile in human-readable format to output stream.
-  virtual void print(std::ostream& out) const;
+  virtual void Print(std::ostream& out) const;
 
  private:
   // Class identifier

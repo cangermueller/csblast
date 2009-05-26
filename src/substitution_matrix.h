@@ -34,7 +34,7 @@ class SubstitutionMatrix {
   // Prints the substitution matrix in human readable format to stream.
   friend std::ostream& operator<< (std::ostream& out,
                                    const SubstitutionMatrix& m) {
-    m.print(out);
+    m.Print(out);
     return out;
   }
 
@@ -58,7 +58,7 @@ class SubstitutionMatrix {
 
  private:
   // Prints the substitution matrix in human-readable format to output stream.
-  virtual void print(std::ostream& out) const;
+  virtual void Print(std::ostream& out) const;
 };
 
 }  // namespace cs

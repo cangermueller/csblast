@@ -42,7 +42,7 @@ class ClusteringTest : public testing::Test {
       Profile<AminoAcid> p(profile, i, kWindowLength);
       lib_.AddProfile(p);
     }
-    lib_.transform_to_logspace();
+    lib_.TransformToLogSpace();
 
     // Read zinc finger alignments
     std::vector< shared_ptr< Alignment<AminoAcid> > > alis;
@@ -77,7 +77,7 @@ TEST_F(ClusteringTest, ZincFingerAlisClustering) {
   Clustering<AminoAcid, CountProfile> em_clust(p, counts_, lib_, stdout);
   em_clust.Run();
 
-  lib_.transform_to_linspace();
+  lib_.TransformToLinSpace();
   EXPECT_NEAR(0.9948, lib_[0][0][AminoAcid::instance().ctoi('C')], kFloatDelta);
   EXPECT_NEAR(0.4975, lib_[5][0][AminoAcid::instance().ctoi('C')], kFloatDelta);
 }
@@ -91,7 +91,7 @@ TEST_F(ClusteringTest, ZincFingerAlisOnlineClustering) {
   Clustering<AminoAcid, CountProfile> em_clust(p, counts_, lib_, stdout);
   em_clust.Run();
 
-  lib_.transform_to_linspace();
+  lib_.TransformToLinSpace();
   EXPECT_NEAR(0.9948, lib_[0][0][AminoAcid::instance().ctoi('C')], kFloatDelta);
   EXPECT_NEAR(0.4975, lib_[5][0][AminoAcid::instance().ctoi('C')], kFloatDelta);
 }

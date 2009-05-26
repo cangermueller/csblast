@@ -82,7 +82,7 @@ void LibraryPseudocounts<AminoAcid>::add_to_sequence(
       p[i][a] = p.logspace() ? fast_log2(pa) : pa;
     }
   }
-  normalize(profile);
+  Normalize(profile);
 
   LOG(DEBUG1) << *profile;
 }

@@ -74,7 +74,7 @@ TEST(CountProfileTest, AlignmentCelegansRefGene) {
 
   EXPECT_FLOAT_EQ(1.0f, profile[1][Nucleotide::instance().ctoi('T')]);
 
-  profile.transform_to_logspace();
+  profile.TransformToLogSpace();
 
   EXPECT_FLOAT_EQ(0.0f, profile[1][Nucleotide::instance().ctoi('T')]);
 }
@@ -101,7 +101,7 @@ TEST(CountProfileTest, AddMatrixPseudocountsToLogProfile) {
   fclose(fin);
 
   CountProfile<Nucleotide> profile(alignment, false);
-  profile.transform_to_logspace();
+  profile.TransformToLogSpace();
 
   ASSERT_FLOAT_EQ(0.0f, profile[1][Nucleotide::instance().ctoi('T')]);
 
@@ -109,7 +109,7 @@ TEST(CountProfileTest, AddMatrixPseudocountsToLogProfile) {
   MatrixPseudocounts<Nucleotide> mpc(&m);
   mpc.add_to_profile(DivergenceDependentAdmixture(1.0f, 10.0f), &profile);
 
-  profile.transform_to_linspace();
+  profile.TransformToLinSpace();
   EXPECT_NEAR(0.25f, profile[0][Nucleotide::instance().ctoi('T')], kFloatDelta);
 }
 

@@ -175,7 +175,7 @@ class HMM {
 
   // Prints HMM in human-readable format for debugging.
   friend std::ostream& operator<< (std::ostream& out, const HMM& hmm) {
-    hmm.print(out);
+    hmm.Print(out);
     return out;
   }
 
@@ -186,7 +186,7 @@ class HMM {
   static const int kBufferSize = KB;
 
   // Prints the HMM in human-readable format to output stream.
-  void print(std::ostream& out) const;
+  void Print(std::ostream& out) const;
   // Initializes the HMM from a serialized HMM read from stream.
   void Read(FILE* fin);
   // Initializes the HMM.

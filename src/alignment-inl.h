@@ -480,7 +480,7 @@ void Alignment<Alphabet>::AssignMatchColumnsBySequence(int k) {
         ++j;
       }
     }
-    seqs_.resize(ref_seq_length, num_seqs());
+    seqs_.Resize(ref_seq_length, num_seqs());
     seqs_ = new_seqs;
 
     // Update match indices
@@ -533,7 +533,7 @@ void Alignment<Alphabet>::RemoveInsertColumns() {
       new_seqs[i][k] = seqs_[match_indices[i]][k];
     }
   }
-  seqs_.resize(match_cols, num_seqs());
+  seqs_.Resize(match_cols, num_seqs());
   seqs_ = new_seqs;
 
   // Update match indices
@@ -673,7 +673,7 @@ float GlobalWeightsAndDiversity(const Alignment<Alphabet>& alignment,
 
   // Calculate number of effective sequences
   for (int i = 0; i < num_cols; ++i) {
-    reset(&fj[0], alphabet_size);
+    Reset(&fj[0], alphabet_size);
     for (int k = 0; k < num_seqs; ++k)
       if (alignment[i][k] < any) fj[alignment[i][k]] += wg[k];
     normalize_to_one(&fj[0], alphabet_size);
@@ -704,7 +704,7 @@ std::vector<float> PositionSpecificWeightsAndDiversity(
 
   // Return values
   std::vector<float> neff(num_cols, 0.0f);      // diversity of subalignment i
-  w.resize(num_cols, num_seqs);                 // weight of seq k in column i
+  w.Resize(num_cols, num_seqs);                 // weight of seq k in column i
   w = matrix<float>(num_cols, num_seqs, 0.0f);  // init to zero
 
   // Helper variables
@@ -747,7 +747,7 @@ std::vector<float> PositionSpecificWeightsAndDiversity(
 
     if (change) {  // set of sequences in subalignment-inl.has changed
       ncoli = 0;
-      reset(&wi[0], num_seqs);
+      Reset(&wi[0], num_seqs);
 
       for (int j = 0; j < num_cols; ++j) {
         if (n[j][endgap] > kMaxEndgapFraction * nseqi) continue;
@@ -777,7 +777,7 @@ std::vector<float> PositionSpecificWeightsAndDiversity(
       neff[i] = 0.0f;
       for (int j = 0; j < num_cols; ++j) {
         if (n[j][endgap] > kMaxEndgapFraction * nseqi) continue;
-        reset(&fj[0], alphabet_size);
+        Reset(&fj[0], alphabet_size);
 
         for (int k = 0; k < num_seqs; ++k)
           if (alignment[i][k] < any && alignment[j][k] < any)

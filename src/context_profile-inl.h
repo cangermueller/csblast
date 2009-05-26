@@ -59,7 +59,7 @@ void ContextProfile<Alphabet>::check() {
 }
 
 template<class Alphabet>
-void ContextProfile<Alphabet>::read_header(FILE* fin) {
+void ContextProfile<Alphabet>::ReadHeader(FILE* fin) {
   char buffer[kBufferSize];
   const char* ptr = buffer;
 
@@ -77,27 +77,27 @@ void ContextProfile<Alphabet>::read_header(FILE* fin) {
     throw Exception("Bad format: profile does not contain 'PRIOR' record!");
   }
 
-  Profile<Alphabet>::read_header(fin);
+  Profile<Alphabet>::ReadHeader(fin);
 }
 
 template<class Alphabet>
-void ContextProfile<Alphabet>::write_header(FILE* fout) const {
+void ContextProfile<Alphabet>::WriteHeader(FILE* fout) const {
   fprintf(fout, "INDEX\t%i\n", index());
   fprintf(fout, "PRIOR\t%-10.8g\n", prior());
 
-  Profile<Alphabet>::write_header(fout);
+  Profile<Alphabet>::WriteHeader(fout);
 }
 
 template<class Alphabet>
-void ContextProfile<Alphabet>::print(std::ostream& out) const {
+void ContextProfile<Alphabet>::Print(std::ostream& out) const {
   out << "index: " << index() << std::endl;
   out << "prior probability: " << strprintf("%-10.8g", prior()) << std::endl;
 
-  Profile<Alphabet>::print(out);
+  Profile<Alphabet>::Print(out);
 }
 
 template<class Alphabet>
-inline void reset(ContextProfile<Alphabet>* p) {
+inline void Reset(ContextProfile<Alphabet>* p) {
   ContextProfile<Alphabet>& profile = *p;
   const int num_cols = profile.num_cols();
   const int alphabet_size = profile.alphabet_size();

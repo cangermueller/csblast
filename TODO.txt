@@ -14,26 +14,23 @@ Todo:
 * Add set_defaults method to Params structs.
 * Rename Params to Options? ... and params to opts
 * Really need directory in CSTrainApp???
-* Use GTEST's FilePath class??? probably not!
-* change serialization format to HMMER like tags (NCOLS, ALPHS, etc.)
 * Make refs in xxx_weights_xxx functions pointers
 * Rename App functions:
   print_usage       -> PrintHelp
   print_options     -> PrintOptions
   print_banner      -> PrintUsage
   print_description -> PrintBanner
-* Rename interface classes to KlassInterface (PseudocountsInterface, AlphabetInterface)
+* Rename interface classes to KlassInterface (PseudocountsInterface,
+  AlphabetInterface)
 * Create ContextSpecificPseudocounts class with constructor taking FILE*
 * Allow raw sequence for initialization of Sequence from stream.
 * Rename typedefs to CamelCase (e.g. ProfileIter)
-* Move kLogScale to globals
 * replace kBufferSize by KB constants.
 * remove inline from constructors
-* Look into Emitter class (remove Options?, rename to MultEmission, positional weights)
 * Replace init method in Initializers with Init and HMM ref to HMM*
-* Implement -B option for CS-BLAST
 * Rename ProfileLibrary in ContextLibary
 * Replace # with // in FASTA alignment reading
+* Replace neff vector with neff valarray in CountProfile
 
 Someday:
 * Unified validation "framework" for Option classes

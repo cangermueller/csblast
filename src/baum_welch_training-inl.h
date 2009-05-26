@@ -209,7 +209,7 @@ void BaumWelchTraining<Alphabet, Subject>::UpdateSufficientStatistics() {
         p[j][a] = gamma * p[j][a] + p_block[j][a];
       }
     }
-    reset(&p_block);
+    Reset(&p_block);
   }
 }
 
@@ -232,8 +232,8 @@ void BaumWelchTraining<Alphabet, Subject>::MaximizationStep() {
 
     hmm_[k].set_prior(p_k.prior() * prior_fac);
     ContextProfile<Alphabet> tmp(p_k);
-    if (normalize(&tmp)) {  // don't update profiles that did'n get evidence
-      tmp.transform_to_logspace();
+    if (Normalize(&tmp)) {  // don't update profiles that did'n get evidence
+      tmp.TransformToLogSpace();
       for (int i = 0; i < num_cols; ++i)
         for (int a = 0; a < alphabet_size; ++a)
           hmm_[k][i][a] = tmp[i][a];
@@ -248,7 +248,7 @@ void BaumWelchTraining<Alphabet, Subject>::MaximizationStep() {
                          hmm_.connectivity());
 
   // Calculate and assign new transition probabilities
-  hmm_.clear_transitions();
+  hmm_.ClearTransitions();
   for (int k = 0; k < num_states; ++k) {
     double tr_sum = 0.0;
     int count    = 0;
@@ -362,7 +362,7 @@ void BaumWelchProgressTable<Alphabet, Subject>::print_header() {
 template< class Alphabet,
           template<class A> class Subject >
 void BaumWelchProgressTable<Alphabet, Subject>::print_row_begin() {
-  reset();
+  Reset();
   fprintf(fout_, "%-4i %4i %6.1f %4i %7.4f  ", training_->scan(),
           training_->iterations(), training_->hmm_.connectivity(),
           training_->num_blocks(), training_->epsilon());

@@ -78,7 +78,7 @@ void SubstitutionMatrix<Alphabet>::init_from_scores_and_background_frequencies()
 }
 
 template<class Alphabet>
-void SubstitutionMatrix<Alphabet>::print(std::ostream& out) const {
+void SubstitutionMatrix<Alphabet>::Print(std::ostream& out) const {
   out << "Background frequencies:\n";
   out << Alphabet::instance() << std::endl;
   for (int a = 0; a < size_; ++a)
