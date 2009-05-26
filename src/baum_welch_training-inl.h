@@ -259,7 +259,9 @@ void BaumWelchTraining<Alphabet, Subject>::MaximizationStep() {
         ++count;
 
         float a_kl = transition_stats_[k][l];
-        if (opts_.transition_pc != 1.0)  a_kl += opts_.transition_pc - 1.0f;
+        if (opts_.transition_pc != 1.0 &&
+            hmm_.connectivity() > opts_.max_connectivity)
+          a_kl += opts_.transition_pc - 1.0f;
         if (a_kl > 0.0f) {
           ++count_pc;
           transition_stats_[k][l] = a_kl;
@@ -276,6 +278,7 @@ void BaumWelchTraining<Alphabet, Subject>::MaximizationStep() {
 
     if (tr_sum != 0.0) {
       float tr_fac = 1.0f / static_cast<float>(tr_sum);
+      LOG(INFO) << strprintf("tr_fac = %-7.2g", tr_fac);
       for (int l = 0; l < num_states; ++l) {
         if (transition_stats_.test(k,l)) {
           hmm_(k,l) = transition_stats_[k][l] * tr_fac;
