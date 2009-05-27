@@ -48,7 +48,7 @@ inline double MultEmission<Alphabet>::operator() (
     double sum = 0.0;
     for (int a = 0; a < alphabet_size; ++a)
       sum += counts[i][a] * counts.neff(i) * profile[j][a];
-    rv += weights_[j] * sum;
+    rv += sum * weights_[j];
   }
 
   return rv;
@@ -90,7 +90,7 @@ inline double MultEmission<AminoAcid>::operator() (
     sum += counts[i][18] * counts.neff(i) * profile[j][18];
     sum += counts[i][19] * counts.neff(i) * profile[j][19];
 
-    rv += weights_[j] * sum;
+    rv += sum * weights_[j];
   }
 
   return rv;

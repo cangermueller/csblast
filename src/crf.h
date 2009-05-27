@@ -1,7 +1,7 @@
 // Copyright 2009, Andreas Biegert
 
-#ifndef SRC_HMM_H_
-#define SRC_HMM_H_
+#ifndef SRC_CRF_H_
+#define SRC_CRF_H_
 
 #include <cstdlib>
 #include <cstdio>

@@ -24,8 +24,7 @@ class HMM;
 template<class Alphabet>
 class HMMState : public ContextProfile<Alphabet> {
  public:
-  typedef typename
-  sparsetable<AnchoredTransition>::const_nonempty_iterator ConstTransitionIter;
+  typedef typename sparsetable<AnchoredTransition>::const_nonempty_iterator ConstTransitionIter;
 
   // Needed to access names in templatized Profile base class
   using ContextProfile<Alphabet>::num_cols;
@@ -41,24 +40,19 @@ class HMMState : public ContextProfile<Alphabet> {
   explicit HMMState(FILE* fin);
   // Constructs HMM state with given profile and all transitions initialized to
   // zero.
-  HMMState(int index, const Profile<Alphabet>& profile, int num_states);
+  HMMState(int index, int num_states, const Profile<Alphabet>& profile);
   // Constructs HMM state with given context profile and all transitions
   // initialized to zero.
-  HMMState(int index, const ContextProfile<Alphabet>& profile, int num_states);
+  HMMState(int index, int num_states, const ContextProfile<Alphabet>& profile);
 
   virtual ~HMMState() {}
 
   // Returns number of in-transitions.
-  int num_in_transitions() const
-  { return in_transitions_.num_nonempty(); }
+  int num_in_transitions() const { return in_transitions_.num_nonempty(); }
   // Returns number of out-transitions.
-  int num_out_transitions() const
-  { return out_transitions_.num_nonempty(); }
+  int num_out_transitions() const { return out_transitions_.num_nonempty(); }
   // Clears all in- and out-transitions.
   void ClearTransitions();
-  // Resizes the transition tables to new HMM size.
-  void Resize(int num_states);
-
   // Returns a const iterator to start of list with non-null in-transition
   // pointers.
   ConstTransitionIter in_transitions_begin() const
@@ -100,8 +94,6 @@ class HMMState : public ContextProfile<Alphabet> {
   // Returns serialization class identity.
   virtual const char* class_id() const { return kClassID; }
 
-  // Size of HMM to which the state belongs.
-  int num_states_;
   // List of in-transitions.
   sparsetable<AnchoredTransition> in_transitions_;
   // List of out-transitions.

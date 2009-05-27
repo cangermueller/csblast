@@ -19,26 +19,23 @@ const char* HMMState<Alphabet>::kClassID = "HMMState";
 
 template<class Alphabet>
 HMMState<Alphabet>::HMMState(FILE* fin)
-    : ContextProfile<Alphabet>(),
-      num_states_(0) {
+    : ContextProfile<Alphabet>() {
   Read(fin);
 }
 
 template<class Alphabet>
 HMMState<Alphabet>::HMMState(int index,
-                             const Profile<Alphabet>& profile,
-                             int num_states)
+                             int num_states,
+                             const Profile<Alphabet>& profile)
     : ContextProfile<Alphabet>(index, profile),
-      num_states_(num_states),
       in_transitions_(num_states),
       out_transitions_(num_states) {}
 
 template<class Alphabet>
 HMMState<Alphabet>::HMMState(int index,
-                             const ContextProfile<Alphabet>& profile,
-                             int num_states)
+                             int num_states,
+                             const ContextProfile<Alphabet>& profile)
     : ContextProfile<Alphabet>(profile),
-      num_states_(num_states),
       in_transitions_(num_states),
       out_transitions_(num_states) {
   index_ = index;
@@ -51,34 +48,28 @@ void HMMState<Alphabet>::ClearTransitions() {
 }
 
 template<class Alphabet>
-void HMMState<Alphabet>::Resize(int num_states) {
-  ClearTransitions();
-  in_transitions_.resize(num_states);
-  out_transitions_.resize(num_states);
-}
-
-template<class Alphabet>
 void HMMState<Alphabet>::ReadHeader(FILE* fin) {
   ContextProfile<Alphabet>::ReadHeader(fin);
 
   // Read HMM size
   char buffer[kBufferSize];
   const char* ptr = buffer;
+  int num_states = 0;
   if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "NSTATES")) {
     ptr = buffer;
-    num_states_ = strtoi(ptr);
+    num_states = strtoi(ptr);
   } else {
     throw Exception("Bad format: profile does not contain 'NSTATES' record!");
   }
 
-  in_transitions_.resize(num_states_);
-  out_transitions_.resize(num_states_);
+  in_transitions_.resize(num_states);
+  out_transitions_.resize(num_states);
 }
 
 template<class Alphabet>
 void HMMState<Alphabet>::WriteHeader(FILE* fout) const {
   ContextProfile<Alphabet>::WriteHeader(fout);
-  fprintf(fout, "NSTATES\t%i\n", num_states_);
+  fprintf(fout, "NSTATES\t%i\n", static_cast<int>(in_transitions_.size()));
 }
 
 }  // namespace cs

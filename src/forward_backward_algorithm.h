@@ -136,12 +136,17 @@ void ForwardAlgorithm(const HMM<Alphabet>& hmm,
 
       m.e[i][l] = pow(2.0, emission(hmm[l], subject, i));
       f_il *= m.e[i][l];
+
       LOG(DEBUG3) << strprintf("f[%i][%i] *= e[%i][%i]=%-7.2e",
                                i, l, i, l, m.e[i][l]);
 
       m.f[i][l] = f_il;
       m.s[i] += f_il;
-      LOG(DEBUG2) << strprintf("f[%i][%i] = %-7.2e", i, l, f_il);
+      if (hmm.iterations() > 60) {
+        LOG(INFO) << strprintf("e[%i][%i] = %-7.2g", i, l, m.e[i][l]);
+        LOG(INFO) << strprintf("f[%i][%i] = %-7.2g", i, l, f_il);
+        LOG(INFO) << strprintf("s[%i] = %-7.2g", i, m.s[i]);
+      }
     }
 
     // Rescale forward values
@@ -150,8 +155,10 @@ void ForwardAlgorithm(const HMM<Alphabet>& hmm,
       m.f[i][l] *= scale_fac;
     m.log_likelihood += log2(m.s[i]);
 
-    LOG(INFO) << strprintf("s[%i] = %-7.2g   log2(s[%i]) = %-7.2g",
-                           i, m.s[i], i, log2(m.s[i]));
+    if (hmm.iterations() > 60) {
+      LOG(INFO) << strprintf("s[%i] = %-7.2g   log2(s[%i]) = %-7.2g",
+                             i, m.s[i], i, log2(m.s[i]));
+    }
   }
 
   LOG(INFO) << strprintf("log(L) = %-7.2g", m.log_likelihood);

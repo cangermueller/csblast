@@ -72,19 +72,19 @@ HMM<Alphabet>::HMM(int num_states,
 template<class Alphabet>
 void HMM<Alphabet>::Init() {
   states_.reserve(num_states());
-  transitions_.Resize(num_states(), num_states());
+  transitions_.resize(num_states(), num_states());
 }
 
 template<class Alphabet>
 void HMM<Alphabet>::init_states(const HMMStateInitializer<Alphabet>& st_init) {
-  clear();
+  Clear();
   st_init.Init(*this);
 }
 
 template<class Alphabet>
 void HMM<Alphabet>::init_transitions(
     const TransitionInitializer<Alphabet>& tr_init) {
-  clear_transitions();
+  ClearTransitions();
   tr_init.Init(*this);
 }
 
@@ -114,17 +114,17 @@ inline void HMM<Alphabet>::erase_transition(int k, int l) {
 }
 
 template<class Alphabet>
-inline void HMM<Alphabet>::clear() {
+inline void HMM<Alphabet>::Clear() {
   states_.clear();
   transitions_.clear();
   Init();
 }
 
 template<class Alphabet>
-void HMM<Alphabet>::clear_transitions() {
+void HMM<Alphabet>::ClearTransitions() {
   transitions_.clear();
   for (StateIter si = states_begin(); si != states_end(); ++si)
-    (*si)->clear_transitions();
+    (*si)->ClearTransitions();
 }
 
 template<class Alphabet>
@@ -136,9 +136,8 @@ inline int HMM<Alphabet>::AddState(const Profile<Alphabet>& profile) {
     throw Exception("Profile to add as state has %i columns but should have %i!",
                     profile.num_cols(), num_cols());
 
-  shared_ptr< HMMState<Alphabet> > state_ptr(new HMMState<Alphabet>(states_.size(),
-                                                              profile,
-                                                              num_states()));
+  shared_ptr< HMMState<Alphabet> > state_ptr(
+      new HMMState<Alphabet>(states_.size(), num_states(), profile));
   state_ptr->set_prior(1.0f / num_states());
   states_.push_back(state_ptr);
 
@@ -154,9 +153,8 @@ inline int HMM<Alphabet>::AddState(const ContextProfile<Alphabet>& profile) {
     throw Exception("Profile to add as state has %i columns but should have %i!",
                     profile.num_cols(), num_cols());
 
-  shared_ptr< HMMState<Alphabet> > state(new HMMState<Alphabet>(states_.size(),
-                                                          profile,
-                                                          num_states()));
+  shared_ptr< HMMState<Alphabet> > state(
+      new HMMState<Alphabet>(states_.size(), num_states(), profile));
   states_.push_back(state);
 
   return states_.size() - 1;

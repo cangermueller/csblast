@@ -70,14 +70,14 @@ class matrix {
   const_iterator begin() const { return &m_[0]; }
   const_iterator end() const { return begin() + size(); }
   void resize(int r, int c, T v = T()) {
-    m_.Resize(r * c, v);
+    m_.resize(r * c, v);
     num_rows_ = r;
     num_cols_ = c;
   }
 
   // operators
   self& operator=(const self& x) {
-    m_.Resize(x.size());
+    m_.resize(x.size());
     m_ = x.m_;
     num_rows_ = x.num_rows_;
     num_cols_ = x.num_cols_;

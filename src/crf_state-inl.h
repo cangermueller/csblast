@@ -5,7 +5,7 @@
 
 #include "crf_state.h"
 
-#include <climits>
+#include <cassert>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -22,8 +22,14 @@
 namespace cs {
 
 template<class Alphabet>
-CRFState<Alphabet>::CRFState()
-    : index_(0) {}
+CRFState<Alphabet>::CRFState(int index,
+                             int num_states,
+                             int num_cols)
+    : index_(index),
+      in_transitions_(num_states),
+      out_transitions_(num_states),
+      weights_(num_cols, Alphabet::instance().size(), 0.0f),
+      pc_(Alphabet::instance().size()) {}
 
 template<class Alphabet>
 CRFState<Alphabet>::CRFState(int index,
@@ -31,7 +37,9 @@ CRFState<Alphabet>::CRFState(int index,
                             const Profile<Alphabet>& profile)
     : index_(index),
       in_transitions_(num_states),
-      out_transitions_(num_states) {
+      out_transitions_(num_states),
+      weights_(profile.num_cols(), Alphabet::instance().size(), 0.0f),
+      pc_(Alphabet::instance().size()) {
   Init(profile);
 }
 
@@ -47,7 +55,7 @@ void CRFState<Alphabet>::Read(FILE* fin) {
   ReadHeader(fin);
   ReadBody(fin);
 
-  //  LOG(DEBUG1) << *this;
+  LOG(DEBUG1) << *this;
 }
 
 template<class Alphabet>
@@ -121,41 +129,43 @@ void CRFState<Alphabet>::ReadBody(FILE* fin) {
 
 template<class Alphabet>
 void CRFState<Alphabet>::Write(FILE* fout) const {
-  fprintf(fout, "%s\n", class_id());
+  fputs("CRFState\n", fout);
   WriteHeader(fout);
   WriteBody(fout);
 }
 
 template<class Alphabet>
 void CRFState<Alphabet>::WriteHeader(FILE* fout) const {
+  fprintf(fout, "INDEX\t%i\n", index());
+  fprintf(fout, "NSTATES\t%i\n", static_cast<int>(in_transitions_.size()));
   fprintf(fout, "NCOLS\t%i\n", num_cols());
   fprintf(fout, "ALPH\t%i\n", alphabet_size());
-  fprintf(fout, "LOG\t%i\n", logspace() ? 1 : 0);
 }
 
 template<class Alphabet>
 void CRFState<Alphabet>::WriteBody(FILE* fout) const {
-  fputs("WGHT\t", fout);
+  fputs("CWT\t", fout);
   Alphabet::instance().Write(fout);
   fputc('\n', fout);
 
   for (int i = 0; i < num_cols(); ++i) {
     fprintf(fout, "%i", i+1);
     for (int a = 0; a < alphabet_size(); ++a) {
-      fprintf(fout, "\t%+i", -iround(weights_[i][a] * kLogScale));
+      fprintf(fout, "\t%i", -iround(weights_[i][a] * kLogScale));
     }
     fputc('\n', fout);
   }
 
-  fputs("WGHT", fout);
+  fputs("PC", fout);
   for (int a = 0; a < alphabet_size(); ++a)
-    fprintf(fout, "\t%+i", -iround(pc_[a] * kLogScale));
+    fprintf(fout, "\t%i", -iround(pc_[a] * kLogScale));
   fputs("//\n", fout);
 }
 
 template<class Alphabet>
 void CRFState<Alphabet>::Print(std::ostream& out) const {
-  out << "\t" << Alphabet::instance() << std::endl;
+  out << "index: " << index() << std::endl;
+  out << "cwt\t" << Alphabet::instance() << std::endl;
 
   for (int i = 0; i < num_cols(); ++i) {
     out << i+1;
@@ -163,6 +173,7 @@ void CRFState<Alphabet>::Print(std::ostream& out) const {
       out << strprintf("\t%6.2f", weights_[i][a]);
     out << std::endl;
   }
+  out << "pc";
 }
 
 template<class Alphabet>
@@ -170,19 +181,43 @@ void CRFState<Alphabet>::Resize(int num_cols, int alphabet_size) {
   if (num_cols == 0 || alphabet_size == 0)
     throw Exception("Bad profile dimensions: num_cols=%i alphabet_size=%i",
                     num_cols, alphabet_size);
-  weights_.resize(num_cols, alphabet_size);
+  weights_.resize(num_cols, alphabet_size, 0.0f);
+  pc_.resize(alphabet_size, 0.0f);
 }
 
 template<class Alphabet>
-inline void Reset(CRFState<Alphabet>* p) {
-  CRFState<Alphabet>& profile = *p;
-  const int num_cols = profile.num_cols();
-  const int alphabet_size = profile.alphabet_size();
+void CRFState<Alphabet>::Init(const Profile<Alphabet>& prof) {
+  assert(prof.num_cols() == num_cols());
+
+  for (int i = 0; i < num_cols(); ++i)
+    for (int a = 0; a < alphabet_size(); ++a)
+      weights_[i][a] = prof.logspace() ? prof[i][a] : fast_log2(prof_[i][a]);
+
+  for (int a = 0; a < alphabet_size(); ++a)
+    pc_[a] = prof.logspace() ? prof[center()][a] : fast_log2(prof[center()][a]);
+}
+
+template<class Alphabet>
+void CRFState<Alphabet>::ClearTransitions() {
+  in_transitions_.clear();
+  out_transitions_.clear();
+}
+
+template<class Alphabet>
+inline void Reset(CRFState<Alphabet>* s) {
+  CRFState<Alphabet>& state = *s;
+  const int num_cols = state.num_cols();
+  const int alphabet_size = state.alphabet_size();
+
+  // Reset context weights
   for (int i = 0; i < num_cols; ++i)
     for (int a = 0; a < alphabet_size; ++a)
-      profile[i][a] = 0.0f;
+      state[i][a] = 0.0f;
+  // Reset pseudocount parameters
+  for (int a = 0; a < alphabet_size; ++a)
+    state(a) = 0.0f;
 }
 
 }  // namespace cs
 
-#endif  // SRC_PROFILE_INL_H_
+#endif  // SRC_CRF_STATE_INL_H_

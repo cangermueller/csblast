@@ -31,9 +31,9 @@ class CRFState {
   typedef matrix<float>::const_iterator ConstIterator;
   typedef typename sparsetable<AnchoredTransition>::const_nonempty_iterator ConstTransitionIter;
 
-  // Constructs a dummy state.
-  CRFState();
-  // Constructs a state with given index with parameters initialized from
+  // Constructs state with given index, number of states, and number of columns.
+  CRFState(int index, int num_states, int num_cols);
+  // Constructs state with given index with parameters initialized from
   // given profile.
   CRFState(int index, int num_states, const Profile<Alphabet>& profile);
   // Constructs a state from serialized data read from input stream.
@@ -48,8 +48,8 @@ class CRFState {
   // Access methods to get the context weight for letter j in column i
   ColType operator[] (int i) { return weights_[i]; }
   ConstColType operator[] (int i) const { return weights_[i]; }
-  float& cw(int i, int a) { return weights_[i][a]; }
-  const float& cw(int i, int a) const { return weights_[i][a]; }
+  float& wt(int i, int a) { return weights_[i][a]; }
+  const float& wt(int i, int a) const { return weights_[i][a]; }
   // Accessors for pseudocount weight of letter a in central column
   float& operator() (int a) { return pc_[a]; }
   const float& operator() (int a) const { return pc_[a]; }
@@ -63,6 +63,10 @@ class CRFState {
   int alphabet_size() const { return weights_.num_cols(); }
   // Returns the total number of context weights
   int size() const { return weights_.size(); }
+  // Returns number of in-transitions.
+  int num_in_transitions() const { return in_transitions_.num_nonempty(); }
+  // Returns number of out-transitions.
+  int num_out_transitions() const { return out_transitions_.num_nonempty(); }
   // Returns index of central column.
   int center() const { return (num_cols() - 1) / 2; }
   // Returns an iterator to the first element in context column i.
@@ -101,6 +105,8 @@ class CRFState {
   void Read(FILE* fin);
   // Writes the profile in serialization format to output stream.
   void Write(FILE*) const;
+  // Clears all in- and out-transitions.
+  void ClearTransitions();
 
   // Prints profile in human-readable format for debugging.
   friend std::ostream& operator<< (std::ostream& out, const CRFState& p) {
@@ -125,7 +131,7 @@ class CRFState {
   // Resize the weight matrices to given dimensions.
   void Resize(int num_cols, int alphabet_size);
   // Initializes context weights and pseudocounts with profile probabilities.
-  void Init(const Profile<Alphabet>& profile);
+  void Init(const Profile<Alphabet>& prof);
 
   // Index of state in states vector of CRF.
   int index_;
@@ -139,7 +145,7 @@ class CRFState {
   std::valarray<float> pc_;
 };  // class CRFState
 
-// Resets all weights in given state to the given value or zero if none is given.
+// Resets all weights and pseudocounts to the given value or zero.
 template<class Alphabet>
 void Reset(CRFState<Alphabet>* s, float value = 0.0f);
 

@@ -68,14 +68,14 @@ class sparse_matrix {
   T& set(int r, int c, const T& val) { return m_.set(r*num_cols_ + c, val); }
   bool test(int r, int c) const { return m_.test(r*num_cols_ + c); }
   void resize(int r, int c) {
-    m_.Resize(r * c);
+    m_.resize(r * c);
     num_rows_ = r;
     num_cols_ = c;
   }
 
   // Operators
   self& operator=(const self& x) {
-    m_.Resize(x.size());
+    m_.resize(x.size());
     m_ = x.m_;
     num_rows_ = x.num_rows_;
     num_cols_ = x.num_cols_;

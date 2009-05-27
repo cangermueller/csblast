@@ -286,8 +286,6 @@ void BaumWelchTraining<Alphabet, Subject>::MaximizationStep() {
                                    k, l, static_cast<float>(hmm_(k,l)));
         }
       }
-    } else {
-      LOG(INFO) << strprintf("State %i has no out-transitions.", k);
     }
   }
   LOG(INFO) << strprintf("Mean connectivity AFTER maximization step: %.2f",

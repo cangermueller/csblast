@@ -480,7 +480,7 @@ void Alignment<Alphabet>::AssignMatchColumnsBySequence(int k) {
         ++j;
       }
     }
-    seqs_.Resize(ref_seq_length, num_seqs());
+    seqs_.resize(ref_seq_length, num_seqs());
     seqs_ = new_seqs;
 
     // Update match indices
@@ -533,7 +533,7 @@ void Alignment<Alphabet>::RemoveInsertColumns() {
       new_seqs[i][k] = seqs_[match_indices[i]][k];
     }
   }
-  seqs_.Resize(match_cols, num_seqs());
+  seqs_.resize(match_cols, num_seqs());
   seqs_ = new_seqs;
 
   // Update match indices
@@ -704,7 +704,7 @@ std::vector<float> PositionSpecificWeightsAndDiversity(
 
   // Return values
   std::vector<float> neff(num_cols, 0.0f);      // diversity of subalignment i
-  w.Resize(num_cols, num_seqs);                 // weight of seq k in column i
+  w.resize(num_cols, num_seqs);                 // weight of seq k in column i
   w = matrix<float>(num_cols, num_seqs, 0.0f);  // init to zero
 
   // Helper variables
