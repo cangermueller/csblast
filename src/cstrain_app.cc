@@ -399,7 +399,7 @@ void CSTrainApp<Alphabet>::InitHMM() {
     fclose(fin);
 
     LibraryHMMStateInitializer<Alphabet> st_init(&profile_lib);
-    CoEmissionTransitionInitializer<Alphabet> tr_init(subst_matrix_.get(),
+    CoEmissionHMMTransitionInitializer<Alphabet> tr_init(subst_matrix_.get(),
                                                       opts_.tr_score_min);
     hmm_.reset(new HMM<Alphabet>(opts_.num_states,
                                  profile_lib.num_cols(),
@@ -417,7 +417,7 @@ void CSTrainApp<Alphabet>::InitHMM() {
                                                opts_.sample_rate,
                                                &pc,
                                                opts_.state_pc);
-    CoEmissionTransitionInitializer<Alphabet> tr_init(subst_matrix_.get(),
+    CoEmissionHMMTransitionInitializer<Alphabet> tr_init(subst_matrix_.get(),
                                                       opts_.tr_score_min);
     hmm_.reset(new HMM<Alphabet>(opts_.num_states,
                                  opts_.window_length,
@@ -426,7 +426,7 @@ void CSTrainApp<Alphabet>::InitHMM() {
     fputc('\n', stream());
   }
 
-  hmm_->transform_states_to_logspace();
+  hmm_->TransformStatesToLogSpace();
 }
 
 template<class Alphabet>

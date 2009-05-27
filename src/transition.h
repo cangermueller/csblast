@@ -20,7 +20,7 @@ struct Transition {
   const int target;
   // Transition weight.
   float weight;
-};  // Transition
+};  // class Transition
 
 struct AnchoredTransition {
   // Simple Constructors
@@ -34,7 +34,7 @@ struct AnchoredTransition {
   const int state;
   // Transition weight.
   float weight;
-};  // AnchoredTransition
+};  // class AnchoredTransition
 
 }  // namespace cs
 

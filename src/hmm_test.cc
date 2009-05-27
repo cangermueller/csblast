@@ -120,8 +120,8 @@ TEST_F(HMMTest, LinLogTransformation) {
   hmm(0,2) = 0.5f;
   hmm(1,2) = 1.0f;
 
-  hmm.transform_transitions_to_logspace();
-  hmm.transform_states_to_logspace();
+  hmm.TransformTransitionsToLogSpace();
+  hmm.TransformStatesToLogSpace();
 
   EXPECT_FLOAT_EQ(0.0f, hmm[0][0][0]);
   EXPECT_FLOAT_EQ(0.0f, hmm[1][0][0]);
@@ -129,8 +129,8 @@ TEST_F(HMMTest, LinLogTransformation) {
 
   EXPECT_FLOAT_EQ(0.0f, hmm(1,2));
 
-  hmm.transform_transitions_to_linspace();
-  hmm.transform_states_to_linspace();
+  hmm.TransformTransitionsToLinSpace();
+  hmm.TransformStatesToLinSpace();
 
   EXPECT_FLOAT_EQ(1.0f, hmm[0][0][0]);
   EXPECT_FLOAT_EQ(0.0f, hmm[0][1][0]);
@@ -155,7 +155,7 @@ TEST(HMMTestInitialization, RandomSampleInitializer) {
   BlosumMatrix m;
   MatrixPseudocounts<AminoAcid> pc(&m);
   SamplingHMMStateInitializer<AminoAcid> st_init(profiles, 0.2f, &pc, 0.2f);
-  HomogeneousTransitionInitializer<AminoAcid> tr_init;
+  HomogeneousHMMTransitionInitializer<AminoAcid> tr_init;
   HMM<AminoAcid> hmm(10, 5, st_init, tr_init);
 
   EXPECT_EQ(10, hmm.num_states());
@@ -174,7 +174,7 @@ TEST(HMMTestInitialization, LibraryInitialization) {
 
   LibraryHMMStateInitializer<AminoAcid> st_init(&profile_lib);
   BlosumMatrix m;
-  CoEmissionTransitionInitializer<AminoAcid> tr_init(&m, 0.0f);
+  CoEmissionHMMTransitionInitializer<AminoAcid> tr_init(&m, 0.0f);
   HMM<AminoAcid> hmm(50, profile_lib.num_cols(), st_init, tr_init);
 
   EXPECT_EQ(892, hmm.num_transitions());

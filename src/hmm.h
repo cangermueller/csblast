@@ -30,7 +30,7 @@ template<class Alphabet>
 class HMM;
 
 template<class Alphabet>
-class TransitionAdaptor;
+class HMMTransitionAdaptor;
 
 template<class Alphabet>
 class HMMStateInitializer {
@@ -41,26 +41,26 @@ class HMMStateInitializer {
 };
 
 template<class Alphabet>
-class TransitionInitializer {
+class HMMTransitionInitializer {
  public:
-  TransitionInitializer() {}
-  virtual ~TransitionInitializer() {}
+  HMMTransitionInitializer() {}
+  virtual ~HMMTransitionInitializer() {}
   virtual void Init(HMM<Alphabet>& hmm) const = 0;
 };
 
 
-// A hidden Markov model that stores context information in the form of
-// context states and state transition probabilities.
+// A Hidden Markov Model that stores context information in the form of
+// context states and inter state transition probabilities.
 template<class Alphabet>
 class HMM {
  public:
   // Public typedefs
-  typedef std::vector< shared_ptr< HMMState<Alphabet> > > state_vector;
-  typedef sparse_matrix<Transition> transition_matrix;
-  typedef typename state_vector::iterator StateIter;
-  typedef typename state_vector::const_iterator ConstStateIter;
-  typedef typename transition_matrix::nonempty_iterator TransitionIter;
-  typedef typename transition_matrix::const_nonempty_iterator ConstTransitionIter;
+  typedef std::vector< shared_ptr< HMMState<Alphabet> > > StateVec;
+  typedef sparse_matrix<Transition> TransitionMatrix;
+  typedef typename StateVec::iterator StateIter;
+  typedef typename StateVec::const_iterator ConstStateIter;
+  typedef typename TransitionMatrix::nonempty_iterator TransitionIter;
+  typedef typename TransitionMatrix::const_nonempty_iterator ConstTransitionIter;
 
   // Constructs an empty HMM of given size without any states or transitions.
   HMM(int num_states, int num_cols);
@@ -71,14 +71,14 @@ class HMM {
   HMM(int num_states,
       int num_cols,
       const HMMStateInitializer<Alphabet>& st_init,
-      const TransitionInitializer<Alphabet>& tr_init);
+      const HMMTransitionInitializer<Alphabet>& tr_init);
 
   virtual ~HMM() {}
 
   // Initializes HMM states with the provided initializer.
   void init_states(const HMMStateInitializer<Alphabet>& st_init);
   // Initializes HMM transitions with the provided initializer.
-  void init_transitions(const TransitionInitializer<Alphabet>& tr_init);
+  void init_transitions(const HMMTransitionInitializer<Alphabet>& tr_init);
   // Returns true if all states have been fully assembled.
   bool full() const { return static_cast<int>(states_.size()) == num_states_; }
   // Returns the number of states in the HMM
@@ -95,26 +95,30 @@ class HMM {
   int iterations() const { return iterations_; }
   // Returns the number of non-null transitions in the HMM.
   int num_transitions() const { return transitions_.num_nonempty(); }
-  // Returns the average state connectivity.
+  // Returns the mean state connectivity.
   float connectivity() const {
     return static_cast<float>(num_transitions()) / num_states();
   }
   // Accessor methods for state i, where i is from interval [0,num_states].
   HMMState<Alphabet>& operator[](int i) { return *states_[i]; }
   const HMMState<Alphabet>& operator[](int i) const { return *states_[i]; }
+  HMMState<Alphabet>& st(int i) { return *states_[i]; }
+  const HMMState<Alphabet>& st(int i) const { return *states_[i]; }
   // Accessor methods for transition probability (k,l)
-  TransitionAdaptor<Alphabet> operator() (int k, int l) {
-    return TransitionAdaptor<Alphabet>(this, k, l);
+  HMMTransitionAdaptor<Alphabet> operator() (int k, int l) {
+    return HMMTransitionAdaptor<Alphabet>(this, k, l);
   }
   float operator() (int k, int l) const {
     return transitions_.get(k,l).weight;
   }
-  // Sets the transition probability from state k to state l.
-  void set_transition(int k, int l, float prob);
-  // Returns the transition probability from state k to state l.
-  float transition_probability(int k, int l) const {
+  HMMTransitionAdaptor<Alphabet> tr(int k, int l) {
+    return HMMTransitionAdaptor<Alphabet>(this, k, l);
+  }
+  float tr(int k, int l) const {
     return transitions_.get(k,l).weight;
   }
+  // Sets the transition probability from state k to state l.
+  void set_transition(int k, int l, float prob);
   // Removes the transition between state k and state l from the HMM.
   void erase_transition(int k, int l);
   // Returns true if there is a transition between state k and state l.
@@ -129,6 +133,22 @@ class HMM {
   // The prior probability of the context profile becomes the prior probability
   // of the state.
   int AddState(const ContextProfile<Alphabet>& profile);
+  // Returns true if transitions are in logspace.
+  bool transitions_logspace() const { return transitions_logspace_; }
+  // Returns true if state profiles are in logspace.
+  bool states_logspace() const { return states_logspace_; }
+  // Increments the training iteration counter.
+  void increment_iterations() { ++iterations_; }
+  // Transforms transitions to logspace.
+  void TransformTransitionsToLogSpace();
+  // Transforms transitions to linspace.
+  void TransformTransitionsToLinSpace();
+  // Transforms state profiles to logspace.
+  void TransformStatesToLogSpace();
+  // Transforms state profiles to linspace.
+  void TransformStatesToLinSpace();
+  // Writes the HMM in serialization format to output stream.
+  void Write(FILE* fout) const;
   // Returns an iterator to a list of pointers of states.
   StateIter states_begin() { return states_.begin(); }
   // Returns an iterator pointing past the end of a list of pointers of states.
@@ -152,26 +172,6 @@ class HMM {
   ConstTransitionIter transitions_end() const {
     return transitions_.nonempty_end();
   }
-  // Writes the HMM in serialization format to output stream.
-  void Write(FILE* fout) const;
-  // Returns true if transitions are in logspace.
-  bool transitions_logspace() const { return transitions_logspace_; }
-  // Returns true if state profiles are in logspace.
-  bool states_logspace() const { return states_logspace_; }
-  // Sets flag indicating if transitions are in logspace.
-  void set_transitions_logspace(bool flag) { transitions_logspace_ = flag; }
-  // Sets flag indicating if state profiles are in logspace.
-  void set_states_logspace(bool flag) { states_logspace_ = flag; }
-  // Transforms transitions to logspace.
-  void transform_transitions_to_logspace();
-  // Transforms transitions to linspace.
-  void transform_transitions_to_linspace();
-  // Transforms state profiles to logspace.
-  void transform_states_to_logspace();
-  // Transforms state profiles to linspace.
-  void transform_states_to_linspace();
-  // Increments the training iteration counter.
-  void increment_iterations() { ++iterations_; }
 
   // Prints HMM in human-readable format for debugging.
   friend std::ostream& operator<< (std::ostream& out, const HMM& hmm) {
@@ -209,18 +209,18 @@ class HMM {
 };  // HMM
 
 template<class Alphabet>
-class TransitionAdaptor {
+class HMMTransitionAdaptor {
  public:
-  TransitionAdaptor(HMM<Alphabet>* hmm, int k, int l)
+  HMMTransitionAdaptor(HMM<Alphabet>* hmm, int k, int l)
       : hmm_(hmm), k_(k), l_(l)
   {}
 
-  TransitionAdaptor& operator= (float val) {
+  HMMTransitionAdaptor& operator= (float val) {
     hmm_->set_transition(k_, l_, val);
     return *this;
   }
 
-  operator float() { return hmm_->transition_probability(k_, l_); }
+  operator float() { return hmm_->tr(k_, l_); }
 
  private:
   HMM<Alphabet>* hmm_;
@@ -280,10 +280,11 @@ class LibraryHMMStateInitializer : public HMMStateInitializer<Alphabet> {
 };
 
 template<class Alphabet>
-class HomogeneousTransitionInitializer : public TransitionInitializer<Alphabet> {
+class HomogeneousHMMTransitionInitializer
+    : public HMMTransitionInitializer<Alphabet> {
  public:
-  HomogeneousTransitionInitializer() {}
-  virtual ~HomogeneousTransitionInitializer() {}
+  HomogeneousHMMTransitionInitializer() {}
+  virtual ~HomogeneousHMMTransitionInitializer() {}
 
   virtual void Init(HMM<Alphabet>& hmm) const {
     float prob = 1.0f / hmm.num_states();
@@ -296,10 +297,10 @@ class HomogeneousTransitionInitializer : public TransitionInitializer<Alphabet> 
 };
 
 template<class Alphabet>
-class RandomTransitionInitializer : public TransitionInitializer<Alphabet> {
+class RandomHMMTransitionInitializer : public HMMTransitionInitializer<Alphabet> {
  public:
-  RandomTransitionInitializer() {}
-  virtual ~RandomTransitionInitializer() {}
+  RandomHMMTransitionInitializer() {}
+  virtual ~RandomHMMTransitionInitializer() {}
 
   virtual void Init(HMM<Alphabet>& hmm) const {
     srand(static_cast<unsigned int>(clock()));
@@ -312,12 +313,13 @@ class RandomTransitionInitializer : public TransitionInitializer<Alphabet> {
 };
 
 template<class Alphabet>
-class CoEmissionTransitionInitializer : public TransitionInitializer<Alphabet> {
+class CoEmissionHMMTransitionInitializer
+    : public HMMTransitionInitializer<Alphabet> {
  public:
-  CoEmissionTransitionInitializer(const SubstitutionMatrix<Alphabet>* sm,
+  CoEmissionHMMTransitionInitializer(const SubstitutionMatrix<Alphabet>* sm,
                                   float score_thresh)
       : co_emission_(sm), score_thresh_(score_thresh) {}
-  virtual ~CoEmissionTransitionInitializer() {}
+  virtual ~CoEmissionHMMTransitionInitializer() {}
 
   virtual void Init(HMM<Alphabet>& hmm) const;
 

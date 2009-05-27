@@ -39,8 +39,8 @@ class BaumWelchTrainingTest : public testing::Test {
       Profile<AminoAcid> p(profile, i, 1);
       hmm_.AddState(p);
     }
-    hmm_.init_transitions(HomogeneousTransitionInitializer<AminoAcid>());
-    hmm_.transform_states_to_logspace();
+    hmm_.init_transitions(HomogeneousHMMTransitionInitializer<AminoAcid>());
+    hmm_.TransformStatesToLogSpace();
 
     // Read zinc finger sequences
     FILE* seq_in = fopen("../data/zinc_finger_proteins.fas", "r");
@@ -80,7 +80,7 @@ TEST_F(BaumWelchTrainingTest, ZincFingerSeqsTraining) {
   BaumWelchTraining<AminoAcid, Sequence> bwt(p, seqs_, hmm_, stdout);
   bwt.Run();
 
-  hmm_.transform_states_to_linspace();
+  hmm_.TransformStatesToLinSpace();
   EXPECT_NEAR(0.8977, hmm_[0][0][AminoAcid::instance().ctoi('C')], kFloatDelta);
   EXPECT_NEAR(0.8977, hmm_[5][0][AminoAcid::instance().ctoi('C')], kFloatDelta);
 }
@@ -98,7 +98,7 @@ TEST_F(BaumWelchTrainingTest, ZincFingerAlisTraining) {
   BaumWelchTraining<AminoAcid, CountProfile> bwt(p, counts_, hmm_, stdout);
   bwt.Run();
 
-  hmm_.transform_states_to_linspace();
+  hmm_.TransformStatesToLinSpace();
   EXPECT_NEAR(0.9948, hmm_[0][0][AminoAcid::instance().ctoi('C')], kFloatDelta);
   EXPECT_NEAR(0.9948, hmm_[5][0][AminoAcid::instance().ctoi('C')], kFloatDelta);
 }
@@ -116,7 +116,7 @@ TEST_F(BaumWelchTrainingTest, ZincFingerAlisOnlineTraining) {
   BaumWelchTraining<AminoAcid, CountProfile> bwt(p, counts_, hmm_, stdout);
   bwt.Run();
 
-  hmm_.transform_states_to_linspace();
+  hmm_.TransformStatesToLinSpace();
   EXPECT_NEAR(0.9948, hmm_[0][0][AminoAcid::instance().ctoi('C')], kFloatDelta);
   EXPECT_NEAR(0.9948, hmm_[5][0][AminoAcid::instance().ctoi('C')], kFloatDelta);
 }
