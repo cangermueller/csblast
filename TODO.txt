@@ -13,13 +13,8 @@ Todo:
   CountProfile*    // changes in place
 * Add set_defaults method to Params structs.
 * Rename Params to Options? ... and params to opts
-* Really need directory in CSTrainApp???
+* Really need directory option in CSTrainApp???
 * Make refs in xxx_weights_xxx functions pointers
-* Rename App functions:
-  print_usage       -> PrintHelp
-  print_options     -> PrintOptions
-  print_banner      -> PrintUsage
-  print_description -> PrintBanner
 * Rename interface classes to KlassInterface (PseudocountsInterface,
   AlphabetInterface)
 * Create ContextSpecificPseudocounts class with constructor taking FILE*

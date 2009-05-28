@@ -85,13 +85,13 @@ class CSClustApp : public Application {
   // Runs the csbuild application.
   virtual int Run();
   // Parses command line options.
-  virtual void parse_options(GetOpt_pp* options);
+  virtual void ParseOptions(GetOpt_pp* options);
   // Prints options summary to stream.
-  virtual void print_options() const;
+  virtual void PrintOptions() const;
   // Prints short application description.
-  virtual void print_description() const;
+  virtual void PrintBanner() const;
   // Prints usage banner to stream.
-  virtual void print_banner() const;
+  virtual void PrintUsage() const;
   // Prints substitution matrix options.
   void print_substitution_matrix_options() const;
   // Reads training data from infile.
@@ -114,7 +114,7 @@ class CSClustApp : public Application {
 
 
 template<class Alphabet>
-void CSClustApp<Alphabet>::parse_options(GetOpt_pp* options) {
+void CSClustApp<Alphabet>::ParseOptions(GetOpt_pp* options) {
   *options >> Option('i', "infile", opts_.infile, opts_.infile);
   *options >> Option('o', "outfile", opts_.outfile, opts_.outfile);
   *options >> Option('d', "directory", opts_.directory, opts_.directory);
@@ -153,13 +153,13 @@ void CSClustApp<Alphabet>::parse_options(GetOpt_pp* options) {
 }
 
 template<class Alphabet>
-void CSClustApp<Alphabet>::print_description() const {
+void CSClustApp<Alphabet>::PrintBanner() const {
   fputs("Cluster a training set of profile windows into a profile library.\n",
         stream());
 }
 
 template<class Alphabet>
-void CSClustApp<Alphabet>::print_banner() const {
+void CSClustApp<Alphabet>::PrintUsage() const {
   fputs("Usage: csclust -i <infile> -K <num_profiles> [options]\n", stream());
   fputs("       csclust -i <infile> -j <libfile> [options]\n", stream());
 }
@@ -180,7 +180,7 @@ void CSClustApp<AminoAcid>::print_substitution_matrix_options() const {
 }
 
 template<class Alphabet>
-void CSClustApp<Alphabet>::print_options() const {
+void CSClustApp<Alphabet>::PrintOptions() const {
   fprintf(stream(), "  %-30s %s\n", "-i, --infile <file>",
           "Path to input file with profile windows");
   fprintf(stream(), "  %-30s %s\n", "-o, --outfile <file>",

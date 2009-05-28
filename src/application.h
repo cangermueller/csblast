@@ -18,7 +18,7 @@ namespace cs {
 // Basic (abstract) application class.
 // Defines the high level behavior of an application. A new application is
 // written by deriving a class from Application and writing an implementation
-// of the Run() and maybe some other (like parse_options() etc.) methods.
+// of the Run() and maybe some other (like ParseOptions() etc.) methods.
 class Application {
  public:
   // Register the application instance.
@@ -47,15 +47,15 @@ class Application {
   // classes.
   virtual int Run() = 0;
   // Parses command line options.
-  virtual void parse_options(GetOpt_pp* /* options */) {};
+  virtual void ParseOptions(GetOpt_pp* /* options */) {};
   // Prints options summary to stream.
-  virtual void print_options() const {};
+  virtual void PrintOptions() const {};
   // Prints usage banner to stream.
-  virtual void print_banner() const {};
+  virtual void PrintUsage() const {};
   // Prints short application description.
-  virtual void print_description() const {};
+  virtual void PrintBanner() const {};
   // Prints copyright notification.
-  void print_usage() const;
+  void PrintHelp() const;
 
   static Application* instance_;       // current app. instance
   std::string         app_name_;       // application name

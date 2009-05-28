@@ -62,13 +62,13 @@ class CSSampleApp : public Application {
   // Runs the csbuild application.
   virtual int Run();
   // Parses command line options.
-  virtual void parse_options(GetOpt_pp* options);
+  virtual void ParseOptions(GetOpt_pp* options);
   // Prints options summary to stream.
-  virtual void print_options() const;
+  virtual void PrintOptions() const;
   // Prints short application description.
-  virtual void print_description() const;
+  virtual void PrintBanner() const;
   // Prints usage banner to stream.
-  virtual void print_banner() const;
+  virtual void PrintUsage() const;
   // Samples profiles from database of profiles.
   void Sample();
 
@@ -83,7 +83,7 @@ class CSSampleApp : public Application {
 
 
 template<class Alphabet>
-void CSSampleApp<Alphabet>::parse_options(GetOpt_pp* options) {
+void CSSampleApp<Alphabet>::ParseOptions(GetOpt_pp* options) {
   *options >> Option('i', "infile", opts_.infile, opts_.infile);
   *options >> Option('o', "outfile", opts_.outfile, opts_.outfile);
   *options >> Option('N', "sample-size", opts_.sample_size,
@@ -100,18 +100,18 @@ void CSSampleApp<Alphabet>::parse_options(GetOpt_pp* options) {
 }
 
 template<class Alphabet>
-void CSSampleApp<Alphabet>::print_description() const {
+void CSSampleApp<Alphabet>::PrintBanner() const {
   fputs("Sample (context) profiles from a large profile database.\n",
         stream());
 }
 
 template<class Alphabet>
-void CSSampleApp<Alphabet>::print_banner() const {
+void CSSampleApp<Alphabet>::PrintUsage() const {
   fputs("Usage: cssample -i <infile> -o <outfile> [options]\n", stream());
 }
 
 template<class Alphabet>
-void CSSampleApp<Alphabet>::print_options() const {
+void CSSampleApp<Alphabet>::PrintOptions() const {
   fprintf(stream(), "  %-30s %s\n", "-i, --infile <file>",
           "Path to input file with profile database");
   fprintf(stream(), "  %-30s %s\n", "-o, --outfile <file>",

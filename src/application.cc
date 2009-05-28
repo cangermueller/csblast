@@ -55,7 +55,7 @@ int Application::main(int argc,
     // Print usage?
     if (argc < 2 || argv[1][0] == '?' ||
         options >> OptionPresent(' ', "help")) {
-      print_usage();
+      PrintHelp();
       return 1;
     }
 
@@ -69,7 +69,7 @@ int Application::main(int argc,
     }
 
     // Let subclasses parse the command line options
-    parse_options(&options);
+    ParseOptions(&options);
 
     // Run application
     status = Run();
@@ -83,13 +83,13 @@ int Application::main(int argc,
   return status;
 }
 
-void Application::print_usage() const {
+void Application::PrintHelp() const {
   fprintf(stream(), "%s version %s\n", app_name_.c_str(), kVersionNumber);
-  print_description();
+  PrintBanner();
   fprintf(stream(), "%s\n\n", kCopyright);
-  print_banner();
+  PrintUsage();
   fputs("\nOptions:\n", stream());
-  print_options();
+  PrintOptions();
 
   if (kDebug) {
     fprintf(stream(), "  %-30s %s (def=%s)\n", "    --log-level <level>",

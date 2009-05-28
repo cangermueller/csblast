@@ -32,13 +32,14 @@ class CRF;
 template<class Alphabet>
 class CRFTransitionAdaptor;
 
+
 template<class Alphabet>
 class CRFStateInitializer {
  public:
   CRFStateInitializer() {}
   virtual ~CRFStateInitializer() {}
   virtual void Init(CRF<Alphabet>& crf) const = 0;
-};
+};  // class CRFStateInitializer
 
 template<class Alphabet>
 class CRFTransitionInitializer {
@@ -46,7 +47,7 @@ class CRFTransitionInitializer {
   CRFTransitionInitializer() {}
   virtual ~CRFTransitionInitializer() {}
   virtual void Init(CRF<Alphabet>& crf) const = 0;
-};
+};  // class CRFTransitionInitializer
 
 
 // A hidden Markov model that stores context information in the form of
@@ -117,8 +118,8 @@ class CRF {
   float tr(int k, int l) const {
     return transitions_.get(k,l).weight;
   }
-  // Sets the transition probability from state k to state l.
-  void set_transition(int k, int l, float prob);
+  // Sets the transition from state k to state l to value w.
+  void set_transition(int k, int l, float w);
   // Removes the transition between state k and state l from the CRF.
   void erase_transition(int k, int l);
   // Returns true if there is a transition between state k and state l.
@@ -195,21 +196,21 @@ class CRF {
   sparse_matrix<Transition> transitions_;
   // Flag indicating if HMM transitions are log- or linspace
   bool transitions_logspace_;
+
+  friend class CRFTransitionAdaptor<Alphabet>;
 };  // class CRF
 
 template<class Alphabet>
 class CRFTransitionAdaptor {
  public:
   CRFTransitionAdaptor(CRF<Alphabet>* crf, int k, int l)
-      : crf_(crf), k_(k), l_(l)
-  {}
-
+      : crf_(crf), k_(k), l_(l) {}
   CRFTransitionAdaptor& operator= (float val) {
     crf_->set_transition(k_, l_, val);
     return *this;
   }
-
-  operator float() { return crf_->tr(k_, l_); }
+  operator float() { return crf_->transitions_.get(k_, l_).weight; }
+  Transition* operator& () { return &hmm_->transitions_.mutating_get(k_, l_); }
 
  private:
   CRF<Alphabet>* crf_;
@@ -225,9 +226,9 @@ class SamplingCRFStateInitializer : public CRFStateInitializer<Alphabet> {
   typedef typename profile_vector::const_iterator profile_iterator;
 
   SamplingCRFStateInitializer(profile_vector profiles,
-                           float sample_rate,
-                           const Pseudocounts<Alphabet>* pc = NULL,
-                           float pc_admixture = 1.0f)
+                              float sample_rate,
+                              const Pseudocounts<Alphabet>* pc = NULL,
+                              float pc_admixture = 1.0f)
       : profiles_(profiles),
         sample_rate_(sample_rate),
         pc_(pc),

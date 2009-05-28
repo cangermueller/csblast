@@ -33,12 +33,16 @@ template<class Alphabet>
 class HMMTransitionAdaptor;
 
 template<class Alphabet>
+class LibraryHMMStateInitializer;
+
+
+template<class Alphabet>
 class HMMStateInitializer {
  public:
   HMMStateInitializer() {}
   virtual ~HMMStateInitializer() {}
   virtual void Init(HMM<Alphabet>& hmm) const = 0;
-};
+};  // class HMMStateInitializer
 
 template<class Alphabet>
 class HMMTransitionInitializer {
@@ -46,7 +50,7 @@ class HMMTransitionInitializer {
   HMMTransitionInitializer() {}
   virtual ~HMMTransitionInitializer() {}
   virtual void Init(HMM<Alphabet>& hmm) const = 0;
-};
+};  // class HMMTransitionInitializer
 
 
 // A Hidden Markov Model that stores context information in the form of
@@ -206,21 +210,22 @@ class HMM {
   bool transitions_logspace_;
   // Flag indicating if HMM profile probabilities are in log- or linspace
   bool states_logspace_;
+
+  friend class HMMTransitionAdaptor<Alphabet>;
+  friend class LibraryHMMStateInitializer<Alphabet>;
 };  // class HMM
 
 template<class Alphabet>
 class HMMTransitionAdaptor {
  public:
   HMMTransitionAdaptor(HMM<Alphabet>* hmm, int k, int l)
-      : hmm_(hmm), k_(k), l_(l)
-  {}
-
+      : hmm_(hmm), k_(k), l_(l) {}
   HMMTransitionAdaptor& operator= (float val) {
     hmm_->set_transition(k_, l_, val);
     return *this;
   }
-
-  operator float() { return hmm_->tr(k_, l_); }
+  operator float() { return hmm_->transitions_.get(k_, l_).weight; }
+  Transition* operator& () { return &hmm_->transitions_.mutating_get(k_, l_); }
 
  private:
   HMM<Alphabet>* hmm_;
@@ -236,9 +241,9 @@ class SamplingHMMStateInitializer : public HMMStateInitializer<Alphabet> {
   typedef typename profile_vector::const_iterator profile_iterator;
 
   SamplingHMMStateInitializer(profile_vector profiles,
-                           float sample_rate,
-                           const Pseudocounts<Alphabet>* pc = NULL,
-                           float pc_admixture = 1.0f)
+                              float sample_rate,
+                              const Pseudocounts<Alphabet>* pc = NULL,
+                              float pc_admixture = 1.0f)
       : profiles_(profiles),
         sample_rate_(sample_rate),
         pc_(pc),

@@ -116,13 +116,13 @@ class CSTrainApp : public Application {
   // Runs the csbuild application.
   virtual int Run();
   // Parses command line options.
-  virtual void parse_options(GetOpt_pp* options);
+  virtual void ParseOptions(GetOpt_pp* options);
   // Prints options summary to stream.
-  virtual void print_options() const;
+  virtual void PrintOptions() const;
   // Prints short application description.
-  virtual void print_description() const;
+  virtual void PrintBanner() const;
   // Prints usage banner to stream.
-  virtual void print_banner() const;
+  virtual void PrintUsage() const;
   // Prints substitution matrix options.
   void PrintSubstitutionMatrixOptions() const;
   // Reads training data from infile.
@@ -145,7 +145,7 @@ class CSTrainApp : public Application {
 
 
 template<class Alphabet>
-void CSTrainApp<Alphabet>::parse_options(GetOpt_pp* options) {
+void CSTrainApp<Alphabet>::ParseOptions(GetOpt_pp* options) {
   *options >> Option('i', "infile", opts_.infile, opts_.infile);
   *options >> Option('o', "outfile", opts_.outfile, opts_.outfile);
   *options >> Option('d', "directory", opts_.directory, opts_.directory);
@@ -193,13 +193,13 @@ void CSTrainApp<Alphabet>::parse_options(GetOpt_pp* options) {
 }
 
 template<class Alphabet>
-void CSTrainApp<Alphabet>::print_description() const {
+void CSTrainApp<Alphabet>::PrintBanner() const {
   fputs("Train a context HMM on dataset of full-length profiles, alignments, "
         "or sequences.\n", stream());
 }
 
 template<class Alphabet>
-void CSTrainApp<Alphabet>::print_banner() const {
+void CSTrainApp<Alphabet>::PrintUsage() const {
   fputs("Usage: cstrain -i <infile> -K <num_states> [options]\n", stream());
   fputs("       cstrain -i <infile> -j <hmmfile> [options]\n", stream());
 }
@@ -220,7 +220,7 @@ void CSTrainApp<AminoAcid>::PrintSubstitutionMatrixOptions() const {
 }
 
 template<class Alphabet>
-void CSTrainApp<Alphabet>::print_options() const {
+void CSTrainApp<Alphabet>::PrintOptions() const {
   fprintf(stream(), "  %-30s %s\n", "-i, --infile <file>",
           "Path to input file with training alignments or profiles");
   fprintf(stream(), "  %-30s %s\n", "-o, --outfile <file>",

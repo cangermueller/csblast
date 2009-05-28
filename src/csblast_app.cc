@@ -98,13 +98,13 @@ class CSBlastApp : public Application {
   // Runs the csbuild application.
   virtual int Run();
   // Parses command line options.
-  virtual void parse_options(GetOpt_pp* options);
+  virtual void ParseOptions(GetOpt_pp* options);
   // Prints options summary to stream.
-  virtual void print_options() const;
+  virtual void PrintOptions() const;
   // Prints short application description.
-  virtual void print_description() const;
+  virtual void PrintBanner() const;
   // Prints usage banner to stream.
-  virtual void print_banner() const;
+  virtual void PrintUsage() const;
   // Initializes all class members for CSI-BLAST searches
   void Init();
   // Writes current PSSM as PSI-BLAST checkpoint to checkpointfile
@@ -135,7 +135,7 @@ class CSBlastApp : public Application {
 
 
 
-void CSBlastApp::parse_options(GetOpt_pp* options) {
+void CSBlastApp::ParseOptions(GetOpt_pp* options) {
   *options >> Option('i', "infile", opts_.infile, opts_.infile);
   *options >> Option('o', "outfile", opts_.outfile, opts_.outfile);
   *options >> Option('B', "alifile", opts_.ali_infile, opts_.ali_infile);
@@ -174,7 +174,7 @@ void CSBlastApp::parse_options(GetOpt_pp* options) {
   opts_.Validate();
 }
 
-void CSBlastApp::print_description() const {
+void CSBlastApp::PrintBanner() const {
   fputs("Search with an amino acid sequence against protein databases for locally\n"
         "similar sequences.\n"
         "Biegert, A. and Soding, J. (2009), Sequence context-specific profiles for\n"
@@ -182,12 +182,12 @@ void CSBlastApp::print_description() const {
         stream());
 }
 
-void CSBlastApp::print_banner() const {
+void CSBlastApp::PrintUsage() const {
   fputs("Usage: csblast -i <infile> -D <context data> --blast-path <blastpgp dir>"
         " [options] [blastpgp options]\n", stream());
 }
 
-void CSBlastApp::print_options() const {
+void CSBlastApp::PrintOptions() const {
   fprintf(stream(), "  %-30s %s\n", "-i, --infile <file>",
           "Input file with query sequence");
   fprintf(stream(), "  %-30s %s\n", "-D, --context-data <file>",

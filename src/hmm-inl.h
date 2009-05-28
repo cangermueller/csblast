@@ -91,13 +91,10 @@ void HMM<Alphabet>::InitTransitions(
 template<class Alphabet>
 inline void HMM<Alphabet>::set_transition(int k, int l, float prob) {
   if (transitions_.test(k,l)) {
-    // Transitions already set -> modify in place
-    Transition* tr = &transitions_[k][l];
-    tr->weight = prob;
-    AnchoredTransition* out_tr = &states_[k]->out_transitions_[l];
-    out_tr->weight = prob;
-    AnchoredTransition* in_tr = &states_[l]->in_transitions_[k];
-    in_tr->weight = prob;
+    // Transition is already set -> modify in place
+    (&transitions_[k][l])->weight = prob;
+    (&states_[k]->out_transitions_[l])->weight = prob;
+    (&states_[l]->in_transitions_[k])->weight = prob;
   } else {
     // Transitions unset -> insert into matrix and tables
     transitions_.set(k, l, Transition(k, l, prob));
@@ -464,7 +461,7 @@ void LibraryHMMStateInitializer<Alphabet>::Init(HMM<Alphabet>& hmm) const {
          !hmm.full(); ++it) {
     hmm.AddState(**it);
   }
-  hmm.set_states_logspace(lib_->logspace());
+  hmm.states_logspace_ = lib_->logspace();
   hmm.TransformStatesToLinSpace();
 
   if (!hmm.full())

@@ -33,7 +33,8 @@ CRF<Alphabet>::CRF(int num_states, int num_cols)
     : num_states_(num_states),
       num_cols_(num_cols),
       iterations_(0),
-      transitions_(num_states, num_states) {
+      transitions_(num_states, num_states),
+      transitions_logspace_(false) {
   Init();
 }
 
@@ -41,7 +42,8 @@ template<class Alphabet>
 CRF<Alphabet>::CRF(FILE* fin)
     : num_states_(0),
       num_cols_(0),
-      iterations_(0) {
+      iterations_(0),
+      transitions_logspace_(false) {
   Read(fin);
 }
 
@@ -53,7 +55,8 @@ CRF<Alphabet>::CRF(int num_states,
     : num_states_(num_states),
       num_cols_(num_cols),
       iterations_(0),
-      transitions_(num_states, num_states) {
+      transitions_(num_states, num_states),
+      transitions_logspace_(false) {
   Init();
   st_init.Init(this);
   tr_init.Init(this);
@@ -79,20 +82,17 @@ void CRF<Alphabet>::InitTransitions(
 }
 
 template<class Alphabet>
-inline void CRF<Alphabet>::set_transition(int k, int l, float prob) {
+inline void CRF<Alphabet>::set_transition(int k, int l, float w) {
   if (transitions_.test(k,l)) {
-    // Transitions already set -> modify in place
-    Transition* tr = &transitions_[k][l];
-    tr->weight = prob;
-    AnchoredTransition* out_tr = &states_[k]->out_transitions_[l];
-    out_tr->weight = prob;
-    AnchoredTransition* in_tr = &states_[l]->in_transitions_[k];
-    in_tr->weight = prob;
+    // Transition is already set -> modify in place
+    (&transitions_[k][l])->weight = w;
+    (&states_[k]->out_transitions_[l])->weight = w;
+    (&states_[l]->in_transitions_[k])->weight = w;
   } else {
     // Transitions unset -> insert into matrix and tables
-    transitions_.set(k, l, Transition(k, l, prob));
-    states_[k]->out_transitions_.set(l, AnchoredTransition(l, prob));
-    states_[l]->in_transitions_.set(k, AnchoredTransition(k, prob));
+    transitions_.set(k, l, Transition(k, l, w));
+    states_[k]->out_transitions_.set(l, AnchoredTransition(l, w));
+    states_[l]->in_transitions_.set(k, AnchoredTransition(k, w));
   }
 }
 
