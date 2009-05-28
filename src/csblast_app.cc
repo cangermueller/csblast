@@ -48,7 +48,7 @@ struct CSBlastAppOptions {
     weight_decay        = 0.9;
     blast_path          = "";
     iterations          = 1;
-    inclusion           = 0.002;
+    inclusion           = 0.0004;
     best                = false;
   }
 
@@ -183,8 +183,8 @@ void CSBlastApp::print_description() const {
 }
 
 void CSBlastApp::print_banner() const {
-  fputs("Usage: csblast -i <infile> -D <context data> [options] [blastpgp options]\n",
-        stream());
+  fputs("Usage: csblast -i <infile> -D <context data> --blast-path <blastpgp dir>"
+        " [options] [blastpgp options]\n", stream());
 }
 
 void CSBlastApp::print_options() const {
@@ -200,7 +200,7 @@ void CSBlastApp::print_options() const {
           "Protein database to search against (def=nr)");
   fprintf(stream(), "  %-30s %s (def=%i)\n", "-j, --iterations [1,inf[",
           "Maximum number of iterations to use in CSI-BLAST", opts_.iterations);
-  fprintf(stream(), "  %-30s %s (def=%-.3f)\n", "-h, --inclusion [0,inf[",
+  fprintf(stream(), "  %-30s %s (def=%-.4f)\n", "-h, --inclusion [0,inf[",
           "E-value threshold for inclusion in  CSI-BLAST", opts_.inclusion);
   fprintf(stream(), "  %-30s %s (def=%-.2f)\n", "-x, --pc-admix [0,1]",
           "Pseudocount admix for context-specific pseudocounts",
@@ -219,7 +219,7 @@ void CSBlastApp::print_options() const {
   fprintf(stream(), "  %-30s %s\n", "    --best",
           "Include only the best HSP per hit in alignment (def=off)");
   fprintf(stream(), "  %-30s %s\n", "    --blast-path <path>",
-          "Set path to directory with PSI-BLAST executable");
+          "Path to directory with blastpgp executable (or set BLAST_PATH)");
 }
 
 int CSBlastApp::Run() {

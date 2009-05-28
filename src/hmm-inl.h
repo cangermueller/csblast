@@ -76,13 +76,13 @@ void HMM<Alphabet>::Init() {
 }
 
 template<class Alphabet>
-void HMM<Alphabet>::init_states(const HMMStateInitializer<Alphabet>& st_init) {
+void HMM<Alphabet>::InitStates(const HMMStateInitializer<Alphabet>& st_init) {
   Clear();
   st_init.Init(*this);
 }
 
 template<class Alphabet>
-void HMM<Alphabet>::init_transitions(
+void HMM<Alphabet>::InitTransitions(
     const HMMTransitionInitializer<Alphabet>& tr_init) {
   ClearTransitions();
   tr_init.Init(*this);
@@ -128,7 +128,7 @@ void HMM<Alphabet>::ClearTransitions() {
 }
 
 template<class Alphabet>
-inline int HMM<Alphabet>::AddState(const Profile<Alphabet>& profile) {
+int HMM<Alphabet>::AddState(const Profile<Alphabet>& profile) {
   if (full())
     throw Exception("Unable to add state: the HMM contains already %i states!",
                     num_states());
@@ -145,7 +145,7 @@ inline int HMM<Alphabet>::AddState(const Profile<Alphabet>& profile) {
 }
 
 template<class Alphabet>
-inline int HMM<Alphabet>::AddState(const ContextProfile<Alphabet>& profile) {
+int HMM<Alphabet>::AddState(const ContextProfile<Alphabet>& profile) {
   if (full())
     throw Exception("Unable to add state: the HMM contains already %i states!",
                     num_states());

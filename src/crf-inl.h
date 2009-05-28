@@ -66,13 +66,13 @@ void CRF<Alphabet>::Init() {
 }
 
 template<class Alphabet>
-void CRF<Alphabet>::init_states(const CRFStateInitializer<Alphabet>& st_init) {
+void CRF<Alphabet>::InitStates(const CRFStateInitializer<Alphabet>& st_init) {
   Clear();
   st_init.Init(*this);
 }
 
 template<class Alphabet>
-void CRF<Alphabet>::init_transitions(
+void CRF<Alphabet>::InitTransitions(
     const CRFTransitionInitializer<Alphabet>& tr_init) {
   ClearTransitions();
   tr_init.Init(*this);
@@ -118,7 +118,7 @@ void CRF<Alphabet>::ClearTransitions() {
 }
 
 template<class Alphabet>
-inline int CRF<Alphabet>::AddState(const Profile<Alphabet>& profile) {
+int CRF<Alphabet>::AddState(const Profile<Alphabet>& profile) {
   if (full())
     throw Exception("Unable to add state: the CRF contains already %i states!",
                     num_states());
@@ -128,64 +128,9 @@ inline int CRF<Alphabet>::AddState(const Profile<Alphabet>& profile) {
 
   shared_ptr< CRFState<Alphabet> > state_ptr(
       new CRFState<Alphabet>(states_.size(), num_states(), profile));
-  state_ptr->set_prior(1.0f / num_states());
   states_.push_back(state_ptr);
 
   return states_.size() - 1;
-}
-
-template<class Alphabet>
-inline int CRF<Alphabet>::AddState(const ContextProfile<Alphabet>& profile) {
-  if (full())
-    throw Exception("Unable to add state: the CRF contains already %i states!",
-                    num_states());
-  if (profile.num_cols() != num_cols())
-    throw Exception("Profile to add as state has %i columns but should have %i!",
-                    profile.num_cols(), num_cols());
-
-  shared_ptr< CRFState<Alphabet> > state(
-      new CRFState<Alphabet>(states_.size(), num_states(), profile));
-  states_.push_back(state);
-
-  return states_.size() - 1;
-}
-
-template<class Alphabet>
-inline void CRF<Alphabet>::TransformTransitionsToLogSpace() {
-  if (!transitions_logspace()) {
-    for (TransitionIter ti = transitions_begin();
-         ti != transitions_end(); ++ti)
-      ti->weight = fast_log2(ti->weight);
-    transitions_logspace_ = true;
-  }
-}
-
-template<class Alphabet>
-inline void CRF<Alphabet>::TransformTransitionsToLinSpace() {
-  if (transitions_logspace()) {
-    for (TransitionIter ti = transitions_begin();
-         ti != transitions_end(); ++ti)
-      ti->weight = fast_pow2(ti->weight);
-    transitions_logspace_ = false;
-  }
-}
-
-template<class Alphabet>
-inline void CRF<Alphabet>::TransformStatesToLogSpace() {
-  if (!states_logspace()) {
-    for (StateIter si = states_begin(); si != states_end(); ++si)
-      (*si)->TransformToLogSpace();
-    states_logspace_ = true;
-  }
-}
-
-template<class Alphabet>
-inline void CRF<Alphabet>::TransformStatesToLinSpace() {
-  if (states_logspace()) {
-    for (StateIter si = states_begin(); si != states_end(); ++si)
-      (*si)->TransformToLinSpace();
-    states_logspace_ = false;
-  }
 }
 
 template<class Alphabet>
@@ -230,20 +175,6 @@ void CRF<Alphabet>::Read(FILE* fin) {
   } else {
     throw Exception("CRF does not contain 'ITERS' record!");
   }
-  // Read transitions logspace
-  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "TRLOG")) {
-    ptr = buffer;
-    transitions_logspace_ = strtoi(ptr) == 1;
-  } else {
-    throw Exception("hMM does not contain 'TRLOG' record!");
-  }
-  // Read states logspace
-  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "STLOG")) {
-    ptr = buffer;
-    states_logspace_ = strtoi(ptr) == 1;
-  } else {
-    throw Exception("Bad format: CRF does not contain 'STLOG' record!");
-  }
 
   Init();
 
@@ -258,18 +189,13 @@ void CRF<Alphabet>::Read(FILE* fin) {
 
   // Read CRF transitions
   int k, l;
-  float tr_prob;
   fgetline(buffer, kBufferSize, fin);  // skip description line
   while (fgetline(buffer, kBufferSize, fin)
          && buffer[0] != '/' && buffer[1] != '/') {
     ptr = buffer;
     k = strtoi(ptr);
     l = strtoi(ptr);
-    if (transitions_logspace())
-      tr_prob = static_cast<float>(-strtoi_ast(ptr)) / kLogScale;
-    else
-      tr_prob = fast_pow2(static_cast<float>(-strtoi_ast(ptr)) / kLogScale);
-    set_transition(k, l, tr_prob);
+    set_transition(k, l, static_cast<float>(-strtoi_ast(ptr)) / kLogScale);
   }
   if (num_transitions() != ntr)
     throw Exception("CRF has %i transition records but should have %i!",
@@ -286,8 +212,6 @@ void CRF<Alphabet>::Write(FILE* fout) const {
   fprintf(fout, "NTRANS\t%i\n", num_transitions());
   fprintf(fout, "NCOLS\t%i\n", num_cols());
   fprintf(fout, "ITERS\t%i\n", iterations());
-  fprintf(fout, "TRLOG\t%i\n", transitions_logspace() ? 1 : 0);
-  fprintf(fout, "STLOG\t%i\n", states_logspace() ? 1 : 0);
 
   // Write states
   for (ConstStateIter si = states_begin(); si != states_end(); ++si)

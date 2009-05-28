@@ -76,9 +76,9 @@ class CRF {
   virtual ~CRF() {}
 
   // Initializes CRF states with the provided initializer.
-  void init_states(const CRFStateInitializer<Alphabet>& st_init);
+  void InitStates(const CRFStateInitializer<Alphabet>& st_init);
   // Initializes CRF transitions with the provided initializer.
-  void init_transitions(const CRFTransitionInitializer<Alphabet>& tr_init);
+  void InitTransitions(const CRFTransitionInitializer<Alphabet>& tr_init);
   // Returns true if all states have been fully assembled.
   bool full() const { return static_cast<int>(states_.size()) == num_states_; }
   // Returns the number of states in the CRF
@@ -130,8 +130,14 @@ class CRF {
   // Adds a states to the CRF initialized with given profile and returns the
   // index of the new state.
   int AddState(const Profile<Alphabet>& profile);
+  // Returns true if transitions are in logspace.
+  bool transitions_logspace() const { return transitions_logspace_; }
   // Increments the training iteration counter.
   void increment_iterations() { ++iterations_; }
+  // Transforms transitions to logspace.
+  void TransformTransitionsToLogSpace();
+  // Transforms transitions to linspace.
+  void TransformTransitionsToLinSpace();
   // Writes the CRF in serialization format to output stream.
   void Write(FILE* fout) const;
   // Returns an iterator to a list of pointers of states.
@@ -187,7 +193,9 @@ class CRF {
   std::vector< shared_ptr< CRFState<Alphabet> > > states_;
   // Sparse matrix with state transitions.
   sparse_matrix<Transition> transitions_;
-};  // CRF
+  // Flag indicating if HMM transitions are log- or linspace
+  bool transitions_logspace_;
+};  // class CRF
 
 template<class Alphabet>
 class CRFTransitionAdaptor {
@@ -207,7 +215,7 @@ class CRFTransitionAdaptor {
   CRF<Alphabet>* crf_;
   int k_;
   int l_;
-};
+};  // class CRFTransitionAdapter
 
 template<class Alphabet>
 class SamplingCRFStateInitializer : public CRFStateInitializer<Alphabet> {
@@ -239,43 +247,7 @@ class SamplingCRFStateInitializer : public CRFStateInitializer<Alphabet> {
   const Pseudocounts<Alphabet>* pc_;
   // Constant pseudocount admixture for state profiles.
   float pc_admixture_;
-};
-
-// Compare function to sort states in descending prior probability.
-template<class Alphabet>
-bool PriorCompare(const shared_ptr< ContextProfile<Alphabet> >& lhs,
-                  const shared_ptr< ContextProfile<Alphabet> >& rhs);
-
-template<class Alphabet>
-class LibraryCRFStateInitializer : public CRFStateInitializer<Alphabet> {
- public:
-  LibraryCRFStateInitializer(const ProfileLibrary<Alphabet>* lib)
-      : lib_(lib) {}
-
-  virtual ~LibraryCRFStateInitializer() {};
-  virtual void Init(CRF<Alphabet>& crf) const;
-
- private:
-  // Profile library of context profiles.
-  const ProfileLibrary<Alphabet>* lib_;
-};
-
-template<class Alphabet>
-class HomogeneousCRFTransitionInitializer
-    : public CRFTransitionInitializer<Alphabet> {
- public:
-  HomogeneousCRFTransitionInitializer() {}
-  virtual ~HomogeneousCRFTransitionInitializer() {}
-
-  virtual void Init(CRF<Alphabet>& crf) const {
-    float prob = 1.0f / crf.num_states();
-    for (int k = 0; k < crf.num_states(); ++k) {
-      for (int l = 0; l < crf.num_states(); ++l) {
-        crf(k,l) = prob;
-      }
-    }
-  }
-};
+};  // class SamplingCRFStateInitializer
 
 template<class Alphabet>
 class RandomCRFTransitionInitializer : public CRFTransitionInitializer<Alphabet> {
@@ -291,7 +263,7 @@ class RandomCRFTransitionInitializer : public CRFTransitionInitializer<Alphabet>
           static_cast<float>(rand()) / (static_cast<float>(RAND_MAX) + 1.0f);
     normalize_transitions(crf);
   }
-};
+};  // class RandomCRFTransitionInitializer
 
 template<class Alphabet>
 class CoEmissionCRFTransitionInitializer
@@ -309,7 +281,7 @@ class CoEmissionCRFTransitionInitializer
   CoEmission<Alphabet> co_emission_;
   // Minimal co-emission score for inclusion in transition set
   float score_thresh_;
-};
+};  // class CoEmissionCRFTransitionInitializer
 
 }  // namespace cs
 

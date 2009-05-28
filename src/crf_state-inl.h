@@ -6,6 +6,7 @@
 #include "crf_state.h"
 
 #include <cassert>
+#include <climits>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -116,10 +117,7 @@ void CRFState<Alphabet>::ReadBody(FILE* fin) {
     ptr = buffer;
     i = strtoi(ptr) - 1;
     for (int a = 0; a < alph_size; ++a) {
-      if (logspace_)
-        weights_[i][a] = static_cast<float>(-strtoi_ast(ptr)) / kLogScale;
-      else
-        weights_[i][a] = fast_pow2(static_cast<float>(-strtoi_ast(ptr)) / kLogScale);
+      weights_[i][a] = static_cast<float>(-strtoi_ast(ptr)) / kLogScale;
     }
   }
   if (i != num_cols() - 1)
@@ -151,7 +149,10 @@ void CRFState<Alphabet>::WriteBody(FILE* fout) const {
   for (int i = 0; i < num_cols(); ++i) {
     fprintf(fout, "%i", i+1);
     for (int a = 0; a < alphabet_size(); ++a) {
-      fprintf(fout, "\t%i", -iround(weights_[i][a] * kLogScale));
+      if (weights_[i][a] == -INFINITY)
+        fputs("\t*", fout);
+      else
+        fprintf(fout, "\t%i", -iround(weights_[i][a] * kLogScale));
     }
     fputc('\n', fout);
   }

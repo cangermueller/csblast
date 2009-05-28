@@ -76,9 +76,9 @@ class HMM {
   virtual ~HMM() {}
 
   // Initializes HMM states with the provided initializer.
-  void init_states(const HMMStateInitializer<Alphabet>& st_init);
+  void InitStates(const HMMStateInitializer<Alphabet>& st_init);
   // Initializes HMM transitions with the provided initializer.
-  void init_transitions(const HMMTransitionInitializer<Alphabet>& tr_init);
+  void InitTransitions(const HMMTransitionInitializer<Alphabet>& tr_init);
   // Returns true if all states have been fully assembled.
   bool full() const { return static_cast<int>(states_.size()) == num_states_; }
   // Returns the number of states in the HMM
@@ -206,7 +206,7 @@ class HMM {
   bool transitions_logspace_;
   // Flag indicating if HMM profile probabilities are in log- or linspace
   bool states_logspace_;
-};  // HMM
+};  // class HMM
 
 template<class Alphabet>
 class HMMTransitionAdaptor {
@@ -226,7 +226,7 @@ class HMMTransitionAdaptor {
   HMM<Alphabet>* hmm_;
   int k_;
   int l_;
-};
+};  // class HMMTransitionAdaptor
 
 template<class Alphabet>
 class SamplingHMMStateInitializer : public HMMStateInitializer<Alphabet> {
@@ -258,7 +258,7 @@ class SamplingHMMStateInitializer : public HMMStateInitializer<Alphabet> {
   const Pseudocounts<Alphabet>* pc_;
   // Constant pseudocount admixture for state profiles.
   float pc_admixture_;
-};
+};  // class SamplingHMMStateInitializer
 
 // Compare function to sort states in descending prior probability.
 template<class Alphabet>
@@ -277,7 +277,7 @@ class LibraryHMMStateInitializer : public HMMStateInitializer<Alphabet> {
  private:
   // Profile library of context profiles.
   const ProfileLibrary<Alphabet>* lib_;
-};
+};  // class LibraryHMMStateInitializer
 
 template<class Alphabet>
 class HomogeneousHMMTransitionInitializer
@@ -294,7 +294,7 @@ class HomogeneousHMMTransitionInitializer
       }
     }
   }
-};
+};  // class HomogeneousHMMTransitionInitializer
 
 template<class Alphabet>
 class RandomHMMTransitionInitializer : public HMMTransitionInitializer<Alphabet> {
@@ -310,7 +310,7 @@ class RandomHMMTransitionInitializer : public HMMTransitionInitializer<Alphabet>
           static_cast<float>(rand()) / (static_cast<float>(RAND_MAX) + 1.0f);
     normalize_transitions(hmm);
   }
-};
+};  // class RandomHMMTransitionInitializer
 
 template<class Alphabet>
 class CoEmissionHMMTransitionInitializer
@@ -328,7 +328,7 @@ class CoEmissionHMMTransitionInitializer
   CoEmission<Alphabet> co_emission_;
   // Minimal co-emission score for inclusion in transition set
   float score_thresh_;
-};
+}; // class CoEmissionHMMTransitionInitializer
 
 }  // namespace cs
 

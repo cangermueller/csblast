@@ -35,7 +35,7 @@ class ForwardBackwardAlgorithmTest : public testing::Test {
       Profile<AminoAcid> p(profile, i, 1);
       hmm_.AddState(p);
     }
-    hmm_.init_transitions(HomogeneousHMMTransitionInitializer<AminoAcid>());
+    hmm_.InitTransitions(HomogeneousHMMTransitionInitializer<AminoAcid>());
     hmm_.TransformStatesToLogSpace();
   }
 
@@ -69,7 +69,7 @@ TEST_F(ForwardBackwardAlgorithmTest, 1Q7L) {
     Profile<AminoAcid> p(profile, i, 1);
     hmm.AddState(p);
   }
-  hmm.init_transitions(HomogeneousHMMTransitionInitializer<AminoAcid>());
+  hmm.InitTransitions(HomogeneousHMMTransitionInitializer<AminoAcid>());
   hmm.TransformStatesToLogSpace();
 
   MultEmission<AminoAcid> emission(1);
