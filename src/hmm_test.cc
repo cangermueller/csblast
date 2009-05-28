@@ -103,7 +103,7 @@ TEST_F(HMMTest, NormalizeTransitions) {
   hmm(1,2) = 0.9f;
   hmm(2,2) = 0.6f;
 
-  normalize_transitions(hmm);
+  NormalizeTransitions(hmm);
 
   EXPECT_FLOAT_EQ(0.5f, hmm(0,1));
   EXPECT_FLOAT_EQ(0.5f, hmm(0,2));

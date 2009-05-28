@@ -134,6 +134,26 @@ int CRF<Alphabet>::AddState(const Profile<Alphabet>& profile) {
 }
 
 template<class Alphabet>
+inline void CRF<Alphabet>::TransformTransitionsToLogSpace() {
+  if (!transitions_logspace()) {
+    for (TransitionIter ti = transitions_begin();
+         ti != transitions_end(); ++ti)
+      ti->weight = fast_log2(ti->weight);
+    transitions_logspace_ = true;
+  }
+}
+
+template<class Alphabet>
+inline void CRF<Alphabet>::TransformTransitionsToLinSpace() {
+  if (transitions_logspace()) {
+    for (TransitionIter ti = transitions_begin();
+         ti != transitions_end(); ++ti)
+      ti->weight = fast_pow2(ti->weight);
+    transitions_logspace_ = false;
+  }
+}
+
+template<class Alphabet>
 void CRF<Alphabet>::Read(FILE* fin) {
   LOG(DEBUG1) << "Reading CRF from stream ...";
 
@@ -175,6 +195,13 @@ void CRF<Alphabet>::Read(FILE* fin) {
   } else {
     throw Exception("CRF does not contain 'ITERS' record!");
   }
+  // Read transitions logspace
+  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "TRLOG")) {
+    ptr = buffer;
+    transitions_logspace_ = strtoi(ptr) == 1;
+  } else {
+    throw Exception("CRF does not contain 'TRLOG' record!");
+  }
 
   Init();
 
@@ -189,13 +216,18 @@ void CRF<Alphabet>::Read(FILE* fin) {
 
   // Read CRF transitions
   int k, l;
+  float w;
   fgetline(buffer, kBufferSize, fin);  // skip description line
   while (fgetline(buffer, kBufferSize, fin)
          && buffer[0] != '/' && buffer[1] != '/') {
     ptr = buffer;
     k = strtoi(ptr);
     l = strtoi(ptr);
-    set_transition(k, l, static_cast<float>(-strtoi_ast(ptr)) / kLogScale);
+    if (transitions_logspace())
+      w = static_cast<float>(-strtoi_ast(ptr)) / kLogScale;
+    else
+      w = fast_pow2(static_cast<float>(-strtoi_ast(ptr)) / kLogScale);
+    set_transition(k, l, w);
   }
   if (num_transitions() != ntr)
     throw Exception("CRF has %i transition records but should have %i!",
@@ -212,6 +244,7 @@ void CRF<Alphabet>::Write(FILE* fout) const {
   fprintf(fout, "NTRANS\t%i\n", num_transitions());
   fprintf(fout, "NCOLS\t%i\n", num_cols());
   fprintf(fout, "ITERS\t%i\n", iterations());
+  fprintf(fout, "TRLOG\t%i\n", transitions_logspace() ? 1 : 0);
 
   // Write states
   for (ConstStateIter si = states_begin(); si != states_end(); ++si)
@@ -223,12 +256,11 @@ void CRF<Alphabet>::Write(FILE* fout) const {
        ti != transitions_end(); ++ti) {
     fprintf(fout, "%i\t%i\t",
             static_cast<int>(ti->source), static_cast<int>(ti->target));
-    float log_p =
-      transitions_logspace() ? ti->weight : fast_log2(ti->weight);
-    if (log_p == -INFINITY)
+    float w = transitions_logspace() ? ti->weight : fast_log2(ti->weight);
+    if (w == -INFINITY)
       fputs("*\n", fout);
     else
-      fprintf(fout, "%i\n", -iround(log_p * kLogScale));
+      fprintf(fout, "%i\n", -iround(w * kLogScale));
   }
   fputs("//\n", fout);
 }
@@ -256,10 +288,9 @@ void CRF<Alphabet>::Print(std::ostream& out) const {
     for (int l = 0; l < num_states(); ++l) {
       if (test_transition(k,l)) {
         if (transitions_logspace())
-          out << strprintf("%6.2f  ",
-                           100.0f * fast_pow2(tr(k,l)));
+          out << strprintf("%6.2f  ", tr(k,l));
         else
-          out << strprintf("%6.2f  ", 100.0f * tr(k,l));
+          out << strprintf("%6.2f  ", fast_log2(tr(k,l)));
       } else {
         out << "     *  ";
       }
@@ -268,45 +299,20 @@ void CRF<Alphabet>::Print(std::ostream& out) const {
   }
 }
 
-// Normalizes transition probabilities to one.
+
+// Removes all transitions with weight below or equal to given threshold.
 template<class Alphabet>
-void normalize_transitions(CRF<Alphabet>& crf) {
-  const bool logspace = crf.transitions_logspace();
-  if (logspace) crf.TransformTransitionsToLinSpace();
-
-  for (int k = 0; k < crf.num_states(); ++k) {
-    float sum = 0.0f;
-    for (int l = 0; l < crf.num_states(); ++l)
-      if (crf.test_transition(k,l)) sum += crf(k,l);
-
-    if (sum != 0.0f) {
-      float fac = 1.0f / sum;
-      for (int l = 0; l < crf.num_states(); ++l)
-        if (crf.test_transition(k,l)) crf(k,l) = crf(k,l) * fac;
-    } else {
-      throw Exception("Unable to normalize: state %i has no out-transitions!", k);
-    }
-  }
-
-  if (logspace) crf.TransformTransitionsToLogSpace();
-}
-
-// Removes all transitions with probability below or equal to given threshold.
-template<class Alphabet>
-void sparsify(CRF<Alphabet>& crf, float threshold) {
-  const bool logspace = crf.transitions_logspace();
-  if (logspace) crf.TransformTransitionsToLinSpace();
+void Sparsify(CRF<Alphabet>& crf, float threshold) {
+  const bool linspace = crf.transitions_logspace();
+  if (linspace) crf.TransformTransitionsToLogSpace();
 
   for (int k = 0; k < crf.num_states(); ++k)
     for (int l = 0; l < crf.num_states(); ++l)
       if (crf.test_transition(k,l) && crf(k,l) <= threshold)
         crf.erase_transition(k,l);
 
-  normalize_transitions(crf);
-
-  if (logspace) crf.TransformTransitionsToLogSpace();
+  if (linspace) crf.TransformTransitionsToLinSpace();
 }
-
 
 template<class Alphabet>
 void SamplingCRFStateInitializer<Alphabet>::Init(CRF<Alphabet>& crf) const {
@@ -401,7 +407,7 @@ void CoEmissionCRFTransitionInitializer<Alphabet>::Init(CRF<Alphabet>& crf) cons
         crf(k,l) = score - score_thresh_;
     }
   }
-  normalize_transitions(crf);
+  NormalizeTransitions(crf);
 }
 
 }  // namespace cs

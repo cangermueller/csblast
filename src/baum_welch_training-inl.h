@@ -277,7 +277,7 @@ void BaumWelchTraining<Alphabet, Subject>::MaximizationStep() {
     LOG(INFO) << strprintf("tr_sum = %-7.2g", tr_sum);
 
     if (tr_sum != 0.0) {
-      float tr_fac = 1.0f / static_cast<float>(tr_sum);
+      float tr_fac = 1.0 / tr_sum;
       LOG(INFO) << strprintf("tr_fac = %-7.2g", tr_fac);
       for (int l = 0; l < num_states; ++l) {
         if (transition_stats_.test(k,l)) {

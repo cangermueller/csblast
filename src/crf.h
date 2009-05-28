@@ -262,7 +262,7 @@ class RandomCRFTransitionInitializer : public CRFTransitionInitializer<Alphabet>
       for (int l = 0; l < crf.num_states(); ++l)
         crf(k,l) =
           static_cast<float>(rand()) / (static_cast<float>(RAND_MAX) + 1.0f);
-    normalize_transitions(crf);
+    NormalizeTransitions(crf);
   }
 };  // class RandomCRFTransitionInitializer
 

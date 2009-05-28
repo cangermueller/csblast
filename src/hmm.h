@@ -313,7 +313,7 @@ class RandomHMMTransitionInitializer : public HMMTransitionInitializer<Alphabet>
       for (int l = 0; l < hmm.num_states(); ++l)
         hmm(k,l) =
           static_cast<float>(rand()) / (static_cast<float>(RAND_MAX) + 1.0f);
-    normalize_transitions(hmm);
+    NormalizeTransitions(hmm);
   }
 };  // class RandomHMMTransitionInitializer
 

@@ -242,7 +242,7 @@ void HMM<Alphabet>::Read(FILE* fin) {
     ptr = buffer;
     transitions_logspace_ = strtoi(ptr) == 1;
   } else {
-    throw Exception("hMM does not contain 'TRLOG' record!");
+    throw Exception("HMM does not contain 'TRLOG' record!");
   }
   // Read states logspace
   if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "STLOG")) {
@@ -265,7 +265,7 @@ void HMM<Alphabet>::Read(FILE* fin) {
 
   // Read HMM transitions
   int k, l;
-  float tr_prob;
+  float w;
   fgetline(buffer, kBufferSize, fin);  // skip description line
   while (fgetline(buffer, kBufferSize, fin)
          && buffer[0] != '/' && buffer[1] != '/') {
@@ -273,10 +273,10 @@ void HMM<Alphabet>::Read(FILE* fin) {
     k = strtoi(ptr);
     l = strtoi(ptr);
     if (transitions_logspace())
-      tr_prob = static_cast<float>(-strtoi_ast(ptr)) / kLogScale;
+      w = static_cast<float>(-strtoi_ast(ptr)) / kLogScale;
     else
-      tr_prob = fast_pow2(static_cast<float>(-strtoi_ast(ptr)) / kLogScale);
-    set_transition(k, l, tr_prob);
+      w = fast_pow2(static_cast<float>(-strtoi_ast(ptr)) / kLogScale);
+    set_transition(k, l, w);
   }
   if (num_transitions() != ntr)
     throw Exception("HMM has %i transition records but should have %i!",
@@ -306,12 +306,11 @@ void HMM<Alphabet>::Write(FILE* fout) const {
        ti != transitions_end(); ++ti) {
     fprintf(fout, "%i\t%i\t",
             static_cast<int>(ti->source), static_cast<int>(ti->target));
-    float log_p =
-      transitions_logspace() ? ti->weight : fast_log2(ti->weight);
-    if (log_p == -INFINITY)
+    float w = transitions_logspace() ? ti->weight : fast_log2(ti->weight);
+    if (w == -INFINITY)
       fputs("*\n", fout);
     else
-      fprintf(fout, "%i\n", -iround(log_p * kLogScale));
+      fprintf(fout, "%i\n", -iround(w * kLogScale));
   }
   fputs("//\n", fout);
 }
@@ -351,9 +350,10 @@ void HMM<Alphabet>::Print(std::ostream& out) const {
   }
 }
 
+
 // Normalizes transition probabilities to one.
 template<class Alphabet>
-void normalize_transitions(HMM<Alphabet>& hmm) {
+void NormalizeTransitions(HMM<Alphabet>& hmm) {
   const bool logspace = hmm.transitions_logspace();
   if (logspace) hmm.TransformTransitionsToLinSpace();
 
@@ -376,7 +376,7 @@ void normalize_transitions(HMM<Alphabet>& hmm) {
 
 // Removes all transitions with probability below or equal to given threshold.
 template<class Alphabet>
-void sparsify(HMM<Alphabet>& hmm, float threshold) {
+void Sparsify(HMM<Alphabet>& hmm, float threshold) {
   const bool logspace = hmm.transitions_logspace();
   if (logspace) hmm.TransformTransitionsToLinSpace();
 
@@ -385,7 +385,7 @@ void sparsify(HMM<Alphabet>& hmm, float threshold) {
       if (hmm.test_transition(k,l) && hmm(k,l) <= threshold)
         hmm.erase_transition(k,l);
 
-  normalize_transitions(hmm);
+  NormalizeTransitions(hmm);
 
   if (logspace) hmm.TransformTransitionsToLogSpace();
 }
@@ -484,7 +484,7 @@ void CoEmissionHMMTransitionInitializer<Alphabet>::Init(HMM<Alphabet>& hmm) cons
         hmm(k,l) = score - score_thresh_;
     }
   }
-  normalize_transitions(hmm);
+  NormalizeTransitions(hmm);
 }
 
 }  // namespace cs
