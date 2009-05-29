@@ -38,8 +38,7 @@ struct ClusteringOptions : public ExpectationMaximizationOptions {
 };
 
 // Encapsulation of expectation-maximization clustering.
-template< class Alphabet,
-          template<class A> class Subject >
+template< class Alphabet, template<class> class Subject >
 class Clustering : public ExpectationMaximization<Alphabet, Subject> {
  public:
   typedef typename std::vector< shared_ptr< Subject<Alphabet> > > data_vector;
@@ -103,8 +102,7 @@ class Clustering : public ExpectationMaximization<Alphabet, Subject> {
 };
 
 
-template< class Alphabet,
-          template<class A> class Subject >
+template< class Alphabet, template<class> class Subject >
 class ClusteringProgressTable : public ProgressTable {
  public:
   ClusteringProgressTable(const Clustering<Alphabet, Subject>* clustering,
@@ -113,9 +111,9 @@ class ClusteringProgressTable : public ProgressTable {
 
   virtual ~ClusteringProgressTable() {}
 
-  virtual void print_header();
-  virtual void print_row_begin();
-  virtual void print_row_end();
+  virtual void PrintHeader();
+  virtual void PrintRowBegin();
+  virtual void PrintRowEnd();
 
  protected:
   const Clustering<Alphabet, Subject>* clustering_;

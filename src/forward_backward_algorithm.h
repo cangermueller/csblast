@@ -79,8 +79,7 @@ struct ForwardBackwardMatrices {
 
 
 // Forward-Backward algorithm encapsulation.
-template< class Alphabet,
-          template<class A> class Subject >
+template< class Alphabet, template<class> class Subject >
 void ForwardBackwardAlgorithm(const HMM<Alphabet>& hmm,
                                 const Subject<Alphabet>& subject,
                                 const MultEmission<Alphabet>& emission,
@@ -93,8 +92,7 @@ void ForwardBackwardAlgorithm(const HMM<Alphabet>& hmm,
   BackwardAlgorithm(hmm, subject, fbm);
 }
 
-template< class Alphabet,
-          template<class A> class Subject >
+template< class Alphabet, template<class> class Subject >
 void ForwardAlgorithm(const HMM<Alphabet>& hmm,
                        const Subject<Alphabet>& subject,
                        const MultEmission<Alphabet>& emission,
@@ -164,8 +162,7 @@ void ForwardAlgorithm(const HMM<Alphabet>& hmm,
   LOG(INFO) << strprintf("log(L) = %-7.2g", m.log_likelihood);
 }
 
-template< class Alphabet,
-          template<class A> class Subject >
+template< class Alphabet, template<class> class Subject >
 void BackwardAlgorithm(const HMM<Alphabet>& hmm,
                         const Subject<Alphabet>& subject,
                         ForwardBackwardMatrices* fbm) {

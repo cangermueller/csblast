@@ -24,6 +24,7 @@ Todo:
 * BaumWelchTraining: replace emission_stats profiles with vector< matrix<float> >
   and sparse_matrix<float> transition_stats with sparse_matrix<Transition>
 * SetDefaults() for BaumWelchOptions instead of setting defaults in constructor
+* put "" around -d command line argument in CSBlast
 
 Someday:
 * Unified validation "framework" for Option classes

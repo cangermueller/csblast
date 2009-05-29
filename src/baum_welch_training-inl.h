@@ -20,8 +20,7 @@
 
 namespace cs {
 
-template< class Alphabet,
-          template<class A> class Subject >
+template< class Alphabet, template<class> class Subject >
 BaumWelchTraining<Alphabet, Subject>::BaumWelchTraining(
     const BaumWelchOptions& opts,
     const data_vector& data,
@@ -37,8 +36,7 @@ BaumWelchTraining<Alphabet, Subject>::BaumWelchTraining(
   Init();
 }
 
-template< class Alphabet,
-          template<class A> class Subject >
+template< class Alphabet, template<class> class Subject >
 BaumWelchTraining<Alphabet, Subject>::BaumWelchTraining(
     const BaumWelchOptions& opts,
     const data_vector& data,
@@ -56,14 +54,12 @@ BaumWelchTraining<Alphabet, Subject>::BaumWelchTraining(
   Init();
 }
 
-template< class Alphabet,
-          template<class A> class Subject >
+template< class Alphabet, template<class> class Subject >
 BaumWelchTraining<Alphabet, Subject>::~BaumWelchTraining() {
   if (progress_table_) delete progress_table_;
 }
 
-template< class Alphabet,
-          template<class A> class Subject >
+template< class Alphabet, template<class> class Subject >
 void BaumWelchTraining<Alphabet, Subject>::ExpectationStep(
     const data_vector& block) {
 
@@ -90,8 +86,7 @@ void BaumWelchTraining<Alphabet, Subject>::ExpectationStep(
   UpdateSufficientStatistics();
 }
 
-template< class Alphabet,
-          template<class A> class Subject >
+template< class Alphabet, template<class> class Subject >
 void BaumWelchTraining<Alphabet, Subject>::AddContributionToTransitions(
     const ForwardBackwardMatrices& m) {
   const int slen = m.f.num_rows();
@@ -116,8 +111,7 @@ void BaumWelchTraining<Alphabet, Subject>::AddContributionToTransitions(
   }
 }
 
-template< class Alphabet,
-          template<class A> class Subject >
+template< class Alphabet, template<class> class Subject >
 inline void BaumWelchTraining<Alphabet, Subject>::AddContributionToStates(
     const ForwardBackwardMatrices& m,
     const CountProfile<Alphabet>& c) {
@@ -147,8 +141,7 @@ inline void BaumWelchTraining<Alphabet, Subject>::AddContributionToStates(
   }
 }
 
-template< class Alphabet,
-          template<class A> class Subject >
+template< class Alphabet, template<class> class Subject >
 void BaumWelchTraining<Alphabet, Subject>::AddContributionToStates(
     const ForwardBackwardMatrices& m,
     const Sequence<Alphabet>& s) {
@@ -175,8 +168,7 @@ void BaumWelchTraining<Alphabet, Subject>::AddContributionToStates(
   }
 }
 
-template< class Alphabet,
-          template<class A> class Subject >
+template< class Alphabet, template<class> class Subject >
 void BaumWelchTraining<Alphabet, Subject>::UpdateSufficientStatistics() {
   const float gamma       = 1.0f - epsilon_;
   const int num_states    = hmm_.num_states();
@@ -213,8 +205,7 @@ void BaumWelchTraining<Alphabet, Subject>::UpdateSufficientStatistics() {
   }
 }
 
-template< class Alphabet,
-          template<class A> class Subject >
+template< class Alphabet, template<class> class Subject >
 void BaumWelchTraining<Alphabet, Subject>::MaximizationStep() {
   const int num_states    = hmm_.num_states();
   const int num_cols      = hmm_.num_cols();
@@ -297,8 +288,7 @@ void BaumWelchTraining<Alphabet, Subject>::MaximizationStep() {
   hmm_.increment_iterations();
 }
 
-template< class Alphabet,
-          template<class A> class Subject >
+template< class Alphabet, template<class> class Subject >
 void BaumWelchTraining<Alphabet, Subject>::Init() {
   // Create profiles for global and block-level sufficient statistics
   for (int k = 0; k < hmm_.num_states(); ++k) {
@@ -323,9 +313,8 @@ void BaumWelchTraining<Alphabet, Subject>::Init() {
   num_eff_cols_ = emission_.SumWeights() * num_cols;
 }
 
-template< class Alphabet,
-          template<class A> class Subject >
-inline bool BaumWelchTraining<Alphabet, Subject>::terminate() const {
+template< class Alphabet, template<class> class Subject >
+inline bool BaumWelchTraining<Alphabet, Subject>::IsDone() const {
   if (scan_ < opts_.min_scans)
     return false;
   else if (scan_ >= opts_.max_scans)
@@ -333,14 +322,12 @@ inline bool BaumWelchTraining<Alphabet, Subject>::terminate() const {
   else if (opts_.max_connectivity == 0)
     return fabs(log_likelihood_change()) <= opts_.log_likelihood_change;
   else
-    return
-      fabs(log_likelihood_change()) <= opts_.log_likelihood_change
-      && hmm_.connectivity() <= opts_.max_connectivity;
+    return (fabs(log_likelihood_change()) <= opts_.log_likelihood_change &&
+            hmm_.connectivity() <= opts_.max_connectivity);
 }
 
 
-template< class Alphabet,
-          template<class A> class Subject >
+template< class Alphabet, template<class> class Subject >
 BaumWelchProgressTable<Alphabet, Subject>::BaumWelchProgressTable(
     const BaumWelchTraining<Alphabet, Subject>* training,
     FILE* fout,
@@ -348,18 +335,16 @@ BaumWelchProgressTable<Alphabet, Subject>::BaumWelchProgressTable(
     : ProgressTable(fout, width),
       training_(training) {}
 
-template< class Alphabet,
-          template<class A> class Subject >
-void BaumWelchProgressTable<Alphabet, Subject>::print_header() {
+template< class Alphabet, template<class> class Subject >
+void BaumWelchProgressTable<Alphabet, Subject>::PrintHeader() {
   fprintf(fout_, "%-4s %4s %6s %4s %7s  %-30s  %9s  %8s\n",
           "Scan", "Itrs", "Conn", "Blks", "Epsilon", "E-Step", "log(L)", "+/-");
   fputs(std::string(82, '-').c_str(), fout_);
   fputc('\n', fout_);
 }
 
-template< class Alphabet,
-          template<class A> class Subject >
-void BaumWelchProgressTable<Alphabet, Subject>::print_row_begin() {
+template< class Alphabet, template<class> class Subject >
+void BaumWelchProgressTable<Alphabet, Subject>::PrintRowBegin() {
   Reset();
   fprintf(fout_, "%-4i %4i %6.1f %4i %7.4f  ", training_->scan(),
           training_->iterations(), training_->hmm_.connectivity(),
@@ -367,9 +352,8 @@ void BaumWelchProgressTable<Alphabet, Subject>::print_row_begin() {
   fflush(fout_);
 }
 
-template< class Alphabet,
-          template<class A> class Subject >
-void BaumWelchProgressTable<Alphabet, Subject>::print_row_end() {
+template< class Alphabet, template<class> class Subject >
+void BaumWelchProgressTable<Alphabet, Subject>::PrintRowEnd() {
   if (training_->scan() == 1)
     fprintf(fout_, "  %9.5f\n", training_->log_likelihood());
   else

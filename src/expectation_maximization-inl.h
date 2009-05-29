@@ -9,8 +9,7 @@
 
 namespace cs {
 
-template< class Alphabet,
-          template<class A> class Subject >
+template< class Alphabet, template<class> class Subject >
 ExpectationMaximization<Alphabet, Subject>::ExpectationMaximization(
     const data_vector& data)
     : data_(data),
@@ -22,46 +21,44 @@ ExpectationMaximization<Alphabet, Subject>::ExpectationMaximization(
       scan_(1),
       epsilon_(1.0f) {}
 
-template< class Alphabet,
-          template<class A> class Subject >
+template< class Alphabet, template<class> class Subject >
 void ExpectationMaximization<Alphabet, Subject>::Run() {
-  setup_blocks(true);
-  if (progress_table_) progress_table_->print_header();
+  SetupBlocks(true);
+  if (progress_table_) progress_table_->PrintHeader();
 
   // Calculate log-likelihood baseline by batch EM without blocks
-  if (progress_table_) progress_table_->print_row_begin();
+  if (progress_table_) progress_table_->PrintRowBegin();
   ExpectationStep(blocks_.front());
   MaximizationStep();
   ++iterations_;
-  if (progress_table_) progress_table_->print_row_end();
+  if (progress_table_) progress_table_->PrintRowEnd();
 
   // Perform E-step and M-step on each training block until convergence
-  setup_blocks();
-  while (!terminate()) {
+  SetupBlocks();
+  while (!IsDone()) {
     if (static_cast<int>(blocks_.size()) > 1)
       epsilon_ = opts().epsilon_null * exp(-opts().beta * (scan_ - 1));
     log_likelihood_prev_ = log_likelihood_;
     log_likelihood_      = 0.0;
     ++scan_;
 
-    if (progress_table_) progress_table_->print_row_begin();
+    if (progress_table_) progress_table_->PrintRowBegin();
     for (int b = 0; b < static_cast<int>(blocks_.size()); ++b) {
       ExpectationStep(blocks_[b]);
       MaximizationStep();
       ++iterations_;
     }
-    if (progress_table_) progress_table_->print_row_end();
-    if (epsilon_ < opts().epsilon_batch
-        && static_cast<int>(blocks_.size()) > 1) {
-      setup_blocks(true);
+    if (progress_table_) progress_table_->PrintRowEnd();
+    if (epsilon_ < opts().epsilon_batch &&
+        static_cast<int>(blocks_.size()) > 1) {
+      SetupBlocks(true);
       epsilon_ = 1.0f;
     }
   }
 }
 
-template< class Alphabet,
-          template<class A> class Subject >
-void ExpectationMaximization<Alphabet, Subject>::setup_blocks(bool force_batch) {
+template< class Alphabet, template<class> class Subject >
+void ExpectationMaximization<Alphabet, Subject>::SetupBlocks(bool force_batch) {
   if (force_batch && static_cast<int>(blocks_.size()) != 1) {
     blocks_.clear();
     blocks_.push_back(data_);
@@ -85,9 +82,8 @@ void ExpectationMaximization<Alphabet, Subject>::setup_blocks(bool force_batch) 
   }
 }
 
-template< class Alphabet,
-          template<class A> class Subject >
-inline bool ExpectationMaximization<Alphabet, Subject>::terminate() const {
+template< class Alphabet, template<class> class Subject >
+inline bool ExpectationMaximization<Alphabet, Subject>::IsDone() const {
   if (scan_ < opts().min_scans)
     return false;
   else if (scan_ >= opts().max_scans)

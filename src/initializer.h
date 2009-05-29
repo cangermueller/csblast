@@ -23,16 +23,9 @@ class SamplingStateInitializer : public StateInitializer<Alphabet> {
   SamplingStateInitializer(profile_vector profiles,
                            float sample_rate,
                            const Pseudocounts<Alphabet>* pc = NULL,
-                           float pc_admixture = 1.0f)
-      : profiles_(profiles),
-        sample_rate_(sample_rate),
-        pc_(pc),
-        pc_admixture_(pc_admixture) {
-    random_shuffle(profiles_.begin(), profiles_.end());
-  }
-
+                           float pc_admixture = 1.0f);
   virtual ~SamplingStateInitializer() {};
-  virtual void Init(<Alphabet>& graph) const;
+  virtual void Init(Graph<Alphabet>& graph) const;
 
  private:
   // Pool of full length sequence profiles to sample from.
@@ -45,17 +38,10 @@ class SamplingStateInitializer : public StateInitializer<Alphabet> {
   float pc_admixture_;
 };  // class SamplingStateInitializer
 
-// Compare function to sort states in descending prior probability.
-template< class Alphabet, template<class> class Graph >
-bool PriorCompare(const shared_ptr< ContextProfile<Alphabet> >& lhs,
-                  const shared_ptr< ContextProfile<Alphabet> >& rhs);
-
 template< class Alphabet, template<class> class Graph >
 class LibraryStateInitializer : public StateInitializer<Alphabet> {
  public:
-  LibraryStateInitializer(const ProfileLibrary<Alphabet>* lib)
-      : lib_(lib) {}
-
+  LibraryStateInitializer(const ProfileLibrary<Alphabet>* lib);
   virtual ~LibraryStateInitializer() {};
   virtual void Init(Graph<Alphabet>& graph) const;
 
@@ -63,7 +49,6 @@ class LibraryStateInitializer : public StateInitializer<Alphabet> {
   // Profile library of context profiles.
   const ProfileLibrary<Alphabet>* lib_;
 };  // class LibraryStateInitializer
-
 
 
 template< class Alphabet, template<class> class Graph >
@@ -80,15 +65,7 @@ class HomogeneousTransitionInitializer
  public:
   HomogeneousTransitionInitializer() {}
   virtual ~HomogeneousTransitionInitializer() {}
-
-  virtual void Init(Graph<Alphabet>& graph) const {
-    float prob = 1.0f / graph.num_states();
-    for (int k = 0; k < graph.num_states(); ++k) {
-      for (int l = 0; l < graph.num_states(); ++l) {
-        graph(k,l) = prob;
-      }
-    }
-  }
+  virtual void Init(Graph<Alphabet>& graph) const;
 };  // class HomogeneousTransitionInitializer
 
 template< class Alphabet, template<class> class Graph >
@@ -96,15 +73,7 @@ class RandomTransitionInitializer : public TransitionInitializer<Alphabet> {
  public:
   RandomTransitionInitializer() {}
   virtual ~RandomTransitionInitializer() {}
-
-  virtual void Init(Graph<Alphabet>& graph) const {
-    srand(static_cast<unsigned int>(clock()));
-    for (int k = 0; k < graph.num_states(); ++k)
-      for (int l = 0; l < graph.num_states(); ++l)
-        graph(k,l) =
-          static_cast<float>(rand()) / (static_cast<float>(RAND_MAX) + 1.0f);
-    NormalizeTransitions(&graph);
-  }
+  virtual void Init(Graph<Alphabet>& graph) const;
 };  // class RandomTransitionInitializer
 
 template< class Alphabet, template<class> class Graph >
@@ -125,9 +94,15 @@ class CoEmissionTransitionInitializer
   float score_thresh_;
 }; // class CoEmissionTransitionInitializer
 
+
 // Normalizes transition probabilities to one.
 template< class Alphabet, template<class> class Graph >
 void NormalizeTransitions(Graph<Alphabet>* graph);
+
+// Compare function to sort profiles in descending prior probability.
+template< class Alphabet, template<class> class Graph >
+bool PriorCompare(const shared_ptr< ContextProfile<Alphabet> >& lhs,
+                  const shared_ptr< ContextProfile<Alphabet> >& rhs);
 
 }  // namespace cs
 

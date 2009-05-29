@@ -18,11 +18,11 @@ class ProgressTable {
   virtual ~ProgressTable() {}
 
   // Prints header information.
-  virtual void print_header() = 0;
+  virtual void PrintHeader() = 0;
   // Starts a new row and prints statistics to outstream.
-  virtual void print_row_begin() = 0;
+  virtual void PrintRowBegin() = 0;
   // Ends the current row and prints likelihood.
-  virtual void print_row_end() = 0;
+  virtual void PrintRowEnd() = 0;
   // Sets total work per scan.
   void set_total_work(long work) { work_total_ = work; }
   // Resets the progress bar to zero.

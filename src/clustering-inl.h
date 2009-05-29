@@ -20,8 +20,7 @@
 
 namespace cs {
 
-template< class Alphabet,
-          template<class A> class Subject >
+template< class Alphabet, template<class> class Subject >
 Clustering<Alphabet, Subject>::Clustering(const ClusteringOptions& opts,
                                           const data_vector& data,
                                           ProfileLibrary<Alphabet>& lib)
@@ -34,8 +33,7 @@ Clustering<Alphabet, Subject>::Clustering(const ClusteringOptions& opts,
   Init();
 }
 
-template< class Alphabet,
-          template<class A> class Subject >
+template< class Alphabet, template<class> class Subject >
 Clustering<Alphabet, Subject>::Clustering(const ClusteringOptions& opts,
                                           const data_vector& data,
                                           ProfileLibrary<Alphabet>& lib,
@@ -50,14 +48,12 @@ Clustering<Alphabet, Subject>::Clustering(const ClusteringOptions& opts,
   Init();
 }
 
-template< class Alphabet,
-          template<class A> class Subject >
+template< class Alphabet, template<class> class Subject >
 Clustering<Alphabet, Subject>::~Clustering() {
   if (progress_table_) delete progress_table_;
 }
 
-template< class Alphabet,
-          template<class A> class Subject >
+template< class Alphabet, template<class> class Subject >
 void Clustering<Alphabet, Subject>::ExpectationStep(const data_vector& block) {
   const int num_profiles = lib_.num_profiles();
   std::valarray<double> p_zn(0.0f, lib_.num_profiles());
@@ -88,8 +84,7 @@ void Clustering<Alphabet, Subject>::ExpectationStep(const data_vector& block) {
   update_sufficient_statistics();
 }
 
-template< class Alphabet,
-          template<class A> class Subject >
+template< class Alphabet, template<class> class Subject >
 void Clustering<Alphabet, Subject>::MaximizationStep() {
   const int num_profiles  = lib_.num_profiles();
   const int num_cols      = lib_.num_cols();
@@ -117,8 +112,7 @@ void Clustering<Alphabet, Subject>::MaximizationStep() {
   lib_.increment_iterations();
 }
 
-template< class Alphabet,
-          template<class A> class Subject >
+template< class Alphabet, template<class> class Subject >
 void Clustering<Alphabet, Subject>::add_contribution_to_priors(
     const std::valarray<double>& p_zn) {
   const int num_profiles = lib_.num_profiles();
@@ -127,8 +121,7 @@ void Clustering<Alphabet, Subject>::add_contribution_to_priors(
     profile_stats_block_[k]->set_prior(profile_stats_block_[k]->prior() + p_zn[k]);
 }
 
-template< class Alphabet,
-          template<class A> class Subject >
+template< class Alphabet, template<class> class Subject >
 void Clustering<Alphabet, Subject>::add_contribution_to_emissions(
     const std::valarray<double>& p_zn,
     const CountProfile<Alphabet>& c) {
@@ -147,8 +140,7 @@ void Clustering<Alphabet, Subject>::add_contribution_to_emissions(
   }
 }
 
-template< class Alphabet,
-          template<class A> class Subject >
+template< class Alphabet, template<class> class Subject >
 void Clustering<Alphabet, Subject>::add_contribution_to_emissions(
     const std::valarray<double>& p_zn,
     const Sequence<Alphabet>& s) {
@@ -165,8 +157,7 @@ void Clustering<Alphabet, Subject>::add_contribution_to_emissions(
   }
 }
 
-template< class Alphabet,
-          template<class A> class Subject >
+template< class Alphabet, template<class> class Subject >
 void Clustering<Alphabet, Subject>::update_sufficient_statistics() {
   const float gamma       = 1.0f - epsilon_;
   const int num_profiles  = lib_.num_profiles();
@@ -188,8 +179,7 @@ void Clustering<Alphabet, Subject>::update_sufficient_statistics() {
   }
 }
 
-template< class Alphabet,
-          template<class A> class Subject >
+template< class Alphabet, template<class> class Subject >
 void Clustering<Alphabet, Subject>::Init() {
   // Create profiles for global and block-level sufficient statistics
   for (int k = 0; k < lib_.num_profiles(); ++k) {
@@ -212,8 +202,7 @@ void Clustering<Alphabet, Subject>::Init() {
 
 
 
-template< class Alphabet,
-          template<class A> class Subject >
+template< class Alphabet, template<class> class Subject >
 ClusteringProgressTable<Alphabet, Subject>::ClusteringProgressTable(
     const Clustering<Alphabet, Subject>* clustering,
     FILE* fout,
@@ -221,18 +210,16 @@ ClusteringProgressTable<Alphabet, Subject>::ClusteringProgressTable(
     : ProgressTable(fout, width),
       clustering_(clustering) {}
 
-template< class Alphabet,
-          template<class A> class Subject >
-void ClusteringProgressTable<Alphabet, Subject>::print_header() {
+template< class Alphabet, template<class> class Subject >
+void ClusteringProgressTable<Alphabet, Subject>::PrintHeader() {
   fprintf(fout_, "%-4s %4s %4s %7s  %-30s  %9s  %8s\n",
           "Scan", "Itrs", "Blks", "Epsilon", "E-Step", "log(L)", "+/-");
   fputs(std::string(75, '-').c_str(), fout_);
   fputc('\n', fout_);
 }
 
-template< class Alphabet,
-          template<class A> class Subject >
-void ClusteringProgressTable<Alphabet, Subject>::print_row_begin() {
+template< class Alphabet, template<class> class Subject >
+void ClusteringProgressTable<Alphabet, Subject>::PrintRowBegin() {
   Reset();
   fprintf(fout_, "%-4i %4i %4i %7.4f  ", clustering_->scan(),
           clustering_->iterations(), clustering_->num_blocks(),
@@ -240,9 +227,8 @@ void ClusteringProgressTable<Alphabet, Subject>::print_row_begin() {
   fflush(fout_);
 }
 
-template< class Alphabet,
-          template<class A> class Subject >
-void ClusteringProgressTable<Alphabet, Subject>::print_row_end() {
+template< class Alphabet, template<class> class Subject >
+void ClusteringProgressTable<Alphabet, Subject>::PrintRowEnd() {
   if (clustering_->scan() == 1)
     fprintf(fout_, "  %9.5f\n", clustering_->log_likelihood());
   else

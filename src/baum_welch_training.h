@@ -89,7 +89,7 @@ class BaumWelchTraining : public ExpectationMaximization<Alphabet, Subject> {
   // Prepares all members for HMM training.
   virtual void Init();
   // Returns true if any termination condition is fullfilled.
-  virtual bool terminate() const;
+  virtual bool IsDone() const;
   // Returns parameter wrapper
   virtual const BaumWelchOptions& opts() const { return opts_; }
   // Adds the contribution of a subject's forward-backward matrices to
@@ -136,9 +136,9 @@ class BaumWelchProgressTable : public ProgressTable {
 
   virtual ~BaumWelchProgressTable() {}
 
-  virtual void print_header();
-  virtual void print_row_begin();
-  virtual void print_row_end();
+  virtual void PrintHeader();
+  virtual void PrintRowBegin();
+  virtual void PrintRowEnd();
 
  protected:
   const BaumWelchTraining<Alphabet, Subject>* training_;

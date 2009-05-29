@@ -37,8 +37,7 @@ struct ExpectationMaximizationOptions {
   int max_scans;
   // Log-likelihood change per column for convergence.
   float log_likelihood_change;
-  // Number of blocks into which the training data are divided
-  // (default:  B=N^(3/8)).
+  // Number of blocks into which the training data are divided (def=N^3/8).
   int num_blocks;
   // Initial value for learning rate epsilon (1-epsilon is preserved fraction of
   // sufficient statistics).
@@ -50,8 +49,7 @@ struct ExpectationMaximizationOptions {
 };
 
 // Abstract base class for expectation maximization algorithms.
-template< class Alphabet,
-          template<class A> class Subject >
+template< class Alphabet, template<class> class Subject >
 class ExpectationMaximization {
  public:
   typedef typename std::vector< shared_ptr< Subject<Alphabet> > > data_vector;
@@ -90,9 +88,9 @@ class ExpectationMaximization {
   // Returns parameter wrapper
   virtual const ExpectationMaximizationOptions& opts() const = 0;
   // Returns true if any termination condition is fullfilled.
-  virtual bool terminate() const;
+  virtual bool IsDone() const;
   // Fills the blocks vector with training data.
-  void setup_blocks(bool force_batch = false);
+  void SetupBlocks(bool force_batch = false);
 
   // Training data (either sequences or counts profiles)
   const data_vector& data_;
@@ -112,7 +110,7 @@ class ExpectationMaximization {
   int scan_;
   // Current learning rate epsilon.
   float epsilon_;
-};
+};  // class ExpectationMaximization
 
 }  // namespace cs
 
