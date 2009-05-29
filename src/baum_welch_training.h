@@ -20,8 +20,7 @@
 namespace cs {
 
 // Forwrad declarations
-template< class Alphabet,
-          template<class A> class Subject >
+template< class Alphabet, template<class> class Subject >
 class BaumWelchProgressTable;
 
 // Parameter wrapper for Baum-Welch training.
@@ -51,8 +50,7 @@ struct BaumWelchOptions : public ExpectationMaximizationOptions {
 };
 
 // Encapsulation of Baum-Welch training for HMMs.
-template< class Alphabet,
-          template<class A> class Subject >
+template< class Alphabet, template<class> class Subject >
 class BaumWelchTraining : public ExpectationMaximization<Alphabet, Subject> {
  public:
   typedef typename std::vector< shared_ptr< Subject<Alphabet> > > data_vector;
@@ -129,8 +127,7 @@ class BaumWelchTraining : public ExpectationMaximization<Alphabet, Subject> {
 };
 
 
-template< class Alphabet,
-          template<class A> class Subject >
+template< class Alphabet, template<class> class Subject >
 class BaumWelchProgressTable : public ProgressTable {
  public:
   BaumWelchProgressTable(const BaumWelchTraining<Alphabet, Subject>* training,

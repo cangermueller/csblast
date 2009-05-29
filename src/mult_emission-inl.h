@@ -1,7 +1,7 @@
 // Copyright 2009, Andreas Biegert
 
-#ifndef SRC_EMITTER_INL_H_
-#define SRC_EMITTER_INL_H_
+#ifndef SRC_MULT_EMISSION_INL_H_
+#define SRC_MULT_EMISSION_INL_H_
 
 #include "mult_emission.h"
 
@@ -127,4 +127,4 @@ void MultEmission<Alphabet>::InitWeights(float weight_center, float weight_decay
 
 }  // namespace cs
 
-#endif  // SRC_EMITTER_INL_H_
+#endif  // SRC_MULT_EMISSION_INL_H_

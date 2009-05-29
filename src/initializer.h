@@ -5,8 +5,7 @@
 
 namespace cs {
 
-template< class Alphabet,
-          template<class A> class Graph >
+template< class Alphabet, template<class> class Graph >
 class StateInitializer {
  public:
   StateInitializer() {}
@@ -14,8 +13,7 @@ class StateInitializer {
   virtual void Init(Graph<Alphabet>& graph) const = 0;
 };  // class StateInitializer
 
-template< class Alphabet,
-          template<class A> class Graph >
+template< class Alphabet, template<class> class Graph >
 class SamplingStateInitializer : public StateInitializer<Alphabet> {
  public:
   typedef typename
@@ -48,13 +46,11 @@ class SamplingStateInitializer : public StateInitializer<Alphabet> {
 };  // class SamplingStateInitializer
 
 // Compare function to sort states in descending prior probability.
-template< class Alphabet,
-          template<class A> class Graph >
+template< class Alphabet, template<class> class Graph >
 bool PriorCompare(const shared_ptr< ContextProfile<Alphabet> >& lhs,
                   const shared_ptr< ContextProfile<Alphabet> >& rhs);
 
-template< class Alphabet,
-          template<class A> class Graph >
+template< class Alphabet, template<class> class Graph >
 class LibraryStateInitializer : public StateInitializer<Alphabet> {
  public:
   LibraryStateInitializer(const ProfileLibrary<Alphabet>* lib)
@@ -70,8 +66,7 @@ class LibraryStateInitializer : public StateInitializer<Alphabet> {
 
 
 
-template< class Alphabet,
-          template<class A> class Graph >
+template< class Alphabet, template<class> class Graph >
 class TransitionInitializer {
  public:
   TransitionInitializer() {}
@@ -79,13 +74,7 @@ class TransitionInitializer {
   virtual void Init(Graph<Alphabet>& graph) const = 0;
 };  // class TransitionInitializer
 
-// Normalizes transition probabilities to one.
-template< class Alphabet,
-          template<class A> class Graph >
-void NormalizeTransitions(Graph<Alphabet>* graph);
-
-template< class Alphabet,
-          template<class A> class Graph >
+template< class Alphabet, template<class> class Graph >
 class HomogeneousTransitionInitializer
     : public TransitionInitializer<Alphabet> {
  public:
@@ -102,8 +91,7 @@ class HomogeneousTransitionInitializer
   }
 };  // class HomogeneousTransitionInitializer
 
-template< class Alphabet,
-          template<class A> class Graph >
+template< class Alphabet, template<class> class Graph >
 class RandomTransitionInitializer : public TransitionInitializer<Alphabet> {
  public:
   RandomTransitionInitializer() {}
@@ -119,8 +107,7 @@ class RandomTransitionInitializer : public TransitionInitializer<Alphabet> {
   }
 };  // class RandomTransitionInitializer
 
-template< class Alphabet,
-          template<class A> class Graph >
+template< class Alphabet, template<class> class Graph >
 class CoEmissionTransitionInitializer
     : public TransitionInitializer<Alphabet> {
  public:
@@ -139,27 +126,8 @@ class CoEmissionTransitionInitializer
 }; // class CoEmissionTransitionInitializer
 
 // Normalizes transition probabilities to one.
-template< class Alphabet,
-          template<class A> class Graph >
-void NormalizeTransitions(Graph<Alphabet>* graph) {
-  const bool logspace = graph->transitions_logspace();
-  if (logspace) graph->TransformTransitionsToLinSpace();
-
-  for (int k = 0; k < graph->num_states(); ++k) {
-    double sum = 0.0;
-    for (int l = 0; l < graph->num_states(); ++l)
-      if (graph->test_transition(k,l)) sum += graph->tr(k,l);
-
-    if (sum != 0.0) {
-      float fac = 1.0 / sum;
-      for (int l = 0; l < graph->num_states(); ++l)
-        if (graph->test_transition(k,l))
-          graph->tr(k,l) = graph->tr(k,l) * fac;
-    }
-  }
-
-  if (logspace) graph->TransformTransitionsToLogSpace();
-}
+template< class Alphabet, template<class> class Graph >
+void NormalizeTransitions(Graph<Alphabet>* graph);
 
 }  // namespace cs
 
