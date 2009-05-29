@@ -3,6 +3,11 @@
 #ifndef SRC_INITIALIZER_H_
 #define SRC_INITIALIZER_H_
 
+#include <vector>
+
+#include "profile_library.h"
+#include "pseudocounts.h"
+
 namespace cs {
 
 template< class Alphabet, template<class> class Graph >
@@ -14,7 +19,7 @@ class StateInitializer {
 };  // class StateInitializer
 
 template< class Alphabet, template<class> class Graph >
-class SamplingStateInitializer : public StateInitializer<Alphabet> {
+class SamplingStateInitializer : public StateInitializer<Alphabet, Graph> {
  public:
   typedef typename
   std::vector< shared_ptr< CountProfile<Alphabet> > > profile_vector;
@@ -39,7 +44,7 @@ class SamplingStateInitializer : public StateInitializer<Alphabet> {
 };  // class SamplingStateInitializer
 
 template< class Alphabet, template<class> class Graph >
-class LibraryStateInitializer : public StateInitializer<Alphabet> {
+class LibraryStateInitializer : public StateInitializer<Alphabet, Graph> {
  public:
   LibraryStateInitializer(const ProfileLibrary<Alphabet>* lib);
   virtual ~LibraryStateInitializer() {};
@@ -61,7 +66,7 @@ class TransitionInitializer {
 
 template< class Alphabet, template<class> class Graph >
 class HomogeneousTransitionInitializer
-    : public TransitionInitializer<Alphabet> {
+    : public TransitionInitializer<Alphabet, Graph> {
  public:
   HomogeneousTransitionInitializer() {}
   virtual ~HomogeneousTransitionInitializer() {}
@@ -69,7 +74,7 @@ class HomogeneousTransitionInitializer
 };  // class HomogeneousTransitionInitializer
 
 template< class Alphabet, template<class> class Graph >
-class RandomTransitionInitializer : public TransitionInitializer<Alphabet> {
+class RandomTransitionInitializer : public TransitionInitializer<Alphabet, Graph> {
  public:
   RandomTransitionInitializer() {}
   virtual ~RandomTransitionInitializer() {}
@@ -78,13 +83,11 @@ class RandomTransitionInitializer : public TransitionInitializer<Alphabet> {
 
 template< class Alphabet, template<class> class Graph >
 class CoEmissionTransitionInitializer
-    : public TransitionInitializer<Alphabet> {
+    : public TransitionInitializer<Alphabet, Graph> {
  public:
   CoEmissionTransitionInitializer(const SubstitutionMatrix<Alphabet>* sm,
-                                  float score_thresh)
-      : co_emission_(sm), score_thresh_(score_thresh) {}
+                                  float score_thresh);
   virtual ~CoEmissionTransitionInitializer() {}
-
   virtual void Init(Graph<Alphabet>& graph) const;
 
  private:
@@ -100,7 +103,7 @@ template< class Alphabet, template<class> class Graph >
 void NormalizeTransitions(Graph<Alphabet>* graph);
 
 // Compare function to sort profiles in descending prior probability.
-template< class Alphabet, template<class> class Graph >
+template<class Alphabet>
 bool PriorCompare(const shared_ptr< ContextProfile<Alphabet> >& lhs,
                   const shared_ptr< ContextProfile<Alphabet> >& rhs);
 

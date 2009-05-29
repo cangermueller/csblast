@@ -16,7 +16,7 @@
 #include "exception.h"
 #include "context_profile-inl.h"
 #include "count_profile-inl.h"
-
+#include "initializer-inl.h"
 #include "log.h"
 #include "profile-inl.h"
 #include "profile_library-inl.h"
@@ -55,8 +55,8 @@ HMM<Alphabet>::HMM(FILE* fin)
 template<class Alphabet>
 HMM<Alphabet>::HMM(int num_states,
                    int num_cols,
-                   const HMMStateInitializer<Alphabet>& st_init,
-                   const HMMTransitionInitializer<Alphabet>& tr_init)
+                   const StateInitializer<Alphabet, ::cs::HMM >& st_init,
+                   const TransitionInitializer<Alphabet, ::cs::HMM >& tr_init)
     : num_states_(num_states),
       num_cols_(num_cols),
       iterations_(0),
@@ -76,14 +76,15 @@ void HMM<Alphabet>::Init() {
 }
 
 template<class Alphabet>
-void HMM<Alphabet>::InitStates(const HMMStateInitializer<Alphabet>& st_init) {
+void HMM<Alphabet>::InitStates(
+    const StateInitializer<Alphabet, ::cs::HMM>& st_init) {
   Clear();
   st_init.Init(*this);
 }
 
 template<class Alphabet>
 void HMM<Alphabet>::InitTransitions(
-    const HMMTransitionInitializer<Alphabet>& tr_init) {
+    const TransitionInitializer<Alphabet, ::cs::HMM>& tr_init) {
   ClearTransitions();
   tr_init.Init(*this);
 }
@@ -351,141 +352,141 @@ void HMM<Alphabet>::Print(std::ostream& out) const {
 }
 
 
-// Normalizes transition probabilities to one.
-template<class Alphabet>
-void NormalizeTransitions(HMM<Alphabet>& hmm) {
-  const bool logspace = hmm.transitions_logspace();
-  if (logspace) hmm.TransformTransitionsToLinSpace();
+// // Normalizes transition probabilities to one.
+// template<class Alphabet>
+// void NormalizeTransitions(HMM<Alphabet>& hmm) {
+//   const bool logspace = hmm.transitions_logspace();
+//   if (logspace) hmm.TransformTransitionsToLinSpace();
 
-  for (int k = 0; k < hmm.num_states(); ++k) {
-    float sum = 0.0f;
-    for (int l = 0; l < hmm.num_states(); ++l)
-      if (hmm.test_transition(k,l)) sum += hmm(k,l);
+//   for (int k = 0; k < hmm.num_states(); ++k) {
+//     float sum = 0.0f;
+//     for (int l = 0; l < hmm.num_states(); ++l)
+//       if (hmm.test_transition(k,l)) sum += hmm(k,l);
 
-    if (sum != 0.0f) {
-      float fac = 1.0f / sum;
-      for (int l = 0; l < hmm.num_states(); ++l)
-        if (hmm.test_transition(k,l)) hmm(k,l) = hmm(k,l) * fac;
-    } else {
-      throw Exception("Unable to normalize: state %i has no out-transitions!", k);
-    }
-  }
+//     if (sum != 0.0f) {
+//       float fac = 1.0f / sum;
+//       for (int l = 0; l < hmm.num_states(); ++l)
+//         if (hmm.test_transition(k,l)) hmm(k,l) = hmm(k,l) * fac;
+//     } else {
+//       throw Exception("Unable to normalize: state %i has no out-transitions!", k);
+//     }
+//   }
 
-  if (logspace) hmm.TransformTransitionsToLogSpace();
-}
+//   if (logspace) hmm.TransformTransitionsToLogSpace();
+// }
 
-// Removes all transitions with probability below or equal to given threshold.
-template<class Alphabet>
-void Sparsify(HMM<Alphabet>& hmm, float threshold) {
-  const bool logspace = hmm.transitions_logspace();
-  if (logspace) hmm.TransformTransitionsToLinSpace();
+// // Removes all transitions with probability below or equal to given threshold.
+// template<class Alphabet>
+// void Sparsify(HMM<Alphabet>& hmm, float threshold) {
+//   const bool logspace = hmm.transitions_logspace();
+//   if (logspace) hmm.TransformTransitionsToLinSpace();
 
-  for (int k = 0; k < hmm.num_states(); ++k)
-    for (int l = 0; l < hmm.num_states(); ++l)
-      if (hmm.test_transition(k,l) && hmm(k,l) <= threshold)
-        hmm.erase_transition(k,l);
+//   for (int k = 0; k < hmm.num_states(); ++k)
+//     for (int l = 0; l < hmm.num_states(); ++l)
+//       if (hmm.test_transition(k,l) && hmm(k,l) <= threshold)
+//         hmm.erase_transition(k,l);
 
-  NormalizeTransitions(hmm);
+//   NormalizeTransitions(hmm);
 
-  if (logspace) hmm.TransformTransitionsToLogSpace();
-}
+//   if (logspace) hmm.TransformTransitionsToLogSpace();
+// }
 
 
-template<class Alphabet>
-void SamplingHMMStateInitializer<Alphabet>::Init(HMM<Alphabet>& hmm) const {
-  LOG(DEBUG) << "Initializing HMM with " << hmm.num_states()
-             << " profile windows randomly sampled from "
-             << profiles_.size() << " training profiles ...";
+// template<class Alphabet>
+// void SamplingHMMStateInitializer<Alphabet>::Init(HMM<Alphabet>& hmm) const {
+//   LOG(DEBUG) << "Initializing HMM with " << hmm.num_states()
+//              << " profile windows randomly sampled from "
+//              << profiles_.size() << " training profiles ...";
 
-  // Iterate over randomly shuffled profiles; from each profile we sample a
-  // fraction of profile windows.
-  for (profile_iterator pi = profiles_.begin();
-       pi != profiles_.end() && !hmm.full(); ++pi) {
-    if ((*pi)->num_cols() < hmm.num_cols()) continue;
+//   // Iterate over randomly shuffled profiles; from each profile we sample a
+//   // fraction of profile windows.
+//   for (profile_iterator pi = profiles_.begin();
+//        pi != profiles_.end() && !hmm.full(); ++pi) {
+//     if ((*pi)->num_cols() < hmm.num_cols()) continue;
 
-    LOG(DEBUG1) << "Processing next training profile ...";
-    LOG(DEBUG1) << **pi;
+//     LOG(DEBUG1) << "Processing next training profile ...";
+//     LOG(DEBUG1) << **pi;
 
-    // Prepare sample of indices
-    std::vector<int> idx;
-    for (int i = 0; i <= (*pi)->num_cols() - hmm.num_cols(); ++i)
-      idx.push_back(i);
-    LOG(DEBUG2) << "Available column indices:";
-    LOG(DEBUG2) << stringify_container(idx);
+//     // Prepare sample of indices
+//     std::vector<int> idx;
+//     for (int i = 0; i <= (*pi)->num_cols() - hmm.num_cols(); ++i)
+//       idx.push_back(i);
+//     LOG(DEBUG2) << "Available column indices:";
+//     LOG(DEBUG2) << stringify_container(idx);
 
-    random_shuffle(idx.begin(), idx.end());
-    LOG(DEBUG2) << "Shuffled column indices:";
-    LOG(DEBUG2) << stringify_container(idx);
+//     random_shuffle(idx.begin(), idx.end());
+//     LOG(DEBUG2) << "Shuffled column indices:";
+//     LOG(DEBUG2) << stringify_container(idx);
 
-    const int sample_size = iround(sample_rate_ * idx.size());
-    // sample only a fraction of the profile indices.
-    idx.erase(idx.begin() + sample_size, idx.end());
-    LOG(DEBUG2) << "Sampled column indicices to be actually used::";
-    LOG(DEBUG2) << stringify_container(idx);
+//     const int sample_size = iround(sample_rate_ * idx.size());
+//     // sample only a fraction of the profile indices.
+//     idx.erase(idx.begin() + sample_size, idx.end());
+//     LOG(DEBUG2) << "Sampled column indicices to be actually used::";
+//     LOG(DEBUG2) << stringify_container(idx);
 
-    // Add sub-profiles at sampled indices to HMM
-    for (std::vector<int>::const_iterator i = idx.begin();
-         i != idx.end() && !hmm.full(); ++i) {
-      CountProfile<Alphabet> p(**pi, *i, hmm.num_cols());
-      LOG(DEBUG1) << "Extracted profile window at position " << *i << ":";
-      if (pc_) pc_->add_to_profile(ConstantAdmixture(pc_admixture_), &p);
-      hmm.AddState(p);
-    }
-  }
-  if (!hmm.full())
-    throw Exception("Could not fully initialize all %i HMM states. "
-                    "Maybe too few training profiles provided?",
-                    hmm.num_states());
+//     // Add sub-profiles at sampled indices to HMM
+//     for (std::vector<int>::const_iterator i = idx.begin();
+//          i != idx.end() && !hmm.full(); ++i) {
+//       CountProfile<Alphabet> p(**pi, *i, hmm.num_cols());
+//       LOG(DEBUG1) << "Extracted profile window at position " << *i << ":";
+//       if (pc_) pc_->add_to_profile(ConstantAdmixture(pc_admixture_), &p);
+//       hmm.AddState(p);
+//     }
+//   }
+//   if (!hmm.full())
+//     throw Exception("Could not fully initialize all %i HMM states. "
+//                     "Maybe too few training profiles provided?",
+//                     hmm.num_states());
 
-  LOG(DEBUG) << "HMM after state initialization:";
-  LOG(DEBUG) << hmm;
-}
+//   LOG(DEBUG) << "HMM after state initialization:";
+//   LOG(DEBUG) << hmm;
+// }
 
-template<class Alphabet>
-bool PriorCompare(const shared_ptr< ContextProfile<Alphabet> >& lhs,
-                  const shared_ptr< ContextProfile<Alphabet> >& rhs) {
-  return lhs->prior() > rhs->prior();
-}
+// template<class Alphabet>
+// bool PriorCompare(const shared_ptr< ContextProfile<Alphabet> >& lhs,
+//                   const shared_ptr< ContextProfile<Alphabet> >& rhs) {
+//   return lhs->prior() > rhs->prior();
+// }
 
-template<class Alphabet>
-void LibraryHMMStateInitializer<Alphabet>::Init(HMM<Alphabet>& hmm) const {
-  assert(lib_->num_cols() == hmm.num_cols());
-  LOG(DEBUG) << "Initializing HMM states with profile library ...";
+// template<class Alphabet>
+// void LibraryHMMStateInitializer<Alphabet>::Init(HMM<Alphabet>& hmm) const {
+//   assert(lib_->num_cols() == hmm.num_cols());
+//   LOG(DEBUG) << "Initializing HMM states with profile library ...";
 
-  typedef std::vector< shared_ptr< ContextProfile<Alphabet> > > ContextProfiles;
-  typedef typename ContextProfiles::const_iterator ContextProfileIter;
-  ContextProfiles profiles(lib_->begin(), lib_->end());
-  sort(profiles.begin(), profiles.end(), PriorCompare<Alphabet>);
+//   typedef std::vector< shared_ptr< ContextProfile<Alphabet> > > ContextProfiles;
+//   typedef typename ContextProfiles::const_iterator ContextProfileIter;
+//   ContextProfiles profiles(lib_->begin(), lib_->end());
+//   sort(profiles.begin(), profiles.end(), PriorCompare<Alphabet>);
 
-  for (ContextProfileIter it = profiles.begin(); it != profiles.end() &&
-         !hmm.full(); ++it) {
-    hmm.AddState(**it);
-  }
-  hmm.states_logspace_ = lib_->logspace();
-  hmm.TransformStatesToLinSpace();
+//   for (ContextProfileIter it = profiles.begin(); it != profiles.end() &&
+//          !hmm.full(); ++it) {
+//     hmm.AddState(**it);
+//   }
+//   hmm.states_logspace_ = lib_->logspace();
+//   hmm.TransformStatesToLinSpace();
 
-  if (!hmm.full())
-    throw Exception("Could not fully initialize all %i HMM states. "
-                    "Context library contains too few profiles!",
-                    hmm.num_states());
+//   if (!hmm.full())
+//     throw Exception("Could not fully initialize all %i HMM states. "
+//                     "Context library contains too few profiles!",
+//                     hmm.num_states());
 
-  LOG(DEBUG) << "HMM after state initialization:";
-  LOG(DEBUG) << hmm;
-}
+//   LOG(DEBUG) << "HMM after state initialization:";
+//   LOG(DEBUG) << hmm;
+// }
 
-template<class Alphabet>
-void CoEmissionHMMTransitionInitializer<Alphabet>::Init(HMM<Alphabet>& hmm) const {
-  const int ncols = hmm.num_cols() - 1;
+// template<class Alphabet>
+// void CoEmissionHMMTransitionInitializer<Alphabet>::Init(HMM<Alphabet>& hmm) const {
+//   const int ncols = hmm.num_cols() - 1;
 
-  for (int k = 0; k < hmm.num_states(); ++k) {
-    for (int l = 0; l < hmm.num_states(); ++l) {
-      float score = co_emission_(hmm[k], hmm[l], 1, 0, ncols);
-      if (score > score_thresh_)
-        hmm(k,l) = score - score_thresh_;
-    }
-  }
-  NormalizeTransitions(hmm);
-}
+//   for (int k = 0; k < hmm.num_states(); ++k) {
+//     for (int l = 0; l < hmm.num_states(); ++l) {
+//       float score = co_emission_(hmm[k], hmm[l], 1, 0, ncols);
+//       if (score > score_thresh_)
+//         hmm(k,l) = score - score_thresh_;
+//     }
+//   }
+//   NormalizeTransitions(hmm);
+// }
 
 }  // namespace cs
 

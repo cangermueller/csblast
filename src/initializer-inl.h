@@ -6,18 +6,12 @@
 #include "initializer.h"
 
 #include <cassert>
-#include <cstdlib>
-#include <cstdio>
-#include <cstring>
 
-#include <iostream>
 #include <vector>
 
 #include "exception.h"
 #include "context_profile-inl.h"
 #include "count_profile-inl.h"
-
-#include "log.h"
 #include "profile-inl.h"
 #include "profile_library-inl.h"
 #include "pseudocounts.h"
@@ -55,11 +49,11 @@ void NormalizeTransitions(Graph<Alphabet>* graph) {
 
 
 template< class Alphabet, template<class> class Graph >
-SamplingStateInitializer<Alphabet>::SamplingStateInitializer(
+SamplingStateInitializer<Alphabet, Graph>::SamplingStateInitializer(
     profile_vector profiles,
     float sample_rate,
-    const Pseudocounts<Alphabet>* pc = NULL,
-    float pc_admixture = 1.0f)
+    const Pseudocounts<Alphabet>* pc,
+    float pc_admixture)
     : profiles_(profiles),
       sample_rate_(sample_rate),
       pc_(pc),
@@ -68,7 +62,7 @@ SamplingStateInitializer<Alphabet>::SamplingStateInitializer(
 }
 
 template< class Alphabet, template<class> class Graph >
-void SamplingStateInitializer<Alphabet>::Init(Graph<Alphabet>& graph) const {
+void SamplingStateInitializer<Alphabet, Graph>::Init(Graph<Alphabet>& graph) const {
   // Iterate over randomly shuffled profiles; from each profile we sample a
   // fraction of profile windows.
   for (profile_iterator pi = profiles_.begin();
@@ -101,11 +95,11 @@ void SamplingStateInitializer<Alphabet>::Init(Graph<Alphabet>& graph) const {
 }
 
 template< class Alphabet, template<class> class Graph >
-LibraryStateInitializer<Alphabet>::LibraryStateInitializer(
+LibraryStateInitializer<Alphabet, Graph>::LibraryStateInitializer(
     const ProfileLibrary<Alphabet>* lib)  : lib_(lib) {}
 
 template< class Alphabet, template<class> class Graph >
-void LibraryStateInitializer<Alphabet>::Init(Graph<Alphabet>& graph) const {
+void LibraryStateInitializer<Alphabet, Graph>::Init(Graph<Alphabet>& graph) const {
   assert(lib_->num_cols() == graph.num_cols());
 
   typedef std::vector< shared_ptr< ContextProfile<Alphabet> > > ContextProfiles;
@@ -128,7 +122,8 @@ void LibraryStateInitializer<Alphabet>::Init(Graph<Alphabet>& graph) const {
 
 
 template< class Alphabet, template<class> class Graph >
-void HomogeneousTransitionInitializer<Alphabet>::Init(Graph<Alphabet>& graph) const {
+void HomogeneousTransitionInitializer<Alphabet, Graph>::Init(
+    Graph<Alphabet>& graph) const {
   float w = 1.0f / graph.num_states();
   for (int k = 0; k < graph.num_states(); ++k) {
     for (int l = 0; l < graph.num_states(); ++l) {
@@ -138,7 +133,8 @@ void HomogeneousTransitionInitializer<Alphabet>::Init(Graph<Alphabet>& graph) co
 }
 
 template< class Alphabet, template<class> class Graph >
-void RandomTransitionInitializer<Alphabet>::Init(Graph<Alphabet>& graph) const {
+void RandomTransitionInitializer<Alphabet, Graph>::Init(
+    Graph<Alphabet>& graph) const {
   srand(static_cast<unsigned int>(clock()));
   for (int k = 0; k < graph.num_states(); ++k)
     for (int l = 0; l < graph.num_states(); ++l)
@@ -148,12 +144,13 @@ void RandomTransitionInitializer<Alphabet>::Init(Graph<Alphabet>& graph) const {
 }
 
 template< class Alphabet, template<class> class Graph >
-CoEmissionTransitionInitializer<Alphabet>::CoEmissionTransitionInitializer(
+CoEmissionTransitionInitializer<Alphabet, Graph>::CoEmissionTransitionInitializer(
     const SubstitutionMatrix<Alphabet>* sm, float score_thresh)
     : co_emission_(sm), score_thresh_(score_thresh) {}
 
 template< class Alphabet, template<class> class Graph >
-void CoEmissionTransitionInitializer<Alphabet>::Init(Graph<Alphabet>& graph) const {
+void CoEmissionTransitionInitializer<Alphabet, Graph>::Init(
+    Graph<Alphabet>& graph) const {
   const int ncols = graph.num_cols() - 1;
 
   for (int k = 0; k < graph.num_states(); ++k) {
@@ -163,7 +160,7 @@ void CoEmissionTransitionInitializer<Alphabet>::Init(Graph<Alphabet>& graph) con
         graph(k,l) = score - score_thresh_;
     }
   }
-  NormalizeTransitions(graph);
+  NormalizeTransitions(&graph);
 }
 
 }  // namespace cs

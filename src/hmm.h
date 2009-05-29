@@ -14,6 +14,7 @@
 #include "co_emission-inl.h"
 #include "context_profile.h"
 #include "count_profile.h"
+#include "initializer-inl.h"
 #include "profile.h"
 #include "profile_library.h"
 #include "pseudocounts.h"
@@ -27,30 +28,7 @@ namespace cs {
 
 // Forward declarations
 template<class Alphabet>
-class HMM;
-
-template<class Alphabet>
 class HMMTransitionAdaptor;
-
-template<class Alphabet>
-class LibraryHMMStateInitializer;
-
-
-template<class Alphabet>
-class HMMStateInitializer {
- public:
-  HMMStateInitializer() {}
-  virtual ~HMMStateInitializer() {}
-  virtual void Init(HMM<Alphabet>& hmm) const = 0;
-};  // class HMMStateInitializer
-
-template<class Alphabet>
-class HMMTransitionInitializer {
- public:
-  HMMTransitionInitializer() {}
-  virtual ~HMMTransitionInitializer() {}
-  virtual void Init(HMM<Alphabet>& hmm) const = 0;
-};  // class HMMTransitionInitializer
 
 
 // A Hidden Markov Model that stores context information in the form of
@@ -74,15 +52,15 @@ class HMM {
   // initializer. State profiles are initially set to lin-space.
   HMM(int num_states,
       int num_cols,
-      const HMMStateInitializer<Alphabet>& st_init,
-      const HMMTransitionInitializer<Alphabet>& tr_init);
+      const StateInitializer<Alphabet, ::cs::HMM >& st_init,
+      const TransitionInitializer<Alphabet, ::cs::HMM >& tr_init);
 
   virtual ~HMM() {}
 
   // Initializes HMM states with the provided initializer.
-  void InitStates(const HMMStateInitializer<Alphabet>& st_init);
+  void InitStates(const StateInitializer<Alphabet, ::cs::HMM>& st_init);
   // Initializes HMM transitions with the provided initializer.
-  void InitTransitions(const HMMTransitionInitializer<Alphabet>& tr_init);
+  void InitTransitions(const TransitionInitializer<Alphabet, ::cs::HMM>& tr_init);
   // Returns true if all states have been fully assembled.
   bool full() const { return static_cast<int>(states_.size()) == num_states_; }
   // Returns the number of states in the HMM
@@ -212,7 +190,7 @@ class HMM {
   bool states_logspace_;
 
   friend class HMMTransitionAdaptor<Alphabet>;
-  friend class LibraryHMMStateInitializer<Alphabet>;
+  friend class LibraryStateInitializer<Alphabet, ::cs::HMM>;
 };  // class HMM
 
 template<class Alphabet>
@@ -233,107 +211,107 @@ class HMMTransitionAdaptor {
   int l_;
 };  // class HMMTransitionAdaptor
 
-template<class Alphabet>
-class SamplingHMMStateInitializer : public HMMStateInitializer<Alphabet> {
- public:
-  typedef typename
-  std::vector< shared_ptr< CountProfile<Alphabet> > > profile_vector;
-  typedef typename profile_vector::const_iterator profile_iterator;
+// template<class Alphabet>
+// class SamplingHMMStateInitializer : public HMMStateInitializer<Alphabet> {
+//  public:
+//   typedef typename
+//   std::vector< shared_ptr< CountProfile<Alphabet> > > profile_vector;
+//   typedef typename profile_vector::const_iterator profile_iterator;
 
-  SamplingHMMStateInitializer(profile_vector profiles,
-                              float sample_rate,
-                              const Pseudocounts<Alphabet>* pc = NULL,
-                              float pc_admixture = 1.0f)
-      : profiles_(profiles),
-        sample_rate_(sample_rate),
-        pc_(pc),
-        pc_admixture_(pc_admixture) {
-    random_shuffle(profiles_.begin(), profiles_.end());
-  }
+//   SamplingHMMStateInitializer(profile_vector profiles,
+//                               float sample_rate,
+//                               const Pseudocounts<Alphabet>* pc = NULL,
+//                               float pc_admixture = 1.0f)
+//       : profiles_(profiles),
+//         sample_rate_(sample_rate),
+//         pc_(pc),
+//         pc_admixture_(pc_admixture) {
+//     random_shuffle(profiles_.begin(), profiles_.end());
+//   }
 
-  virtual ~SamplingHMMStateInitializer() {};
-  virtual void Init(HMM<Alphabet>& hmm) const;
+//   virtual ~SamplingHMMStateInitializer() {};
+//   virtual void Init(HMM<Alphabet>& hmm) const;
 
- private:
-  // Pool of full length sequence profiles to sample from.
-  profile_vector profiles_;
-  // Fraction of profile windows sampled from each subject.
-  float sample_rate_;
-  // Pseudocount factory for state profiles.
-  const Pseudocounts<Alphabet>* pc_;
-  // Constant pseudocount admixture for state profiles.
-  float pc_admixture_;
-};  // class SamplingHMMStateInitializer
+//  private:
+//   // Pool of full length sequence profiles to sample from.
+//   profile_vector profiles_;
+//   // Fraction of profile windows sampled from each subject.
+//   float sample_rate_;
+//   // Pseudocount factory for state profiles.
+//   const Pseudocounts<Alphabet>* pc_;
+//   // Constant pseudocount admixture for state profiles.
+//   float pc_admixture_;
+// };  // class SamplingHMMStateInitializer
 
-// Compare function to sort states in descending prior probability.
-template<class Alphabet>
-bool PriorCompare(const shared_ptr< ContextProfile<Alphabet> >& lhs,
-                  const shared_ptr< ContextProfile<Alphabet> >& rhs);
+// // Compare function to sort states in descending prior probability.
+// template<class Alphabet>
+// bool PriorCompare(const shared_ptr< ContextProfile<Alphabet> >& lhs,
+//                   const shared_ptr< ContextProfile<Alphabet> >& rhs);
 
-template<class Alphabet>
-class LibraryHMMStateInitializer : public HMMStateInitializer<Alphabet> {
- public:
-  LibraryHMMStateInitializer(const ProfileLibrary<Alphabet>* lib)
-      : lib_(lib) {}
+// template<class Alphabet>
+// class LibraryHMMStateInitializer : public HMMStateInitializer<Alphabet> {
+//  public:
+//   LibraryHMMStateInitializer(const ProfileLibrary<Alphabet>* lib)
+//       : lib_(lib) {}
 
-  virtual ~LibraryHMMStateInitializer() {};
-  virtual void Init(HMM<Alphabet>& hmm) const;
+//   virtual ~LibraryHMMStateInitializer() {};
+//   virtual void Init(HMM<Alphabet>& hmm) const;
 
- private:
-  // Profile library of context profiles.
-  const ProfileLibrary<Alphabet>* lib_;
-};  // class LibraryHMMStateInitializer
+//  private:
+//   // Profile library of context profiles.
+//   const ProfileLibrary<Alphabet>* lib_;
+// };  // class LibraryHMMStateInitializer
 
-template<class Alphabet>
-class HomogeneousHMMTransitionInitializer
-    : public HMMTransitionInitializer<Alphabet> {
- public:
-  HomogeneousHMMTransitionInitializer() {}
-  virtual ~HomogeneousHMMTransitionInitializer() {}
+// template<class Alphabet>
+// class HomogeneousHMMTransitionInitializer
+//     : public HMMTransitionInitializer<Alphabet> {
+//  public:
+//   HomogeneousHMMTransitionInitializer() {}
+//   virtual ~HomogeneousHMMTransitionInitializer() {}
 
-  virtual void Init(HMM<Alphabet>& hmm) const {
-    float prob = 1.0f / hmm.num_states();
-    for (int k = 0; k < hmm.num_states(); ++k) {
-      for (int l = 0; l < hmm.num_states(); ++l) {
-        hmm(k,l) = prob;
-      }
-    }
-  }
-};  // class HomogeneousHMMTransitionInitializer
+//   virtual void Init(HMM<Alphabet>& hmm) const {
+//     float prob = 1.0f / hmm.num_states();
+//     for (int k = 0; k < hmm.num_states(); ++k) {
+//       for (int l = 0; l < hmm.num_states(); ++l) {
+//         hmm(k,l) = prob;
+//       }
+//     }
+//   }
+// };  // class HomogeneousHMMTransitionInitializer
 
-template<class Alphabet>
-class RandomHMMTransitionInitializer : public HMMTransitionInitializer<Alphabet> {
- public:
-  RandomHMMTransitionInitializer() {}
-  virtual ~RandomHMMTransitionInitializer() {}
+// template<class Alphabet>
+// class RandomHMMTransitionInitializer : public HMMTransitionInitializer<Alphabet> {
+//  public:
+//   RandomHMMTransitionInitializer() {}
+//   virtual ~RandomHMMTransitionInitializer() {}
 
-  virtual void Init(HMM<Alphabet>& hmm) const {
-    srand(static_cast<unsigned int>(clock()));
-    for (int k = 0; k < hmm.num_states(); ++k)
-      for (int l = 0; l < hmm.num_states(); ++l)
-        hmm(k,l) =
-          static_cast<float>(rand()) / (static_cast<float>(RAND_MAX) + 1.0f);
-    NormalizeTransitions(hmm);
-  }
-};  // class RandomHMMTransitionInitializer
+//   virtual void Init(HMM<Alphabet>& hmm) const {
+//     srand(static_cast<unsigned int>(clock()));
+//     for (int k = 0; k < hmm.num_states(); ++k)
+//       for (int l = 0; l < hmm.num_states(); ++l)
+//         hmm(k,l) =
+//           static_cast<float>(rand()) / (static_cast<float>(RAND_MAX) + 1.0f);
+//     NormalizeTransitions(hmm);
+//   }
+// };  // class RandomHMMTransitionInitializer
 
-template<class Alphabet>
-class CoEmissionHMMTransitionInitializer
-    : public HMMTransitionInitializer<Alphabet> {
- public:
-  CoEmissionHMMTransitionInitializer(const SubstitutionMatrix<Alphabet>* sm,
-                                  float score_thresh)
-      : co_emission_(sm), score_thresh_(score_thresh) {}
-  virtual ~CoEmissionHMMTransitionInitializer() {}
+// template<class Alphabet>
+// class CoEmissionHMMTransitionInitializer
+//     : public HMMTransitionInitializer<Alphabet> {
+//  public:
+//   CoEmissionHMMTransitionInitializer(const SubstitutionMatrix<Alphabet>* sm,
+//                                   float score_thresh)
+//       : co_emission_(sm), score_thresh_(score_thresh) {}
+//   virtual ~CoEmissionHMMTransitionInitializer() {}
 
-  virtual void Init(HMM<Alphabet>& hmm) const;
+//   virtual void Init(HMM<Alphabet>& hmm) const;
 
- private:
-  // Function object for calculation of co-emission scores
-  CoEmission<Alphabet> co_emission_;
-  // Minimal co-emission score for inclusion in transition set
-  float score_thresh_;
-}; // class CoEmissionHMMTransitionInitializer
+//  private:
+//   // Function object for calculation of co-emission scores
+//   CoEmission<Alphabet> co_emission_;
+//   // Minimal co-emission score for inclusion in transition set
+//   float score_thresh_;
+// }; // class CoEmissionHMMTransitionInitializer
 
 }  // namespace cs
 
