@@ -25,97 +25,67 @@
 
 namespace cs {
 
-// Forward declarations
 template<class Alphabet>
-class CRF;
-
-template<class Alphabet>
-class CRFTransitionAdaptor;
+class TransitionAdaptor;
 
 
-template<class Alphabet>
-class CRFStateInitializer {
- public:
-  CRFStateInitializer() {}
-  virtual ~CRFStateInitializer() {}
-  virtual void Init(CRF<Alphabet>& crf) const = 0;
-};  // class CRFStateInitializer
-
-template<class Alphabet>
-class CRFTransitionInitializer {
- public:
-  CRFTransitionInitializer() {}
-  virtual ~CRFTransitionInitializer() {}
-  virtual void Init(CRF<Alphabet>& crf) const = 0;
-};  // class CRFTransitionInitializer
-
-
-// A hidden Markov model that stores context information in the form of
-// context states and state transition probabilities.
-template<class Alphabet>
-class CRF {
+// Factor graph base class for CRFs and HMMs.
+template< class Alphabet, template<class> class State >
+class FactorGraph {
  public:
   // Public typedefs
-  typedef std::vector< shared_ptr< CRFState<Alphabet> > > StateVec;
+  typedef std::vector< shared_ptr<State> > StateVec;
   typedef sparse_matrix<Transition> TransitionMatrix;
   typedef typename StateVec::iterator StateIter;
   typedef typename StateVec::const_iterator ConstStateIter;
   typedef typename TransitionMatrix::nonempty_iterator TransitionIter;
   typedef typename TransitionMatrix::const_nonempty_iterator ConstTransitionIter;
 
-  // Constructs an empty CRF of given size without any states or transitions.
-  CRF(int num_states, int num_cols);
-  // Constructs context CRF from serialized CRF read from input stream.
-  explicit CRF(FILE* fin);
-  // Constructs context CRF with the help of a state- and a transition-
-  // initializer.
-  CRF(int num_states,
-      int num_cols,
-      const CRFStateInitializer<Alphabet>& st_init,
-      const CRFTransitionInitializer<Alphabet>& tr_init);
+  // Constructs an empty factor graph without any states or transitions.
+  explicit FactorGraph(int num_states);
+  // Constructs a factor graph from serialized graph read from input stream.
+  explicit FactorGraph(FILE* fin);
 
-  virtual ~CRF() {}
+  virtual ~FactorGraph() {}
 
-  // Initializes CRF states with the provided initializer.
-  void InitStates(const CRFStateInitializer<Alphabet>& st_init);
+  // Adds a states to the CRF initialized with given profile and returns the
+  // index of the new state.
+  virtual int AddState(const Profile<Alphabet>& profile) = 0;
+
+
+
+  // Initializes states with the provided initializer.
+  void InitStates(const StateInitializer<Alphabet>& st_init);
   // Initializes CRF transitions with the provided initializer.
-  void InitTransitions(const CRFTransitionInitializer<Alphabet>& tr_init);
+  void InitTransitions(const TransitionInitializer<Alphabet>& tr_init);
   // Returns true if all states have been fully assembled.
   bool full() const { return static_cast<int>(states_.size()) == num_states_; }
-  // Returns the number of states in the CRF
+  // Returns the number of states of the full graph.
   int num_states() const { return num_states_; }
-  // Returns the number of states in the CRF
+  // Returns the number of states of the full graph.
   int size() const { return num_states_; }
-  // Returns the number of columns in each context state.
+  // Returns the number of context columns.
   int num_cols() const { return num_cols_; }
-  // Returns index of central context column in states.
+  // Returns index of central context column.
   int center() const { return (num_cols() - 1) / 2; }
   // Returns the size of the alphabet of the CRF.
   int alphabet_size() const { return Alphabet::instance().size(); }
-  // Returns the number of optimization iterations.
+  // Returns the number of training iterations.
   int iterations() const { return iterations_; }
-  // Returns the number of non-null transitions in the CRF.
+  // Returns the number of transitions.
   int num_transitions() const { return transitions_.num_nonempty(); }
-  // Returns the mean state connectivity.
+  // Returns the mean connectivity.
   float connectivity() const {
     return static_cast<float>(num_transitions()) / num_states();
   }
   // Accessor methods for state i, where i is from interval [0,num_states].
   CRFState<Alphabet>& operator[](int i) { return *states_[i]; }
   const CRFState<Alphabet>& operator[](int i) const { return *states_[i]; }
-  CRFState<Alphabet>& st(int i) { return *states_[i]; }
-  const CRFState<Alphabet>& st(int i) const { return *states_[i]; }
   // Accessor methods for transition probability (k,l)
   CRFTransitionAdaptor<Alphabet> operator() (int k, int l) {
     return CRFTransitionAdaptor<Alphabet>(this, k, l);
   }
   float operator() (int k, int l) const {
-    return transitions_.get(k,l).weight;
-  }
-  CRFTransitionAdaptor<Alphabet> tr(int k, int l) {
-    return CRFTransitionAdaptor<Alphabet>(this, k, l);
-  }
-  float tr(int k, int l) const {
     return transitions_.get(k,l).weight;
   }
   // Sets the transition from state k to state l to value w.
@@ -124,23 +94,6 @@ class CRF {
   void erase_transition(int k, int l);
   // Returns true if there is a transition between state k and state l.
   bool test_transition(int k, int l) const { return transitions_.test(k,l); }
-  // Clears all states and transitions.
-  void Clear();
-  // Clears all transitions but leaves states untouched.
-  void ClearTransitions();
-  // Adds a states to the CRF initialized with given profile and returns the
-  // index of the new state.
-  int AddState(const Profile<Alphabet>& profile);
-  // Returns true if transitions are in logspace.
-  bool transitions_logspace() const { return transitions_logspace_; }
-  // Increments the training iteration counter.
-  void increment_iterations() { ++iterations_; }
-  // Transforms transitions to logspace.
-  void TransformTransitionsToLogSpace();
-  // Transforms transitions to linspace.
-  void TransformTransitionsToLinSpace();
-  // Writes the CRF in serialization format to output stream.
-  void Write(FILE* fout) const;
   // Returns an iterator to a list of pointers of states.
   StateIter states_begin() { return states_.begin(); }
   // Returns an iterator pointing past the end of a list of pointers of states.
@@ -164,6 +117,30 @@ class CRF {
   ConstTransitionIter transitions_end() const {
     return transitions_.nonempty_end();
   }
+  // Clears all states and transitions.
+  void Clear();
+  // Clears all transitions but leaves states untouched.
+  void ClearTransitions();
+  // Returns true if transitions are in logspace.
+  bool transitions_logspace() const { return transitions_logspace_; }
+  // Increments the training iteration counter.
+  void increment_iterations() { ++iterations_; }
+  // Transforms transitions to logspace.
+  void TransformTransitionsToLogSpace();
+  // Transforms transitions to linspace.
+  void TransformTransitionsToLinSpace();
+
+
+  // Writes the CRF in serialization format to output stream.
+  void Write(FILE* fout) const;
+  // Writes header section for serialization.
+  virtual WriteHeader(FILE* fout) const;
+  // Writes states in serialization format.
+  virtual WriteStates(FILE* fout) const;
+  // Writes transitions in serialization format.
+  virtual WriteTransitions(FILE* fout) const;
+
+
 
   // Prints CRF in human-readable format for debugging.
   friend std::ostream& operator<< (std::ostream& out, const CRF& crf) {
