@@ -1,35 +1,31 @@
 // Copyright 2009, Andreas Biegert
 
-#ifndef SRC_CRF_H_
-#define SRC_CRF_H_
+#ifndef SRC_FACTOR_GRAPH_H_
+#define SRC_FACTOR_GRAPH_H_
 
 #include <cstdlib>
 #include <cstdio>
 
-#include <algorithm>
 #include <iostream>
 #include <vector>
 
 #include "globals.h"
-#include "co_emission-inl.h"
-#include "context_profile.h"
-#include "count_profile.h"
+#include "initializer.h"
 #include "profile.h"
-#include "profile_library.h"
-#include "pseudocounts.h"
 #include "shared_ptr.h"
 #include "sparse_matrix.h"
-#include "substitution_matrix.h"
-#include "crf_state.h"
-#include "transition.h"
 
 namespace cs {
+
+// Forward declarations
+struct Transition;
 
 template<class Alphabet>
 class TransitionAdaptor;
 
 
-// Factor graph base class for factor graphs and HMMs.
+// Abstract base class of a linear chain factor graph from which classes CRF and
+// HMM derive.
 template< class Alphabet, template<class> class State >
 class FactorGraph {
  public:
@@ -42,9 +38,15 @@ class FactorGraph {
   typedef typename TransitionMatrix::const_nonempty_iterator ConstTransitionIter;
 
   // Constructs an empty factor graph without any states or transitions.
-  explicit FactorGraph(int num_states);
+  FactorGraph(int num_states, int num_cols);
   // Constructs a factor graph from serialized graph read from input stream.
   explicit FactorGraph(FILE* fin);
+  // Constructs an HMM with the help of a state- and a transition-
+  // initializer. Transitions are initially set to lin-space.
+  FactorGraph(int num_states,
+              int num_cols,
+              const StateInitializer<Alphabet>& st_init,
+              const TransitionInitializer<Alphabet>& tr_init);
 
   virtual ~FactorGraph() {}
 
@@ -158,13 +160,13 @@ class FactorGraph {
   // Writes transitions in serialization format.
   virtual WriteTransitions(FILE* fout) const;
   // Prints the factor graph in human-readable format to output stream.
-  void Print(std::ostream& out) const;
+  virtual void Print(std::ostream& out) const;
   // Returns serialization class identity.
   virtual const char* class_id() const = 0;
 
   // Number states in the fully assembled factor graph
   int num_states_;
-  // Number of columns in each context state.
+  // Number of columns in each state.
   int num_cols_;
   // Number of training iterations performed on this factor graph.
   int iterations_;
@@ -178,6 +180,40 @@ class FactorGraph {
   friend class TransitionAdaptor<Alphabet>;
 };  // class FactorGraph
 
+
+// Simple struct for transitions between factor graph states.
+struct Transition {
+  Transition() : source(0), target(0), weight(0.0f) {}
+  Transition(int f, int t, float p) : source(f), target(t), weight(p) {}
+  ~Transition() {}
+
+  operator float() const { return weight; }
+
+  // Index of source state of the transition
+  const int source;
+  // Index of target state of the transition
+  const int target;
+  // Transition weight.
+  float weight;
+};  // class Transition
+
+
+// Simple struct for transitions that are anchored at a state.
+struct AnchoredTransition {
+  AnchoredTransition() : state(0), weight(0.0f) {}
+  AnchoredTransition(int i, float p) : state(i), weight(p) {}
+  ~AnchoredTransition() {}
+
+  operator float() const { return weight; }
+
+  // Index of the source/target state of the transition.
+  const int state;
+  // Transition weight.
+  float weight;
+};  // class AnchoredTransition
+
+
+// Opaque object that acts like a transition.
 template<class Alphabet>
 class TransitionAdaptor {
  public:

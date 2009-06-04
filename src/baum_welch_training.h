@@ -53,9 +53,9 @@ struct BaumWelchOptions : public ExpectationMaximizationOptions {
 template< class Alphabet, template<class> class Subject >
 class BaumWelchTraining : public ExpectationMaximization<Alphabet, Subject> {
  public:
-  typedef typename std::vector< shared_ptr< Subject<Alphabet> > > data_vector;
-  typedef typename std::vector< shared_ptr< ContextProfile<Alphabet> > > profiles_vector;
-  typedef typename HMM<Alphabet>::ConstTransitionIter ConstTransitionIter;
+  typedef std::vector< shared_ptr< Subject<Alphabet> > > data_vector;
+  typedef std::vector< shared_ptr< ContextProfile<Alphabet> > > profiles_vector;
+  typedef HMM<Alphabet>::ConstTransitionIter ConstTransitionIter;
 
   // Needed to access names in templatized base class
   using ExpectationMaximization<Alphabet, Subject>::log_likelihood;
