@@ -98,7 +98,7 @@ void ForwardAlgorithm(const HMM<Alphabet>& hmm,
                        const MultEmission<Alphabet>& emission,
                        ForwardBackwardMatrices* fbm) {
   typedef typename HMM<Alphabet>::ConstStateIter ConstStateIter;
-  typedef typename HMMState<Alphabet>::ConstTransitionIter ConstTransitionIter;
+  typedef typename ContextProfileState<Alphabet>::ConstTransitionIter ConstTransitionIter;
 
   LOG(DEBUG1) << "Forward algorithm ...";
   const int length     = subject.length();
@@ -167,7 +167,7 @@ void BackwardAlgorithm(const HMM<Alphabet>& hmm,
                         const Subject<Alphabet>& subject,
                         ForwardBackwardMatrices* fbm) {
   typedef typename HMM<Alphabet>::ConstStateIter ConstStateIter;
-  typedef typename HMMState<Alphabet>::ConstTransitionIter ConstTransitionIter;
+  typedef typename ContextProfileState<Alphabet>::ConstTransitionIter ConstTransitionIter;
 
   LOG(DEBUG1) << "Backward algorithm ...";
   const int length     = subject.length();

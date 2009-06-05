@@ -5,9 +5,8 @@
 
 namespace cs {
 
-// Simple struct for transitions between HMM or CRF states.
+// Simple struct for transitions between factor graph states.
 struct Transition {
-  // Simple Constructors
   Transition() : source(0), target(0), weight(0.0f) {}
   Transition(int f, int t, float p) : source(f), target(t), weight(p) {}
   ~Transition() {}
@@ -22,8 +21,8 @@ struct Transition {
   float weight;
 };  // class Transition
 
+// Simple struct for transitions that are anchored at a state.
 struct AnchoredTransition {
-  // Simple Constructors
   AnchoredTransition() : state(0), weight(0.0f) {}
   AnchoredTransition(int i, float p) : state(i), weight(p) {}
   ~AnchoredTransition() {}

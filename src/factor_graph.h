@@ -10,18 +10,27 @@
 #include <vector>
 
 #include "globals.h"
-#include "initializer.h"
+#include "context_profile-inl.h"
+#include "count_profile-inl.h"
+#include "profile-inl.h"
+#include "profile_library-inl.h"
+#include "pseudocounts.h"
 #include "profile.h"
 #include "shared_ptr.h"
 #include "sparse_matrix.h"
+#include "transition.h"
 
 namespace cs {
 
 // Forward declarations
-struct Transition;
-
-template<class Alphabet>
+template< class Alphabet, template<class> class State >
 class TransitionAdaptor;
+
+template< class Alphabet, template<class> class State >
+class StateInitializer;
+
+template< class Alphabet, template<class> class State >
+class TransitionInitializer;
 
 
 // Abstract base class of a linear chain factor graph from which classes CRF and
@@ -30,33 +39,30 @@ template< class Alphabet, template<class> class State >
 class FactorGraph {
  public:
   // Public typedefs
-  typedef std::vector< shared_ptr<State> > StateVec;
+  typedef std::vector< shared_ptr< State<Alphabet> > > StateVec;
   typedef sparse_matrix<Transition> TransitionMatrix;
   typedef typename StateVec::iterator StateIter;
   typedef typename StateVec::const_iterator ConstStateIter;
   typedef typename TransitionMatrix::nonempty_iterator TransitionIter;
   typedef typename TransitionMatrix::const_nonempty_iterator ConstTransitionIter;
 
+  // Constructs a dummy factor graph
+  FactorGraph();
   // Constructs an empty factor graph without any states or transitions.
   FactorGraph(int num_states, int num_cols);
   // Constructs a factor graph from serialized graph read from input stream.
   explicit FactorGraph(FILE* fin);
-  // Constructs an HMM with the help of a state- and a transition-
-  // initializer. Transitions are initially set to lin-space.
-  FactorGraph(int num_states,
-              int num_cols,
-              const StateInitializer<Alphabet>& st_init,
-              const TransitionInitializer<Alphabet>& tr_init);
 
   virtual ~FactorGraph() {}
 
   // Adds a states to the factor graph initialized with given profile and
-  // returns the index of the new state.
+  // returns the index of the new state. Caller has to guarantee that the profile
+  // is in lin-space
   virtual int AddState(const Profile<Alphabet>& profile) = 0;
   // Initializes states with the provided initializer.
-  void InitStates(const StateInitializer<Alphabet>& st_init);
+  void InitStates(const StateInitializer<Alphabet, State>& st);
   // Initializes factor graph transitions with the provided initializer.
-  void InitTransitions(const TransitionInitializer<Alphabet>& tr_init);
+  void InitTransitions(const TransitionInitializer<Alphabet, State>& tr);
   // Returns true if all states have been fully assembled.
   bool full() const { return static_cast<int>(states_.size()) == num_states_; }
   // Returns the number of states of the full graph.
@@ -81,10 +87,16 @@ class FactorGraph {
   State<Alphabet>& operator[](int i) { return *states_[i]; }
   const State<Alphabet>& operator[](int i) const { return *states_[i]; }
   // Accessor methods for transition probability (k,l)
-  TransitionAdaptor<Alphabet> operator() (int k, int l) {
-    return TransitionAdaptor<Alphabet>(this, k, l);
+  TransitionAdaptor<Alphabet, State> operator() (int k, int l) {
+    return TransitionAdaptor<Alphabet, State>(this, k, l);
   }
   float operator() (int k, int l) const {
+    return transitions_.get(k,l).weight;
+  }
+  TransitionAdaptor<Alphabet, State> tr(int k, int l) {
+    return TransitionAdaptor<Alphabet, State>(this, k, l);
+  }
+  float tr(int k, int l) const {
     return transitions_.get(k,l).weight;
   }
   // Sets the transition from state k to state l to value w.
@@ -137,7 +149,7 @@ class FactorGraph {
     return out;
   }
 
- private:
+ protected:
   // Scaling factor for serialization of profile log values
   static const int kLogScale = 1000;
   // Buffer size for reading
@@ -148,21 +160,19 @@ class FactorGraph {
   // Initializes the factor graph from a serialized factor graph read from stream.
   void Read(FILE* fin);
   // Writes header section for serialization.
-  virtual ReadHeader(FILE* fout) const;
+  virtual void ReadHeader(FILE* fout);
   // Writes states in serialization format.
-  virtual ReadStates(FILE* fout) const;
+  virtual void ReadStates(FILE* fout);
   // Writes transitions in serialization format.
-  virtual ReadTransitions(FILE* fout) const;
+  virtual void ReadTransitions(FILE* fout);
   // Writes header section for serialization.
-  virtual WriteHeader(FILE* fout) const;
+  virtual void WriteHeader(FILE* fout) const;
   // Writes states in serialization format.
-  virtual WriteStates(FILE* fout) const;
+  virtual void WriteStates(FILE* fout) const;
   // Writes transitions in serialization format.
-  virtual WriteTransitions(FILE* fout) const;
+  virtual void WriteTransitions(FILE* fout) const;
   // Prints the factor graph in human-readable format to output stream.
   virtual void Print(std::ostream& out) const;
-  // Returns serialization class identity.
-  virtual const char* class_id() const = 0;
 
   // Number states in the fully assembled factor graph
   int num_states_;
@@ -177,60 +187,145 @@ class FactorGraph {
   // Flag indicating if HMM transitions are log- or linspace
   bool transitions_logspace_;
 
-  friend class TransitionAdaptor<Alphabet>;
+ private:
+  // Returns serialization class identity.
+  virtual const char* class_id() const = 0;
+
+  friend class TransitionAdaptor<Alphabet, State>;
 };  // class FactorGraph
 
 
-// Simple struct for transitions between factor graph states.
-struct Transition {
-  Transition() : source(0), target(0), weight(0.0f) {}
-  Transition(int f, int t, float p) : source(f), target(t), weight(p) {}
-  ~Transition() {}
-
-  operator float() const { return weight; }
-
-  // Index of source state of the transition
-  const int source;
-  // Index of target state of the transition
-  const int target;
-  // Transition weight.
-  float weight;
-};  // class Transition
-
-
-// Simple struct for transitions that are anchored at a state.
-struct AnchoredTransition {
-  AnchoredTransition() : state(0), weight(0.0f) {}
-  AnchoredTransition(int i, float p) : state(i), weight(p) {}
-  ~AnchoredTransition() {}
-
-  operator float() const { return weight; }
-
-  // Index of the source/target state of the transition.
-  const int state;
-  // Transition weight.
-  float weight;
-};  // class AnchoredTransition
-
-
 // Opaque object that acts like a transition.
-template<class Alphabet>
+template< class Alphabet, template<class> class State >
 class TransitionAdaptor {
  public:
-  TransitionAdaptor(FactorGraph<Alphabet>* g, int k, int l)
+  TransitionAdaptor(FactorGraph<Alphabet, State>* g, int k, int l)
       : g_(g), k_(k), l_(l) {}
   TransitionAdaptor& operator= (float val) {
     g_->set_transition(k_, l_, val);
     return *this;
   }
   operator float() { return g_->transitions_.get(k_, l_).weight; }
-  Transition* operator& () { return &hmm_->transitions_.mutating_get(k_, l_); }
+  Transition* operator& () { return &g_->transitions_.mutating_get(k_, l_); }
 
  private:
-  CRF<Alphabet>* g_;
+  FactorGraph<Alphabet, State>* g_;
   int k_;
   int l_;
 };  // class TransitionAdapter
+
+
+// Normalizes transition probabilities to one.
+template< class Alphabet, template<class> class State >
+void NormalizeTransitions(FactorGraph<Alphabet, State>* graph, float f = 1.0f);
+
+// Compare function to sort profiles in order of descending prior probability.
+template<class Alphabet>
+bool PriorCompare(const shared_ptr< ContextProfile<Alphabet> >& lhs,
+                  const shared_ptr< ContextProfile<Alphabet> >& rhs);
+
+
+// Abstract base class for state initialization strategies.
+template< class Alphabet, template<class> class State >
+class StateInitializer {
+ public:
+  StateInitializer() {}
+  virtual ~StateInitializer() {}
+  virtual void Init(FactorGraph<Alphabet, State>& graph) const = 0;
+};  // class StateInitializer
+
+// Strategy that randomly samples states from training profiles.
+template< class Alphabet, template<class> class State >
+class SamplingStateInitializer : public StateInitializer<Alphabet, State> {
+ public:
+  typedef shared_ptr< CountProfile<Alphabet> > ProfilePtr;
+  typedef typename std::vector<ProfilePtr> ProfileVec;
+  typedef typename std::vector<ProfilePtr>::const_iterator ProfileIter;
+
+  SamplingStateInitializer(ProfileVec profiles,
+                           float sample_rate,
+                           const Pseudocounts<Alphabet>* pc = NULL,
+                           float pc_admixture = 1.0f);
+  virtual ~SamplingStateInitializer() {};
+  virtual void Init(FactorGraph<Alphabet, State>& graph) const;
+
+ private:
+  // Pool of full length sequence profiles to sample from.
+  ProfileVec profiles_;
+  // Fraction of profile windows sampled from each subject.
+  float sample_rate_;
+  // Pseudocount factory for state profiles.
+  const Pseudocounts<Alphabet>* pc_;
+  // Constant pseudocount admixture for state profiles.
+  float pc_admixture_;
+};  // class SamplingStateInitializer
+
+// Strategy that uses context profiles from a profile library to initialize
+// states in the factor graph.
+template< class Alphabet, template<class> class State >
+class LibraryStateInitializer : public StateInitializer<Alphabet, State> {
+ public:
+  LibraryStateInitializer(const ProfileLibrary<Alphabet>* lib);
+  virtual ~LibraryStateInitializer() {};
+  virtual void Init(FactorGraph<Alphabet, State>& graph) const;
+
+ private:
+  typedef shared_ptr< ContextProfile<Alphabet> > ContextProfilePtr;
+  typedef std::vector<ContextProfilePtr> ContextProfileVec;
+  typedef typename ContextProfileVec::const_iterator ContextProfileIter;
+
+  // Profile library of context profiles.
+  const ProfileLibrary<Alphabet>* lib_;
+};  // class LibraryStateInitializer
+
+
+// Abstract base class for transition initialization strategies.
+template< class Alphabet, template<class> class State >
+class TransitionInitializer {
+ public:
+  TransitionInitializer() {}
+  virtual ~TransitionInitializer() {}
+  virtual void Init(FactorGraph<Alphabet, State>& graph) const = 0;
+};  // class TransitionInitializer
+
+// Strategy that initializes transitions homogeneously.
+template< class Alphabet, template<class> class State >
+class HomogeneousTransitionInitializer
+    : public TransitionInitializer<Alphabet, State> {
+ public:
+  HomogeneousTransitionInitializer() {}
+  virtual ~HomogeneousTransitionInitializer() {}
+  virtual void Init(FactorGraph<Alphabet, State>& graph) const;
+};  // class HomogeneousTransitionInitializer
+
+// Strategy that initializes transition probabilities at random.
+template< class Alphabet, template<class> class State >
+class RandomTransitionInitializer :
+      public TransitionInitializer<Alphabet, State> {
+ public:
+  RandomTransitionInitializer() {}
+  virtual ~RandomTransitionInitializer() {}
+  virtual void Init(FactorGraph<Alphabet, State>& graph) const;
+};  // class RandomTransitionInitializer
+
+// Strategy that uses the co-emission scores of profile pairs to determine
+// transition probabilities. No transition is added if the co-emission is below
+// given threshold.
+template< class Alphabet, template<class> class State >
+class CoEmissionTransitionInitializer
+    : public TransitionInitializer<Alphabet, State> {
+ public:
+  CoEmissionTransitionInitializer(const SubstitutionMatrix<Alphabet>* sm,
+                                  float score_thresh);
+  virtual ~CoEmissionTransitionInitializer() {}
+  virtual void Init(FactorGraph<Alphabet, State>& graph) const;
+
+ private:
+  // Function object for calculation of co-emission scores
+  CoEmission<Alphabet> co_emission_;
+  // Minimal co-emission score for inclusion in transition set
+  float score_thresh_;
+}; // class CoEmissionTransitionInitializer
 
 }  // namespace cs
 

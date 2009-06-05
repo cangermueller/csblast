@@ -23,13 +23,13 @@ template<class Alphabet>
 inline ContextProfile<Alphabet>::ContextProfile()
     : Profile<Alphabet>(),
       index_(0),
-      prior_(0.0f) {}
+      prior_(0.0) {}
 
 template<class Alphabet>
 inline ContextProfile<Alphabet>::ContextProfile(int index, int num_cols)
     : Profile<Alphabet>(num_cols),
       index_(index),
-      prior_(0.0f) {
+      prior_(0.0) {
   check();
 }
 
@@ -38,7 +38,7 @@ inline ContextProfile<Alphabet>::ContextProfile(int index,
                                                 const Profile<Alphabet>& profile)
     : Profile<Alphabet>(profile),
       index_(index),
-      prior_(0.0f) {
+      prior_(0.0) {
   check();
 }
 
@@ -46,7 +46,7 @@ template<class Alphabet>
 inline ContextProfile<Alphabet>::ContextProfile(FILE* fin)
     : Profile<Alphabet>(),
       index_(0),
-      prior_(0.0f) {
+      prior_(0.0) {
   Read(fin);
   check();
 }
@@ -102,7 +102,7 @@ inline void Reset(ContextProfile<Alphabet>* p) {
   const int num_cols = profile.num_cols();
   const int alphabet_size = profile.alphabet_size();
 
-  profile.set_prior(0.0f);
+  profile.set_prior(0.0);
   for (int i = 0; i < num_cols; ++i)
     for (int a = 0; a < alphabet_size; ++a)
       profile[i][a] = 0.0f;

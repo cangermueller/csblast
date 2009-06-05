@@ -154,9 +154,10 @@ TEST(HMMTestInitialization, RandomSampleInitializer) {
 
   BlosumMatrix m;
   MatrixPseudocounts<AminoAcid> pc(&m);
-  SamplingStateInitializer<AminoAcid, HMM> st_init(profiles, 0.2f, &pc, 0.2f);
-  HomogeneousTransitionInitializer<AminoAcid, HMM> tr_init;
+  SamplingStateInitializerHMM<AminoAcid> st_init(profiles, 0.2f, &pc, 0.2f);
+  HomogeneousTransitionInitializerHMM<AminoAcid> tr_init;
   HMM<AminoAcid> hmm(10, 5, st_init, tr_init);
+
 
   EXPECT_EQ(10, hmm.num_states());
   EXPECT_EQ(100, hmm.num_transitions());
@@ -167,14 +168,15 @@ TEST(HMMTestInitialization, RandomSampleInitializer) {
 TEST(HMMTestInitialization, LibraryInitialization) {
   FILE* fin = fopen("../data/scop20_1.73_opt_N100000_W13.lib", "r");
   ProfileLibrary<AminoAcid> profile_lib(fin);
+  profile_lib.TransformToLinSpace();
   fclose(fin);
 
   ASSERT_EQ(50, profile_lib.num_profiles());
   ASSERT_EQ(13, profile_lib.num_cols());
 
-  LibraryStateInitializer<AminoAcid, HMM> st_init(&profile_lib);
+  LibraryStateInitializerHMM<AminoAcid> st_init(&profile_lib);
   BlosumMatrix m;
-  CoEmissionTransitionInitializer<AminoAcid, HMM> tr_init(&m, 0.0f);
+  CoEmissionTransitionInitializerHMM<AminoAcid> tr_init(&m, 0.0f);
   HMM<AminoAcid> hmm(50, profile_lib.num_cols(), st_init, tr_init);
 
   EXPECT_EQ(892, hmm.num_transitions());

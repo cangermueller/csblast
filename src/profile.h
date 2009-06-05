@@ -116,7 +116,6 @@ class Profile {
 
   // Returns serialization class identity.
   virtual const char* class_id() const { return kClassID; }
-
 };  // Profile
 
 // Resets all entries in given profile to the given value or zero if none is given.

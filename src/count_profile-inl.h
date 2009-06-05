@@ -20,7 +20,8 @@ const char* CountProfile<Alphabet>::kClassID = "CountProfile";
 
 template<class Alphabet>
 inline CountProfile<Alphabet>::CountProfile(FILE* fin)
-    : neff_() {
+    : Profile<Alphabet>(),
+      neff_() {
   Read(fin);
 }
 

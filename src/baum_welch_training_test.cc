@@ -39,7 +39,7 @@ class BaumWelchTrainingTest : public testing::Test {
       Profile<AminoAcid> p(profile, i, 1);
       hmm_.AddState(p);
     }
-    hmm_.InitTransitions(HomogeneousTransitionInitializer<AminoAcid, HMM>());
+    hmm_.InitTransitions(HomogeneousTransitionInitializerHMM<AminoAcid>());
     hmm_.TransformStatesToLogSpace();
 
     // Read zinc finger sequences

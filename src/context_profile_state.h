@@ -1,7 +1,7 @@
 // Copyright 2009, Andreas Biegert
 
-#ifndef SRC_HMM_STATE_H_
-#define SRC_HMM_STATE_H_
+#ifndef SRC_CONTEXT_PROFILE_STATE_H_
+#define SRC_CONTEXT_PROFILE_STATE_H_
 
 #include <cstdio>
 
@@ -17,14 +17,15 @@ using google::sparsetable;
 namespace cs {
 
 // Forward declarations
-template<class Alphabet>
-class HMM;
+template< class Alphabet, template<class> class State >
+class FactorGraph;
 
 // A class representing a context state in a context HMM.
 template<class Alphabet>
-class HMMState : public ContextProfile<Alphabet> {
+class ContextProfileState : public ContextProfile<Alphabet> {
  public:
-  typedef typename sparsetable<AnchoredTransition>::const_nonempty_iterator ConstTransitionIter;
+  typedef sparsetable<AnchoredTransition> TransitionTable;
+  typedef typename TransitionTable::const_nonempty_iterator ConstTransitionIter;
 
   // Needed to access names in templatized Profile base class
   using ContextProfile<Alphabet>::num_cols;
@@ -37,15 +38,12 @@ class HMMState : public ContextProfile<Alphabet> {
   using ContextProfile<Alphabet>::Read;
 
   // Constructs HMM state from serialized state read from input stream.
-  explicit HMMState(FILE* fin);
+  explicit ContextProfileState(FILE* fin);
   // Constructs HMM state with given profile and all transitions initialized to
   // zero.
-  HMMState(int index, int num_states, const Profile<Alphabet>& profile);
-  // Constructs HMM state with given context profile and all transitions
-  // initialized to zero.
-  HMMState(int index, int num_states, const ContextProfile<Alphabet>& profile);
+  ContextProfileState(int index, int num_states, const Profile<Alphabet>& profile);
 
-  virtual ~HMMState() {}
+  virtual ~ContextProfileState() {}
 
   // Returns number of in-transitions.
   int num_in_transitions() const { return in_transitions_.num_nonempty(); }
@@ -72,7 +70,7 @@ class HMMState : public ContextProfile<Alphabet> {
 
  protected:
   // HMM needs access to transition tables.
-  friend class HMM<Alphabet>;
+  friend class FactorGraph<Alphabet, ::cs::ContextProfileState>;
 
   // Needed to access names in templatized Profile base class
   using ContextProfile<Alphabet>::kBufferSize;
@@ -98,8 +96,8 @@ class HMMState : public ContextProfile<Alphabet> {
   sparsetable<AnchoredTransition> in_transitions_;
   // List of out-transitions.
   sparsetable<AnchoredTransition> out_transitions_;
-};  // class HMMState
+};  // class ContextProfileState
 
 }  // namespace cs
 
-#endif  // SRC_HMM_STATE_H_
+#endif  // SRC_CONTEXT_PROFILE_STATE_H_

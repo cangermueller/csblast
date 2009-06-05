@@ -9,6 +9,7 @@
 #include <iostream>
 #include <vector>
 
+#include "abstract_state.h"
 #include "alignment.h"
 #include "profile.h"
 #include "shared_ptr.h"
@@ -42,9 +43,9 @@ class ContextProfile : public Profile<Alphabet> {
   // Sets the index of this context profile.
   void set_index(int i) { index_ = i; }
   // Returns the prior probability of this context profile.
-  float prior() const { return prior_; }
+  double prior() const { return prior_; }
   // Sets the prior probability of this context profile.
-  void set_prior(float p) { prior_ = p; }
+  void set_prior(double p) { prior_ = p; }
   // Returns index of central profile column.
   int center() const { return (num_cols() - 1) / 2; }
 
@@ -63,7 +64,7 @@ class ContextProfile : public Profile<Alphabet> {
   // Index of context-profile.
   int index_;
   // Prior probability of context-profile.
-  float prior_;
+  double prior_;
 
  private:
   // Class identifier

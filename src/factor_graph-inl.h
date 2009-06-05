@@ -14,19 +14,32 @@
 #include <vector>
 
 #include "exception.h"
-#include "initializer-inl.h"
+#include "context_profile-inl.h"
+#include "count_profile-inl.h"
+#include "profile-inl.h"
+#include "profile_library-inl.h"
+#include "pseudocounts.h"
 #include "log.h"
 #include "profile.h"
 #include "shared_ptr.h"
+#include "transition.h"
 
 namespace cs {
+
+template< class Alphabet, template<class> class State >
+FactorGraph<Alphabet, State>::FactorGraph()
+    : num_states_(0),
+      num_cols_(0),
+      iterations_(0),
+      transitions_logspace_(false) {
+  Init();
+}
 
 template< class Alphabet, template<class> class State >
 FactorGraph<Alphabet, State>::FactorGraph(int num_states, int num_cols)
     : num_states_(num_states),
       num_cols_(num_cols),
       iterations_(0),
-      states_(),
       transitions_(num_states, num_states),
       transitions_logspace_(false) {
   Init();
@@ -42,22 +55,6 @@ FactorGraph<Alphabet, State>::FactorGraph(FILE* fin)
 }
 
 template< class Alphabet, template<class> class State >
-FactorGraph<Alphabet, State>::FactorGraph(
-    int num_states,
-    int num_cols,
-    const StateInitializer<Alphabet, State>& st_init,
-    const TransitionInitializer<Alphabet, State>& tr_init)
-    : num_states_(num_states),
-      num_cols_(num_cols),
-      iterations_(0),
-      transitions_(num_states, num_states),
-      transitions_logspace_(false) {
-  Init();
-  st_init.Init(*this);
-  tr_init.Init(*this);
-}
-
-template< class Alphabet, template<class> class State >
 void FactorGraph<Alphabet, State>::Init() {
   states_.reserve(num_states());
   transitions_.resize(num_states(), num_states());
@@ -65,16 +62,16 @@ void FactorGraph<Alphabet, State>::Init() {
 
 template< class Alphabet, template<class> class State >
 void FactorGraph<Alphabet, State>::InitStates(
-    const StateInitializer<Alphabet>& st_init) {
+    const StateInitializer<Alphabet, State>& st) {
   Clear();
-  st_init.Init(*this);
+  st.Init(*this);
 }
 
 template< class Alphabet, template<class> class State >
 void FactorGraph<Alphabet, State>::InitTransitions(
-    const TransitionInitializer<Alphabet>& tr_init) {
+    const TransitionInitializer<Alphabet, State>& tr) {
   ClearTransitions();
-  tr_init.Init(*this);
+  tr.Init(*this);
 }
 
 template< class Alphabet, template<class> class State >
@@ -138,6 +135,7 @@ void FactorGraph<Alphabet, State>::Read(FILE* fin) {
   LOG(DEBUG1) << "Reading HMM from stream ...";
 
   ReadHeader(fin);
+  Init();
   ReadStates(fin);
   ReadTransitions(fin);
 
@@ -196,14 +194,12 @@ void FactorGraph<Alphabet, State>::ReadHeader(FILE* fin) {
   } else {
     throw Exception("%s does not contain 'TRLOG' record!", class_id());
   }
-
-  Init();
 }
 
 template< class Alphabet, template<class> class State >
 void FactorGraph<Alphabet, State>::ReadStates(FILE* fin) {
   while (!full() && !feof(fin)) {
-    shared_ptr< HMMState<Alphabet> > state_ptr(new HMMState<Alphabet>(fin));
+    shared_ptr< State<Alphabet> > state_ptr(new State<Alphabet>(fin));
     states_.push_back(state_ptr);
   }
 
@@ -214,10 +210,12 @@ void FactorGraph<Alphabet, State>::ReadStates(FILE* fin) {
 
 template< class Alphabet, template<class> class State >
 void FactorGraph<Alphabet, State>::ReadTransitions(FILE* fin) {
+  char buffer[kBufferSize];
+  const char* ptr = buffer;
   int k, l;
   float w;
-  fgetline(buffer, kBufferSize, fin);  // skip description line
 
+  fgetline(buffer, kBufferSize, fin);  // skip description line
   while (fgetline(buffer, kBufferSize, fin) && buffer[0] != '/' &&
          buffer[1] != '/') {
     ptr = buffer;
@@ -231,10 +229,6 @@ void FactorGraph<Alphabet, State>::ReadTransitions(FILE* fin) {
 
     set_transition(k, l, w);
   }
-
-  if (num_transitions() != ntr)
-    throw Exception("%s has %i transition records but should have %i!",
-                    class_id(), num_transitions(), ntr);
 }
 
 template< class Alphabet, template<class> class State >
@@ -309,6 +303,154 @@ void FactorGraph<Alphabet, State>::Print(std::ostream& out) const {
     }
     out << std::endl;
   }
+}
+
+
+template<class Alphabet>
+bool PriorCompare(const shared_ptr< ContextProfile<Alphabet> >& lhs,
+                  const shared_ptr< ContextProfile<Alphabet> >& rhs) {
+  return lhs->prior() > rhs->prior();
+}
+
+template< class Alphabet, template<class> class State >
+void NormalizeTransitions(FactorGraph<Alphabet, State>* graph, float f) {
+  const bool logspace = graph->transitions_logspace();
+  if (logspace) graph->TransformTransitionsToLinSpace();
+
+  for (int k = 0; k < graph->num_states(); ++k) {
+    double sum = 0.0;
+    bool is_zero = true;
+    for (int l = 0; l < graph->num_states(); ++l)
+      if (graph->test_transition(k,l)) {
+        sum += (*graph)(k,l);
+        is_zero = false;
+      }
+
+    if (!is_zero) {
+      float fac = f / sum;
+      for (int l = 0; l < graph->num_states(); ++l)
+        if (graph->test_transition(k,l)) {
+          (*graph)(k,l) = (*graph)(k,l) * fac;
+        }
+    }
+  }
+
+  if (logspace) graph->TransformTransitionsToLogSpace();
+}
+
+
+template< class Alphabet, template<class> class State >
+SamplingStateInitializer<Alphabet, State>::SamplingStateInitializer(
+    ProfileVec profiles,
+    float sample_rate,
+    const Pseudocounts<Alphabet>* pc,
+    float pc_admixture)
+    : profiles_(profiles),
+      sample_rate_(sample_rate),
+      pc_(pc),
+      pc_admixture_(pc_admixture) {
+  random_shuffle(profiles_.begin(), profiles_.end());
+}
+
+template< class Alphabet, template<class> class State >
+void SamplingStateInitializer<Alphabet, State>::Init(
+    FactorGraph<Alphabet, State>& graph) const {
+  // Iterate over randomly shuffled profiles; from each profile we sample a
+  // fraction of profile windows.
+  for (ProfileIter pi = profiles_.begin(); pi != profiles_.end() &&
+         !graph.full(); ++pi) {
+    assert(!(*pi)->logspace());
+    if ((*pi)->num_cols() < graph.num_cols()) continue;
+
+    // Prepare sample of indices
+    std::vector<int> idx;
+    for (int i = 0; i <= (*pi)->num_cols() - graph.num_cols(); ++i)
+      idx.push_back(i);
+    random_shuffle(idx.begin(), idx.end());
+    const int sample_size = iround(sample_rate_ * idx.size());
+    idx.erase(idx.begin() + sample_size, idx.end());
+
+    // Add sub-profiles at sampled indices to graph
+    for (std::vector<int>::const_iterator i = idx.begin(); i != idx.end() &&
+           !graph.full(); ++i) {
+      CountProfile<Alphabet> p(**pi, *i, graph.num_cols());
+      if (pc_) pc_->add_to_profile(ConstantAdmixture(pc_admixture_), &p);
+      graph.AddState(p);
+    }
+  }
+  if (!graph.full())
+    throw Exception("Could not fully initialize all %i states. "
+                    "Maybe too few training profiles provided?",
+                    graph.num_states());
+}
+
+template< class Alphabet, template<class> class State >
+LibraryStateInitializer<Alphabet, State>::LibraryStateInitializer(
+    const ProfileLibrary<Alphabet>* lib)  : lib_(lib) {}
+
+template< class Alphabet, template<class> class State >
+void LibraryStateInitializer<Alphabet, State>::Init(
+    FactorGraph<Alphabet, State>& graph) const {
+  assert(lib_->num_cols() == graph.num_cols());
+  assert(!lib_->logspace());
+
+  ContextProfileVec profiles(lib_->begin(), lib_->end());
+  sort(profiles.begin(), profiles.end(), PriorCompare<Alphabet>);
+
+  for (ContextProfileIter it = profiles.begin(); it != profiles.end() &&
+         !graph.full(); ++it) {
+    graph.AddState(**it);
+  }
+
+  if (!graph.full())
+    throw Exception("Could not fully initialize all %i states. "
+                    "Context library contains too few profiles!",
+                    graph.num_states());
+}
+
+
+template< class Alphabet, template<class> class State >
+void HomogeneousTransitionInitializer<Alphabet, State>::Init(
+    FactorGraph<Alphabet, State>& graph) const {
+  float w = 1.0f / graph.num_states();
+  for (int k = 0; k < graph.num_states(); ++k) {
+    for (int l = 0; l < graph.num_states(); ++l) {
+      graph(k,l) = w;
+    }
+  }
+}
+
+template< class Alphabet, template<class> class State >
+void RandomTransitionInitializer<Alphabet, State>::Init(
+    FactorGraph<Alphabet, State>& graph) const {
+  srand(static_cast<unsigned int>(clock()));
+
+  for (int k = 0; k < graph.num_states(); ++k)
+    for (int l = 0; l < graph.num_states(); ++l)
+      graph(k,l) = static_cast<float>(rand()) / (1.0f + RAND_MAX);
+
+  NormalizeTransitions(&graph);
+}
+
+template< class Alphabet, template<class> class State >
+CoEmissionTransitionInitializer<Alphabet, State>::CoEmissionTransitionInitializer(
+    const SubstitutionMatrix<Alphabet>* sm, float score_thresh)
+    : co_emission_(sm), score_thresh_(score_thresh) {}
+
+template< class Alphabet, template<class> class State >
+void CoEmissionTransitionInitializer<Alphabet, State>::Init(
+    FactorGraph<Alphabet, State>& graph) const {
+  const int ncols = graph.num_cols() - 1;
+
+  for (int k = 0; k < graph.num_states(); ++k) {
+    for (int l = 0; l < graph.num_states(); ++l) {
+      float score = co_emission_(graph[k], graph[l], 1, 0, ncols);
+      if (score > score_thresh_)
+        graph(k,l) = score - score_thresh_;
+    }
+  }
+
+  NormalizeTransitions(&graph);
 }
 
 }  // namespace cs
