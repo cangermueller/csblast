@@ -11,7 +11,7 @@ namespace cs {
 
 template< class Alphabet, template<class> class Subject >
 ExpectationMaximization<Alphabet, Subject>::ExpectationMaximization(
-    const data_vector& data)
+    const DataVec& data)
     : data_(data),
       progress_table_(NULL),
       num_eff_cols_(0.0f),
@@ -28,6 +28,7 @@ void ExpectationMaximization<Alphabet, Subject>::Run() {
 
   // Calculate log-likelihood baseline by batch EM without blocks
   if (progress_table_) progress_table_->PrintRowBegin();
+  ResetAndAddPseudocounts();
   ExpectationStep(blocks_.front());
   MaximizationStep();
   ++iterations_;
@@ -44,6 +45,7 @@ void ExpectationMaximization<Alphabet, Subject>::Run() {
 
     if (progress_table_) progress_table_->PrintRowBegin();
     for (int b = 0; b < static_cast<int>(blocks_.size()); ++b) {
+      ResetAndAddPseudocounts();
       ExpectationStep(blocks_[b]);
       MaximizationStep();
       ++iterations_;
@@ -70,7 +72,7 @@ void ExpectationMaximization<Alphabet, Subject>::SetupBlocks(bool force_batch) {
 
     blocks_.clear();
     for (int b = 0; b < num_blocks; ++b) {
-      data_vector block;
+      DataVec block;
       if (b == num_blocks - 1)  // last block may differ in block size
         for (int n = b * block_size; n < static_cast<int>(data_.size()); ++n)
           block.push_back(data_[n]);

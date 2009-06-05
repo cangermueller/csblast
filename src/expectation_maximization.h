@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "progress_table.h"
+#include "scoped_ptr.h"
 #include "shared_ptr.h"
 #include "utils-inl.h"
 
@@ -52,8 +53,8 @@ struct ExpectationMaximizationOptions {
 template< class Alphabet, template<class> class Subject >
 class ExpectationMaximization {
  public:
-  typedef typename std::vector< shared_ptr< Subject<Alphabet> > > data_vector;
-  typedef typename std::vector<data_vector> blocks_vector;
+  typedef typename std::vector< shared_ptr< Subject<Alphabet> > > DataVec;
+  typedef typename std::vector<DataVec> BlocksVec;
 
   // Runs EM algorithm until termination criterion is met.
   void Run();
@@ -75,12 +76,12 @@ class ExpectationMaximization {
 
  protected:
   // Constructs a new EM object.
-  ExpectationMaximization(const data_vector& data);
+  ExpectationMaximization(const DataVec& data);
 
   virtual ~ExpectationMaximization() {}
 
   // Evaluates the responsibilities using the current parameter values.
-  virtual void ExpectationStep(const data_vector& block) = 0;
+  virtual void ExpectationStep(const DataVec& block) = 0;
   // Reestimate teh parameters using the current responsibilities.
   virtual void MaximizationStep() = 0;
   // Initializes members for running the EM algorithm.
@@ -91,15 +92,17 @@ class ExpectationMaximization {
   virtual bool IsDone() const;
   // Fills the blocks vector with training data.
   void SetupBlocks(bool force_batch = false);
+  // Sets all statistics variables to their pseudocount values.
+  virtual void ResetAndAddPseudocounts() {}
 
   // Training data (either sequences or counts profiles)
-  const data_vector& data_;
+  const DataVec& data_;
   // Progress table object for output.
-  ProgressTable* progress_table_;
+  scoped_ptr<ProgressTable> progress_table_;
   // Effective number of training columns.
   float num_eff_cols_;
   // Blocks of training data.
-  blocks_vector blocks_;
+  BlocksVec blocks_;
   // Incremental likelihood in current iteration
   float log_likelihood_;
   // Complete likelihood after last complete scan of training data

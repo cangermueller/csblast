@@ -49,8 +49,7 @@ struct CSTrainAppOptions : public BaumWelchOptions {
     num_states          = 0;
     window_length       = 13;
     sample_rate         = 0.2f;
-    state_pc            = 1.0f;
-    data_pc             = 0.01f;
+    init_pc            = 0.6f;
     global_weights      = false;
     blosum_type         = "BLOSUM62";
     nucleotide_match    = 1.0f;
@@ -91,9 +90,7 @@ struct CSTrainAppOptions : public BaumWelchOptions {
   // Fraction of profile windows sampled from each full length subject.
   float sample_rate;
   // Pseudocounts to be added to each state profile.
-  float state_pc;
-  // Pseudocounts to be added to observed data counts.
-  float data_pc;
+  float init_pc;
   // Use global instead of position specific weights for profile construction.
   bool global_weights;
   // BLOSUM matrix for pseudocount generation.
@@ -170,8 +167,7 @@ void CSTrainApp<Alphabet>::ParseOptions(GetOpt_pp* options) {
                      opts_.nucleotide_mismatch);
   *options >> Option('r', "match-score", opts_.nucleotide_match,
                      opts_.nucleotide_match);
-  *options >> Option(' ', "data-pc", opts_.data_pc, opts_.data_pc);
-  *options >> Option(' ', "state-pc", opts_.state_pc, opts_.state_pc);
+  *options >> Option(' ', "init-pc", opts_.init_pc, opts_.init_pc);
   *options >> Option(' ', "min-scans", opts_.min_scans, opts_.min_scans);
   *options >> Option(' ', "max-scans", opts_.max_scans, opts_.max_scans);
   *options >> Option(' ', "weight-center", opts_.weight_center, opts_.weight_center);
@@ -262,10 +258,8 @@ void CSTrainApp<Alphabet>::PrintOptions() const {
           "Minimal number of training data scans", opts_.min_scans);
   fprintf(stream(), "  %-30s %s (def=%i)\n", "    --max-scans [0,inf[",
           "Maximal number of training data scans", opts_.max_scans);
-  fprintf(stream(), "  %-30s %s (def=%3.1f)\n", "    --state-pc [0,1]",
-          "Pseudocounts for state profiles", opts_.state_pc);
-  fprintf(stream(), "  %-30s %s (def=%4.2f)\n", "    --data-pc [0,1]",
-          "Pseudocounts for training data", opts_.data_pc);
+  fprintf(stream(), "  %-30s %s (def=%3.1f)\n", "    --init-pc [0,1]",
+          "Initialization pseudocounts for state profiles", opts_.init_pc);
   fprintf(stream(), "  %-30s %s (def=%4.2f)\n", "    --weight-center [0,1]",
           "Weight of central profile column in context window",
           opts_.weight_center);
@@ -416,7 +410,7 @@ void CSTrainApp<Alphabet>::InitHMM() {
     SamplingStateInitializerHMM<Alphabet> st(data_,
                                              opts_.sample_rate,
                                              &pc,
-                                             opts_.state_pc);
+                                             opts_.init_pc);
     CoEmissionTransitionInitializerHMM<Alphabet> tr(subst_matrix_.get(),
                                                     opts_.tr_score_min);
     hmm_.reset(new HMM<Alphabet>(opts_.num_states, opts_.window_length, st, tr));
@@ -432,17 +426,11 @@ int CSTrainApp<Alphabet>::Run() {
   ReadTrainingData();
   InitHMM();
 
-  // Add pseudocounts to training data
-  fprintf(stream(), "Adding pseudocounts to training profiles (admix=%-.2f) ...",
-          opts_.data_pc);
-  fflush(stream());
+  // Calculate number of total training columns
   int num_data_cols = 0;
-  MatrixPseudocounts<Alphabet> pc(subst_matrix_.get());
   for (profile_iterator ci = data_.begin(); ci != data_.end(); ++ci) {
-    pc.add_to_profile(ConstantAdmixture(opts_.data_pc), ci->get());
     num_data_cols += (*ci)->num_cols();
   }
-  fputc('\n', stream());
 
   // Run Baum-Welch training on HMM
   fprintf(stream(), "Running Baum-Welch training (K=%i, W=%i, N=%i, C=%i) ...",

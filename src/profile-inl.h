@@ -224,6 +224,7 @@ inline void Reset(Profile<Alphabet>* p) {
   Profile<Alphabet>& profile = *p;
   const int num_cols = profile.num_cols();
   const int alphabet_size = profile.alphabet_size();
+
   for (int i = 0; i < num_cols; ++i)
     for (int a = 0; a < alphabet_size; ++a)
       profile[i][a] = 0.0f;

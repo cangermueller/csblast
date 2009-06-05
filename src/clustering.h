@@ -55,7 +55,7 @@ class Clustering : public ExpectationMaximization<Alphabet, Subject> {
              ProfileLibrary<Alphabet>& lib,
              FILE* fout);
 
-  virtual ~Clustering();
+  virtual ~Clustering() {}
 
  protected:
   // Needed to access names in templatized base class

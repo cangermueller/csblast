@@ -16,6 +16,7 @@
 #include "log.h"
 #include "progress_table.h"
 #include "shared_ptr.h"
+#include "substitution_matrix-inl.h"
 #include "utils-inl.h"
 
 namespace cs {
@@ -23,23 +24,23 @@ namespace cs {
 template< class Alphabet, template<class> class Subject >
 BaumWelchTraining<Alphabet, Subject>::BaumWelchTraining(
     const BaumWelchOptions& opts,
-    const data_vector& data,
+    const DataVec& data,
     HMM<Alphabet>& hmm)
-    : ExpectationMaximization<Alphabet, Subject>(opts, data),
+    : ExpectationMaximization<Alphabet, Subject>(data),
       opts_(opts),
       hmm_(hmm),
       emission_(hmm.num_cols(), opts.weight_center, opts.weight_decay),
       transition_stats_(hmm.num_states(), hmm.num_states()),
-      profile_stats_(),
+      prior_stats_(0.0, hmm.num_states()),
       transition_stats_block_(hmm.num_states(), hmm.num_states()),
-      profile_stats_block_() {
+      prior_stats_block_(0.0, hmm.num_states()) {
   Init();
 }
 
 template< class Alphabet, template<class> class Subject >
 BaumWelchTraining<Alphabet, Subject>::BaumWelchTraining(
     const BaumWelchOptions& opts,
-    const data_vector& data,
+    const DataVec& data,
     HMM<Alphabet>& hmm,
     FILE* fout)
     : ExpectationMaximization<Alphabet, Subject>(data),
@@ -47,21 +48,16 @@ BaumWelchTraining<Alphabet, Subject>::BaumWelchTraining(
       hmm_(hmm),
       emission_(hmm.num_cols(), opts.weight_center, opts.weight_decay),
       transition_stats_(hmm.num_states(), hmm.num_states()),
-      profile_stats_(),
+      prior_stats_(0.0, hmm.num_states()),
       transition_stats_block_(hmm.num_states(), hmm.num_states()),
-      profile_stats_block_() {
-  progress_table_ = new BaumWelchProgressTable<Alphabet, Subject>(this, fout);
+      prior_stats_block_(0.0, hmm.num_states()) {
+  progress_table_.reset(new BaumWelchProgressTable<Alphabet, Subject>(this, fout));
   Init();
 }
 
 template< class Alphabet, template<class> class Subject >
-BaumWelchTraining<Alphabet, Subject>::~BaumWelchTraining() {
-  if (progress_table_) delete progress_table_;
-}
-
-template< class Alphabet, template<class> class Subject >
 void BaumWelchTraining<Alphabet, Subject>::ExpectationStep(
-    const data_vector& block) {
+    const DataVec& block) {
 
   const int block_size = block.size();
   LOG(INFO) << "Starting E-step ...";
@@ -95,18 +91,16 @@ void BaumWelchTraining<Alphabet, Subject>::AddContributionToTransitions(
        ti != hmm_.transitions_end(); ++ti) {
     double w_kl = 0.0;
     for (int i = 0; i < slen-1; ++i) {
-      w_kl += m.f[i][ti->source] * m.b[i+1][ti->target] * ti->weight
-        * m.e[i+1][ti->target] / m.s[i+1];
+      w_kl += m.f[i][ti->source] * m.b[i+1][ti->target] * ti->weight *
+        m.e[i+1][ti->target] / m.s[i+1];
     }
 
-    if (w_kl != 0.0) {
 #pragma omp critical (add_contribution_to_transition)
-      if (!transition_stats_block_.test(ti->source, ti->target)) {
-        transition_stats_block_[ti->source][ti->target] = w_kl;
-      } else {
-        transition_stats_block_[ti->source][ti->target] =
-          transition_stats_block_[ti->source][ti->target] + w_kl;
-      }
+    if (!transition_stats_block_.test(ti->source, ti->target)) {
+      transition_stats_block_[ti->source][ti->target] = w_kl;
+    } else {
+      transition_stats_block_[ti->source][ti->target] = w_kl +
+        transition_stats_block_[ti->source][ti->target];
     }
   }
 }
@@ -115,26 +109,26 @@ template< class Alphabet, template<class> class Subject >
 inline void BaumWelchTraining<Alphabet, Subject>::AddContributionToStates(
     const ForwardBackwardMatrices& m,
     const CountProfile<Alphabet>& c) {
-  const int slen       = c.length();
-  const int num_states = hmm_.num_states();
+  const int slen          = c.length();
+  const int num_states    = hmm_.num_states();
+  const int alphabet_size = hmm_.alphabet_size();
+  const int ci            = (hmm_.num_cols() - 1) / 2;
 
   for (int k = 0; k < num_states; ++k) {
-    ContextProfile<Alphabet>& p_k = *profile_stats_block_[k];
+    ProfileStats& p_k = *profile_stats_block_[k];
 
-#pragma omp critical (add_contribution_to_prior)
-    p_k.set_prior(p_k.prior() + m.f[0][k] * m.b[0][k]);
+#pragma omp atomic
+    prior_stats_block_[k] += m.f[0][k] * m.b[0][k];
 
-    const int ci = p_k.center();
     for (int i = 0; i < slen; ++i) {
       const int beg = std::max(0, i - ci);
       const int end = std::min(c.num_cols() - 1, i + ci);
 
       for(int h = beg; h <= end; ++h) {
         const int j = h - i + ci;
-        const int alphabet_size = p_k.alphabet_size();
         for (int a = 0; a < alphabet_size; ++a) {
 #pragma omp atomic
-          p_k[j][a] += c[h][a] * m.f[i][k] * m.b[i][k];
+          p_k[j][a] += c.counts(h,a) * m.f[i][k] * m.b[i][k];
         }
       }
     }
@@ -146,15 +140,15 @@ void BaumWelchTraining<Alphabet, Subject>::AddContributionToStates(
     const ForwardBackwardMatrices& m,
     const Sequence<Alphabet>& s) {
   const int slen       = s.length();
-  const int num_states = hmm_.num_states();
+  const int num_states    = hmm_.num_states();
+  const int ci            = (hmm_.num_cols() - 1) / 2;
 
   for (int k = 0; k < num_states; ++k) {
-    ContextProfile<Alphabet>& p_k = *profile_stats_block_[k];
+    ProfileStats& p_k = *profile_stats_block_[k];
 
-#pragma omp critical (add_contribution_to_prior)
-    p_k.set_prior(p_k.prior() + m.f[0][k] * m.b[0][k]);
+#pragma omp atomic
+    prior_stats_block_[k] += m.f[0][k] * m.b[0][k];
 
-    const int ci = p_k.center();
     for (int i = 0; i < slen; ++i) {
       const int beg = std::max(0, i - ci);
       const int end = std::min(s.length() - 1, i + ci);
@@ -186,22 +180,20 @@ void BaumWelchTraining<Alphabet, Subject>::UpdateSufficientStatistics() {
         transition_stats_block_[ti->source][ti->target];
     }
   }
-  transition_stats_block_.clear();
 
   // Update priors and emissions statistics
 #pragma omp parallel for schedule(static)
   for (int k = 0; k < num_states; ++k) {
-    ContextProfile<Alphabet>& p_block = *profile_stats_block_[k];
-    ContextProfile<Alphabet>& p       = *profile_stats_[k];
+    ProfileStats& p_block = *profile_stats_block_[k];
+    ProfileStats& p       = *profile_stats_[k];
 
-    p.set_prior(p.prior() * gamma + p_block.prior());
+    prior_stats_[k] = prior_stats_[k] * gamma + prior_stats_block_[k];
+
     for (int j = 0; j < num_cols; ++j) {
       for (int a = 0; a < alphabet_size; ++a) {
-        //#pragma omp critical (update_profile_statistics)
         p[j][a] = gamma * p[j][a] + p_block[j][a];
       }
     }
-    Reset(&p_block);
   }
 }
 
@@ -211,65 +203,52 @@ void BaumWelchTraining<Alphabet, Subject>::MaximizationStep() {
   const int num_cols      = hmm_.num_cols();
   const int alphabet_size = hmm_.alphabet_size();
 
-  // Calculate normalization factor for priors
-  float prior_sum = 0.0f;
-  for (int k = 0; k < num_states; ++k) prior_sum += profile_stats_[k]->prior();
-  float prior_fac = 1.0f / prior_sum;
+  // Normalize prior state probabilities
+  prior_stats_ /= prior_stats_.sum();
 
   // Assign new priors and emission probabilities
 #pragma omp parallel for schedule(static)
   for (int k = 0; k < num_states; ++k) {
-    ContextProfile<Alphabet>& p_k = *profile_stats_[k];
+    // Update prior probability
+    hmm_[k].set_prior(prior_stats_[k]);
 
-    hmm_[k].set_prior(p_k.prior() * prior_fac);
-    ContextProfile<Alphabet> tmp(p_k);
-    if (Normalize(&tmp)) {  // don't update profiles that did'n get evidence
-      tmp.TransformToLogSpace();
-      for (int i = 0; i < num_cols; ++i)
+    // Update emissions
+    ProfileStats& p_k = *profile_stats_[k];
+    for (int i = 0; i < num_cols; ++i) {
+      double sum = Normalize(&p_k[i][0], alphabet_size);
+      if (sum != 0.0)
         for (int a = 0; a < alphabet_size; ++a)
-          hmm_[k][i][a] = tmp[i][a];
+          hmm_[k][i][a] = fast_log2(static_cast<float>(p_k[i][a]));
     }
   }
-
-  LOG(INFO) << strprintf("num_states in HMM= %i", hmm_.num_states());
-  LOG(INFO) << strprintf("num_transitions in HMM = %i", hmm_.num_transitions());
-  LOG(INFO) << strprintf("num_transitions in suff. statistics= %i",
-                         static_cast<int>(transition_stats_.num_nonempty()));
-  LOG(INFO) << strprintf("Mean connectivity BEFORE maximization step: %.2f",
-                         hmm_.connectivity());
 
   // Calculate and assign new transition probabilities
   hmm_.ClearTransitions();
   for (int k = 0; k < num_states; ++k) {
     double tr_sum = 0.0;
-    int count    = 0;
-    int count_pc = 0;
+    bool sum_zero = true;
 
     for (int l = 0; l < num_states; ++l) {
       if (transition_stats_.test(k,l)) {
-        ++count;
+        double a_kl = transition_stats_[k][l];
 
-        float a_kl = transition_stats_[k][l];
-        if (opts_.transition_pc != 1.0 &&
+        if (opts_.transition_pc != 1.0f &&
             hmm_.connectivity() > opts_.max_connectivity)
           a_kl += opts_.transition_pc - 1.0f;
-        if (a_kl > 0.0f) {
-          ++count_pc;
+
+        if (a_kl > 0.0) {
           transition_stats_[k][l] = a_kl;
           tr_sum += a_kl;
+          sum_zero = false;
         } else {
           transition_stats_.erase(k,l);
         }
       }
     }
 
-    LOG(INFO) << strprintf("state %i has %i out transitions (%i without sparseness)",
-                           k, count_pc, count);
-    LOG(INFO) << strprintf("tr_sum = %-7.2g", tr_sum);
+    if (!sum_zero) {
+      double tr_fac = 1.0 / tr_sum;
 
-    if (tr_sum != 0.0) {
-      float tr_fac = 1.0 / tr_sum;
-      LOG(INFO) << strprintf("tr_fac = %-7.2g", tr_fac);
       for (int l = 0; l < num_states; ++l) {
         if (transition_stats_.test(k,l)) {
           hmm_(k,l) = transition_stats_[k][l] * tr_fac;
@@ -279,30 +258,26 @@ void BaumWelchTraining<Alphabet, Subject>::MaximizationStep() {
       }
     }
   }
-  LOG(INFO) << strprintf("Mean connectivity AFTER maximization step: %.2f",
-                         hmm_.connectivity());
-  LOG(INFO) << strprintf("Log-likelihood: %9.5f", log_likelihood());
-  LOG(INFO) << strprintf("Log-likelihood change: %+8.5f",
-                         log_likelihood_change());
 
   hmm_.increment_iterations();
 }
 
 template< class Alphabet, template<class> class Subject >
 void BaumWelchTraining<Alphabet, Subject>::Init() {
+  const int alphabet_size = hmm_.alphabet_size();
+
   // Create profiles for global and block-level sufficient statistics
   for (int k = 0; k < hmm_.num_states(); ++k) {
-    profile_stats_.push_back(
-        shared_ptr< ContextProfile<Alphabet> >(
-            new ContextProfile<Alphabet>(k, hmm_.num_cols())));
-    profile_stats_block_.push_back(
-        shared_ptr< ContextProfile<Alphabet> >(
-            new ContextProfile<Alphabet>(k, hmm_.num_cols())));
+    ProfileStatsPtr p(new matrix<double>(hmm_.num_cols(), alphabet_size, 0.0));
+    profile_stats_.push_back(p);
+
+    ProfileStatsPtr pb(new matrix<double>(hmm_.num_cols(), alphabet_size, 0.0));
+    profile_stats_block_.push_back(pb);
   }
 
   // Compute total number of data columns
   long num_cols = 0;
-  for (typename data_vector::const_iterator di = data_.begin();
+  for (typename DataVec::const_iterator di = data_.begin();
        di != data_.end(); ++di)
     num_cols += (**di).length();
 
@@ -311,6 +286,19 @@ void BaumWelchTraining<Alphabet, Subject>::Init() {
 
   // Set number of effective columsn for log-likelihood calculation
   num_eff_cols_ = emission_.SumWeights() * num_cols;
+}
+
+template< class Alphabet, template<class> class Subject >
+void BaumWelchTraining<Alphabet, Subject>::ResetAndAddPseudocounts() {
+  // Erase all transitions. Pseudocounts are taken care of in M-step.
+  transition_stats_block_.clear();
+
+  // Reset profile and prior evidences to their pseudocount values for numeric
+  // stability.
+  for (int k = 0; k < hmm_.num_states(); ++k) {
+    Reset(profile_stats_block_[k].get(), opts_.profile_pc);
+    prior_stats_block_[k] = opts_.prior_pc;
+  }
 }
 
 template< class Alphabet, template<class> class Subject >

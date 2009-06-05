@@ -127,7 +127,7 @@ void LibraryPseudocounts<Alphabet>::add_to_profile(
         pc[i][a] += prob[k] * fast_pow2(lib_[k][center][a]);
       }
     }
-    normalize_to_one(&pc[i][0], alphabet_size);
+    Normalize(&pc[i][0], alphabet_size);
   }
 
   // Add pseudocounts to profile

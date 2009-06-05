@@ -49,6 +49,8 @@ class CountProfile : public Profile<Alphabet> {
   static void ReadAll(FILE* in, std::vector< shared_ptr<CountProfile> >* v);
   // Returns the number of effective sequences in alignment column i
   float neff(int i) const { return neff_[i]; }
+  // Returns counts of amino acid a in column i.
+  float counts(int i, int a) const { return neff_[i] * data_[i][a]; }
 
  protected:
   // Needed to access names in templatized Profile base class

@@ -669,14 +669,14 @@ float GlobalWeightsAndDiversity(const Alignment<Alphabet>& alignment,
     for (int k = 0; k < num_seqs; ++k)
       if (adiff[i] > 0 && alignment[i][k] < any)
         wg[k] += 1.0f/(adiff[i] * counts[i][alignment[i][k]] * n[k]);
-  normalize_to_one(&wg[0], num_seqs);
+  Normalize(&wg[0], num_seqs);
 
   // Calculate number of effective sequences
   for (int i = 0; i < num_cols; ++i) {
     Reset(&fj[0], alphabet_size);
     for (int k = 0; k < num_seqs; ++k)
       if (alignment[i][k] < any) fj[alignment[i][k]] += wg[k];
-    normalize_to_one(&fj[0], alphabet_size);
+    Normalize(&fj[0], alphabet_size);
     for (int a = 0; a < alphabet_size; ++a)
       if (fj[a] > kZero) neff -= fj[a] * fast_log2(fj[a]);
   }
@@ -765,7 +765,7 @@ std::vector<float> PositionSpecificWeightsAndDiversity(
           }
         }
       }  // for j over num_cols
-      normalize_to_one(&wi[0], num_seqs);
+      Normalize(&wi[0], num_seqs);
 
       if (ncoli < kMinCols)  // number of columns in subalignment insufficient?
         for (int k = 0; k < num_seqs; ++k)
@@ -782,7 +782,7 @@ std::vector<float> PositionSpecificWeightsAndDiversity(
         for (int k = 0; k < num_seqs; ++k)
           if (alignment[i][k] < any && alignment[j][k] < any)
             fj[alignment[j][k]] += wi[k];
-        normalize_to_one(&fj[0], alphabet_size);
+        Normalize(&fj[0], alphabet_size);
         for (int a = 0; a < alphabet_size; ++a)
           if (fj[a] > kZero) neff[i] -= fj[a] * fast_log2(fj[a]);
       }  // for j over num_cols

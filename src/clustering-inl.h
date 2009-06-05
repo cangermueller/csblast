@@ -44,13 +44,8 @@ Clustering<Alphabet, Subject>::Clustering(const ClusteringOptions& opts,
       emission_(lib.num_cols(), opts.weight_center, opts.weight_decay),
       profile_stats_(),
       profile_stats_block_() {
-  progress_table_ = new ClusteringProgressTable<Alphabet, Subject>(this, fout);
+  progress_table_.reset(new ClusteringProgressTable<Alphabet, Subject>(this, fout));
   Init();
-}
-
-template< class Alphabet, template<class> class Subject >
-Clustering<Alphabet, Subject>::~Clustering() {
-  if (progress_table_) delete progress_table_;
 }
 
 template< class Alphabet, template<class> class Subject >

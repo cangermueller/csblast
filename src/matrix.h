@@ -113,4 +113,15 @@ class matrix {
   mutable valarray<T> m_;
 };
 
+// Resets all entries in matrix to the provided value or default if  none given.
+template<class T>
+inline void Reset(matrix<T>* m, float value = T()) {
+  const int num_rows = m->num_rows();
+  const int num_cols = m->num_cols();
+
+  for (int i = 0; i < num_rows; ++i)
+    for (int j = 0; j < num_cols; ++j)
+      (*m)[i][j] = value;
+}
+
 #endif  // SRC_MATRIX_H_

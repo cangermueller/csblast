@@ -39,7 +39,7 @@ void SubstitutionMatrix<Alphabet>::init_from_target_frequencies() {
     f_[a] = 0.0f;
     for (int b = 0; b < size_; ++b) f_[a] += p_[a][b];
   }
-  normalize_to_one(&f_[0], size_);
+  Normalize(&f_[0], size_);
 
   // Precompute matrix R for amino acid pseudocounts:
   for (int a = 0; a < size_; ++a)
