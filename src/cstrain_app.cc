@@ -390,6 +390,7 @@ void CSTrainApp<Alphabet>::InitHMM() {
     FILE* fin = fopen(opts_.libfile.c_str(), "r");
     if (!fin) throw Exception("Unable to read file '%s'!", opts_.libfile.c_str());
     ProfileLibrary<Alphabet> profile_lib(fin);
+    profile_lib.TransformToLinSpace();
     fclose(fin);
 
     LibraryStateInitializerHMM<Alphabet> st_init(&profile_lib);
