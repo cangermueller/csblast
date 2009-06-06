@@ -115,11 +115,10 @@ inline void BaumWelchTraining<Alphabet, Subject>::AddContributionToStates(
   const int ci            = (hmm_.num_cols() - 1) / 2;
 
   for (int k = 0; k < num_states; ++k) {
-    ProfileStats& p_k = *profile_stats_block_[k];
-
 #pragma omp atomic
     prior_stats_block_[k] += m.f[0][k] * m.b[0][k];
 
+    ProfileStats& p_k = *profile_stats_block_[k];
     for (int i = 0; i < slen; ++i) {
       const int beg = std::max(0, i - ci);
       const int end = std::min(c.num_cols() - 1, i + ci);
@@ -144,11 +143,10 @@ void BaumWelchTraining<Alphabet, Subject>::AddContributionToStates(
   const int ci            = (hmm_.num_cols() - 1) / 2;
 
   for (int k = 0; k < num_states; ++k) {
-    ProfileStats& p_k = *profile_stats_block_[k];
-
 #pragma omp atomic
     prior_stats_block_[k] += m.f[0][k] * m.b[0][k];
 
+    ProfileStats& p_k = *profile_stats_block_[k];
     for (int i = 0; i < slen; ++i) {
       const int beg = std::max(0, i - ci);
       const int end = std::min(s.length() - 1, i + ci);
@@ -184,14 +182,14 @@ void BaumWelchTraining<Alphabet, Subject>::UpdateSufficientStatistics() {
   // Update priors and emissions statistics
 #pragma omp parallel for schedule(static)
   for (int k = 0; k < num_states; ++k) {
-    ProfileStats& p_block = *profile_stats_block_[k];
-    ProfileStats& p       = *profile_stats_[k];
-
     prior_stats_[k] = prior_stats_[k] * gamma + prior_stats_block_[k];
 
+    ProfileStats& p_block = *profile_stats_block_[k];
+    ProfileStats& p       = *profile_stats_[k];
     for (int j = 0; j < num_cols; ++j) {
       for (int a = 0; a < alphabet_size; ++a) {
         p[j][a] = gamma * p[j][a] + p_block[j][a];
+        LOG(INFO) << strprintf("p[%i][%i][%i]=%-7.2g", k, j, a, p_block[j][a]);
       }
     }
   }
