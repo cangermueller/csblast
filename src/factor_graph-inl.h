@@ -22,6 +22,7 @@
 #include "log.h"
 #include "profile.h"
 #include "shared_ptr.h"
+#include "substitution_matrix-inl.h"
 #include "transition.h"
 
 namespace cs {

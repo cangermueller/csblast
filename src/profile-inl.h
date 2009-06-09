@@ -25,8 +25,7 @@ const char* Profile<Alphabet>::kClassID = "Profile";
 
 template<class Alphabet>
 inline Profile<Alphabet>::Profile()
-    : data_(),
-      logspace_(false) {}
+    : logspace_(false) {}
 
 template<class Alphabet>
 inline Profile<Alphabet>::Profile(int num_cols)
@@ -35,8 +34,7 @@ inline Profile<Alphabet>::Profile(int num_cols)
 
 template<class Alphabet>
 inline Profile<Alphabet>::Profile(FILE* fin)
-    : data_(),
-      logspace_(false) {
+    : logspace_(false) {
   Read(fin);
 }
 

@@ -25,7 +25,8 @@ template<class Alphabet>
 class HMM : public FactorGraph<Alphabet, ContextProfileState> {
  public:
   // Public typedefs
-  typedef std::vector< shared_ptr< ContextProfileState<Alphabet> > > StateVec;
+  typedef shared_ptr< ContextProfileState<Alphabet> > StatePtr;
+  typedef std::vector<StatePtr> StateVec;
   typedef sparse_matrix<Transition> TransitionMatrix;
   typedef typename StateVec::iterator StateIter;
   typedef typename StateVec::const_iterator ConstStateIter;

@@ -1,9 +1,9 @@
 // Copyright 2009, Andreas Biegert
 
-#ifndef SRC_CRF_STATE_INL_H_
-#define SRC_CRF_STATE_INL_H_
+#ifndef SRC_CONTEXT_WEIGHT_STATE_INL_H_
+#define SRC_CONTEXT_WEIGHT_STATE_INL_H_
 
-#include "crf_state.h"
+#include "context_weight_state.h"
 
 #include <cassert>
 #include <climits>
@@ -23,35 +23,41 @@
 namespace cs {
 
 template<class Alphabet>
-CRFState<Alphabet>::CRFState(int index,
-                             int num_states,
-                             int num_cols)
+ContextWeightState<Alphabet>::ContextWeightState(int index,
+                                                 int num_states,
+                                                 int num_cols)
     : index_(index),
       in_transitions_(num_states),
       out_transitions_(num_states),
       weights_(num_cols, Alphabet::instance().size(), 0.0f),
-      pc_(Alphabet::instance().size()) {}
+      pc_(0.0f, Alphabet::instance().size()) {}
 
 template<class Alphabet>
-CRFState<Alphabet>::CRFState(int index,
-                            int num_states,
-                            const Profile<Alphabet>& profile)
+ContextWeightState<Alphabet>::ContextWeightState(int index,
+                                                 int num_states,
+                                                 const Profile<Alphabet>& profile)
     : index_(index),
       in_transitions_(num_states),
       out_transitions_(num_states),
       weights_(profile.num_cols(), Alphabet::instance().size(), 0.0f),
-      pc_(Alphabet::instance().size()) {
+      pc_(0.0f, Alphabet::instance().size()) {
   Init(profile);
 }
 
 template<class Alphabet>
-void CRFState<Alphabet>::Read(FILE* fin) {
+ContextWeightState<Alphabet>::ContextWeightState(FILE* fin)
+    : index_(0) {
+  Read(fin);
+}
+
+template<class Alphabet>
+void ContextWeightState<Alphabet>::Read(FILE* fin) {
   // Check if stream actually contains a serialized profile
   char buffer[kBufferSize];
   while (fgetline(buffer, kBufferSize, fin))
     if (strscn(buffer)) break;
-  if (!strstr(buffer, "CRFState"))
-    throw Exception("Bad format: profile does not start with 'CRFState'!");
+  if (!strstr(buffer, "ContextWeightState"))
+    throw Exception("State record does not start with 'ContextWeightState'!");
 
   ReadHeader(fin);
   ReadBody(fin);
@@ -60,7 +66,7 @@ void CRFState<Alphabet>::Read(FILE* fin) {
 }
 
 template<class Alphabet>
-void CRFState<Alphabet>::ReadHeader(FILE* fin) {
+void ContextWeightState<Alphabet>::ReadHeader(FILE* fin) {
   char buffer[kBufferSize];
   const char* ptr = buffer;
 
@@ -70,14 +76,6 @@ void CRFState<Alphabet>::ReadHeader(FILE* fin) {
     index_ = strtoi(ptr);
   } else {
     throw Exception("Bad format: profile does not contain 'INDEX' record!");
-  }
-  // Read num_states
-  int num_states = 0;
-  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "NSTATES")) {
-    ptr = buffer;
-    num_states = strtoi(ptr);
-  } else {
-    throw Exception("Bad format: profile does not contain 'NSTATES' record!");
   }
   // Read num_cols
   int num_cols = 0;
@@ -98,6 +96,14 @@ void CRFState<Alphabet>::ReadHeader(FILE* fin) {
   if (alphabet_size != Alphabet::instance().size())
     throw Exception("Bad format: profile alphabet_size should be %i but is %i!",
                     Alphabet::instance().size(), alphabet_size);
+  // Read num_states
+  int num_states = 0;
+  if (fgetline(buffer, kBufferSize, fin) && strstr(buffer, "NSTATES")) {
+    ptr = buffer;
+    num_states = strtoi(ptr);
+  } else {
+    throw Exception("Bad format: profile does not contain 'NSTATES' record!");
+  }
 
   Resize(num_cols, alphabet_size);
   in_transitions_.resize(num_states);
@@ -105,19 +111,25 @@ void CRFState<Alphabet>::ReadHeader(FILE* fin) {
 }
 
 template<class Alphabet>
-void CRFState<Alphabet>::ReadBody(FILE* fin) {
+void ContextWeightState<Alphabet>::ReadBody(FILE* fin) {
   const int alph_size = alphabet_size();
   char buffer[kBufferSize];
   const char* ptr = buffer;
   int i = 0;
 
   fgetline(buffer, kBufferSize, fin);  // skip alphabet description line
-  while (fgetline(buffer, kBufferSize, fin)
-         && buffer[0] != '/' && buffer[1] != '/') {
+  while (fgetline(buffer, kBufferSize, fin) && buffer[0] != '/' &&
+         buffer[1] != '/') {
     ptr = buffer;
-    i = strtoi(ptr) - 1;
-    for (int a = 0; a < alph_size; ++a) {
-      weights_[i][a] = static_cast<float>(-strtoi_ast(ptr)) / kLogScale;
+    if (strstr(buffer, "PC")) {
+      for (int a = 0; a < alph_size; ++a) {
+        pc_[a] = static_cast<float>(-strtoi_ast(ptr)) / kLogScale;
+      }
+    } else {
+      i = strtoi(ptr) - 1;
+      for (int a = 0; a < alph_size; ++a) {
+        weights_[i][a] = static_cast<float>(-strtoi_ast(ptr)) / kLogScale;
+      }
     }
   }
   if (i != num_cols() - 1)
@@ -126,23 +138,23 @@ void CRFState<Alphabet>::ReadBody(FILE* fin) {
 }
 
 template<class Alphabet>
-void CRFState<Alphabet>::Write(FILE* fout) const {
-  fputs("CRFState\n", fout);
+void ContextWeightState<Alphabet>::Write(FILE* fout) const {
+  fputs("ContextWeightState\n", fout);
   WriteHeader(fout);
   WriteBody(fout);
 }
 
 template<class Alphabet>
-void CRFState<Alphabet>::WriteHeader(FILE* fout) const {
+void ContextWeightState<Alphabet>::WriteHeader(FILE* fout) const {
   fprintf(fout, "INDEX\t%i\n", index());
-  fprintf(fout, "NSTATES\t%i\n", static_cast<int>(in_transitions_.size()));
   fprintf(fout, "NCOLS\t%i\n", num_cols());
   fprintf(fout, "ALPH\t%i\n", alphabet_size());
+  fprintf(fout, "NSTATES\t%i\n", static_cast<int>(in_transitions_.size()));
 }
 
 template<class Alphabet>
-void CRFState<Alphabet>::WriteBody(FILE* fout) const {
-  fputs("CWT\t", fout);
+void ContextWeightState<Alphabet>::WriteBody(FILE* fout) const {
+  fputs("WEIGHTS\t", fout);
   Alphabet::instance().Write(fout);
   fputc('\n', fout);
 
@@ -164,9 +176,9 @@ void CRFState<Alphabet>::WriteBody(FILE* fout) const {
 }
 
 template<class Alphabet>
-void CRFState<Alphabet>::Print(std::ostream& out) const {
+void ContextWeightState<Alphabet>::Print(std::ostream& out) const {
   out << "index: " << index() << std::endl;
-  out << "cwt\t" << Alphabet::instance() << std::endl;
+  out << "weights\t" << Alphabet::instance() << std::endl;
 
   for (int i = 0; i < num_cols(); ++i) {
     out << i+1;
@@ -175,10 +187,12 @@ void CRFState<Alphabet>::Print(std::ostream& out) const {
     out << std::endl;
   }
   out << "pc";
+  for (int a = 0; a < alphabet_size(); ++a)
+    out << strprintf("\t%6.2f", pc_[a]);
 }
 
 template<class Alphabet>
-void CRFState<Alphabet>::Resize(int num_cols, int alphabet_size) {
+void ContextWeightState<Alphabet>::Resize(int num_cols, int alphabet_size) {
   if (num_cols == 0 || alphabet_size == 0)
     throw Exception("Bad profile dimensions: num_cols=%i alphabet_size=%i",
                     num_cols, alphabet_size);
@@ -187,26 +201,26 @@ void CRFState<Alphabet>::Resize(int num_cols, int alphabet_size) {
 }
 
 template<class Alphabet>
-void CRFState<Alphabet>::Init(const Profile<Alphabet>& prof) {
+void ContextWeightState<Alphabet>::Init(const Profile<Alphabet>& prof) {
   assert(prof.num_cols() == num_cols());
 
   for (int i = 0; i < num_cols(); ++i)
     for (int a = 0; a < alphabet_size(); ++a)
-      weights_[i][a] = prof.logspace() ? prof[i][a] : fast_log2(prof_[i][a]);
+      weights_[i][a] = prof.logspace() ? prof[i][a] : fast_log2(prof[i][a]);
 
   for (int a = 0; a < alphabet_size(); ++a)
     pc_[a] = prof.logspace() ? prof[center()][a] : fast_log2(prof[center()][a]);
 }
 
 template<class Alphabet>
-void CRFState<Alphabet>::ClearTransitions() {
+void ContextWeightState<Alphabet>::ClearTransitions() {
   in_transitions_.clear();
   out_transitions_.clear();
 }
 
 template<class Alphabet>
-inline void Reset(CRFState<Alphabet>* s) {
-  CRFState<Alphabet>& state = *s;
+inline void Reset(ContextWeightState<Alphabet>* s) {
+  ContextWeightState<Alphabet>& state = *s;
   const int num_cols = state.num_cols();
   const int alphabet_size = state.alphabet_size();
 

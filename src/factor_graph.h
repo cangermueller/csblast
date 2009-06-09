@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "globals.h"
+#include "co_emission.h"
 #include "context_profile-inl.h"
 #include "count_profile-inl.h"
 #include "profile-inl.h"
@@ -17,6 +18,7 @@
 #include "pseudocounts.h"
 #include "profile.h"
 #include "shared_ptr.h"
+#include "substitution_matrix.h"
 #include "sparse_matrix.h"
 #include "transition.h"
 
@@ -39,7 +41,8 @@ template< class Alphabet, template<class> class State >
 class FactorGraph {
  public:
   // Public typedefs
-  typedef std::vector< shared_ptr< State<Alphabet> > > StateVec;
+  typedef shared_ptr< State<Alphabet> > StatePtr;
+  typedef std::vector<StatePtr> StateVec;
   typedef sparse_matrix<Transition> TransitionMatrix;
   typedef typename StateVec::iterator StateIter;
   typedef typename StateVec::const_iterator ConstStateIter;
@@ -181,7 +184,7 @@ class FactorGraph {
   // Number of training iterations performed on this factor graph.
   int iterations_;
   // Factor graph states ordered by index.
-  std::vector< shared_ptr< State<Alphabet> > > states_;
+  StateVec states_;
   // Sparse matrix with state transitions.
   sparse_matrix<Transition> transitions_;
   // Flag indicating if HMM transitions are log- or linspace

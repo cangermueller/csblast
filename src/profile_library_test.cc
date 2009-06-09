@@ -20,7 +20,7 @@ class ProfileLibraryTest : public testing::Test {
  protected:
 
   virtual void SetUp() {
-    FILE* fin = fopen("../data/hmm_profile.prf", "r");
+    FILE* fin = fopen("../data/profile.prf", "r");
     p1_.Read(fin);
     rewind(fin);
     p2_.Read(fin);

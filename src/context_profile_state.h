@@ -69,9 +69,6 @@ class ContextProfileState : public ContextProfile<Alphabet> {
   { return out_transitions_.nonempty_end(); }
 
  protected:
-  // HMM needs access to transition tables.
-  friend class FactorGraph<Alphabet, ::cs::ContextProfileState>;
-
   // Needed to access names in templatized Profile base class
   using ContextProfile<Alphabet>::kBufferSize;
   using ContextProfile<Alphabet>::ReadHeader;
@@ -96,6 +93,9 @@ class ContextProfileState : public ContextProfile<Alphabet> {
   sparsetable<AnchoredTransition> in_transitions_;
   // List of out-transitions.
   sparsetable<AnchoredTransition> out_transitions_;
+
+  // HMM needs access to transition tables.
+  friend class FactorGraph<Alphabet, ::cs::ContextProfileState>;
 };  // class ContextProfileState
 
 }  // namespace cs

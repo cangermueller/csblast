@@ -60,10 +60,11 @@ int HMM<Alphabet>::AddState(const Profile<Alphabet>& profile) {
     throw Exception("Profile to add as state has %i columns but should have %i!",
                     profile.num_cols(), num_cols());
 
-  shared_ptr< ContextProfileState<Alphabet> > state_ptr(
-      new ContextProfileState<Alphabet>(states_.size(), num_states(), profile));
-  state_ptr->set_prior(1.0f / num_states());
-  states_.push_back(state_ptr);
+  StatePtr sp(new ContextProfileState<Alphabet>(states_.size(),
+                                                num_states(),
+                                                profile));
+  sp->set_prior(1.0 / num_states());
+  states_.push_back(sp);
 
   return states_.size() - 1;
 }

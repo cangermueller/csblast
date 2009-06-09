@@ -24,9 +24,10 @@ ContextProfileState<Alphabet>::ContextProfileState(FILE* fin)
 }
 
 template<class Alphabet>
-ContextProfileState<Alphabet>::ContextProfileState(int index,
-                             int num_states,
-                             const Profile<Alphabet>& profile)
+ContextProfileState<Alphabet>::ContextProfileState(
+    int index,
+    int num_states,
+    const Profile<Alphabet>& profile)
     : ContextProfile<Alphabet>(index, profile),
       in_transitions_(num_states),
       out_transitions_(num_states) {}

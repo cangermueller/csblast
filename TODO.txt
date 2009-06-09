@@ -7,24 +7,18 @@ Todo:
 * Make pseudocount methods return auto_ptr< CountProfile >
 * Make Pseudocounts constructor take 'const Admixture*'.
 * Add set_defaults method to Params structs.
-* Rename Params to Options? ... and params to opts
 * Really need directory option in CSTrainApp???
 * Make refs in xxx_weights_xxx functions pointers
-* Rename interface classes to KlassInterface (PseudocountsInterface,
-  AlphabetInterface)
 * Create ContextSpecificPseudocounts class with constructor taking FILE*
 * Allow raw sequence for initialization of Sequence from stream.
-* Rename typedefs to CamelCase (e.g. ProfileIter)
-* replace kBufferSize by KB constants.
 * remove inline from constructors
-* Replace init method in Initializers with Init and HMM ref to HMM*
+* Replace HMM ref with HMM* in initializers
 * Rename ProfileLibrary in ContextLibary
 * Replace # with // in FASTA alignment reading
 * Replace neff vector with neff valarray in CountProfile
-* BaumWelchTraining: replace emission_stats profiles with vector< matrix<float> >
-  and sparse_matrix<float> transition_stats with sparse_matrix<Transition>
 * SetDefaults() for BaumWelchOptions instead of setting defaults in constructor
 * put "" around -d command line argument in CSBlast
+* Fix arguments ref arguments in BaumWelch to pointers
 
 Someday:
 * Unified validation "framework" for Option classes

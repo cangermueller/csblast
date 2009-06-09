@@ -1,7 +1,7 @@
 // Copyright 2009, Andreas Biegert
 
-#ifndef SRC_CRF_STATE_H_
-#define SRC_CRF_STATE_H_
+#ifndef SRC_CONTEXT_WEIGHT_STATE_H_
+#define SRC_CONTEXT_WEIGHT_STATE_H_
 
 #include <cstdio>
 #include <cstdlib>
@@ -20,26 +20,31 @@ using google::sparsetable;
 
 namespace cs {
 
+// Forward declarations
+template< class Alphabet, template<class> class State >
+class FactorGraph;
+
 // A class encapsulating context weights, pseudocount parameters, and transition
 // parameters of a CRF state.
 template<class Alphabet>
-class CRFState {
+class ContextWeightState {
  public:
   typedef matrix<float>::row_type ColType;
   typedef matrix<float>::const_row_type ConstColType;
-  typedef matrix<float>::iterator Iterator;
-  typedef matrix<float>::const_iterator ConstIterator;
-  typedef typename sparsetable<AnchoredTransition>::const_nonempty_iterator ConstTransitionIter;
+  typedef matrix<float>::iterator WeightIter;
+  typedef matrix<float>::const_iterator ConstWeightIter;
+  typedef sparsetable<AnchoredTransition> TransitionTable;
+  typedef typename TransitionTable::const_nonempty_iterator ConstTransitionIter;
 
   // Constructs state with given index, number of states, and number of columns.
-  CRFState(int index, int num_states, int num_cols);
+  ContextWeightState(int index, int num_states, int num_cols);
   // Constructs state with given index with parameters initialized from
   // given profile.
-  CRFState(int index, int num_states, const Profile<Alphabet>& profile);
+  ContextWeightState(int index, int num_states, const Profile<Alphabet>& profile);
   // Constructs a state from serialized data read from input stream.
-  explicit CRFState(FILE* fin);
+  explicit ContextWeightState(FILE* fin);
 
-  virtual ~CRFState() {}
+  ~ContextWeightState() {}
 
   // Returns the index of this state.
   int index() const { return index_; }
@@ -48,13 +53,13 @@ class CRFState {
   // Access methods to get the context weight for letter j in column i
   ColType operator[] (int i) { return weights_[i]; }
   ConstColType operator[] (int i) const { return weights_[i]; }
-  float& wt(int i, int a) { return weights_[i][a]; }
-  const float& wt(int i, int a) const { return weights_[i][a]; }
   // Accessors for pseudocount weight of letter a in central column
   float& operator() (int a) { return pc_[a]; }
   const float& operator() (int a) const { return pc_[a]; }
   float& pc(int a) { return pc_[a]; }
   const float& pc(int a) const { return pc_[a]; }
+  // Returns the sum of pseudocount parameters.
+  float pc_sum() const { return pc_.sum(); }
   // Returns number of context columns
   int num_cols() const { return weights_.num_rows(); }
   // Returns number of context columns
@@ -70,21 +75,21 @@ class CRFState {
   // Returns index of central column.
   int center() const { return (num_cols() - 1) / 2; }
   // Returns an iterator to the first element in context column i.
-  col_type col_begin(int i) { return weights_.row_begin(i); }
+  ColType col_begin(int i) { return weights_.row_begin(i); }
   // Returns an iterator just past the end of context column i.
-  col_type col_end(int i) { return weights_.row_end(i); }
+  ColType col_end(int i) { return weights_.row_end(i); }
   // Returns a const iterator to the first element in context column i.
-  const_col_type col_begin(int i) const { return weights_.row_begin(i); }
+  ConstColType col_begin(int i) const { return weights_.row_begin(i); }
   // Returns a const iterator just past the end of context column i.
-  const_col_type col_end(int i) const { return weights_.row_end(i); }
+  ConstColType col_end(int i) const { return weights_.row_end(i); }
   // Returns an iterator to the first weight in the context weight matrix.
-  iterator begin() { return weights_.begin(); }
+  WeightIter begin() { return weights_.begin(); }
   // Returns an iterator just past the end of the context weight matrix.
-  iterator end() { return weights_.end(); }
+  WeightIter end() { return weights_.end(); }
   // Returns a const iterator to the first element in the context matrix.
-  const_iterator begin() const { return weights_.begin(); }
+  ConstWeightIter begin() const { return weights_.begin(); }
   // Returns a const iterator just past the end of the context matrix.
-  const_iterator end() const { return weights_.end(); }
+  ConstWeightIter end() const { return weights_.end(); }
   // Returns a const iterator to start of list with non-null in-transition
   // pointers.
   ConstTransitionIter in_transitions_begin() const
@@ -109,7 +114,8 @@ class CRFState {
   void ClearTransitions();
 
   // Prints profile in human-readable format for debugging.
-  friend std::ostream& operator<< (std::ostream& out, const CRFState& p) {
+  friend std::ostream& operator<< (std::ostream& out,
+                                   const ContextWeightState& p) {
     p.Print(out);
     return out;
   }
@@ -128,6 +134,8 @@ class CRFState {
   virtual void WriteHeader(FILE* fout) const;
   // Writes serialized weights to stream.
   virtual void WriteBody(FILE* fout) const;
+  // Prints the state weights and parameters in human-readable format.
+  virtual void Print(std::ostream& out) const;
   // Resize the weight matrices to given dimensions.
   void Resize(int num_cols, int alphabet_size);
   // Initializes context weights and pseudocounts with profile probabilities.
@@ -143,12 +151,15 @@ class CRFState {
   matrix<float> weights_;
   // Unnormalized logs of pseudocounts in central column
   std::valarray<float> pc_;
-};  // class CRFState
+
+  // CRF needs access to transition tables.
+  friend class FactorGraph<Alphabet, ::cs::ContextWeightState>;
+};  // class ContextWeightState
 
 // Resets all weights and pseudocounts to the given value or zero.
 template<class Alphabet>
-void Reset(CRFState<Alphabet>* s, float value = 0.0f);
+void Reset(ContextWeightState<Alphabet>* s, float value = 0.0f);
 
 }  // namespace cs
 
-#endif  // SRC_CRF_STATE_H_
+#endif  // SRC_CONTEXT_WEIGHT_STATE_H_
