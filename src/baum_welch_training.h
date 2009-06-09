@@ -18,6 +18,7 @@
 #include "mult_emission-inl.h"
 #include "progress_table.h"
 #include "shared_ptr.h"
+#include "substitution_matrix-inl.h"
 
 namespace cs {
 
@@ -30,8 +31,8 @@ struct BaumWelchOptions : public ExpectationMaximizationOptions {
   BaumWelchOptions()
       : ExpectationMaximizationOptions(),
         transition_pc(1.0f),
-        profile_pc(1e-8),
-        prior_pc(1e-8),
+        profile_pc(1e-3),
+        prior_pc(1e-10),
         max_connectivity(0),
         weight_center(1.3f),
         weight_decay(0.9f) {}
@@ -76,10 +77,12 @@ class BaumWelchTraining : public ExpectationMaximization<Alphabet, Subject> {
   // Initializes a new training object without output.
   BaumWelchTraining(const BaumWelchOptions& opts,
                     const DataVec& data,
+                    const SubstitutionMatrix<Alphabet>* sm,
                     HMM<Alphabet>& hmm);
   // Initializes a new training object with output.
   BaumWelchTraining(const BaumWelchOptions& opts,
                     const DataVec& data,
+                    const SubstitutionMatrix<Alphabet>* sm,
                     HMM<Alphabet>& hmm,
                     FILE* fout);
 
@@ -123,6 +126,8 @@ class BaumWelchTraining : public ExpectationMaximization<Alphabet, Subject> {
 
   // Parameter wrapper for clustering.
   const BaumWelchOptions& opts_;
+  // Substitution matrix for profile pseudocounts.
+  const SubstitutionMatrix<Alphabet>* sm_;
   // HMM to be trained
   HMM<Alphabet>& hmm_;
   // Profile matcher for calculation of emission probabilities.

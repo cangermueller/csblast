@@ -31,8 +31,7 @@ class BaumWelchTrainingTest : public testing::Test {
     Sequence<AminoAcid> seq("zinc finger motif", "CPVESCDRRFSRSDELTRHIRIH\n");
     Profile<AminoAcid> profile(seq.length());
 
-    BlosumMatrix m;
-    MatrixPseudocounts<AminoAcid> mpc(&m);
+    MatrixPseudocounts<AminoAcid> mpc(&sm_);
     mpc.add_to_sequence(seq, ConstantAdmixture(1.0f), &profile);
 
     for (int i = 0; i < seq.length(); ++i) {
@@ -64,6 +63,7 @@ class BaumWelchTrainingTest : public testing::Test {
     }
   }
 
+  BlosumMatrix sm_;
   HMM<AminoAcid> hmm_;
   std::vector< shared_ptr< Sequence<AminoAcid> > > seqs_;
   std::vector< shared_ptr< CountProfile<AminoAcid> > > counts_;
@@ -77,7 +77,7 @@ TEST_F(BaumWelchTrainingTest, ZincFingerSeqsTraining) {
   p.epsilon_batch      = 0.0f;
   p.min_scans          = 3;
   p.weight_center      = 1.0f;
-  BaumWelchTraining<AminoAcid, Sequence> bwt(p, seqs_, hmm_, stdout);
+  BaumWelchTraining<AminoAcid, Sequence> bwt(p, seqs_, &sm_, hmm_, stdout);
   bwt.Run();
 
   hmm_.TransformStatesToLinSpace();
@@ -95,7 +95,7 @@ TEST_F(BaumWelchTrainingTest, ZincFingerAlisTraining) {
   p.beta                     = 0.0f;
   p.min_scans                = 3;
   p.weight_center            = 1.0f;
-  BaumWelchTraining<AminoAcid, CountProfile> bwt(p, counts_, hmm_, stdout);
+  BaumWelchTraining<AminoAcid, CountProfile> bwt(p, counts_, &sm_, hmm_, stdout);
   bwt.Run();
 
   hmm_.TransformStatesToLinSpace();
@@ -113,7 +113,7 @@ TEST_F(BaumWelchTrainingTest, ZincFingerAlisOnlineTraining) {
   p.beta                     = 0.5f;
   p.min_scans                = 3;
   p.weight_center            = 1.0f;
-  BaumWelchTraining<AminoAcid, CountProfile> bwt(p, counts_, hmm_, stdout);
+  BaumWelchTraining<AminoAcid, CountProfile> bwt(p, counts_, &sm_, hmm_, stdout);
   bwt.Run();
 
   hmm_.TransformStatesToLinSpace();

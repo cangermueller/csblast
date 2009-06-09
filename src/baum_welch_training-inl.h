@@ -8,6 +8,7 @@
 #include <cmath>
 #include <cstdio>
 
+#include <numeric>
 #include <string>
 
 #include "context_profile-inl.h"
@@ -25,9 +26,11 @@ template< class Alphabet, template<class> class Subject >
 BaumWelchTraining<Alphabet, Subject>::BaumWelchTraining(
     const BaumWelchOptions& opts,
     const DataVec& data,
+    const SubstitutionMatrix<Alphabet>* sm,
     HMM<Alphabet>& hmm)
     : ExpectationMaximization<Alphabet, Subject>(data),
       opts_(opts),
+      sm_(sm),
       hmm_(hmm),
       emission_(hmm.num_cols(), opts.weight_center, opts.weight_decay),
       transition_stats_(hmm.num_states(), hmm.num_states()),
@@ -41,10 +44,12 @@ template< class Alphabet, template<class> class Subject >
 BaumWelchTraining<Alphabet, Subject>::BaumWelchTraining(
     const BaumWelchOptions& opts,
     const DataVec& data,
+    const SubstitutionMatrix<Alphabet>* sm,
     HMM<Alphabet>& hmm,
     FILE* fout)
     : ExpectationMaximization<Alphabet, Subject>(data),
       opts_(opts),
+      sm_(sm),
       hmm_(hmm),
       emission_(hmm.num_cols(), opts.weight_center, opts.weight_decay),
       transition_stats_(hmm.num_states(), hmm.num_states()),
@@ -58,11 +63,10 @@ BaumWelchTraining<Alphabet, Subject>::BaumWelchTraining(
 template< class Alphabet, template<class> class Subject >
 void BaumWelchTraining<Alphabet, Subject>::ExpectationStep(
     const DataVec& block) {
-
-  const int block_size = block.size();
   LOG(INFO) << "Starting E-step ...";
 
   // Run forward and backward algorithm on each subject in current block
+  const int block_size = block.size();
 #pragma omp parallel for schedule(static)
   for (int n = 0; n < block_size; ++n) {
     ForwardBackwardMatrices fbm(block[n]->length(), hmm_.num_states());
@@ -162,7 +166,7 @@ void BaumWelchTraining<Alphabet, Subject>::AddContributionToStates(
 
 template< class Alphabet, template<class> class Subject >
 void BaumWelchTraining<Alphabet, Subject>::UpdateSufficientStatistics() {
-  const float gamma       = 1.0f - epsilon_;
+  const double gamma      = 1.0 - epsilon_;
   const int num_states    = hmm_.num_states();
   const int num_cols      = hmm_.num_cols();
   const int alphabet_size = hmm_.alphabet_size();
@@ -180,7 +184,7 @@ void BaumWelchTraining<Alphabet, Subject>::UpdateSufficientStatistics() {
   }
 
   // Update priors and emissions statistics
-#pragma omp parallel for schedule(static)
+  #pragma omp parallel for schedule(static)
   for (int k = 0; k < num_states; ++k) {
     prior_stats_[k] = prior_stats_[k] * gamma + prior_stats_block_[k];
 
@@ -189,8 +193,7 @@ void BaumWelchTraining<Alphabet, Subject>::UpdateSufficientStatistics() {
     for (int j = 0; j < num_cols; ++j) {
       for (int a = 0; a < alphabet_size; ++a) {
         p[j][a] = gamma * p[j][a] + p_block[j][a];
-        LOG(INFO) << strprintf("p[%i][%i][%i]=%-7.2g", k, j, a, p_block[j][a]);
-      }
+          }
     }
   }
 }
@@ -212,11 +215,14 @@ void BaumWelchTraining<Alphabet, Subject>::MaximizationStep() {
 
     // Update emissions
     ProfileStats& p_k = *profile_stats_[k];
-    for (int i = 0; i < num_cols; ++i) {
-      double sum = Normalize(&p_k[i][0], alphabet_size);
-      if (sum != 0.0)
+    for (int j = 0; j < num_cols; ++j) {
+      double sum = std::accumulate(&p_k[j][0], &p_k[j][0] + alphabet_size, 0.0);
+
+      if (sum != 0.0) {
+        double norm_fac = 1.0 / sum;
         for (int a = 0; a < alphabet_size; ++a)
-          hmm_[k][i][a] = fast_log2(static_cast<float>(p_k[i][a]));
+          hmm_[k][j][a] = log2(p_k[j][a] * norm_fac);
+      }
     }
   }
 
@@ -224,7 +230,6 @@ void BaumWelchTraining<Alphabet, Subject>::MaximizationStep() {
   hmm_.ClearTransitions();
   for (int k = 0; k < num_states; ++k) {
     double tr_sum = 0.0;
-    bool sum_zero = true;
 
     for (int l = 0; l < num_states; ++l) {
       if (transition_stats_.test(k,l)) {
@@ -237,20 +242,19 @@ void BaumWelchTraining<Alphabet, Subject>::MaximizationStep() {
         if (a_kl > 0.0) {
           transition_stats_[k][l] = a_kl;
           tr_sum += a_kl;
-          sum_zero = false;
         } else {
           transition_stats_.erase(k,l);
         }
       }
     }
 
-    if (!sum_zero) {
+    if (tr_sum != 0.0) {
       double tr_fac = 1.0 / tr_sum;
 
       for (int l = 0; l < num_states; ++l) {
         if (transition_stats_.test(k,l)) {
-          hmm_(k,l) = transition_stats_[k][l] * tr_fac;
-          LOG(DEBUG2) << strprintf("tr[%i][%i]=%-8.5f",
+          hmm_(k,l) = static_cast<float>(transition_stats_[k][l] * tr_fac);
+          LOG(DEBUG2) << strprintf("tr[%i][%i]=%-15.10f",
                                    k, l, static_cast<float>(hmm_(k,l)));
         }
       }
@@ -266,10 +270,10 @@ void BaumWelchTraining<Alphabet, Subject>::Init() {
 
   // Create profiles for global and block-level sufficient statistics
   for (int k = 0; k < hmm_.num_states(); ++k) {
-    ProfileStatsPtr p(new matrix<double>(hmm_.num_cols(), alphabet_size, 0.0));
+    ProfileStatsPtr p(new ProfileStats(hmm_.num_cols(), alphabet_size, 0.0));
     profile_stats_.push_back(p);
 
-    ProfileStatsPtr pb(new matrix<double>(hmm_.num_cols(), alphabet_size, 0.0));
+    ProfileStatsPtr pb(new ProfileStats(hmm_.num_cols(), alphabet_size, 0.0));
     profile_stats_block_.push_back(pb);
   }
 
@@ -288,14 +292,23 @@ void BaumWelchTraining<Alphabet, Subject>::Init() {
 
 template< class Alphabet, template<class> class Subject >
 void BaumWelchTraining<Alphabet, Subject>::ResetAndAddPseudocounts() {
+  const int num_cols      = hmm_.num_cols();
+  const int alphabet_size = hmm_.alphabet_size();
+
   // Erase all transitions. Pseudocounts are taken care of in M-step.
   transition_stats_block_.clear();
 
   // Reset profile and prior evidences to their pseudocount values for numeric
   // stability.
   for (int k = 0; k < hmm_.num_states(); ++k) {
-    Reset(profile_stats_block_[k].get(), opts_.profile_pc);
     prior_stats_block_[k] = opts_.prior_pc;
+
+    ProfileStats& p = *profile_stats_block_[k];
+    for (int j = 0; j < num_cols; ++j) {
+      for (int a = 0; a < alphabet_size; ++a) {
+        p[j][a] = opts_.profile_pc * sm_->f(a);
+      }
+    }
   }
 }
 

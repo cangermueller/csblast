@@ -67,8 +67,8 @@ void ExpectationMaximization<Alphabet, Subject>::SetupBlocks(bool force_batch) {
 
   } else {
     const int num_blocks = opts().num_blocks == 0 ?
-      iround(pow(data_.size(), 3.0/8.0)) : opts().num_blocks;
-    const int block_size = iround(data_.size() / num_blocks);
+      iround(pow(data_.size(), 0.375)) : opts().num_blocks;
+    const int block_size = iround(static_cast<float>(data_.size()) / num_blocks);
 
     blocks_.clear();
     for (int b = 0; b < num_blocks; ++b) {

@@ -366,7 +366,6 @@ void CSTrainApp<Alphabet>::ReadTrainingData() {
       fprintf(stream(), "%s %i\n",
               string(50 - iround((i % 100) / 2), ' ').c_str(), i);
   }
-
   fclose(fin);
 }
 
@@ -439,7 +438,11 @@ int CSTrainApp<Alphabet>::Run() {
           num_data_cols);
   fflush(stream());
   fputs("\n\n", stream());
-  BaumWelchTraining<Alphabet, CountProfile> bw(opts_, data_, *hmm_, stream());
+  BaumWelchTraining<Alphabet, CountProfile> bw(opts_,
+                                               data_,
+                                               subst_matrix_.get(),
+                                               *hmm_,
+                                               stream());
   bw.Run();
 
   // Write HMM to outfile

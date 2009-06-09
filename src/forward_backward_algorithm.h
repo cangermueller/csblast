@@ -140,11 +140,6 @@ void ForwardAlgorithm(const HMM<Alphabet>& hmm,
 
       m.f[i][l] = f_il;
       m.s[i] += f_il;
-      if (hmm.iterations() > 73) {
-        LOG(INFO) << strprintf("e[%i][%i] = %-7.2g", i, l, m.e[i][l]);
-        LOG(INFO) << strprintf("f[%i][%i] = %-7.2g", i, l, f_il);
-        LOG(INFO) << strprintf("s[%i] = %-7.2g", i, m.s[i]);
-      }
     }
 
     // Rescale forward values
@@ -152,14 +147,9 @@ void ForwardAlgorithm(const HMM<Alphabet>& hmm,
     for (int l = 0; l < num_states; ++l)
       m.f[i][l] *= scale_fac;
     m.log_likelihood += log2(m.s[i]);
-
-    if (hmm.iterations() > 73) {
-      LOG(INFO) << strprintf("s[%i] = %-7.2g   log2(s[%i]) = %-7.2g",
-                             i, m.s[i], i, log2(m.s[i]));
-    }
   }
 
-  LOG(INFO) << strprintf("log(L) = %-7.2g", m.log_likelihood);
+  LOG(DEBUG) << strprintf("log(L) = %-7.2g", m.log_likelihood);
 }
 
 template< class Alphabet, template<class> class Subject >
