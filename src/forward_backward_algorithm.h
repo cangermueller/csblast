@@ -94,25 +94,33 @@ void ForwardBackwardAlgorithm(const HMM<Alphabet>& hmm,
 
 template< class Alphabet, template<class> class Subject >
 void ForwardAlgorithm(const HMM<Alphabet>& hmm,
-                       const Subject<Alphabet>& subject,
-                       const MultEmission<Alphabet>& emission,
-                       ForwardBackwardMatrices* fbm) {
+                      const Subject<Alphabet>& subject,
+                      const MultEmission<Alphabet>& emission,
+                      ForwardBackwardMatrices* fbm) {
+  typedef ContextProfileState<Alphabet> State;
   typedef typename HMM<Alphabet>::ConstStateIter ConstStateIter;
-  typedef typename ContextProfileState<Alphabet>::ConstTransitionIter ConstTransitionIter;
+  typedef typename State::ConstTransitionIter ConstTransitionIter;
 
   LOG(DEBUG1) << "Forward algorithm ...";
   const int length     = subject.length();
   const int num_states = hmm.num_states();
   ForwardBackwardMatrices& m = *fbm;
+  m.log_likelihood = 0.0;
 
   // Initialization
   LOG(DEBUG1) << strprintf("i=%i", 0);
   for (int k = 0; k < num_states; ++k) {
     m.e[0][k] = pow(2.0, emission(hmm[k], subject, 0));
     m.f[0][k] = hmm[k].prior() * m.e[0][k];
+    m.s[0] += m.f[0][k];
+
     LOG(DEBUG2) << strprintf("f[%i][%i] = %-7.2e", 0, k, m.f[0][k]);
   }
-  m.log_likelihood = 0.0;
+  // Rescale forward values
+  double scale_fac = 1.0 / m.s[0];
+  for (int k = 0; k < num_states; ++k)
+    m.f[0][k] *= scale_fac;
+  m.log_likelihood += log2(m.s[0]);
 
   // Recursion
   for (int i = 1; i < length; ++i) {
@@ -143,7 +151,7 @@ void ForwardAlgorithm(const HMM<Alphabet>& hmm,
     }
 
     // Rescale forward values
-    double scale_fac = 1.0 / m.s[i];
+    scale_fac = 1.0 / m.s[i];
     for (int l = 0; l < num_states; ++l)
       m.f[i][l] *= scale_fac;
     m.log_likelihood += log2(m.s[i]);
@@ -156,8 +164,9 @@ template< class Alphabet, template<class> class Subject >
 void BackwardAlgorithm(const HMM<Alphabet>& hmm,
                         const Subject<Alphabet>& subject,
                         ForwardBackwardMatrices* fbm) {
+  typedef ContextProfileState<Alphabet> State;
   typedef typename HMM<Alphabet>::ConstStateIter ConstStateIter;
-  typedef typename ContextProfileState<Alphabet>::ConstTransitionIter ConstTransitionIter;
+  typedef typename State::ConstTransitionIter ConstTransitionIter;
 
   LOG(DEBUG1) << "Backward algorithm ...";
   const int length     = subject.length();
