@@ -12,7 +12,7 @@
 
 #include "globals.h"
 #include "context_weight_state.h"
-#include "factor_graph-inl.h"
+#include "chain_graph-inl.h"
 #include "profile.h"
 #include "shared_ptr.h"
 
@@ -21,7 +21,7 @@ namespace cs {
 // A conditional random field (CRF) that stores context information in
 // form of states of context weights and state transition weights.
 template<class Alphabet>
-class CRF : public FactorGraph<Alphabet, ContextWeightState> {
+class CRF : public ChainGraph<Alphabet, ContextWeightState> {
  public:
   // Public typedefs
   typedef shared_ptr< ContextWeightState<Alphabet> > StatePtr;
@@ -49,17 +49,17 @@ class CRF : public FactorGraph<Alphabet, ContextWeightState> {
   virtual int AddState(const Profile<Alphabet>& profile);
 
  protected:
-  // Needed to access names in templatized FactorGraph base class
-  using FactorGraph<Alphabet, ContextWeightState>::full;
-  using FactorGraph<Alphabet, ContextWeightState>::num_cols;
-  using FactorGraph<Alphabet, ContextWeightState>::num_states;
-  using FactorGraph<Alphabet, ContextWeightState>::Read;
-  using FactorGraph<Alphabet, ContextWeightState>::ReadHeader;
-  using FactorGraph<Alphabet, ContextWeightState>::WriteHeader;
-  using FactorGraph<Alphabet, ContextWeightState>::states_;
-  using FactorGraph<Alphabet, ContextWeightState>::states_begin;
-  using FactorGraph<Alphabet, ContextWeightState>::states_end;
-  using FactorGraph<Alphabet, ContextWeightState>::kBufferSize;
+  // Needed to access names in templatized ChainGraph base class
+  using ChainGraph<Alphabet, ContextWeightState>::full;
+  using ChainGraph<Alphabet, ContextWeightState>::num_cols;
+  using ChainGraph<Alphabet, ContextWeightState>::num_states;
+  using ChainGraph<Alphabet, ContextWeightState>::Read;
+  using ChainGraph<Alphabet, ContextWeightState>::ReadHeader;
+  using ChainGraph<Alphabet, ContextWeightState>::WriteHeader;
+  using ChainGraph<Alphabet, ContextWeightState>::states_;
+  using ChainGraph<Alphabet, ContextWeightState>::states_begin;
+  using ChainGraph<Alphabet, ContextWeightState>::states_end;
+  using ChainGraph<Alphabet, ContextWeightState>::kBufferSize;
 
  private:
   // Class identifier

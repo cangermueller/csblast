@@ -1,9 +1,9 @@
 // Copyright 2009, Andreas Biegert
 
-#ifndef SRC_FACTOR_GRAPH_INL_H_
-#define SRC_FACTOR_GRAPH_INL_H_
+#ifndef SRC_CHAIN_GRAPH_INL_H_
+#define SRC_CHAIN_GRAPH_INL_H_
 
-#include "factor_graph.h"
+#include "chain_graph.h"
 
 #include <cassert>
 #include <cstdlib>
@@ -28,7 +28,7 @@
 namespace cs {
 
 template< class Alphabet, template<class> class State >
-FactorGraph<Alphabet, State>::FactorGraph()
+ChainGraph<Alphabet, State>::ChainGraph()
     : num_states_(0),
       num_cols_(0),
       iterations_(0),
@@ -37,7 +37,7 @@ FactorGraph<Alphabet, State>::FactorGraph()
 }
 
 template< class Alphabet, template<class> class State >
-FactorGraph<Alphabet, State>::FactorGraph(int num_states, int num_cols)
+ChainGraph<Alphabet, State>::ChainGraph(int num_states, int num_cols)
     : num_states_(num_states),
       num_cols_(num_cols),
       iterations_(0),
@@ -47,7 +47,7 @@ FactorGraph<Alphabet, State>::FactorGraph(int num_states, int num_cols)
 }
 
 template< class Alphabet, template<class> class State >
-FactorGraph<Alphabet, State>::FactorGraph(FILE* fin)
+ChainGraph<Alphabet, State>::ChainGraph(FILE* fin)
     : num_states_(0),
       num_cols_(0),
       iterations_(0),
@@ -56,27 +56,27 @@ FactorGraph<Alphabet, State>::FactorGraph(FILE* fin)
 }
 
 template< class Alphabet, template<class> class State >
-void FactorGraph<Alphabet, State>::Init() {
+void ChainGraph<Alphabet, State>::Init() {
   states_.reserve(num_states());
   transitions_.resize(num_states(), num_states());
 }
 
 template< class Alphabet, template<class> class State >
-void FactorGraph<Alphabet, State>::InitStates(
+void ChainGraph<Alphabet, State>::InitStates(
     const StateInitializer<Alphabet, State>& st) {
   Clear();
   st.Init(*this);
 }
 
 template< class Alphabet, template<class> class State >
-void FactorGraph<Alphabet, State>::InitTransitions(
+void ChainGraph<Alphabet, State>::InitTransitions(
     const TransitionInitializer<Alphabet, State>& tr) {
   ClearTransitions();
   tr.Init(*this);
 }
 
 template< class Alphabet, template<class> class State >
-inline void FactorGraph<Alphabet, State>::set_transition(int k, int l, float w) {
+inline void ChainGraph<Alphabet, State>::set_transition(int k, int l, float w) {
   if (transitions_.test(k,l)) {
     // Transition is already set -> modify in place
     (&transitions_[k][l])->weight = w;
@@ -91,28 +91,28 @@ inline void FactorGraph<Alphabet, State>::set_transition(int k, int l, float w) 
 }
 
 template< class Alphabet, template<class> class State >
-inline void FactorGraph<Alphabet, State>::erase_transition(int k, int l) {
+inline void ChainGraph<Alphabet, State>::erase_transition(int k, int l) {
   transitions_.erase(k,l);
   states_[k]->out_transitions_.erase(l);
   states_[l]->in_transitions_.erase(k);
 }
 
 template< class Alphabet, template<class> class State >
-inline void FactorGraph<Alphabet, State>::Clear() {
+inline void ChainGraph<Alphabet, State>::Clear() {
   states_.clear();
   transitions_.clear();
   Init();
 }
 
 template< class Alphabet, template<class> class State >
-inline void FactorGraph<Alphabet, State>::ClearTransitions() {
+inline void ChainGraph<Alphabet, State>::ClearTransitions() {
   transitions_.clear();
   for (StateIter si = states_begin(); si != states_end(); ++si)
     (*si)->ClearTransitions();
 }
 
 template< class Alphabet, template<class> class State >
-inline void FactorGraph<Alphabet, State>::TransformTransitionsToLogSpace() {
+inline void ChainGraph<Alphabet, State>::TransformTransitionsToLogSpace() {
   if (!transitions_logspace()) {
     for (TransitionIter ti = transitions_begin();
          ti != transitions_end(); ++ti)
@@ -122,7 +122,7 @@ inline void FactorGraph<Alphabet, State>::TransformTransitionsToLogSpace() {
 }
 
 template< class Alphabet, template<class> class State >
-inline void FactorGraph<Alphabet, State>::TransformTransitionsToLinSpace() {
+inline void ChainGraph<Alphabet, State>::TransformTransitionsToLinSpace() {
   if (transitions_logspace()) {
     for (TransitionIter ti = transitions_begin();
          ti != transitions_end(); ++ti)
@@ -132,7 +132,7 @@ inline void FactorGraph<Alphabet, State>::TransformTransitionsToLinSpace() {
 }
 
 template< class Alphabet, template<class> class State >
-void FactorGraph<Alphabet, State>::Read(FILE* fin) {
+void ChainGraph<Alphabet, State>::Read(FILE* fin) {
   LOG(DEBUG1) << "Reading HMM from stream ...";
 
   ReadHeader(fin);
@@ -144,7 +144,7 @@ void FactorGraph<Alphabet, State>::Read(FILE* fin) {
 }
 
 template< class Alphabet, template<class> class State >
-void FactorGraph<Alphabet, State>::ReadHeader(FILE* fin) {
+void ChainGraph<Alphabet, State>::ReadHeader(FILE* fin) {
   char buffer[kBufferSize];
   const char* ptr = buffer;
 
@@ -198,7 +198,7 @@ void FactorGraph<Alphabet, State>::ReadHeader(FILE* fin) {
 }
 
 template< class Alphabet, template<class> class State >
-void FactorGraph<Alphabet, State>::ReadStates(FILE* fin) {
+void ChainGraph<Alphabet, State>::ReadStates(FILE* fin) {
   while (!full() && !feof(fin)) {
     shared_ptr< State<Alphabet> > state_ptr(new State<Alphabet>(fin));
     states_.push_back(state_ptr);
@@ -210,7 +210,7 @@ void FactorGraph<Alphabet, State>::ReadStates(FILE* fin) {
 }
 
 template< class Alphabet, template<class> class State >
-void FactorGraph<Alphabet, State>::ReadTransitions(FILE* fin) {
+void ChainGraph<Alphabet, State>::ReadTransitions(FILE* fin) {
   char buffer[kBufferSize];
   const char* ptr = buffer;
   int k, l;
@@ -233,14 +233,14 @@ void FactorGraph<Alphabet, State>::ReadTransitions(FILE* fin) {
 }
 
 template< class Alphabet, template<class> class State >
-void FactorGraph<Alphabet, State>::Write(FILE* fout) const {
+void ChainGraph<Alphabet, State>::Write(FILE* fout) const {
   WriteHeader(fout);
   WriteStates(fout);
   WriteTransitions(fout);
 }
 
 template< class Alphabet, template<class> class State >
-void FactorGraph<Alphabet, State>::WriteHeader(FILE* fout) const {
+void ChainGraph<Alphabet, State>::WriteHeader(FILE* fout) const {
   fprintf(fout, "%s\n", class_id());
   fprintf(fout, "NSTATES\t%i\n", num_states());
   fprintf(fout, "NTRANS\t%i\n", num_transitions());
@@ -250,13 +250,13 @@ void FactorGraph<Alphabet, State>::WriteHeader(FILE* fout) const {
 }
 
 template< class Alphabet, template<class> class State >
-void FactorGraph<Alphabet, State>::WriteStates(FILE* fout) const {
+void ChainGraph<Alphabet, State>::WriteStates(FILE* fout) const {
   for (ConstStateIter si = states_begin(); si != states_end(); ++si)
     (*si)->Write(fout);
 }
 
 template< class Alphabet, template<class> class State >
-void FactorGraph<Alphabet, State>::WriteTransitions(FILE* fout) const {
+void ChainGraph<Alphabet, State>::WriteTransitions(FILE* fout) const {
   fputs("TRANS\n", fout);
 
   for (ConstTransitionIter ti = transitions_begin();
@@ -274,7 +274,7 @@ void FactorGraph<Alphabet, State>::WriteTransitions(FILE* fout) const {
 }
 
 template< class Alphabet, template<class> class State >
-void FactorGraph<Alphabet, State>::Print(std::ostream& out) const {
+void ChainGraph<Alphabet, State>::Print(std::ostream& out) const {
   out << class_id() << std::endl;
   out << "Number of states:      " << num_states() << std::endl;
   out << "Number of transitions: " << num_transitions() << std::endl;
@@ -314,7 +314,7 @@ bool PriorCompare(const shared_ptr< ContextProfile<Alphabet> >& lhs,
 }
 
 template< class Alphabet, template<class> class State >
-void NormalizeTransitions(FactorGraph<Alphabet, State>* graph, float f) {
+void NormalizeTransitions(ChainGraph<Alphabet, State>* graph, float f) {
   const bool logspace = graph->transitions_logspace();
   if (logspace) graph->TransformTransitionsToLinSpace();
 
@@ -355,7 +355,7 @@ SamplingStateInitializer<Alphabet, State>::SamplingStateInitializer(
 
 template< class Alphabet, template<class> class State >
 void SamplingStateInitializer<Alphabet, State>::Init(
-    FactorGraph<Alphabet, State>& graph) const {
+    ChainGraph<Alphabet, State>& graph) const {
   // Iterate over randomly shuffled profiles; from each profile we sample a
   // fraction of profile windows.
   for (ProfileIter pi = profiles_.begin(); pi != profiles_.end() &&
@@ -391,7 +391,7 @@ LibraryStateInitializer<Alphabet, State>::LibraryStateInitializer(
 
 template< class Alphabet, template<class> class State >
 void LibraryStateInitializer<Alphabet, State>::Init(
-    FactorGraph<Alphabet, State>& graph) const {
+    ChainGraph<Alphabet, State>& graph) const {
   assert(lib_->num_cols() == graph.num_cols());
   assert(!lib_->logspace());
 
@@ -412,7 +412,7 @@ void LibraryStateInitializer<Alphabet, State>::Init(
 
 template< class Alphabet, template<class> class State >
 void HomogeneousTransitionInitializer<Alphabet, State>::Init(
-    FactorGraph<Alphabet, State>& graph) const {
+    ChainGraph<Alphabet, State>& graph) const {
   float w = 1.0f / graph.num_states();
   for (int k = 0; k < graph.num_states(); ++k) {
     for (int l = 0; l < graph.num_states(); ++l) {
@@ -423,7 +423,7 @@ void HomogeneousTransitionInitializer<Alphabet, State>::Init(
 
 template< class Alphabet, template<class> class State >
 void RandomTransitionInitializer<Alphabet, State>::Init(
-    FactorGraph<Alphabet, State>& graph) const {
+    ChainGraph<Alphabet, State>& graph) const {
   srand(static_cast<unsigned int>(clock()));
 
   for (int k = 0; k < graph.num_states(); ++k)
@@ -440,7 +440,7 @@ CoEmissionTransitionInitializer<Alphabet, State>::CoEmissionTransitionInitialize
 
 template< class Alphabet, template<class> class State >
 void CoEmissionTransitionInitializer<Alphabet, State>::Init(
-    FactorGraph<Alphabet, State>& graph) const {
+    ChainGraph<Alphabet, State>& graph) const {
   const int ncols = graph.num_cols() - 1;
 
   for (int k = 0; k < graph.num_states(); ++k) {
@@ -456,4 +456,4 @@ void CoEmissionTransitionInitializer<Alphabet, State>::Init(
 
 }  // namespace cs
 
-#endif  // SRC_FACTOR_GRAPH_INL_H_
+#endif  // SRC_CHAIN_GRAPH_INL_H_

@@ -13,7 +13,7 @@
 #include "globals.h"
 #include "co_emission.h"
 #include "context_profile_state.h"
-#include "factor_graph-inl.h"
+#include "chain_graph-inl.h"
 #include "profile.h"
 #include "shared_ptr.h"
 
@@ -22,7 +22,7 @@ namespace cs {
 // A Hidden Markov Model that stores context information in form of states
 // of context profiles and inter state transition probabilities.
 template<class Alphabet>
-class HMM : public FactorGraph<Alphabet, ContextProfileState> {
+class HMM : public ChainGraph<Alphabet, ContextProfileState> {
  public:
   // Public typedefs
   typedef shared_ptr< ContextProfileState<Alphabet> > StatePtr;
@@ -58,17 +58,17 @@ class HMM : public FactorGraph<Alphabet, ContextProfileState> {
   virtual void WriteHeader(FILE* fout) const;
 
  protected:
-  // Needed to access names in templatized FactorGraph base class
-  using FactorGraph<Alphabet, ContextProfileState>::full;
-  using FactorGraph<Alphabet, ContextProfileState>::num_cols;
-  using FactorGraph<Alphabet, ContextProfileState>::num_states;
-  using FactorGraph<Alphabet, ContextProfileState>::Read;
-  using FactorGraph<Alphabet, ContextProfileState>::ReadHeader;
-  using FactorGraph<Alphabet, ContextProfileState>::WriteHeader;
-  using FactorGraph<Alphabet, ContextProfileState>::states_;
-  using FactorGraph<Alphabet, ContextProfileState>::states_begin;
-  using FactorGraph<Alphabet, ContextProfileState>::states_end;
-  using FactorGraph<Alphabet, ContextProfileState>::kBufferSize;
+  // Needed to access names in templatized ChainGraph base class
+  using ChainGraph<Alphabet, ContextProfileState>::full;
+  using ChainGraph<Alphabet, ContextProfileState>::num_cols;
+  using ChainGraph<Alphabet, ContextProfileState>::num_states;
+  using ChainGraph<Alphabet, ContextProfileState>::Read;
+  using ChainGraph<Alphabet, ContextProfileState>::ReadHeader;
+  using ChainGraph<Alphabet, ContextProfileState>::WriteHeader;
+  using ChainGraph<Alphabet, ContextProfileState>::states_;
+  using ChainGraph<Alphabet, ContextProfileState>::states_begin;
+  using ChainGraph<Alphabet, ContextProfileState>::states_end;
+  using ChainGraph<Alphabet, ContextProfileState>::kBufferSize;
 
   // Initializes the HMM from a serialized HMM read from stream.
   virtual void ReadHeader(FILE* fin);

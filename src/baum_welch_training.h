@@ -12,7 +12,7 @@
 
 #include "context_profile-inl.h"
 #include "expectation_maximization-inl.h"
-#include "forward_backward_algorithm.h"
+#include "forward_backward_algorithm-inl.h"
 #include "hmm-inl.h"
 #include "matrix.h"
 #include "mult_emission-inl.h"

@@ -1,8 +1,8 @@
 // Copyright 2009, Andreas Biegert
 // Collection of commonly used inline utility functions.
 
-#ifndef SRC_UTILS_H_
-#define SRC_UTILS_H_
+#ifndef SRC_UTILS_INL_H_
+#define SRC_UTILS_INL_H_
 
 #include <cassert>
 #include <cctype>
@@ -399,4 +399,4 @@ inline const char* strscn(const char* str) {
 
 }  // namespace cs
 
-#endif  // SRC_UTILS_H_
+#endif  // SRC_UTILS_INL_H_

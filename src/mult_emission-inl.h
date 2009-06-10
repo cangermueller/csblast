@@ -33,21 +33,21 @@ MultEmission<Alphabet>::MultEmission(int num_cols,
 template<class Alphabet>
 inline double MultEmission<Alphabet>::operator() (
     const ContextProfile<Alphabet>& profile,
-    const CountProfile<Alphabet>& counts_profile,
+    const CountProfile<Alphabet>& count_profile,
     int index) const {
   assert(profile.logspace());
-  assert(!counts_profile.logspace());
+  assert(!count_profile.logspace());
 
   const int alphabet_size = profile.alphabet_size();
   const int beg = std::max(0, index - center_);
-  const int end = std::min(counts_profile.num_cols() - 1, index + center_);
+  const int end = std::min(count_profile.num_cols() - 1, index + center_);
   double rv = 0.0;
 
   for(int i = beg; i <= end; ++i) {
     const int j = i - index + center_;
     double sum = 0.0;
     for (int a = 0; a < alphabet_size; ++a)
-      sum += counts_profile.counts(i, a) * profile[j][a];
+      sum += count_profile.counts(i, a) * profile[j][a];
     rv += sum * weights_[j];
   }
 
@@ -57,38 +57,38 @@ inline double MultEmission<Alphabet>::operator() (
 template<>
 inline double MultEmission<AminoAcid>::operator() (
     const ContextProfile<AminoAcid>& profile,
-    const CountProfile<AminoAcid>& counts_profile,
+    const CountProfile<AminoAcid>& count_profile,
     int index) const {
   assert(profile.logspace());
-  assert(!counts_profile.logspace());
+  assert(!count_profile.logspace());
 
   const int beg = std::max(0, index - center_);
-  const int end = std::min(counts_profile.num_cols() - 1, index + center_);
+  const int end = std::min(count_profile.num_cols() - 1, index + center_);
   double rv = 0.0;
 
   for(int i = beg; i <= end; ++i) {
     const int j = i - index + center_;
     double sum = 0.0;
-    sum += counts_profile.counts(i,0) * profile[j][0];
-    sum += counts_profile.counts(i,1) * profile[j][1];
-    sum += counts_profile.counts(i,2) * profile[j][2];
-    sum += counts_profile.counts(i,3) * profile[j][3];
-    sum += counts_profile.counts(i,4) * profile[j][4];
-    sum += counts_profile.counts(i,5) * profile[j][5];
-    sum += counts_profile.counts(i,6) * profile[j][6];
-    sum += counts_profile.counts(i,7) * profile[j][7];
-    sum += counts_profile.counts(i,8) * profile[j][8];
-    sum += counts_profile.counts(i,9) * profile[j][9];
-    sum += counts_profile.counts(i,10) * profile[j][10];
-    sum += counts_profile.counts(i,11) * profile[j][11];
-    sum += counts_profile.counts(i,12) * profile[j][12];
-    sum += counts_profile.counts(i,13) * profile[j][13];
-    sum += counts_profile.counts(i,14) * profile[j][14];
-    sum += counts_profile.counts(i,15) * profile[j][15];
-    sum += counts_profile.counts(i,16) * profile[j][16];
-    sum += counts_profile.counts(i,17) * profile[j][17];
-    sum += counts_profile.counts(i,18) * profile[j][18];
-    sum += counts_profile.counts(i,19) * profile[j][19];
+    sum += count_profile.counts(i,0) * profile[j][0];
+    sum += count_profile.counts(i,1) * profile[j][1];
+    sum += count_profile.counts(i,2) * profile[j][2];
+    sum += count_profile.counts(i,3) * profile[j][3];
+    sum += count_profile.counts(i,4) * profile[j][4];
+    sum += count_profile.counts(i,5) * profile[j][5];
+    sum += count_profile.counts(i,6) * profile[j][6];
+    sum += count_profile.counts(i,7) * profile[j][7];
+    sum += count_profile.counts(i,8) * profile[j][8];
+    sum += count_profile.counts(i,9) * profile[j][9];
+    sum += count_profile.counts(i,10) * profile[j][10];
+    sum += count_profile.counts(i,11) * profile[j][11];
+    sum += count_profile.counts(i,12) * profile[j][12];
+    sum += count_profile.counts(i,13) * profile[j][13];
+    sum += count_profile.counts(i,14) * profile[j][14];
+    sum += count_profile.counts(i,15) * profile[j][15];
+    sum += count_profile.counts(i,16) * profile[j][16];
+    sum += count_profile.counts(i,17) * profile[j][17];
+    sum += count_profile.counts(i,18) * profile[j][18];
+    sum += count_profile.counts(i,19) * profile[j][19];
 
     rv += sum * weights_[j];
   }

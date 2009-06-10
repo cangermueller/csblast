@@ -15,7 +15,7 @@
 
 #include "exception.h"
 #include "context_weight_state-inl.h"
-#include "factor_graph-inl.h"
+#include "chain_graph-inl.h"
 #include "log.h"
 #include "profile-inl.h"
 #include "shared_ptr.h"
@@ -28,11 +28,11 @@ const char* CRF<Alphabet>::kClassID = "CRF";
 
 template<class Alphabet>
 CRF<Alphabet>::CRF(int num_states, int num_cols)
-    : FactorGraph<Alphabet, ContextWeightState>(num_states, num_cols) {}
+    : ChainGraph<Alphabet, ContextWeightState>(num_states, num_cols) {}
 
 template<class Alphabet>
 CRF<Alphabet>::CRF(FILE* fin)
-    : FactorGraph<Alphabet, ContextWeightState>() {
+    : ChainGraph<Alphabet, ContextWeightState>() {
   Read(fin);
 }
 
@@ -42,7 +42,7 @@ CRF<Alphabet>::CRF(
     int num_cols,
     const StateInitializer<Alphabet, ContextWeightState>& st_init,
     const TransitionInitializer<Alphabet, ContextWeightState>& tr_init)
-    : FactorGraph<Alphabet, ContextWeightState>(num_states, num_cols) {
+    : ChainGraph<Alphabet, ContextWeightState>(num_states, num_cols) {
   st_init.Init(*this);
   tr_init.Init(*this);
 }

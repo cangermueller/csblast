@@ -12,7 +12,7 @@
 #include <string>
 
 #include "context_profile-inl.h"
-#include "forward_backward_algorithm.h"
+#include "forward_backward_algorithm-inl.h"
 #include "hmm-inl.h"
 #include "log.h"
 #include "progress_table.h"

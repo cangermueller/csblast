@@ -10,7 +10,7 @@
 
 #include "count_profile-inl.h"
 #include "mult_emission-inl.h"
-#include "forward_backward_algorithm.h"
+#include "forward_backward_algorithm-inl.h"
 #include "hmm-inl.h"
 #include "log.h"
 #include "profile-inl.h"

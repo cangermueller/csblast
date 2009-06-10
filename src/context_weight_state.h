@@ -22,7 +22,7 @@ namespace cs {
 
 // Forward declarations
 template< class Alphabet, template<class> class State >
-class FactorGraph;
+class ChainGraph;
 
 // A class encapsulating context weights, pseudocount parameters, and transition
 // parameters of a CRF state.
@@ -153,7 +153,7 @@ class ContextWeightState {
   std::valarray<float> pc_;
 
   // CRF needs access to transition tables.
-  friend class FactorGraph<Alphabet, ::cs::ContextWeightState>;
+  friend class ChainGraph<Alphabet, ::cs::ContextWeightState>;
 };  // class ContextWeightState
 
 // Resets all weights and pseudocounts to the given value or zero.

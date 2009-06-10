@@ -1,7 +1,7 @@
 // Copyright 2009, Andreas Biegert
 
-#ifndef SRC_FORWARD_BACKWARD_ALGORITHM_H_
-#define SRC_FORWARD_BACKWARD_ALGORITHM_H_
+#ifndef SRC_FORWARD_BACKWARD_ALGORITHM_INL_H_
+#define SRC_FORWARD_BACKWARD_ALGORITHM_INL_H_
 
 #include <valarray>
 
@@ -16,13 +16,10 @@ namespace cs {
 
 // POD with forward backward matrices, emission probs, and log-likelihood.
 struct ForwardBackwardMatrices {
-  ForwardBackwardMatrices()
-      : log_likelihood(0.0) {}
-
   ForwardBackwardMatrices(int slen, int nstates)
       : f(slen, nstates, 0.0),
         b(slen, nstates, 0.0),
-        e(slen, nstates, 1.0),
+        e(slen, nstates, 0.0),
         s(0.0, slen),
         log_likelihood(0.0) {}
 
@@ -31,37 +28,37 @@ struct ForwardBackwardMatrices {
     out << "Forward matrix f[i][k]:" << std::endl;
     for (int i = 0; i < m.f.num_rows(); ++i) {
       for (int k = 0; k < m.f.num_cols(); ++k) {
-        out << strprintf("%6.4f  ", m.f[i][k]);
+        out << strprintf("%7.5f  ", m.f[i][k]);
       }
       out << std::endl;
     }
     out << "Backward matrix b[i][k]:" << std::endl;
     for (int i = 0; i < m.f.num_rows(); ++i) {
       for (int k = 0; k < m.f.num_cols(); ++k) {
-        out << strprintf("%6.4f  ", m.b[i][k]);
+        out << strprintf("%7.5f  ", m.b[i][k]);
       }
       out << std::endl;
     }
     out << "Forward row-sums before scaling s[i]:" << std::endl;
     for (int i = 0; i < m.f.num_rows(); ++i) {
-      out << strprintf("%6.2f  ", m.s[i]);
+      out << strprintf("%7.5f  ", m.s[i]);
     }
     out << "\nMultEmission probabilities e[i][k]:" << std::endl;
     for (int i = 0; i < m.f.num_rows(); ++i) {
       for (int k = 0; k < m.f.num_cols(); ++k) {
-        out << strprintf("%6.4f  ", m.e[i][k]);
+        out << strprintf("%7.5f  ", m.e[i][k]);
       }
       out << std::endl;
     }
-    out << "Posterior probability matrix p[i][k]:" << std::endl;
+    out << "Posterior probabilities pp[i][k]:" << std::endl;
     for (int i = 0; i < m.f.num_rows(); ++i) {
       for (int k = 0; k < m.f.num_cols(); ++k) {
         double p = 100.0 * m.f[i][k] * m.b[i][k];
-        out << strprintf("%6.2f  ", p);
+        out << strprintf("%7.5f  ", p);
       }
       out << std::endl;
     }
-    out << strprintf("Log-likelihood = %-7.2g\n", m.log_likelihood);
+    out << strprintf("Log-likelihood = %-10.5f\n", m.log_likelihood);
     return out;
   }
 
@@ -81,9 +78,9 @@ struct ForwardBackwardMatrices {
 // Forward-Backward algorithm encapsulation.
 template< class Alphabet, template<class> class Subject >
 void ForwardBackwardAlgorithm(const HMM<Alphabet>& hmm,
-                                const Subject<Alphabet>& subject,
-                                const MultEmission<Alphabet>& emission,
-                                ForwardBackwardMatrices* fbm) {
+                              const Subject<Alphabet>& subject,
+                              const MultEmission<Alphabet>& emission,
+                              ForwardBackwardMatrices* fbm) {
   LOG(DEBUG) << "Running forward-backward algorithm ...";
   LOG(DEBUG1) << hmm;
   LOG(DEBUG1) << subject;
@@ -205,4 +202,4 @@ void BackwardAlgorithm(const HMM<Alphabet>& hmm,
 
 }  // namespace cs
 
-#endif  // SRC_FORWARD_BACKWARD_ALGORITHM_H_
+#endif  // SRC_FORWARD_BACKWARD_ALGORITHM_INL_H_

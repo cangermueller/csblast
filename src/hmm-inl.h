@@ -16,7 +16,7 @@
 #include "exception.h"
 #include "co_emission-inl.h"
 #include "context_profile_state-inl.h"
-#include "factor_graph-inl.h"
+#include "chain_graph-inl.h"
 #include "count_profile-inl.h"
 #include "log.h"
 #include "profile-inl.h"
@@ -30,12 +30,12 @@ const char* HMM<Alphabet>::kClassID = "HMM";
 
 template<class Alphabet>
 HMM<Alphabet>::HMM(int num_states, int num_cols)
-    : FactorGraph<Alphabet, ContextProfileState>(num_states, num_cols),
+    : ChainGraph<Alphabet, ContextProfileState>(num_states, num_cols),
       states_logspace_(false)  {}
 
 template<class Alphabet>
 HMM<Alphabet>::HMM(FILE* fin)
-    : FactorGraph<Alphabet, ContextProfileState>(),
+    : ChainGraph<Alphabet, ContextProfileState>(),
       states_logspace_(false) {
   Read(fin);
 }
@@ -46,7 +46,7 @@ HMM<Alphabet>::HMM(
     int num_cols,
     const StateInitializer<Alphabet, ContextProfileState>& st_init,
     const TransitionInitializer<Alphabet, ContextProfileState>& tr_init)
-    : FactorGraph<Alphabet, ContextProfileState>(num_states, num_cols),
+    : ChainGraph<Alphabet, ContextProfileState>(num_states, num_cols),
       states_logspace_(false) {
   st_init.Init(*this);
   tr_init.Init(*this);
@@ -89,7 +89,7 @@ inline void HMM<Alphabet>::TransformStatesToLinSpace() {
 
 template<class Alphabet>
 void HMM<Alphabet>::ReadHeader(FILE* fin) {
-  FactorGraph<Alphabet, ContextProfileState>::ReadHeader(fin);
+  ChainGraph<Alphabet, ContextProfileState>::ReadHeader(fin);
 
   char buffer[kBufferSize];
   const char* ptr = buffer;
@@ -105,7 +105,7 @@ void HMM<Alphabet>::ReadHeader(FILE* fin) {
 
 template<class Alphabet>
 void HMM<Alphabet>::WriteHeader(FILE* fout) const {
-  FactorGraph<Alphabet, ContextProfileState>::WriteHeader(fout);
+  ChainGraph<Alphabet, ContextProfileState>::WriteHeader(fout);
   fprintf(fout, "STLOG\t%i\n", states_logspace() ? 1 : 0);
 }
 

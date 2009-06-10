@@ -5,7 +5,7 @@
 #include "amino_acid.h"
 #include "blosum_matrix.h"
 #include "mult_emission-inl.h"
-#include "forward_backward_algorithm.h"
+#include "forward_backward_algorithm-inl.h"
 #include "hmm-inl.h"
 #include "log.h"
 #include "matrix_pseudocounts-inl.h"

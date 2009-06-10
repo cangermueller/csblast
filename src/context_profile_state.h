@@ -18,7 +18,7 @@ namespace cs {
 
 // Forward declarations
 template< class Alphabet, template<class> class State >
-class FactorGraph;
+class ChainGraph;
 
 // A class representing a context state in a context HMM.
 template<class Alphabet>
@@ -95,7 +95,7 @@ class ContextProfileState : public ContextProfile<Alphabet> {
   sparsetable<AnchoredTransition> out_transitions_;
 
   // HMM needs access to transition tables.
-  friend class FactorGraph<Alphabet, ::cs::ContextProfileState>;
+  friend class ChainGraph<Alphabet, ::cs::ContextProfileState>;
 };  // class ContextProfileState
 
 }  // namespace cs

@@ -25,7 +25,7 @@ class MultEmission {
   // Calculates the log emission probability of profile window centered at given
   // index.
   double operator() (const ContextProfile<Alphabet>& profile,
-                     const CountProfile<Alphabet>& counts_profile,
+                     const CountProfile<Alphabet>& count_profile,
                      int index) const;
   // Calculates the log emission probability of sequence window centered at given
   // index.
