@@ -13,7 +13,7 @@
 
 namespace cs {
 
-// POD needed for calculation and output of sum product algorithm.
+// POD needed for output of sum product algorithm.
 struct SumProductMatrices {
   SumProductMatrices(int slen, int nstates)
       : alpha(slen, nstates, 0.0),
@@ -89,20 +89,6 @@ struct SumProductMatrices {
   double log_likelihood_pc;
 };
 
-
-// Forward-Backward algorithm encapsulation.
-template< class Alphabet, template<class> class Subject >
-void SumProductAlgorithm(const CRF<Alphabet>& crf,
-                         const Subject<Alphabet>& subject,
-                         SumProductMatrices* spm) {
-  LOG(DEBUG) << "Running sum-product algorithm ...";
-  LOG(DEBUG1) << crf;
-  LOG(DEBUG1) << subject;
-
-  SumProductForwardPass(crf, subject, spm);
-  SumProductBackwardPass(hmm, subject, spm);
-}
-
 template<class Alphabet>
 inline double CalculateContextScore<Alphabet>(
     const ContextWeightState<Alphabet>& state,
@@ -125,11 +111,24 @@ inline double CalculateContextScore<Alphabet>(
   return rv;
 }
 
+// Sum-product algorithm encapsulation.
+template< class Alphabet, template<class> class Subject >
+void SumProductAlgorithm(const CRF<Alphabet>& crf,
+                         const Subject<Alphabet>& subject,
+                         SumProductMatrices* spm) {
+  LOG(DEBUG) << "Running sum-product algorithm ...";
+  LOG(DEBUG1) << crf;
+  LOG(DEBUG1) << subject;
+
+  SumProductForwardPass(crf, subject, spm);
+  SumProductBackwardPass(hmm, subject, spm);
+}
+
 template< class Alphabet, template<class> class Subject >
 void SumProductForwardPass(const CRF<Alphabet>& crf,
                            const Subject<Alphabet>& subject,
                            SumProductMatrices* spm) {
-  typedef ContextProfileState<Alphabet> State;
+  typedef CRF<Alphabet>::State State;
   typedef typename CRF<Alphabet>::ConstStateIter ConstStateIter;
   typedef typename State::ConstTransitionIter ConstTransitionIter;
 
@@ -147,8 +146,9 @@ void SumProductForwardPass(const CRF<Alphabet>& crf,
     m.alpha[0][k] = m.context_score[0][k];
     m.alpha_sum[0] += m.alpha[0][k];
 
-    LOG(DEBUG2) << strprintf("f[%i][%i] = %-7.2e", 0, k, m.alpha[0][k]);
+    LOG(DEBUG2) << strprintf("alpha[%i][%i] = %-7.2e", 0, k, m.alpha[0][k]);
   }
+
   // Rescale alpha values
   double scale_fac = 1.0 / m.alpha_sum[0];
   for (int k = 0; k < num_states; ++k)
@@ -158,50 +158,51 @@ void SumProductForwardPass(const CRF<Alphabet>& crf,
   // Recursion
   for (int i = 1; i < length; ++i) {
     LOG(DEBUG1) << strprintf("i=%i", i);
-    m.s[i] = 0.0;
+    m.alpha_sum[i] = 0.0;
 
     for (int l = 0; l < num_states; ++l) {
-      double f_il = 0.0;
-      LOG(DEBUG2) << strprintf("f[%i][%i] = 0", i, l);
+      double alpha_il = 0.0;
+      LOG(DEBUG2) << strprintf("alpha[%i][%i] = 0", i, l);
 
       for (ConstTransitionIter t_kl = crf[l].in_transitions_begin();
            t_kl != crf[l].in_transitions_end(); ++t_kl) {
-        f_il += m.f[i-1][t_kl->state] * t_kl->weight;
+        alpha_il += m.alpha[i-1][t_kl->state] * t_kl->weight;
 
-        LOG(DEBUG3) << strprintf("f[%i][%i] += f[%i][%i]=%-7.2e * tr[%i][%i]=%-7.5f",
-                                 i, l, i-1, t_kl->state, m.f[i-1][t_kl->state],
-                                 t_kl->state, l, t_kl->weight);
+        LOG(DEBUG3) << strprintf("alpha[%i][%i] += alpha[%i][%i]=%-7.2e * "
+                                 "tr[%i][%i]=%-7.5f", i, l, i-1, t_kl->state,
+                                 m.f[i-1][t_kl->state], t_kl->state, l,
+                                 t_kl->weight);
       }
 
-      m.e[i][l] = pow(2.0, emission(crf[l], subject, i));
-      f_il *= m.e[i][l];
+      m.context_score[i][l] = pow(2.0, CalculateContextScore(crf[l], subject, i));
+      alpha_il *= m.context_score[i][l];
 
-      LOG(DEBUG3) << strprintf("f[%i][%i] *= e[%i][%i]=%-7.2e",
-                               i, l, i, l, m.e[i][l]);
+      LOG(DEBUG3) << strprintf("alpha[%i][%i] *= context_score[%i][%i]=%-7.2e",
+                               i, l, i, l, m.context_score[i][l]);
 
-      m.f[i][l] = f_il;
-      m.s[i] += f_il;
+      m.alpha[i][l] = alpha_il;
+      m.alpha_sum[i] += alpha_il;
     }
 
     // Rescale forward values
-    scale_fac = 1.0 / m.s[i];
+    scale_fac = 1.0 / m.alpha_sum[i];
     for (int l = 0; l < num_states; ++l)
-      m.f[i][l] *= scale_fac;
-    m.log_likelihood += log2(m.s[i]);
+      m.alpha[i][l] *= scale_fac;
+    m.log_likelihood += log2(m.alpha_sum[i]);
   }
 
-  LOG(DEBUG) << strprintf("log(L) = %-7.2g", m.log_likelihood);
+  LOG(DEBUG) << strprintf("log(L) = %-10.5f", m.log_likelihood);
 }
 
 template< class Alphabet, template<class> class Subject >
 void SumProductBackwardPass(const CRF<Alphabet>& crf,
-                        const Subject<Alphabet>& subject,
-                        SumProductMatrices* spm) {
-  typedef ContextProfileState<Alphabet> State;
+                            const Subject<Alphabet>& subject,
+                            SumProductMatrices* spm) {
+  typedef CRF<Alphabet>::State State;
   typedef typename CRF<Alphabet>::ConstStateIter ConstStateIter;
   typedef typename State::ConstTransitionIter ConstTransitionIter;
 
-  LOG(DEBUG1) << "Backward algorithm ...";
+  LOG(DEBUG1) << "Sum-product backward pass ...";
   const int length     = subject.length();
   const int num_states = crf.num_states();
   SumProductMatrices& m = *spm;
@@ -209,29 +210,33 @@ void SumProductBackwardPass(const CRF<Alphabet>& crf,
   // Initialization
   LOG(DEBUG1) << strprintf("i=%i", length-1);
   for (int l = 0; l < num_states; ++l) {
-    m.b[length-1][l] = 1.0;
-    LOG(DEBUG2) << strprintf("b[%i][%i] = %-7.2e", length-1, l, m.b[length-1][l]);
+    m.beta[length-1][l] = 1.0;
+    LOG(DEBUG2) << strprintf("b[%i][%i] = %-7.2e", length-1, l,
+                             m.beta[length-1][l]);
   }
 
   // Recursion
   for (int i = length-2; i >= 0; --i) {
     LOG(DEBUG1) << strprintf("i=%i", i);
     for (int k = 0; k < num_states; ++k) {
-      double b_ik = 0.0;
-      LOG(DEBUG2) << strprintf("b[%i][%i] = 0", i, k);
+      double beta_ik = 0.0;
+      LOG(DEBUG2) << strprintf("beta[%i][%i] = 0", i, k);
 
       for (ConstTransitionIter t_kl = crf[k].out_transitions_begin();
            t_kl != crf[k].out_transitions_end(); ++t_kl) {
-        b_ik += t_kl->weight * m.e[i+1][t_kl->state] * m.b[i+1][t_kl->state];
+        beta_ik +=
+          t_kl->weight * m.context_score[i+1][t_kl->state] *
+          m.beta[i+1][t_kl->state];
 
-        LOG(DEBUG3) << strprintf("b[%i][%i] += tr[%i][%i]=%-7.5f *"
-                                 " e[%i][%i]=%-7.5f * f[%i][%i]=%-7.2e",
-                                 i, k, t_kl->state, k, t_kl->weight,
-                                 i+1, t_kl->state, m.e[i+1][t_kl->state],
-                                 i+1, t_kl->state, m.b[i+1][t_kl->state]);
+        LOG(DEBUG3) << strprintf("beta[%i][%i] += tr[%i][%i]=%-7.5f * "
+                                 "context_score[%i][%i]=%-7.5f * "
+                                 "beta[%i][%i]=%-7.2e", i, k, t_kl->state,
+                                 k, t_kl->weight, i+1, t_kl->state,
+                                 m.context_score[i+1][t_kl->state], i+1,
+                                 t_kl->state, m.beta[i+1][t_kl->state]);
       }
-      m.b[i][k] = b_ik / m.s[i+1];
-      LOG(DEBUG2) << strprintf("b[%i][%i] = %-7.2e", i, k, m.b[i][k]);
+      m.beta[i][k] = beta_ik / m.alpha_sum[i+1];
+      LOG(DEBUG2) << strprintf("beta[%i][%i] = %-7.2e", i, k, m.beta[i][k]);
     }
   }
 }

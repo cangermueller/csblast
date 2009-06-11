@@ -55,11 +55,9 @@ int CRF<Alphabet>::AddState(const Profile<Alphabet>& profile) {
     throw Exception("Profile to add as state has %i columns but should have %i!",
                     profile.num_cols(), num_cols());
 
-  StatePtr sp(new ContextWeightState<Alphabet>(states_.size(),
-                                               num_states(),
-                                               profile));
-  states_.push_back(sp);
+  StatePtr sp(new State(states_.size(), num_states(), profile));
 
+  states_.push_back(sp);
   return states_.size() - 1;
 }
 
@@ -76,9 +74,23 @@ SamplingStateInitializerCRF<Alphabet>::SamplingStateInitializerCRF(
                                                              pc_admixture) {}
 
 template<class Alphabet>
-LibraryStateInitializerCRF<Alphabet>::LibraryStateInitializerCRF(
+LibraryBasedStateInitializerCRF<Alphabet>::LibraryBasedStateInitializerCRF(
     const ProfileLibrary<Alphabet>* lib)
-    : LibraryStateInitializer<Alphabet, ContextWeightState>(lib) {}
+    : LibraryBasedStateInitializer<Alphabet, ContextWeightState>(lib) {}
+
+
+template<class Alphabet>
+void Sparsify(CRF<Alphabet>& crf, float threshold) {
+  const bool linspace = !crf.transitions_logspace();
+  if (linspace) crf.TransformTransitionsToLogSpace();
+
+  for (int k = 0; k < crf.num_states(); ++k)
+    for (int l = 0; l < crf.num_states(); ++l)
+      if (crf.test_transition(k,l) && crf(k,l) <= threshold)
+        crf.erase_transition(k,l);
+
+  if (linspace) crf.TransformTransitionsToLinSpace();
+}
 
 }  // namespace cs
 

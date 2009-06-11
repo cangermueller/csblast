@@ -60,12 +60,10 @@ int HMM<Alphabet>::AddState(const Profile<Alphabet>& profile) {
     throw Exception("Profile to add as state has %i columns but should have %i!",
                     profile.num_cols(), num_cols());
 
-  StatePtr sp(new ContextProfileState<Alphabet>(states_.size(),
-                                                num_states(),
-                                                profile));
+  StatePtr sp(new State(states_.size(), num_states(), profile));
   sp->set_prior(1.0 / num_states());
-  states_.push_back(sp);
 
+  states_.push_back(sp);
   return states_.size() - 1;
 }
 
@@ -122,9 +120,9 @@ SamplingStateInitializerHMM<Alphabet>::SamplingStateInitializerHMM(
                                                               pc_admixture) {}
 
 template<class Alphabet>
-LibraryStateInitializerHMM<Alphabet>::LibraryStateInitializerHMM(
+LibraryBasedStateInitializerHMM<Alphabet>::LibraryBasedStateInitializerHMM(
     const ProfileLibrary<Alphabet>* lib)
-    : LibraryStateInitializer<Alphabet, ContextProfileState>(lib) {}
+    : LibraryBasedStateInitializer<Alphabet, ContextProfileState>(lib) {}
 
 template<class Alphabet>
 CoEmissionTransitionInitializerHMM<Alphabet>::CoEmissionTransitionInitializerHMM(

@@ -174,7 +174,7 @@ TEST(HMMTestInitialization, LibraryInitialization) {
   ASSERT_EQ(50, profile_lib.num_profiles());
   ASSERT_EQ(13, profile_lib.num_cols());
 
-  LibraryStateInitializerHMM<AminoAcid> st_init(&profile_lib);
+  LibraryBasedStateInitializerHMM<AminoAcid> st_init(&profile_lib);
   BlosumMatrix m;
   CoEmissionTransitionInitializerHMM<AminoAcid> tr_init(&m, 0.0f);
   HMM<AminoAcid> hmm(50, profile_lib.num_cols(), st_init, tr_init);

@@ -95,11 +95,11 @@ void SamplingStateInitializer<Alphabet, Graph>::Init(Graph<Alphabet>& graph) con
 }
 
 template< class Alphabet, template<class> class Graph >
-LibraryStateInitializer<Alphabet, Graph>::LibraryStateInitializer(
+LibraryBasedStateInitializer<Alphabet, Graph>::LibraryBasedStateInitializer(
     const ProfileLibrary<Alphabet>* lib)  : lib_(lib) {}
 
 template< class Alphabet, template<class> class Graph >
-void LibraryStateInitializer<Alphabet, Graph>::Init(Graph<Alphabet>& graph) const {
+void LibraryBasedStateInitializer<Alphabet, Graph>::Init(Graph<Alphabet>& graph) const {
   assert(lib_->num_cols() == graph.num_cols());
 
   typedef std::vector< shared_ptr< ContextProfile<Alphabet> > > ContextProfiles;

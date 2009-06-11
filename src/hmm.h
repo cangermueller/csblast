@@ -25,7 +25,8 @@ template<class Alphabet>
 class HMM : public ChainGraph<Alphabet, ContextProfileState> {
  public:
   // Public typedefs
-  typedef shared_ptr< ContextProfileState<Alphabet> > StatePtr;
+  typedef ContextProfileState<Alphabet> State;
+  typedef shared_ptr<State> StatePtr;
   typedef std::vector<StatePtr> StateVec;
   typedef sparse_matrix<Transition> TransitionMatrix;
   typedef typename StateVec::iterator StateIter;
@@ -102,10 +103,10 @@ class SamplingStateInitializerHMM :
 // Strategy that uses context profiles from a profile library to initialize
 // states in the factor graph.
 template<class Alphabet>
-class LibraryStateInitializerHMM :
-      public LibraryStateInitializer<Alphabet, ContextProfileState> {
+class LibraryBasedStateInitializerHMM :
+      public LibraryBasedStateInitializer<Alphabet, ContextProfileState> {
  public:
-  LibraryStateInitializerHMM(const ProfileLibrary<Alphabet>* lib);
+  LibraryBasedStateInitializerHMM(const ProfileLibrary<Alphabet>* lib);
 };
 
 

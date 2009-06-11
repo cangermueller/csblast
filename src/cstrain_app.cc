@@ -392,7 +392,7 @@ void CSTrainApp<Alphabet>::InitHMM() {
     profile_lib.TransformToLinSpace();
     fclose(fin);
 
-    LibraryStateInitializerHMM<Alphabet> st_init(&profile_lib);
+    LibraryBasedStateInitializerHMM<Alphabet> st_init(&profile_lib);
     CoEmissionTransitionInitializerHMM<Alphabet> tr_init(subst_matrix_.get(),
                                                       opts_.tr_score_min);
     hmm_.reset(new HMM<Alphabet>(opts_.num_states,

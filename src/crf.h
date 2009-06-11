@@ -24,7 +24,8 @@ template<class Alphabet>
 class CRF : public ChainGraph<Alphabet, ContextWeightState> {
  public:
   // Public typedefs
-  typedef shared_ptr< ContextWeightState<Alphabet> > StatePtr;
+  typedef ContextWeightState<Alphabet> State;
+  typedef shared_ptr<State> StatePtr;
   typedef std::vector<StatePtr> StateVec;
   typedef sparse_matrix<Transition> TransitionMatrix;
   typedef typename StateVec::iterator StateIter;
@@ -53,13 +54,8 @@ class CRF : public ChainGraph<Alphabet, ContextWeightState> {
   using ChainGraph<Alphabet, ContextWeightState>::full;
   using ChainGraph<Alphabet, ContextWeightState>::num_cols;
   using ChainGraph<Alphabet, ContextWeightState>::num_states;
-  using ChainGraph<Alphabet, ContextWeightState>::Read;
-  using ChainGraph<Alphabet, ContextWeightState>::ReadHeader;
-  using ChainGraph<Alphabet, ContextWeightState>::WriteHeader;
   using ChainGraph<Alphabet, ContextWeightState>::states_;
-  using ChainGraph<Alphabet, ContextWeightState>::states_begin;
-  using ChainGraph<Alphabet, ContextWeightState>::states_end;
-  using ChainGraph<Alphabet, ContextWeightState>::kBufferSize;
+  using ChainGraph<Alphabet, ContextWeightState>::Read;
 
  private:
   // Class identifier
@@ -87,10 +83,10 @@ class SamplingStateInitializerCRF :
 // Strategy that uses context profiles from a profile library to initialize
 // states in the factor graph.
 template<class Alphabet>
-class LibraryStateInitializerCRF :
-      public LibraryStateInitializer<Alphabet, ContextWeightState> {
+class LibraryBasedStateInitializerCRF :
+      public LibraryBasedStateInitializer<Alphabet, ContextWeightState> {
  public:
-  LibraryStateInitializerCRF(const ProfileLibrary<Alphabet>* lib);
+  LibraryBasedStateInitializerCRF(const ProfileLibrary<Alphabet>* lib);
 };
 
 
@@ -109,6 +105,11 @@ class RandomTransitionInitializerCRF :
  public:
   RandomTransitionInitializerCRF() {}
 };
+
+
+// Erases all transitions whose log-value is equal to or below a given threshold.
+template<class Alphabet>
+void Sparsify(CRF<Alphabet>& crf, float threshold);
 
 }  // namespace cs
 

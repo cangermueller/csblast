@@ -44,16 +44,16 @@ class SamplingStateInitializer : public StateInitializer<Alphabet, Graph> {
 };  // class SamplingStateInitializer
 
 template< class Alphabet, template<class> class Graph >
-class LibraryStateInitializer : public StateInitializer<Alphabet, Graph> {
+class LibraryBasedStateInitializer : public StateInitializer<Alphabet, Graph> {
  public:
-  LibraryStateInitializer(const ProfileLibrary<Alphabet>* lib);
-  virtual ~LibraryStateInitializer() {};
+  LibraryBasedStateInitializer(const ProfileLibrary<Alphabet>* lib);
+  virtual ~LibraryBasedStateInitializer() {};
   virtual void Init(Graph<Alphabet>& graph) const;
 
  private:
   // Profile library of context profiles.
   const ProfileLibrary<Alphabet>* lib_;
-};  // class LibraryStateInitializer
+};  // class LibraryBasedStateInitializer
 
 
 template< class Alphabet, template<class> class Graph >

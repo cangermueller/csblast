@@ -266,10 +266,10 @@ class SamplingStateInitializer : public StateInitializer<Alphabet, State> {
 // Strategy that uses context profiles from a profile library to initialize
 // states in the factor graph.
 template< class Alphabet, template<class> class State >
-class LibraryStateInitializer : public StateInitializer<Alphabet, State> {
+class LibraryBasedStateInitializer : public StateInitializer<Alphabet, State> {
  public:
-  LibraryStateInitializer(const ProfileLibrary<Alphabet>* lib);
-  virtual ~LibraryStateInitializer() {};
+  LibraryBasedStateInitializer(const ProfileLibrary<Alphabet>* lib);
+  virtual ~LibraryBasedStateInitializer() {};
   virtual void Init(ChainGraph<Alphabet, State>& graph) const;
 
  private:
@@ -279,7 +279,7 @@ class LibraryStateInitializer : public StateInitializer<Alphabet, State> {
 
   // Profile library of context profiles.
   const ProfileLibrary<Alphabet>* lib_;
-};  // class LibraryStateInitializer
+};  // class LibraryBasedStateInitializer
 
 
 // Abstract base class for transition initialization strategies.

@@ -386,11 +386,11 @@ void SamplingStateInitializer<Alphabet, State>::Init(
 }
 
 template< class Alphabet, template<class> class State >
-LibraryStateInitializer<Alphabet, State>::LibraryStateInitializer(
+LibraryBasedStateInitializer<Alphabet, State>::LibraryBasedStateInitializer(
     const ProfileLibrary<Alphabet>* lib)  : lib_(lib) {}
 
 template< class Alphabet, template<class> class State >
-void LibraryStateInitializer<Alphabet, State>::Init(
+void LibraryBasedStateInitializer<Alphabet, State>::Init(
     ChainGraph<Alphabet, State>& graph) const {
   assert(lib_->num_cols() == graph.num_cols());
   assert(!lib_->logspace());
