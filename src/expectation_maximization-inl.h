@@ -30,6 +30,7 @@ void ExpectationMaximization<Alphabet, Subject>::Run() {
   if (progress_table_) progress_table_->PrintRowBegin();
   ResetAndAddPseudocounts();
   ExpectationStep(blocks_.front());
+  UpdateSufficientStatistics();
   MaximizationStep();
   ++iterations_;
   if (progress_table_) progress_table_->PrintRowEnd();
@@ -47,6 +48,7 @@ void ExpectationMaximization<Alphabet, Subject>::Run() {
     for (int b = 0; b < static_cast<int>(blocks_.size()); ++b) {
       ResetAndAddPseudocounts();
       ExpectationStep(blocks_[b]);
+      UpdateSufficientStatistics();
       MaximizationStep();
       ++iterations_;
     }

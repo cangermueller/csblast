@@ -120,7 +120,7 @@ class BaumWelchTraining : public ExpectationMaximization<Alphabet, Subject> {
                                const Sequence<Alphabet>& s);
   // Updates global sufficient statistics with sufficient statistics calculated
   // on current block.
-  void UpdateSufficientStatistics();
+  virtual void UpdateSufficientStatistics();
   // Sets profile and prior block statistics to their pseudocount values.
   virtual void ResetAndAddPseudocounts();
 

@@ -19,7 +19,7 @@ Todo:
 * SetDefaults() for BaumWelchOptions instead of setting defaults in constructor
 * put "" around -d command line argument in CSBlast
 * Fix arguments ref arguments in BaumWelch to pointers
-* Addapt EM-clustering to double predision
+* Addapt EM-clustering to double predision and add pseudocounts to profiles
 * Adapt sum-product algorithm to work with sequence data
 
 Someday:

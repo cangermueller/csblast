@@ -82,8 +82,6 @@ void BaumWelchTraining<Alphabet, Subject>::ExpectationStep(
       progress_table_->print_progress(hmm_.num_states() * block[n]->length());
     }
   }
-
-  UpdateSufficientStatistics();
 }
 
 template< class Alphabet, template<class> class Subject >

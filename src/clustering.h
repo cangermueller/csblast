@@ -75,18 +75,20 @@ class Clustering : public ExpectationMaximization<Alphabet, Subject> {
   virtual const ClusteringOptions& opts() const { return opts_; }
   // Adds the contribution of the responsibilities for a subject to sufficient
   // statistics for priors.
-  void add_contribution_to_priors(const std::valarray<double>& p_zn);
+  void AddContributionToPriors(const std::valarray<double>& p_zn);
   // Adds the contribution of the responsibilities for a counts profile to
   // sufficient statistics for emissions.
-  void add_contribution_to_emissions(const std::valarray<double>& p_zn,
+  void AddContributionToEmissions(const std::valarray<double>& p_zn,
                                      const CountProfile<Alphabet>& c);
   // Adds the contribution of the responsibilities for a sequence to sufficient
   // statistics for emissions.
-  void add_contribution_to_emissions(const std::valarray<double>& p_zn,
-                                     const Sequence<Alphabet>& s);
+  void AddContributionToEmissions(const std::valarray<double>& p_zn,
+                                  const Sequence<Alphabet>& s);
+  // Sets profile and prior block statistics to their pseudocount values.
+  virtual void ResetAndAddPseudocounts();
   // Updates global sufficient statistics with sufficient statistics calculated
   // on current block.
-  void update_sufficient_statistics();
+  virtual void UpdateSufficientStatistics();
 
   // Parameter wrapper for clustering.
   const ClusteringOptions& opts_;

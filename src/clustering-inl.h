@@ -64,8 +64,8 @@ void Clustering<Alphabet, Subject>::ExpectationStep(const data_vector& block) {
     }
 
     p_zn /= sum;
-    add_contribution_to_priors(p_zn);
-    add_contribution_to_emissions(p_zn, **bi);
+    AddContributionToPriors(p_zn);
+    AddContributionToEmissions(p_zn, **bi);
 
     log_likelihood_ += log2(sum) / num_eff_cols_;
     if (progress_table_)
@@ -74,7 +74,7 @@ void Clustering<Alphabet, Subject>::ExpectationStep(const data_vector& block) {
     LOG(DEBUG1) << strprintf("log(L)=%-8.5g", log_likelihood_);
   }
 
-  update_sufficient_statistics();
+  UpdateSufficientStatistics();
 }
 
 template< class Alphabet, template<class> class Subject >
@@ -106,7 +106,7 @@ void Clustering<Alphabet, Subject>::MaximizationStep() {
 }
 
 template< class Alphabet, template<class> class Subject >
-void Clustering<Alphabet, Subject>::add_contribution_to_priors(
+void Clustering<Alphabet, Subject>::AddContributionToPriors(
     const std::valarray<double>& p_zn) {
   const int num_profiles = lib_.num_profiles();
 
@@ -115,7 +115,7 @@ void Clustering<Alphabet, Subject>::add_contribution_to_priors(
 }
 
 template< class Alphabet, template<class> class Subject >
-void Clustering<Alphabet, Subject>::add_contribution_to_emissions(
+void Clustering<Alphabet, Subject>::AddContributionToEmissions(
     const std::valarray<double>& p_zn,
     const CountProfile<Alphabet>& c) {
   const int num_profiles  = lib_.num_profiles();
@@ -134,7 +134,7 @@ void Clustering<Alphabet, Subject>::add_contribution_to_emissions(
 }
 
 template< class Alphabet, template<class> class Subject >
-void Clustering<Alphabet, Subject>::add_contribution_to_emissions(
+void Clustering<Alphabet, Subject>::AddContributionToEmissions(
     const std::valarray<double>& p_zn,
     const Sequence<Alphabet>& s) {
   const int num_profiles  = lib_.num_profiles();
@@ -151,7 +151,7 @@ void Clustering<Alphabet, Subject>::add_contribution_to_emissions(
 }
 
 template< class Alphabet, template<class> class Subject >
-void Clustering<Alphabet, Subject>::update_sufficient_statistics() {
+void Clustering<Alphabet, Subject>::UpdateSufficientStatistics() {
   const float gamma       = 1.0f - epsilon_;
   const int num_profiles  = lib_.num_profiles();
   const int num_cols      = lib_.num_cols();
@@ -168,7 +168,6 @@ void Clustering<Alphabet, Subject>::update_sufficient_statistics() {
         p[j][a] = gamma * p[j][a] + p_block[j][a];
       }
     }
-    Reset(&p_block);
   }
 }
 
@@ -193,6 +192,11 @@ void Clustering<Alphabet, Subject>::Init() {
   num_eff_cols_ = emission_.SumWeights() * data_.size();
 }
 
+template< class Alphabet, template<class> class Subject >
+void Clustering<Alphabet, Subject>::ResetAndAddPseudocounts() {
+  for (int k = 0; k < lib_.num_profiles(); ++k)
+    Reset(profile_stats_block_[k].get());
+}
 
 
 template< class Alphabet, template<class> class Subject >

@@ -1,7 +1,7 @@
 // Copyright 2009, Andreas Biegert
 
-#ifndef SRC_EXPECTATION_MAXIMIZATION_H_
-#define SRC_EXPECTATION_MAXIMIZATION_H_
+#ifndef SRC_OPTIMIZER_H_
+#define SRC_OPTIMIZER_H_
 
 #include <vector>
 
@@ -13,24 +13,20 @@
 namespace cs {
 
 // Abstract base class for expectation maximization algorithms.
-struct ExpectationMaximizationOptions {
-  ExpectationMaximizationOptions()
+struct OptimizerOptions {
+  OptimizerOptions()
       : min_scans(10),
         max_scans(500),
         log_likelihood_change(2e-4f),
         num_blocks(0),
-        epsilon_null(0.5f),
-        beta(0.2f),
-        epsilon_batch(0.05f) {}
+        eta(0.5f) {}
 
-  ExpectationMaximizationOptions(const ExpectationMaximizationOptions& opts)
+  OptimizerOptions(const OptimizerOptions& opts)
       : min_scans(opts.min_scans),
         max_scans(opts.max_scans),
         log_likelihood_change(opts.log_likelihood_change),
         num_blocks(opts.num_blocks),
-        epsilon_null(opts.epsilon_null),
-        beta(opts.beta),
-        epsilon_batch(opts.epsilon_batch) {}
+        eta(opts.eta) {}
 
   // Minimal number of data scans.
   int min_scans;
@@ -40,63 +36,66 @@ struct ExpectationMaximizationOptions {
   float log_likelihood_change;
   // Number of blocks into which the training data are divided (def=N^3/8).
   int num_blocks;
-  // Initial value for learning rate epsilon (1-epsilon is preserved fraction of
-  // sufficient statistics).
-  float epsilon_null;
-  // Paramter governing exponential decay of epsilon per scan.
-  float beta;
-  // Learning rate epsilon below which training is switched to batch mode.
-  float epsilon_batch;
+  // Learning rate eta
+  float eta;
 };
 
-// Abstract base class for expectation maximization algorithms.
+// Encapsulation of CRF parameter optimization by stochastic gradient descent.
 template< class Alphabet, template<class> class Subject >
-class ExpectationMaximization {
+class Optimizer {
  public:
   typedef typename std::vector< shared_ptr< Subject<Alphabet> > > DataVec;
   typedef typename std::vector<DataVec> BlocksVec;
+  typedef matrix<double> ContextDerivs;
+  typedef matrix<double> PcDerivs;
+  typedef typename CRF<Alphabet>::ConstTransitionIter ConstTransitionIter;
 
-  // Runs EM algorithm until termination criterion is met.
+  // Initializes a new optimizer WITHOUT output.
+  Optimizer(const BaumWelchOptions& opts,
+                    const DataVec& data,
+                    const SubstitutionMatrix<Alphabet>* sm,
+                    HMM<Alphabet>& hmm);
+  // Initializes a new optimizer WITH output.
+  Optimizer(const BaumWelchOptions& opts,
+            const DataVec& data,
+            const SubstitutionMatrix<Alphabet>* sm,
+            HMM<Alphabet>& hmm,
+            FILE* fout);
+
+  ~Optimizer() {}
+
+  // Runs stochastic gradient optimization until termination criterion is met.
   void Run();
+
+ private:
+  // Runs sum-product algorithm on each subject in provided block and updates
+  // derivatives according to posterior probabilities.
+  void CalculateDerivatives(const DataVec& block);
+  // Updates parameters in CRF based on derivatives.
+  void UpdateCRF();
   // Returns number of current scan.
   int scan() const { return scan_; }
-  // Returns number of completed EM iterations.
+  // Returns number of completed iterations.
   int iterations() const { return iterations_; }
   // Returns number of training blocks in current scan.
   int num_blocks() const { return blocks_.size(); }
-  // Returns learning rate epsilon in current scan.
-  float epsilon() const { return epsilon_; }
-  // Returns most recent log-likelihood.
+  // Returns learning rate eta in current scan.
+  float eta() const { return eta_; }
+  // Returns most recent conditional log-likelihood value.
   float log_likelihood() const { return log_likelihood_; }
-  // Calculates the change between current log-likelihood and the
+  // Calculates change between the current log-likelihood and the
   // log-likelihood in previous scan.
   float log_likelihood_change() const {
     return log_likelihood_ - log_likelihood_prev_;
   }
-
- protected:
-  // Constructs a new EM object.
-  ExpectationMaximization(const DataVec& data);
-
-  virtual ~ExpectationMaximization() {}
-
-  // Evaluates the responsibilities using the current parameter values.
-  virtual void ExpectationStep(const DataVec& block) = 0;
-  // Reestimate teh parameters using the current responsibilities.
-  virtual void MaximizationStep() = 0;
-  // Initializes members for running the EM algorithm.
-  virtual void Init() = 0;
+  // Initializes members for running the optimization.
+  void Init();
   // Returns parameter wrapper
-  virtual const ExpectationMaximizationOptions& opts() const = 0;
+  const OptimizerOptions& opts() const { return opts_; }
   // Returns true if any termination condition is fullfilled.
   virtual bool IsDone() const;
   // Fills the blocks vector with training data.
   void SetupBlocks(bool force_batch = false);
-  // Sets all statistics variables to their pseudocount values.
-  virtual void ResetAndAddPseudocounts() = 0;
-  // Updates global sufficient statistics with sufficient statistics calculated
-  // on current block.
-  virtual void UpdateSufficientStatistics() = 0;
 
   // Training data (either sequences or counts profiles)
   const DataVec& data_;
@@ -116,8 +115,8 @@ class ExpectationMaximization {
   int scan_;
   // Current learning rate epsilon.
   float epsilon_;
-};  // class ExpectationMaximization
+};  // class Optimizer
 
 }  // namespace cs
 
-#endif  // SRC_EXPECTATION_MAXIMIZATION_H_
+#endif  // SRC_OPTIMIZER_H_
