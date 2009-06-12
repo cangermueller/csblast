@@ -30,7 +30,7 @@ inline HMMPseudocounts<Alphabet>::HMMPseudocounts(const HMM<Alphabet>* hmm,
 }
 
 template<class Alphabet>
-void HMMPseudocounts<Alphabet>::add_to_sequence(
+void HMMPseudocounts<Alphabet>::AddPseudocountsToSequence(
     const Sequence<Alphabet>& seq,
     const Admixture& pca,
     Profile<Alphabet>* profile) const {
@@ -79,7 +79,7 @@ void HMMPseudocounts<Alphabet>::add_to_sequence(
 }
 
 template<class Alphabet>
-void HMMPseudocounts<Alphabet>::add_to_profile(
+void HMMPseudocounts<Alphabet>::AddPseudocountsToProfile(
     const Admixture& pca,
     CountProfile<Alphabet>* profile) const {
   assert(!profile->logspace());

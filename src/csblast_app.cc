@@ -250,7 +250,7 @@ int CSBlastApp::Run() {
 
     if (itr) {
       CountProfile<AminoAcid> ali_profile(*ali_, !opts_.global_weights);
-      pc_->add_to_profile(DivergenceDependentAdmixture(opts_.pc_admix, opts_.pc_ali),
+      pc_->AddPseudocountsToProfile(DivergenceDependentAdmixture(opts_.pc_admix, opts_.pc_ali),
                          &ali_profile);
       pssm_.reset(new PsiBlastPssm(query_->ToString(), ali_profile));
       csblast_->set_pssm(pssm_.get());
@@ -288,7 +288,7 @@ void CSBlastApp::Init() {
   if (opts_.psiblast_opts.find('R') == opts_.psiblast_opts.end()) {
     if (opts_.ali_infile.empty()) {
       CountProfile<AminoAcid> profile(*query_);
-      pc_->add_to_sequence(*query_, ConstantAdmixture(opts_.pc_admix), &profile);
+      pc_->AddPseudocountsToSequence(*query_, ConstantAdmixture(opts_.pc_admix), &profile);
       pssm_.reset(new PsiBlastPssm(query_->ToString(), profile));
 
     } else {
@@ -298,7 +298,7 @@ void CSBlastApp::Init() {
       fclose(fin);
 
       CountProfile<AminoAcid> profile(input_alignment, !opts_.global_weights);
-      pc_->add_to_profile(DivergenceDependentAdmixture(opts_.pc_admix, opts_.pc_ali),
+      pc_->AddPseudocountsToProfile(DivergenceDependentAdmixture(opts_.pc_admix, opts_.pc_ali),
                           &profile);
       pssm_.reset(new PsiBlastPssm(query_->ToString(), profile));
     }

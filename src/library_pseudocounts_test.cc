@@ -30,7 +30,7 @@ TEST(LibraryPseudocountsTest, AddToDummySequence) {
   ASSERT_EQ(50, lib.num_profiles());
 
   LibraryPseudocounts<AminoAcid> pc(&lib, 1.6f, 0.85f);
-  pc.add_to_sequence(seq, DivergenceDependentAdmixture(1.0f, 10.0f), &profile);
+  pc.AddPseudocountsToSequence(seq, DivergenceDependentAdmixture(1.0f, 10.0f), &profile);
 
   EXPECT_NEAR(0.0736f, profile[0][AminoAcid::instance().ctoi('V')], kFloatDelta);
 }
@@ -43,7 +43,7 @@ TEST(LibraryPseudocountsTest, AddToSmallProfile) {
 
   BlosumMatrix m;
   MatrixPseudocounts<AminoAcid> mpc(&m);
-  mpc.add_to_profile(ConstantAdmixture(0.1f), &profile);
+  mpc.AddPseudocountsToProfile(ConstantAdmixture(0.1f), &profile);
 
   FILE* fin = fopen("../data/scop20_1.73_opt_N100000_W13.lib", "r");
   ProfileLibrary<AminoAcid> lib(fin);
@@ -52,7 +52,7 @@ TEST(LibraryPseudocountsTest, AddToSmallProfile) {
   ASSERT_EQ(50, lib.num_profiles());
 
   LibraryPseudocounts<AminoAcid> pc(&lib, 1.6f, 0.85f);
-  pc.add_to_profile(DivergenceDependentAdmixture(1.0f, 10.0f), &profile);
+  pc.AddPseudocountsToProfile(DivergenceDependentAdmixture(1.0f, 10.0f), &profile);
 
   EXPECT_NEAR(0.80f, profile[0][AminoAcid::instance().ctoi('C')], kFloatDelta);
   EXPECT_NEAR(0.81f, profile[5][AminoAcid::instance().ctoi('C')], kFloatDelta);
@@ -71,7 +71,7 @@ TEST(LibraryPseudocountsTest, AddToZnFingerSequenceK50) {
 
   LibraryPseudocounts<AminoAcid> pc(&lib, 1.6f, 0.85f);
   for (int n = 0; n < 80; ++n)
-    pc.add_to_sequence(seq, ConstantAdmixture(1.0f), &profile);
+    pc.AddPseudocountsToSequence(seq, ConstantAdmixture(1.0f), &profile);
 
   EXPECT_NEAR(0.8259, profile[53][AminoAcid::instance().ctoi('C')], kFloatDelta);
   EXPECT_NEAR(0.8214, profile[56][AminoAcid::instance().ctoi('C')], kFloatDelta);
@@ -93,7 +93,7 @@ TEST(LibraryPseudocountsTest, AddToZnFingerSequenceK4000) {
   ASSERT_TRUE(lib.logspace());
 
   LibraryPseudocounts<AminoAcid> pc(&lib, 1.6f, 0.85f);
-  pc.add_to_sequence(seq, ConstantAdmixture(1.0f), &profile);
+  pc.AddPseudocountsToSequence(seq, ConstantAdmixture(1.0f), &profile);
 
   EXPECT_NEAR(0.78696, profile[53][AminoAcid::instance().ctoi('C')], kFloatDelta);
   EXPECT_NEAR(0.84759, profile[56][AminoAcid::instance().ctoi('C')], kFloatDelta);
@@ -115,7 +115,7 @@ TEST(LibraryPseudocountsTest, AddToZnFingerAlignmentK4000) {
   ASSERT_TRUE(lib.logspace());
 
   LibraryPseudocounts<AminoAcid> pc(&lib, 1.6f, 0.85f);
-  pc.add_to_profile(DivergenceDependentAdmixture(1.0f, 10.0f), &profile);
+  pc.AddPseudocountsToProfile(DivergenceDependentAdmixture(1.0f, 10.0f), &profile);
 
   EXPECT_NEAR(0.7612, profile[53][AminoAcid::instance().ctoi('C')], kFloatDelta);
   EXPECT_NEAR(0.7925, profile[56][AminoAcid::instance().ctoi('C')], kFloatDelta);

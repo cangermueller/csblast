@@ -17,7 +17,9 @@ namespace cs {
 // POD with forward backward matrices, emission probs, and log-likelihood.
 struct ForwardBackwardMatrices {
   ForwardBackwardMatrices(int slen, int nstates)
-      : f(slen, nstates, 0.0),
+      : subject_length(slen),
+        num_states(nstates),
+        f(slen, nstates, 0.0),
         b(slen, nstates, 0.0),
         e(slen, nstates, 0.0),
         s(0.0, slen),
@@ -26,35 +28,35 @@ struct ForwardBackwardMatrices {
   friend std::ostream& operator<< (std::ostream& out,
                                    const ForwardBackwardMatrices& m) {
     out << "Forward matrix f[i][k]:" << std::endl;
-    for (int i = 0; i < m.f.num_rows(); ++i) {
-      for (int k = 0; k < m.f.num_cols(); ++k) {
+    for (int i = 0; i < m.subject_length; ++i) {
+      for (int k = 0; k < m.num_states; ++k) {
         out << strprintf("%7.5f  ", m.f[i][k]);
       }
       out << std::endl;
     }
     out << "Backward matrix b[i][k]:" << std::endl;
-    for (int i = 0; i < m.f.num_rows(); ++i) {
-      for (int k = 0; k < m.f.num_cols(); ++k) {
+    for (int i = 0; i < m.subject_length; ++i) {
+      for (int k = 0; k < m.num_states; ++k) {
         out << strprintf("%7.5f  ", m.b[i][k]);
       }
       out << std::endl;
     }
     out << "Forward row-sums before scaling s[i]:" << std::endl;
-    for (int i = 0; i < m.f.num_rows(); ++i) {
-      out << strprintf("%7.5f  ", m.s[i]);
+    for (int i = 0; i < m.subject_length; ++i) {
+      out << strprintf("%9.3g  ", m.s[i]);
     }
     out << "\nMultEmission probabilities e[i][k]:" << std::endl;
-    for (int i = 0; i < m.f.num_rows(); ++i) {
-      for (int k = 0; k < m.f.num_cols(); ++k) {
-        out << strprintf("%7.5f  ", m.e[i][k]);
+    for (int i = 0; i < m.subject_length; ++i) {
+      for (int k = 0; k < m.num_states; ++k) {
+        out << strprintf("%8.3g  ", m.e[i][k]);
       }
       out << std::endl;
     }
     out << "Posterior probabilities pp[i][k]:" << std::endl;
-    for (int i = 0; i < m.f.num_rows(); ++i) {
-      for (int k = 0; k < m.f.num_cols(); ++k) {
+    for (int i = 0; i < m.subject_length; ++i) {
+      for (int k = 0; k < m.num_states; ++k) {
         double p = 100.0 * m.f[i][k] * m.b[i][k];
-        out << strprintf("%7.5f  ", p);
+        out << strprintf("%6.2f  ", p);
       }
       out << std::endl;
     }
@@ -62,15 +64,19 @@ struct ForwardBackwardMatrices {
     return out;
   }
 
-  // forward matrix
+  // length of the subject whose Fwd-Bwd information is stored
+  const int subject_length;
+  // Number of states in the HMM against which the subject is aligned
+  const int num_states;
+  // Forward matrix
   matrix<double> f;
-  // backward matrix
+  // Backward matrix
   matrix<double> b;
-  // emission probability matrix
+  // Emission probability matrix
   matrix<double> e;
-  // forward matrix column sum s(n) before normalization
+  // Forward matrix column sum s(n) before normalization
   std::valarray<double> s;
-  // likelihood P(x)
+  // Log-likelihood calculated with forward algorithm.
   double log_likelihood;
 };
 

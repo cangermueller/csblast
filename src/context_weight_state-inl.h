@@ -61,8 +61,6 @@ void ContextWeightState<Alphabet>::Read(FILE* fin) {
 
   ReadHeader(fin);
   ReadBody(fin);
-
-  LOG(DEBUG1) << *this;
 }
 
 template<class Alphabet>
@@ -183,12 +181,12 @@ void ContextWeightState<Alphabet>::Print(std::ostream& out) const {
   for (int i = 0; i < num_cols(); ++i) {
     out << i+1;
     for (int a = 0; a < alphabet_size(); ++a)
-      out << strprintf("\t%6.2f", weights_[i][a]);
+      out << strprintf("\t%6.4f", fast_pow2(weights_[i][a]));
     out << std::endl;
   }
   out << "pc";
   for (int a = 0; a < alphabet_size(); ++a)
-    out << strprintf("\t%6.2f", pc_[a]);
+    out << strprintf("\t%6.4f", fast_pow2(pc_[a]));
 }
 
 template<class Alphabet>

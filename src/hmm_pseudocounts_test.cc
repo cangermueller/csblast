@@ -27,7 +27,7 @@ TEST(HMMPseudocountsTest, AddToSequence) {
   ASSERT_EQ(100, hmm.num_states());
 
   HMMPseudocounts<AminoAcid> pc(&hmm, 1.6f, 0.85f);
-  pc.add_to_sequence(seq, DivergenceDependentAdmixture(1.0f, 10.0f), &profile);
+  pc.AddPseudocountsToSequence(seq, DivergenceDependentAdmixture(1.0f, 10.0f), &profile);
 
   EXPECT_NEAR(0.8121f, profile[23][AminoAcid::instance().ctoi('C')], kFloatDelta);
   EXPECT_NEAR(0.8121f, profile[28][AminoAcid::instance().ctoi('C')], kFloatDelta);
@@ -46,7 +46,7 @@ TEST(HMMPseudocountsTest, AddToProfile) {
   ASSERT_EQ(100, hmm.num_states());
 
   HMMPseudocounts<AminoAcid> pc(&hmm, 1.6f, 0.85f);
-  pc.add_to_profile(DivergenceDependentAdmixture(1.0f, 10.0f), &profile);
+  pc.AddPseudocountsToProfile(DivergenceDependentAdmixture(1.0f, 10.0f), &profile);
 
   EXPECT_NEAR(0.7756f, profile[53][AminoAcid::instance().ctoi('C')], kFloatDelta);
   EXPECT_NEAR(0.7720f, profile[56][AminoAcid::instance().ctoi('C')], kFloatDelta);

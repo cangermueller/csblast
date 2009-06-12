@@ -32,7 +32,7 @@ class BaumWelchTrainingTest : public testing::Test {
     Profile<AminoAcid> profile(seq.length());
 
     MatrixPseudocounts<AminoAcid> mpc(&sm_);
-    mpc.add_to_sequence(seq, ConstantAdmixture(1.0f), &profile);
+    mpc.AddPseudocountsToSequence(seq, ConstantAdmixture(1.0f), &profile);
 
     for (int i = 0; i < seq.length(); ++i) {
       Profile<AminoAcid> p(profile, i, 1);
@@ -58,7 +58,7 @@ class BaumWelchTrainingTest : public testing::Test {
     for (alignment_iterator ai = alis.begin(); ai != alis.end(); ++ai) {
       shared_ptr< CountProfile<AminoAcid> > p_ptr(
           new CountProfile<AminoAcid>(**ai, true));
-      mpc.add_to_profile(ConstantAdmixture(0.01f), p_ptr.get());
+      mpc.AddPseudocountsToProfile(ConstantAdmixture(0.01f), p_ptr.get());
       counts_.push_back(p_ptr);
     }
   }

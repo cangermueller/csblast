@@ -29,11 +29,11 @@ class HMMPseudocounts : public Pseudocounts<Alphabet> {
 
   // Adds context-specific pseudocounts to sequence and stores resulting
   // frequencies in given profile.
-  virtual void add_to_sequence(const Sequence<Alphabet>& seq,
+  virtual void AddPseudocountsToSequence(const Sequence<Alphabet>& seq,
                                const Admixture& pca,
                                Profile<Alphabet>* profile) const;
   // Adds context-specific pseudocounts to alignment derived profile.
-  virtual void add_to_profile(const Admixture& pca,
+  virtual void AddPseudocountsToProfile(const Admixture& pca,
                               CountProfile<Alphabet>* p) const;
 
  private:

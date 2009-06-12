@@ -17,7 +17,7 @@ using std::valarray;
 namespace cs {
 
 template<>
-void LibraryPseudocounts<AminoAcid>::add_to_sequence(
+void LibraryPseudocounts<AminoAcid>::AddPseudocountsToSequence(
     const Sequence<AminoAcid>& seq,
     const Admixture& pca,
     Profile<AminoAcid>* profile) const {

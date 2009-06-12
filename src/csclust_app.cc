@@ -294,7 +294,7 @@ int CSClustApp<Alphabet>::Run() {
   fflush(stream());
   MatrixPseudocounts<Alphabet> pc(subst_matrix_.get());
   for (profile_iterator ci = data_.begin(); ci != data_.end(); ++ci) {
-    pc.add_to_profile(ConstantAdmixture(opts_.data_pc), ci->get());
+    pc.AddPseudocountsToProfile(ConstantAdmixture(opts_.data_pc), ci->get());
   }
   fputc('\n', stream());
 

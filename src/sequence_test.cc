@@ -57,7 +57,7 @@ TEST(SequenceTest, AddMatrixPseudocountsToSequence) {
 
   BlosumMatrix m;
   MatrixPseudocounts<AminoAcid> mpc(&m);
-  mpc.add_to_sequence(sequence,
+  mpc.AddPseudocountsToSequence(sequence,
                       DivergenceDependentAdmixture(1.0f, 10.0f),
                       &profile);
 

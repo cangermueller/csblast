@@ -102,4 +102,21 @@ TEST_F(CRFTest, NormalizeTransitions) {
   EXPECT_FLOAT_EQ(1.0f, crf(2,2));
 }
 
+TEST(CRFTestInitialization, LibraryInitialization) {
+  FILE* fin = fopen("../data/scop20_1.73_opt_N100000_W13.lib", "r");
+  ProfileLibrary<AminoAcid> profile_lib(fin);
+  profile_lib.TransformToLinSpace();
+  fclose(fin);
+
+  ASSERT_EQ(50, profile_lib.num_profiles());
+  ASSERT_EQ(13, profile_lib.num_cols());
+
+  LibraryBasedStateInitializerCRF<AminoAcid> st_init(&profile_lib);
+  HomogeneousTransitionInitializerCRF<AminoAcid> tr_init;
+  CRF<AminoAcid> crf(50, profile_lib.num_cols(), st_init, tr_init);
+
+  EXPECT_EQ(50, crf.num_states());
+  EXPECT_EQ(2500, crf.num_transitions());
+}
+
 }  // namespace cs

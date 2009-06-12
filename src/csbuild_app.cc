@@ -258,7 +258,7 @@ int CSBuildApp<Alphabet>::Run() {
     if (pc_) {
       fprintf(stream(), "Adding context-specific pseudocounts (admix=%-.2f) ...\n",
               opts_.pc_admix);
-      pc_->add_to_sequence(seq, ConstantAdmixture(opts_.pc_admix), &profile);
+      pc_->AddPseudocountsToSequence(seq, ConstantAdmixture(opts_.pc_admix), &profile);
     }
     if (opts_.outformat == "chk")
       WriteCheckpoint(seq, profile);
@@ -280,7 +280,7 @@ int CSBuildApp<Alphabet>::Run() {
     if (pc_) {
       fprintf(stream(), "Adding context-specific pseudocounts (admix=%-.2f) ...\n",
               opts_.pc_admix);
-      pc_->add_to_profile(DivergenceDependentAdmixture(opts_.pc_admix,
+      pc_->AddPseudocountsToProfile(DivergenceDependentAdmixture(opts_.pc_admix,
                                                        opts_.pc_ali), &profile);
     }
     if (opts_.outformat == "chk")

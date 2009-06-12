@@ -31,7 +31,7 @@ inline LibraryPseudocounts<Alphabet>::LibraryPseudocounts(
 }
 
 template<class Alphabet>
-void LibraryPseudocounts<Alphabet>::add_to_sequence(
+void LibraryPseudocounts<Alphabet>::AddPseudocountsToSequence(
     const Sequence<Alphabet>& seq,
     const Admixture& pca,
     Profile<Alphabet>* profile) const {
@@ -85,7 +85,7 @@ void LibraryPseudocounts<Alphabet>::add_to_sequence(
 }
 
 template<class Alphabet>
-void LibraryPseudocounts<Alphabet>::add_to_profile(
+void LibraryPseudocounts<Alphabet>::AddPseudocountsToProfile(
     const Admixture& pca,
     CountProfile<Alphabet>* profile) const {
   assert(!profile->logspace());
@@ -135,7 +135,7 @@ void LibraryPseudocounts<Alphabet>::add_to_profile(
     const float tau = pca(p.neff(i));
 
     for(int a = 0; a < alphabet_size; ++a) {
-      assert(pc[i][a] > 0.0);  // should be always true because of log-scaling
+      assert(pc[i][a] > 0.0);  // always true because of log-scaling
       p[i][a] = (1.0f - tau) * p[i][a] + tau * pc[i][a];
     }
   }

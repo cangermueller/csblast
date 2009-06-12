@@ -61,19 +61,17 @@ void Clustering<Alphabet, Subject>::ExpectationStep(const data_vector& block) {
       p_zn[k] = lib_[k].prior() *
         pow(2.0, emission_(lib_[k], **bi, lib_[k].center()));
       sum += p_zn[k];
-
-      LOG(DEBUG2) << strprintf("a(%i)=%-8.5g P(c_n|p_%i)=%-8.5g P(z_n=%-4i)=%-8.5g",
-                               k, lib_[k].prior(), k,
-                               emission_(lib_[k], **bi, lib_[k].center()), k, p_zn[k]);
     }
+
     p_zn /= sum;
     add_contribution_to_priors(p_zn);
     add_contribution_to_emissions(p_zn, **bi);
-    log_likelihood_ += log2(sum) / num_eff_cols_;
-    LOG(DEBUG1) << strprintf("log(L)=%-8.5g", log_likelihood_);
 
+    log_likelihood_ += log2(sum) / num_eff_cols_;
     if (progress_table_)
       progress_table_->print_progress(lib_.num_profiles());
+
+    LOG(DEBUG1) << strprintf("log(L)=%-8.5g", log_likelihood_);
   }
 
   update_sufficient_statistics();

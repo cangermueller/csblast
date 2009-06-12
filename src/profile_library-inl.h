@@ -196,7 +196,7 @@ void SamplingProfileInitializer<Alphabet>::Init(
                       lib.num_cols(), (*pi)->num_cols());
 
     CountProfile<Alphabet> p(**pi);
-    if (pc_) pc_->add_to_profile(ConstantAdmixture(pc_admixture_), &p);
+    if (pc_) pc_->AddPseudocountsToProfile(ConstantAdmixture(pc_admixture_), &p);
     lib.AddProfile(p);
   }
   if (!lib.full())

@@ -375,7 +375,7 @@ void SamplingStateInitializer<Alphabet, State>::Init(
     for (std::vector<int>::const_iterator i = idx.begin(); i != idx.end() &&
            !graph.full(); ++i) {
       CountProfile<Alphabet> p(**pi, *i, graph.num_cols());
-      if (pc_) pc_->add_to_profile(ConstantAdmixture(pc_admixture_), &p);
+      if (pc_) pc_->AddPseudocountsToProfile(ConstantAdmixture(pc_admixture_), &p);
       graph.AddState(p);
     }
   }
