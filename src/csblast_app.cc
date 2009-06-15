@@ -16,6 +16,8 @@
 #include "csblast_iteration.h"
 #include "exception.h"
 #include "getopt_pp.h"
+#include "pseudocounts.h"
+#include "hmm_pseudocounts-inl.h"
 #include "library_pseudocounts-inl.h"
 #include "profile_library-inl.h"
 #include "psiblast_pssm.h"
@@ -37,12 +39,13 @@ struct CSBlastAppOptions {
   void SetDefaults() {
     infile              = "";
     outfile             = "";
-    libfile             = "";
+    contextfile         = "";
     ali_infile          = "";
     ali_outfile         = "";
     checkpointfile      = "";
     pc_admix            = 0.95f;
     pc_ali              = 12.0f;
+    pc_engine           = "auto";
     global_weights      = false;
     weight_center       = 1.3;
     weight_decay        = 0.9;
@@ -55,15 +58,15 @@ struct CSBlastAppOptions {
   // Validates parameter settings and throws exception if needed.
   void Validate() {
     if (infile.empty()) throw Exception("No input file provided!");
-    if (libfile.empty()) throw Exception("No profile library provided!");
+    if (contextfile.empty()) throw Exception("No profile library provided!");
   }
 
   // The input alignment file with training data.
   string infile;
   // The output file for the trained HMM.
   string outfile;
-  // Library input file for restarting
-  string libfile;
+  // Input file with context profile library or HMM
+  string contextfile;
   // Alignment file for starting from existing alignment
   string ali_infile;
   // Output file for multiple alignment of hits
@@ -74,6 +77,8 @@ struct CSBlastAppOptions {
   float pc_admix;
   // Constant in pseudocount calculation for alignments
   float pc_ali;
+  // Pseudocount engine
+  string pc_engine;
   // Use global instead of position specific weights for sequence weighting.
   bool global_weights;
   // Path to PSI-BLAST executable
@@ -123,8 +128,10 @@ class CSBlastApp : public Application {
   scoped_ptr< Sequence<AminoAcid> > query_;
   // Profile library for pseudocounts
   scoped_ptr< ProfileLibrary<AminoAcid> > lib_;
-  // Pseudocount factory
-  scoped_ptr< LibraryPseudocounts<AminoAcid> > pc_;
+  // HMM for pseudocounts
+  scoped_ptr< HMM<AminoAcid> > hmm_;
+  // Pseudocount engine
+  scoped_ptr< Pseudocounts<AminoAcid> > pc_;
   // PSI-BLAST engine
   scoped_ptr<CSBlast> csblast_;
   // PSSM for PSI-BLAST jumpstarting
@@ -142,7 +149,7 @@ void CSBlastApp::ParseOptions(GetOpt_pp* options) {
   *options >> Option('C', "checkpoint", opts_.checkpointfile, opts_.checkpointfile);
   *options >> Option('x', "pc-admix", opts_.pc_admix, opts_.pc_admix);
   *options >> Option('c', "pc-ali", opts_.pc_ali, opts_.pc_ali);
-  *options >> Option('D', "context-data", opts_.libfile, opts_.libfile);
+  *options >> Option('D', "context-data", opts_.contextfile, opts_.contextfile);
   *options >> Option('j', "iterations", opts_.iterations, opts_.iterations);
   *options >> Option('h', "inclusion", opts_.inclusion, opts_.inclusion);
   *options >> Option(' ', "alignhits", opts_.ali_outfile, opts_.ali_outfile);
@@ -172,6 +179,9 @@ void CSBlastApp::ParseOptions(GetOpt_pp* options) {
   }
 
   opts_.Validate();
+
+  if (opts_.pc_engine == "auto" && !opts_.contextfile.empty())
+    opts_.pc_engine = get_file_ext(opts_.contextfile);
 }
 
 void CSBlastApp::PrintBanner() const {
@@ -191,7 +201,9 @@ void CSBlastApp::PrintOptions() const {
   fprintf(stream(), "  %-30s %s\n", "-i, --infile <file>",
           "Input file with query sequence");
   fprintf(stream(), "  %-30s %s\n", "-D, --context-data <file>",
-          "Path to library with context profiles for cs pseudocounts");
+          "Path to profile library with context profiles");
+  // fprintf(stream(), "  %-30s %s (def=%s)\n", "-p, --pc-engine lib|hmm",
+  //         "Specify engine for pseudocount generation", opts_.pc_engine.c_str());
   fprintf(stream(), "  %-30s %s\n", "-o, --outfile <file>",
           "Output file with search results (def=stdout)");
   fprintf(stream(), "  %-30s %s\n", "-B, --alifile <file>",
@@ -250,8 +262,9 @@ int CSBlastApp::Run() {
 
     if (itr) {
       CountProfile<AminoAcid> ali_profile(*ali_, !opts_.global_weights);
-      pc_->AddPseudocountsToProfile(DivergenceDependentAdmixture(opts_.pc_admix, opts_.pc_ali),
-                         &ali_profile);
+      pc_->AddPseudocountsToProfile(DivergenceDependentAdmixture(opts_.pc_admix,
+                                                                 opts_.pc_ali),
+                                    &ali_profile);
       pssm_.reset(new PsiBlastPssm(query_->ToString(), ali_profile));
       csblast_->set_pssm(pssm_.get());
     }
@@ -268,27 +281,46 @@ int CSBlastApp::Run() {
 void CSBlastApp::Init() {
   // Read query sequence
   FILE* fin = fopen(opts_.infile.c_str(), "r");
-  if (!fin) throw Exception("Unable to read file '%s'!", opts_.infile.c_str());
+  if (!fin)
+    throw Exception("Unable to read file '%s'!", opts_.infile.c_str());
   query_.reset(new Sequence<AminoAcid>(fin));
   fclose(fin);
 
-  // Read profile library
-  fin = fopen(opts_.libfile.c_str(), "r");
-  if (!fin) throw Exception("Unable to read file '%s'!", opts_.libfile.c_str());
-  lib_.reset(new ProfileLibrary<AminoAcid>(fin));
-  fclose(fin);
+  if (opts_.pc_engine == "lib") {
+    // Setup profile library and library pseudocounts
+    fin = fopen(opts_.contextfile.c_str(), "r");
+    if (!fin)
+      throw Exception("Unable to read file '%s'!", opts_.contextfile.c_str());
+    lib_.reset(new ProfileLibrary<AminoAcid>(fin));
+    fclose(fin);
 
-  // Setup context-specific pseudocounts generator
-  pc_.reset(new LibraryPseudocounts<AminoAcid>(lib_.get(),
-                                               opts_.weight_center,
-                                               opts_.weight_decay));
+    pc_.reset(new LibraryPseudocounts<AminoAcid>(lib_.get(),
+                                                 opts_.weight_center,
+                                                 opts_.weight_decay));
+
+  } else if (opts_.pc_engine == "hmm") {
+    // Iniialize HMM and HMM pseudocounts if needed
+    FILE* fin = fopen(opts_.contextfile.c_str(), "r");
+    if (!fin)
+      throw Exception("Unable to read fromfile '%s'!", opts_.contextfile.c_str());
+    hmm_.reset(new HMM<AminoAcid>(fin));
+    fclose(fin);
+
+    pc_.reset(new HMMPseudocounts<AminoAcid>(hmm_.get(),
+                                             opts_.weight_center,
+                                             opts_.weight_decay));
+  } else {
+    throw Exception("Unsupported pseudocount engine '%s'!", opts_.pc_engine.c_str());
+  }
 
   // Setup PSSM of query profile with context-specific pseudocounts if no
   // restart file is provided
   if (opts_.psiblast_opts.find('R') == opts_.psiblast_opts.end()) {
     if (opts_.ali_infile.empty()) {
       CountProfile<AminoAcid> profile(*query_);
-      pc_->AddPseudocountsToSequence(*query_, ConstantAdmixture(opts_.pc_admix), &profile);
+      pc_->AddPseudocountsToSequence(*query_,
+                                     ConstantAdmixture(opts_.pc_admix),
+                                     &profile);
       pssm_.reset(new PsiBlastPssm(query_->ToString(), profile));
 
     } else {
@@ -298,8 +330,9 @@ void CSBlastApp::Init() {
       fclose(fin);
 
       CountProfile<AminoAcid> profile(input_alignment, !opts_.global_weights);
-      pc_->AddPseudocountsToProfile(DivergenceDependentAdmixture(opts_.pc_admix, opts_.pc_ali),
-                          &profile);
+      pc_->AddPseudocountsToProfile(DivergenceDependentAdmixture(opts_.pc_admix,
+                                                                 opts_.pc_ali),
+                                    &profile);
       pssm_.reset(new PsiBlastPssm(query_->ToString(), profile));
     }
   }

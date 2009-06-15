@@ -143,10 +143,6 @@ class Alignment {
   // Buffer size for reading
   static const int kBufferSize = 32 * KB;
 
-  // Disallow copy and assign
-  Alignment(const Alignment&);
-  void operator=(const Alignment&);
-
   // Initializes alignment with given headers and sequences.
   void Init(const std::vector<std::string>& headers,
             const std::vector<std::string>& seqs);

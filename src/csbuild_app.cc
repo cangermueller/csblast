@@ -227,27 +227,29 @@ int CSBuildApp<Alphabet>::Run() {
   if (!fin) throw Exception("Unable to read from input file '%s'!",
                             opts_.infile.c_str());
 
-  // Iniialize profile library and library pseudocounts if needed
   if (!opts_.contextfile.empty() && opts_.pc_engine == "lib") {
+    // Iniialize profile library and library pseudocounts if needed
     FILE* fin = fopen(opts_.contextfile.c_str(), "r");
-    if (!fin) throw Exception("Unable to read from jumpstart file '%s'!",
-                              opts_.contextfile.c_str());
+    if (!fin)
+      throw Exception("Unable to read from file '%s'!", opts_.contextfile.c_str());
     lib_.reset(new ProfileLibrary<Alphabet>(fin));
+    fclose(fin);
+
     pc_.reset(new LibraryPseudocounts<Alphabet>(lib_.get(),
                                                 opts_.weight_center,
                                                 opts_.weight_decay));
+
+  } else if (!opts_.contextfile.empty() && opts_.pc_engine == "hmm") {
+    // Iniialize HMM and HMM pseudocounts if needed
+    FILE* fin = fopen(opts_.contextfile.c_str(), "r");
+    if (!fin)
+      throw Exception("Unable to read from file '%s'!", opts_.contextfile.c_str());
+    hmm_.reset(new HMM<Alphabet>(fin));
     fclose(fin);
 
-    // Iniialize HMM and HMM pseudocounts if needed
-  } else if (!opts_.contextfile.empty() && opts_.pc_engine == "hmm") {
-    FILE* fin = fopen(opts_.contextfile.c_str(), "r");
-    if (!fin) throw Exception("Unable to read from jumpstart file '%s'!",
-                              opts_.contextfile.c_str());
-    hmm_.reset(new HMM<Alphabet>(fin));
     pc_.reset(new HMMPseudocounts<Alphabet>(hmm_.get(),
                                             opts_.weight_center,
                                             opts_.weight_decay));
-    fclose(fin);
   }
 
   // Build profile from sequence
