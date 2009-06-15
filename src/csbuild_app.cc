@@ -40,7 +40,7 @@ struct CSBuildAppOptions {
     informat            = "auto";
     outformat           = "prf";
     pc_admix            = 1.0f;
-    pc_ali              = 10.0f;
+    pc_ali              = 12.0f;
     pc_engine           = "auto";
     matchcol_assignment = kMatchColAssignByQuery;
     global_weights      = false;
@@ -164,9 +164,9 @@ void CSBuildApp<Alphabet>::PrintOptions() const {
   fprintf(stream(), "  %-30s %s\n", "", "(def: make columns with residue in "
           "first sequence match columns)");
   fprintf(stream(), "  %-30s %s (def=off)\n", "-D, --context-data <file>",
-          "Add context-specific pseudocounts with profile library or HMM");
-  fprintf(stream(), "  %-30s %s (def=%s)\n", "-p, --pc-engine lib|hmm",
-          "Specify engine for pseudocount generation", opts_.pc_engine.c_str());
+          "Add context-specific pseudocounts with profile library");
+  // fprintf(stream(), "  %-30s %s (def=%s)\n", "-p, --pc-engine lib|hmm",
+  //         "Specify engine for pseudocount generation", opts_.pc_engine.c_str());
   fprintf(stream(), "  %-30s %s (def=%-.2f)\n", "-x, --pc-admix [0,1]",
           "Pseudocount admixture for context-specific pseudocounts",
           opts_.pc_admix);
