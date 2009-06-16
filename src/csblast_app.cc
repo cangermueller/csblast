@@ -47,11 +47,11 @@ struct CSBlastAppOptions {
     pc_ali              = 12.0f;
     pc_engine           = "auto";
     global_weights      = false;
-    weight_center       = 1.3;
-    weight_decay        = 0.9;
+    weight_center       = 1.3f;
+    weight_decay        = 0.9f;
     blast_path          = "";
     iterations          = 1;
-    inclusion           = 0.0004;
+    inclusion           = 0.0004f;
     best                = false;
   }
 
@@ -152,6 +152,7 @@ void CSBlastApp::ParseOptions(GetOpt_pp* options) {
   *options >> Option('D', "context-data", opts_.contextfile, opts_.contextfile);
   *options >> Option('j', "iterations", opts_.iterations, opts_.iterations);
   *options >> Option('h', "inclusion", opts_.inclusion, opts_.inclusion);
+  *options >> Option(' ', "pc-engine", opts_.pc_engine, opts_.pc_engine);
   *options >> Option(' ', "alignhits", opts_.ali_outfile, opts_.ali_outfile);
   *options >> Option(' ', "weight-center", opts_.weight_center,
                      opts_.weight_center);
@@ -202,7 +203,7 @@ void CSBlastApp::PrintOptions() const {
           "Input file with query sequence");
   fprintf(stream(), "  %-30s %s\n", "-D, --context-data <file>",
           "Path to profile library with context profiles");
-  // fprintf(stream(), "  %-30s %s (def=%s)\n", "-p, --pc-engine lib|hmm",
+  // fprintf(stream(), "  %-30s %s (def=%s)\n", "    --pc-engine lib|hmm",
   //         "Specify engine for pseudocount generation", opts_.pc_engine.c_str());
   fprintf(stream(), "  %-30s %s\n", "-o, --outfile <file>",
           "Output file with search results (def=stdout)");
@@ -309,6 +310,7 @@ void CSBlastApp::Init() {
     pc_.reset(new HMMPseudocounts<AminoAcid>(hmm_.get(),
                                              opts_.weight_center,
                                              opts_.weight_decay));
+
   } else {
     throw Exception("Unsupported pseudocount engine '%s'!", opts_.pc_engine.c_str());
   }
@@ -318,6 +320,7 @@ void CSBlastApp::Init() {
   if (opts_.psiblast_opts.find('R') == opts_.psiblast_opts.end()) {
     if (opts_.ali_infile.empty()) {
       CountProfile<AminoAcid> profile(*query_);
+
       pc_->AddPseudocountsToSequence(*query_,
                                      ConstantAdmixture(opts_.pc_admix),
                                      &profile);
@@ -330,9 +333,9 @@ void CSBlastApp::Init() {
       fclose(fin);
 
       CountProfile<AminoAcid> profile(input_alignment, !opts_.global_weights);
-      pc_->AddPseudocountsToProfile(DivergenceDependentAdmixture(opts_.pc_admix,
-                                                                 opts_.pc_ali),
-                                    &profile);
+      pc_->AddPseudocountsToProfile(
+          DivergenceDependentAdmixture(opts_.pc_admix, opts_.pc_ali),
+          &profile);
       pssm_.reset(new PsiBlastPssm(query_->ToString(), profile));
     }
   }

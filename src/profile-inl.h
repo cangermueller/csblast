@@ -29,8 +29,12 @@ inline Profile<Alphabet>::Profile()
 
 template<class Alphabet>
 inline Profile<Alphabet>::Profile(int num_cols)
-    : data_(num_cols, Alphabet::instance().size(), 0.0f),
-      logspace_(false) {}
+    : data_(num_cols, Alphabet::instance().size() + 1, 0.0f),
+      logspace_(false) {
+  const int any = Alphabet::instance().any();
+  for (int i = 0; i < num_cols; ++i)
+    data_[i][any] = 1.0f;
+}
 
 template<class Alphabet>
 inline Profile<Alphabet>::Profile(FILE* fin)
@@ -42,13 +46,13 @@ template<class Alphabet>
 inline Profile<Alphabet>::Profile(const Profile& other,
                                   int index,
                                   int length)
-    : data_(length, other.alphabet_size(), 0.0f),
+    : data_(length, Alphabet::instance().size() + 1, 0.0f),
       logspace_(other.logspace_) {
   if (index + length > other.num_cols())
     throw Exception("Index=%i and length=%i of sub-profile are out of bounds!",
                     index, length);
   for (int i = 0; i < num_cols(); ++i)
-    for (int a = 0; a < alphabet_size(); ++a)
+    for (int a = 0; a <= alphabet_size(); ++a)
       data_[i][a] = other[i+index][a];
 }
 
@@ -69,7 +73,7 @@ template<class Alphabet>
 void Profile<Alphabet>::TransformToLogSpace() {
   if (!logspace_) {
     for (int i = 0; i < num_cols(); ++i)
-      for (int a = 0; a < alphabet_size(); ++a)
+      for (int a = 0; a <= alphabet_size(); ++a)
         data_[i][a] = fast_log2(data_[i][a]);
     logspace_ = true;
   }
@@ -79,7 +83,7 @@ template<class Alphabet>
 void Profile<Alphabet>::TransformToLinSpace() {
   if (logspace_) {
     for (int i = 0; i < num_cols(); ++i)
-      for (int a = 0; a < alphabet_size(); ++a)
+      for (int a = 0; a <= alphabet_size(); ++a)
         data_[i][a] = fast_pow2(data_[i][a]);
     logspace_ = false;
   }
@@ -135,7 +139,7 @@ void Profile<Alphabet>::ReadHeader(FILE* fin) {
     throw Exception("Bad format: profile does not contain 'LOG' record!");
   }
 
-  Resize(num_cols, alphabet_size);
+  Resize(num_cols);
 }
 
 template<class Alphabet>
@@ -156,6 +160,7 @@ void Profile<Alphabet>::ReadBody(FILE* fin) {
       else
         data_[i][a] = fast_pow2(static_cast<float>(-strtoi_ast(ptr)) / kLogScale);
     }
+    data_[i][alph_size] = logspace_ ? 0.0f : 1.0f;
   }
   if (i != num_cols() - 1)
     throw Exception("Bad format: profile has %i columns but should have %i!",
@@ -210,11 +215,10 @@ void Profile<Alphabet>::Print(std::ostream& out) const {
 }
 
 template<class Alphabet>
-void Profile<Alphabet>::Resize(int num_cols, int alphabet_size) {
-  if (num_cols == 0 || alphabet_size == 0)
-    throw Exception("Bad profile dimensions: num_cols=%i alphabet_size=%i",
-                    num_cols, alphabet_size);
-  data_.resize(num_cols, alphabet_size);
+void Profile<Alphabet>::Resize(int num_cols) {
+  if (num_cols == 0)
+    throw Exception("Cannot resize profile to num_cols=%i!", num_cols);
+  data_.resize(num_cols, Alphabet::instance().size() + 1, 0.0f);
 }
 
 template<class Alphabet>

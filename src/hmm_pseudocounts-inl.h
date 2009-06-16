@@ -68,8 +68,8 @@ void HMMPseudocounts<Alphabet>::AddPseudocountsToSequence(
 
     // Add pseudocounts to sequence by storing probabilities in output profile
     for(int a = 0; a < alphabet_size; ++a) {
-      float pa = (1.0f - tau) * (static_cast<int>(seq[i]) == a ?
-                                 1.0f : 0.0f) + tau * pc[a];
+      float pa = tau * pc[a] + (1.0f - tau) *
+        (static_cast<int>(seq[i]) == a ? 1.0f : 0.0f);
       p[i][a] = p.logspace() ? fast_log2(pa) : pa;
     }
   }

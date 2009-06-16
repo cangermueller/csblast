@@ -57,9 +57,9 @@ void PsiBlastPssm::Read(FILE* fin) {
 }
 
 void PsiBlastPssm::Write(FILE* fout) const {
-  LOG(DEBUG2) << "Writing query and profile as PSI-BLAST checkpoint ...";
-  LOG(DEBUG2) << query_;
-  LOG(DEBUG2) << *profile_;
+  LOG(INFO) << "Writing query and profile as PSI-BLAST checkpoint ...";
+  LOG(INFO) << query_;
+  LOG(INFO) << *profile_;
 
   const int alph_size = AminoAcid::instance().size();
   int query_length = query_.length();

@@ -65,7 +65,7 @@ class ContextWeightState {
   // Returns number of context columns
   int length() const { return weights_.num_rows(); }
   // Returns number of weights per context column
-  int alphabet_size() const { return weights_.num_cols(); }
+  int alphabet_size() const { return Alphabet::instance().size(); }
   // Returns the total number of context weights
   int size() const { return weights_.size(); }
   // Returns number of in-transitions.

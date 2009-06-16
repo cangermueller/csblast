@@ -50,7 +50,7 @@ class Profile {
   // Returns #columns in the profile
   int length() const { return data_.num_rows(); }
   // Returns #entries per column
-  int alphabet_size() const { return data_.num_cols(); }
+  int alphabet_size() const { return Alphabet::instance().size(); }
   // Returns the total number of elements in the profile.
   int size() const { return data_.size(); }
   // Transforms profile to logspace
@@ -62,11 +62,15 @@ class Profile {
   // Returns an iterator to the first element in profile column i.
   col_type col_begin(int i) { return data_.row_begin(i); }
   // Returns an iterator just past the end of profile column i.
-  col_type col_end(int i) { return data_.row_end(i); }
+  col_type col_end(int i) {
+     return data_.row_begin(i) + alphabet_size();
+  }
   // Returns a const iterator to the first element in profile column i.
   const_col_type col_begin(int i) const { return data_.row_begin(i); }
   // Returns a const iterator just past the end of profile column i.
-  const_col_type col_end(int i) const { return data_.row_end(i); }
+  const_col_type col_end(int i) const {
+    return data_.row_begin(i) + alphabet_size();
+  }
   // Returns an iterator to the first element in the profile matrix.
   iterator begin() { return data_.begin(); }
   // Returns an iterator just past the end of the profile matrix.
@@ -102,8 +106,8 @@ class Profile {
   virtual void WriteBody(FILE* fout) const;
   // Prints the profile in human-readable format to output stream.
   virtual void Print(std::ostream& out) const;
-  // Resize the profile matrix to given dimensions.
-  void Resize(int num_cols, int alphabet_size);
+  // Resize the profile matrix to given dimension.
+  void Resize(int num_cols);
 
   // Profile matrix in row major format
   matrix<float> data_;

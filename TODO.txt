@@ -21,6 +21,10 @@ Todo:
 * Fix arguments ref arguments in BaumWelch to pointers
 * Addapt EM-clustering to double predision and add pseudocounts to profiles
 * Adapt sum-product algorithm to work with sequence data
+* Add ANY-column in ContextWeightState
+* Replace call to alphabet_size() with static Alphabet.instance().size() and also
+  look into moving methods of Alphabet class into AminoAcid/Nucleotide to allow
+  for *static* const int size_, any_ etc.
 
 Someday:
 * Unified validation "framework" for Option classes
