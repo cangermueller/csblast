@@ -1,0 +1,20 @@
+== CS-BLAST 2.0.2 (June 16th, 2009)
+
+* Fixed a bug that occured if csblast or csbuild were run with a sequence
+  containind the amino acid letter 'X'.
+
+== CS-BLAST 2.0.1 (May 28th, 2009)
+
+* Added section about usage of CSI-BLAST to README.
+* Fixed bug that prevented alignment format other than '-m 0' in CS-BLAST
+  NOTE: CSI-BLAST output format is fixed to '-m 0' because CSI-BLAST because CSI-
+  BLAST needs to parse PSI-BLAST output in order to extract an alignment of hits)
+
+== CS-BLAST 2.0.0 (May 13th, 2009)
+
+* Changed format of profile library (new format is as in K4000.lib)
+* Fixed bug that prevented saving of checkpoint files in CSI-BLAST
+* Fixed bug that prevented inclusion of more than 250 hits in PSSM in CSI-BLAST
+* Fixed bug concerning lower case letters in PSI formatted input alignment for
+  -R option
+

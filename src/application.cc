@@ -18,7 +18,7 @@ namespace cs {
 
 Application* Application::instance_;
 
-const char* Application::kVersionNumber = "2.0.1";
+const char* Application::kVersionNumber = "2.0.2";
 
 const char* Application::kCopyright =
   "Copyright (c) 2008 Andreas Biegert, Johannes Soding, and LMU Munich";
