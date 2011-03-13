@@ -151,8 +151,10 @@ void Alignment<Abc>::ReadFastaFlavors(FILE* fin, std::vector<std::string>& heade
     while (!feof(fin)) {
         // Read header
         while (fgetline(buffer, kBufferSize, fin)) {
-            if (!strscn(buffer) || buffer[0] == '#') continue;
-            if (buffer[0] == '>') {
+            if (!strscn(buffer)) continue;
+            if (buffer[0] == '#') {
+                name_ = std::string(buffer + 1);
+            } else if (buffer[0] == '>') {
                 if (headers.empty() && strstr(buffer, ">ss_")) {
                     while (fgetline(buffer, kBufferSize, fin))
                         if (buffer[0] == '>' && strstr(buffer, ">ss_") == NULL) break;

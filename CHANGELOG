@@ -1,0 +1,51 @@
+== CS-BLAST 2.1.2 (February 19th, 2010)
+* Fixed bug concerning left-over tempfiles in /tmp directory when running CS-BLAST.
+* Minor changes in format of K4000.lib context library.
+
+== CS-BLAST 2.1.1 (August 21th, 2009)
+* You can run CS-BLAST in batch mode by putting several query sequences into the
+  input file. CS-BLAST will automatically recognizes the sequences and process
+  all of them sequentially. This batch mode currently works for CS-BLAST only,
+  not for CSI-BLAST)
+* Added new csprobs binary. It takes a sequence or alignment as input and
+  prints the posterior probabilities for each context profile along the query
+  sequence.
+
+== CS-BLAST 2.1.0 (August 11th, 2009)
+* Reported E-values in CS-BLAST are now correct when compared to BLAST. E-values
+  are no longer too optimistic by a factor of about three.
+* CS-BLAST now uses the parameters derived from parameter optimization on the
+  optimization set instead of the benchmark set (weight_center=1.6,
+  weight_decay=0.85 and tau 0.9). Because of this the profile library K4000.lib
+  (not its format) has also changed.
+* Added executables compiled with Intel's icc instead of g++. We found that icc
+  produces very fast code that runs about 10% to 15% faster than the standard
+  executables compiled with g++.
+
+== CS-BLAST 2.0.3 (June 19th, 2009)
+
+* Fixed a bug that prevented setting the number of one-line descriptions
+  and alignments in CSI-BLAST.
+* Fixed a bug that occurred when searching against multiple databaes with
+  CS(I)-BLAST.
+
+== CS-BLAST 2.0.2 (June 16th, 2009)
+
+* Fixed a bug that occured if csblast or csbuild were run with a sequence
+  containind the amino acid letter 'X'.
+
+== CS-BLAST 2.0.1 (May 28th, 2009)
+
+* Added section about usage of CSI-BLAST to README.
+* Fixed bug that prevented alignment format other than '-m 0' in CS-BLAST
+  NOTE: CSI-BLAST output format is fixed to '-m 0' because CSI-BLAST because CSI-
+  BLAST needs to parse PSI-BLAST output in order to extract an alignment of hits)
+
+== CS-BLAST 2.0.0 (May 13th, 2009)
+
+* Changed format of profile library (new format is as in K4000.lib)
+* Fixed bug that prevented saving of checkpoint files in CSI-BLAST
+* Fixed bug that prevented inclusion of more than 250 hits in PSSM in CSI-BLAST
+* Fixed bug concerning lower case letters in PSI formatted input alignment for
+  -R option
+

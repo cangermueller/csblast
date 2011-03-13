@@ -90,9 +90,9 @@ class CSTranslateApp : public Application {
     // Prints usage banner to stream.
     virtual void PrintUsage() const;
     // Writes abstract state sequence to outfile
-    void WriteStateSequence(const Sequence<AS62>& seq) const;
+    void WriteStateSequence(const Sequence<AS219>& seq) const;
     // Writes abstract state profile to outfile
-    void WriteStateProfile(const CountProfile<AS62>& prof) const;
+    void WriteStateProfile(const CountProfile<AS219>& prof) const;
 
     // Parameter wrapper
     CSTranslateAppOptions opts_;
@@ -126,7 +126,7 @@ void CSTranslateApp<Abc>::ParseOptions(GetOpt_pp& ops) {
     opts_.Validate();
 
     if (opts_.outfile.empty() && opts_.appendfile.empty())
-        opts_.outfile = GetBasename(opts_.infile, false) + "as62";
+        opts_.outfile = GetBasename(opts_.infile, false) + ".as";
     if (opts_.informat == "auto")
         opts_.informat = GetFileExt(opts_.infile);
     if (opts_.pc_engine == "auto" && !opts_.modelfile.empty())
@@ -153,7 +153,7 @@ void CSTranslateApp<Abc>::PrintOptions() const {
     fprintf(out_, "  %-30s %s (def=%s)\n", "-O, --outformat seq|prf", "Outformat: abstract state sequence or profile", opts_.outformat.c_str());
     fprintf(out_, "  %-30s %s\n", "-M, --match-assign [0:100]", "Make all FASTA columns with less than X% gaps match columns");
     fprintf(out_, "  %-30s %s\n", "", "(def: make columns with residue in first sequence match columns)");
-    fprintf(out_, "  %-30s %s (def=off)\n", "-A, --alphabet <file>", "Abstract state alphabet consisting of exactly 62 states");
+    fprintf(out_, "  %-30s %s (def=off)\n", "-A, --alphabet <file>", "Abstract state alphabet consisting of exactly 219 states");
     fprintf(out_, "  %-30s %s (def=off)\n", "-D, --context-data <file>", "Add context-specific pseudocounts using given context-data");
     // fprintf(out_, "  %-30s %s (def=%s)\n", "-p, --pc-engine lib|crf", "Specify engine for pseudocount generation", opts_.pc_engine.c_str());
     fprintf(out_, "  %-30s %s (def=%-.2f)\n", "-x, --pc-admix [0,1]", "Pseudocount admix for context-specific pseudocounts", opts_.pc_admix);
@@ -162,7 +162,7 @@ void CSTranslateApp<Abc>::PrintOptions() const {
 }
 
 template<class Abc>
-void CSTranslateApp<Abc>::WriteStateSequence(const Sequence<AS62>& seq) const {
+void CSTranslateApp<Abc>::WriteStateSequence(const Sequence<AS219>& seq) const {
     if (!opts_.outfile.empty()) {
         FILE* fout = fopen(opts_.outfile.c_str(), "w");
         if (!fout) throw Exception("Can't write to output file '%s'!", opts_.outfile.c_str());
@@ -180,7 +180,7 @@ void CSTranslateApp<Abc>::WriteStateSequence(const Sequence<AS62>& seq) const {
 }
 
 template<class Abc>
-void CSTranslateApp<Abc>::WriteStateProfile(const CountProfile<AS62>& prof) const {
+void CSTranslateApp<Abc>::WriteStateProfile(const CountProfile<AS219>& prof) const {
     if (!opts_.outfile.empty()) {
         FILE* fout = fopen(opts_.outfile.c_str(), "w");
         if (!fout) throw Exception("Can't write to output file '%s'!", opts_.outfile.c_str());
@@ -243,9 +243,9 @@ int CSTranslateApp<Abc>::Run() {
     if (!fin) throw Exception("Unable to read file '%s'!",
                               opts_.alphabetfile.c_str());
     as_lib_.reset(new ContextLibrary<Abc>(fin));
-    if (as_lib_->size() != AS62::kSize)
+    if (as_lib_->size() != AS219::kSize)
         throw Exception("Abstract state alphabet should have %zu states but actually "
-                        "has %zu states!", AS62::kSize, as_lib_->size());
+                        "has %zu states!", AS219::kSize, as_lib_->size());
     if (static_cast<int>(as_lib_->wlen()) != 1)
         throw Exception("Abstract state alphabet should have a window length of %zu "
                         "but actually has %zu!", 1, as_lib_->wlen());
@@ -284,7 +284,7 @@ int CSTranslateApp<Abc>::Run() {
     } else {  // build profile from alignment
         AlignmentFormat f = AlignmentFormatFromString(opts_.informat);
         Alignment<Abc> ali(fin, f);
-        header = ali.header(0);
+        header = ali.name();
 
         if (f == FASTA_ALIGNMENT) {
             if (opts_.match_assign == CSTranslateAppOptions::kAssignMatchColsByQuery)
@@ -306,13 +306,13 @@ int CSTranslateApp<Abc>::Run() {
     // Create emission functor needed for translation into abstract states
     Emission<Abc> emission(1, opts_.weight_as, 1.0);
 
-    // Prepare abstract sequence in AS62 format
-    Sequence<AS62> as_seq(profile.counts.length());
+    // Prepare abstract sequence in AS219 format
+    Sequence<AS219> as_seq(profile.counts.length());
     as_seq.set_header(header);
 
     // Translate count profile into abstract state count profile (Neff is one)
-    CountProfile<AS62> as_profile(profile.counts.length());  // output profile
-    fputs("Translating count profile to abstract state alphabet AS62 ...\n", out_);
+    CountProfile<AS219> as_profile(profile.counts.length());  // output profile
+    fputs("Translating count profile to abstract state alphabet AS219 ...\n", out_);
     for (size_t i = 0; i < as_profile.length(); ++i)
         CalculatePosteriorProbs(*as_lib_, emission, profile, i, as_profile.counts[i]);
     as_profile.name = GetBasename(opts_.infile, false);
@@ -324,7 +324,7 @@ int CSTranslateApp<Abc>::Run() {
         // Find state with maximal posterior prob and assign it to as_seq[i]
         size_t k_max = 0;
         double p_max = as_profile.counts[i][0];
-        for (size_t k = 1; k < AS62::kSize; ++k) {
+        for (size_t k = 1; k < AS219::kSize; ++k) {
             if (as_profile.counts[i][k] > p_max) {
                 k_max = k;
                 p_max = as_profile.counts[i][k];
@@ -341,7 +341,7 @@ int CSTranslateApp<Abc>::Run() {
     vector<string> labels(nseqs, "");
     labels[0] = "Pos";
     labels[1] = "Cons";
-    labels[3] = "AS62";
+    labels[3] = "AS219";
     labels[4] = "Conf";
 
     BlosumMatrix sm;

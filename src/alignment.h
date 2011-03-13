@@ -86,6 +86,12 @@ class Alignment {
     // Sets the header of sequence k.
     void set_header(size_t k, const std::string& header) { headers_[k] = header; }
 
+    // Returns the name of the alignment
+    std::string name() const { return name_; }
+
+    // Sets the name of the alignment
+    void set_name(const std::string& header) { name_ = name; }
+
     // Makes all columns with a residue in sequence k match columns.
     void AssignMatchColumnsBySequence(size_t k = 0);
 
@@ -164,6 +170,8 @@ class Alignment {
     std::valarray<bool> is_match_;
     // Headers of sequences in the alignment.
     std::vector<std::string> headers_;
+    // Name of the alignment as given by comment line in FASTA file
+    std::string name_;
 };  // Alignment
 
 
