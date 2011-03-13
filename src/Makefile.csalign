@@ -1,0 +1,209 @@
+#
+# Makefile for cs-suite
+#
+
+GCC_PREFIX = $(shell dirname `which gcc`)
+GCC_SUFFIX =
+CC = $(GCC_PREFIX)/gcc$(GCC_SUFFIX)
+CPP = $(GCC_PREFIX)/g++$(GCC_SUFFIX)
+CXX = $(CPP)
+HEADERS = $(wildcard *.h)
+
+LIBS = -lm
+
+OTHER_CCS = assert_helpers.cc aa.cc as.cc dna.cc log.cc pdf_writer.cc sparse_profile.cc utils.cc
+CSALIGN_CCS = guide_tree.cc
+CSCLUST_CCS = application.cc getopt_pp.cc blosum_matrix.cc
+CSTRANSLATE_CCS = application.cc getopt_pp.cc blosum_matrix.cc
+CSSGD_CCS = application.cc getopt_pp.cc blosum_matrix.cc
+
+CSALIGN_VERSION = $(shell cat ../CSALIGN_VERSION)
+EXTRA_FLAGS = -Wno-deprecated -Wall -static
+
+DEFS=-fno-strict-aliasing \
+     -DCSALIGN_VERSION="\"`cat ../CSALIGN_VERSION`\"" \
+     -DBUILD_HOST="\"`hostname`\"" \
+     -DBUILD_TIME="\"`date`\"" \
+     -DCOMPILER_VERSION="\"`$(CXX) -v 2>&1 | tail -1`\"" \
+     $(LOGGING_DEF)
+
+# Convert BITS=?? to a -m flag
+BITS_FLAG =
+ifeq (32,$(BITS))
+BITS_FLAG = -m32
+endif
+ifeq (64,$(BITS))
+BITS_FLAG = -m64
+endif
+
+ifeq (1,$(OPENMP))
+DEFS += -fopenmp -DOPENMP
+endif
+
+# Convert LOGGING=1 to CHUD-related flags
+LOGGING = 0
+LOGGING_DEF =
+LOG_MAX_LEVEL = 0
+ifeq (1,$(LOGGING))
+LOGGING_DEF += -DLOGGING -DLOG_MAX_LEVEL=$(LOG_MAX_LEVEL)
+endif
+
+DEBUG_FLAGS = -O1 -g3 $(BITS_FLAG)
+DEBUG_DEFS = -DCOMPILER_OPTIONS="\"$(DEBUG_FLAGS) $(EXTRA_FLAGS)\""
+RELEASE_FLAGS = -O3 $(BITS_FLAG)
+RELEASE_DEFS = -DCOMPILER_OPTIONS="\"$(RELEASE_FLAGS) $(EXTRA_FLAGS)\""
+NOASSERT_FLAGS = -DNDEBUG
+
+BIN_LIST = csalign csclust cstranslate cssgd
+BIN_LIST_AUX = csalign-debug csclust-debug cstranslate-debug cssgd-debug
+
+all: $(BIN_LIST)
+
+allall: $(BIN_LIST) $(BIN_LIST_AUX)
+
+define checksum
+  cat $^ | md5sum | awk '{print $$1}' > .$@.md5
+endef
+
+#
+# csalign-build targets
+#
+csalign: csalign.cc $(CSALIGN_CCS) $(OTHER_CCS) $(HEADERS)
+	$(checksum)
+	$(CXX) $(RELEASE_FLAGS) $(RELEASE_DEFS) $(EXTRA_FLAGS) \
+		-DCSALIGN_BUILD_HASH=`cat .$@.md5` \
+		$(DEFS) $(NOASSERT_FLAGS) -Wall -fopenmp -DOPENMP \
+		$(INC) \
+		-o $@ $< \
+		$(OTHER_CCS) $(CSALIGN_CCS) \
+		$(LIBS)
+
+csalign_prof: csalign.cc $(CSALIGN_CCS) $(OTHER_CCS) $(HEADERS)
+	$(checksum)
+	$(CXX) $(RELEASE_FLAGS) -pg -p -g3 $(RELEASE_DEFS) $(EXTRA_FLAGS) \
+		-DCSALIGN_BUILD_HASH=`cat .$@.md5` \
+		$(DEFS) $(NOASSERT_FLAGS) -Wall \
+		$(INC) \
+		-o $@ $< \
+		$(OTHER_CCS) $(CSALIGN_CCS) \
+		$(LIBS)
+
+csalign-debug: csalign.cc $(CSALIGN_CCS) $(OTHER_CCS) $(HEADERS)
+	$(checksum)
+	$(CXX) $(DEBUG_FLAGS) $(DEBUG_DEFS) $(EXTRA_FLAGS) \
+		-DCSALIGN_BUILD_HASH=`cat .$@.md5` \
+		$(DEFS) -Wall \
+		$(INC) \
+		-o $@ $< \
+		$(OTHER_CCS) $(CSALIGN_CCS) \
+		$(LIBS)
+
+
+#
+# csclust-build targets
+#
+csclust: csclust_app.cc $(CSCLUST_CCS) $(OTHER_CCS) $(HEADERS)
+	$(checksum)
+	$(CXX) $(RELEASE_FLAGS) $(RELEASE_DEFS) $(EXTRA_FLAGS) \
+		-DCSCLUST_BUILD_HASH=`cat .$@.md5` \
+		$(DEFS) $(NOASSERT_FLAGS) -Wall \
+		$(INC) \
+		-o $@ $< \
+		$(OTHER_CCS) $(CSCLUST_CCS) \
+		$(LIBS)
+
+csclust_prof: csclust_app.cc $(CSCLUST_CCS) $(OTHER_CCS) $(HEADERS)
+	$(checksum)
+	$(CXX) $(RELEASE_FLAGS) -pg -p -g3 $(RELEASE_DEFS) $(EXTRA_FLAGS) \
+		-DCSCLUST_BUILD_HASH=`cat .$@.md5` \
+		$(DEFS) $(NOASSERT_FLAGS) -Wall \
+		$(INC) \
+		-o $@ $< \
+		$(OTHER_CCS) $(CSCLUST_CCS) \
+		$(LIBS)
+
+csclust-debug: csclust_app.cc $(CSCLUST_CCS) $(OTHER_CCS) $(HEADERS)
+	$(checksum)
+	$(CXX) $(DEBUG_FLAGS) $(DEBUG_DEFS) $(EXTRA_FLAGS) \
+		-DCSCLUST_BUILD_HASH=`cat .$@.md5` \
+		$(DEFS) -Wall \
+		$(INC) \
+		-o $@ $< \
+		$(OTHER_CCS) $(CSCLUST_CCS) \
+		$(LIBS)
+
+
+#
+# cstranslate-build targets
+#
+cstranslate: cstranslate_app.cc $(CSTRANSLATE_CCS) $(OTHER_CCS) $(HEADERS)
+	$(checksum)
+	$(CXX) $(RELEASE_FLAGS) $(RELEASE_DEFS) $(EXTRA_FLAGS) \
+		-DCSTRANSLATE_BUILD_HASH=`cat .$@.md5` \
+		$(DEFS) $(NOASSERT_FLAGS) -Wall \
+		$(INC) \
+		-o $@ $< \
+		$(OTHER_CCS) $(CSTRANSLATE_CCS) \
+		$(LIBS)
+
+cstranslate_prof: cstranslate_app.cc $(CSTRANSLATE_CCS) $(OTHER_CCS) $(HEADERS)
+	$(checksum)
+	$(CXX) $(RELEASE_FLAGS) -pg -p -g3 $(RELEASE_DEFS) $(EXTRA_FLAGS) \
+		-DCSTRANSLATE_BUILD_HASH=`cat .$@.md5` \
+		$(DEFS) $(NOASSERT_FLAGS) -Wall \
+		$(INC) \
+		-o $@ $< \
+		$(OTHER_CCS) $(CSTRANSLATE_CCS) \
+		$(LIBS)
+
+cstranslate-debug: cstranslate_app.cc $(CSTRANSLATE_CCS) $(OTHER_CCS) $(HEADERS)
+	$(checksum)
+	$(CXX) $(DEBUG_FLAGS) $(DEBUG_DEFS) $(EXTRA_FLAGS) \
+		-DCSTRANSLATE_BUILD_HASH=`cat .$@.md5` \
+		$(DEFS) -Wall \
+		$(INC) \
+		-o $@ $< \
+		$(OTHER_CCS) $(CSTRANSLATE_CCS) \
+		$(LIBS)
+
+
+#
+# cssgd-build targets
+#
+cssgd: cssgd_app.cc $(CSSGD_CCS) $(OTHER_CCS) $(HEADERS)
+	$(checksum)
+	$(CXX) $(RELEASE_FLAGS) $(RELEASE_DEFS) $(EXTRA_FLAGS) \
+		-DCSSGD_BUILD_HASH=`cat .$@.md5` \
+		$(DEFS) $(NOASSERT_FLAGS) -Wall \
+		$(INC) \
+		-o $@ $< \
+		$(OTHER_CCS) $(CSSGD_CCS) \
+		$(LIBS)
+
+cssgd_prof: cssgd_app.cc $(CSSGD_CCS) $(OTHER_CCS) $(HEADERS)
+	$(checksum)
+	$(CXX) $(RELEASE_FLAGS) -pg -p -g3 $(RELEASE_DEFS) $(EXTRA_FLAGS) \
+		-DCSSGD_BUILD_HASH=`cat .$@.md5` \
+		$(DEFS) $(NOASSERT_FLAGS) -Wall \
+		$(INC) \
+		-o $@ $< \
+		$(OTHER_CCS) $(CSSGD_CCS) \
+		$(LIBS)
+
+cssgd-debug: cssgd_app.cc $(CSSGD_CCS) $(OTHER_CCS) $(HEADERS)
+	$(checksum)
+	$(CXX) $(DEBUG_FLAGS) $(DEBUG_DEFS) $(EXTRA_FLAGS) \
+		-DCSSGD_BUILD_HASH=`cat .$@.md5` \
+		$(DEFS) -Wall \
+		$(INC) \
+		-o $@ $< \
+		$(OTHER_CCS) $(CSSGD_CCS) \
+		$(LIBS)
+
+
+.PHONY: clean
+clean:
+	rm -f $(BIN_LIST) $(BIN_LIST_AUX) \
+	csalign_prof csclust_prof cstranslate_prof cssgd_prof \
+	$(addsuffix .exe,$(BIN_LIST) $(BIN_LIST_AUX) csalign_prof csclust_prof cstranslate_prof cssgd_prof) \
+	rm -f core.*
