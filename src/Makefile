@@ -13,7 +13,8 @@
 # but shouldn't modify.
 
 # All non-test executables produced by this Makefile
-TARGETS = test cstrain_aa cstrain_nt csbuild_aa csbuild_nt
+TARGETS = cstrainset csclust csbuild cshmc cssgd csblast cstest cstranslate csmakemat csviz cslast 
+#TARGETS = test cstrain_aa cstrain_nt csbuild_aa csbuild_nt
 
 # Points to the root of Google Test, relative to where this file is.
 # Remember to tweak this if you move this file.
