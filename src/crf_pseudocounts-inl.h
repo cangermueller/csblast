@@ -49,7 +49,7 @@ void CrfPseudocounts<Abc>::AddToSequence(const Sequence<Abc>& seq,
         pc[a] += ppi[k] * crf_[k].pc[a];
     }
     Normalize(&pc[0], Abc::kSize);  // FIXME: is this really needed?
-
+	
     // Add pseudocounts to sequence
     for(size_t a = 0; a < Abc::kSize; ++a)
       p[i][a] = (1.0 - tau) * (seq[i] == a ? 1.0 : 0.0) + tau * pc[a];

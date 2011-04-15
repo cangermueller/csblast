@@ -1,4 +1,9 @@
 bin
+build
+tmp
+scripts
+.cs.sh
+
 src/build
 src/test
 src/*.o

@@ -76,7 +76,7 @@ void CSVizApp<Abc>::ParseOptions(GetOpt_pp& ops) {
   if (opts_.informat == "auto")
     opts_.informat = GetFileExt(opts_.infile);
   if (opts_.outfile.empty())
-    opts_.outfile = GetBasename(opts_.infile, false) + "pdf";
+    opts_.outfile = GetBasename(opts_.infile, false) + ".pdf";
   if (GetDirname(opts_.outfile).empty())
     opts_.outfile = "./" + opts_.outfile;
 }

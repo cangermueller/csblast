@@ -53,7 +53,7 @@ class Crf {
     // Returns the number of columns in each context profile.
     size_t wlen() const { return wlen_; }
 
-    // Returns total number of weights in this CRf. Note that context weights
+    // Returns total number of weights in this CRF. Note that context weights
     // and pseudocount weights of letter ANY are not accounted for since these are
     // held fix at zero anyway.
     size_t nweights() const { return size() * (1 + (wlen() + 1) * Abc::kSize); }

@@ -144,8 +144,8 @@ class Matrix {
   size_t ncols() const;
   void Resize(size_t newn, size_t newm);
   void Assign(size_t newn, size_t newm, const T &a);
-  T* begin() { return v; }
-  const T* begin() const { return v; }
+  T* begin() { return *v; }
+  const T* begin() const { return *v; }
 
  private:
   size_t nn;

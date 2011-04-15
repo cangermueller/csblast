@@ -127,9 +127,10 @@ inline void UpdatePseudocounts(CrfState<Abc>& state) {
     mean /= Abc::kSize;
 
     // Rescale pseudocount weights and calculate their sum in lin-space
-    double sum = 0.0;
-    for (size_t a = 0; a < Abc::kSize; ++a)
+    long double sum = 0.0;
+    for (size_t a = 0; a < Abc::kSize; ++a) {
         sum += exp(state.pc_weights[a] - max);
+	}
 
     // Update emission pseudocount vector
     double tmp = max + log(sum);

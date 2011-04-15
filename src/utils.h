@@ -57,6 +57,11 @@ inline float SIGN(const double &a, const float &b) {
 }
 
 template<class T>
+inline int SIGN(const T& a) {
+    return a >= 0 ? 1 : -1;
+}
+
+template<class T>
 inline void SWAP(T &a, T &b) {
   T dum=a; a=b; b=dum;
 }

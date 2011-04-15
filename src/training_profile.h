@@ -15,6 +15,9 @@ struct TrainingProfile {
   TrainingProfile(const Sequence<Abc>& seq, const ProfileColumn<Abc>& col)
     : x(seq), y(col) {}
 
+  TrainingProfile(const CountProfile<Abc>& cp, const ProfileColumn<Abc>& col)
+    : x(cp), y(col) {}
+
   TrainingProfile(FILE* fin) {
     if (!StreamStartsWith(fin, "TrainingProfile"))
       throw Exception("Stream does not start with class id 'TrainingProfile'!");

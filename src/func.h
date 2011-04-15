@@ -9,6 +9,7 @@
 #include "progress_bar.h"
 #include "substitution_matrix-inl.h"
 #include "training_sequence.h"
+#include "training_profile.h"
 
 namespace cs {
 
@@ -112,10 +113,12 @@ struct CrfFunc {
                     ContextScore(crf[k].context_weights, trainset[n].x, center, center);
                 if (pp[k] > max) max = pp[k];  // needed for log-sum-exp trick
             }
+
             // Log-sum-exp trick begins here
             double sum = 0.0;
             for (size_t k = 0; k < crf.size(); ++k)
                 sum += exp(pp[k] - max);
+
             double tmp = max + log(sum);
             for (size_t k = 0; k < crf.size(); ++k) {
                 pp[k] = exp(pp[k] - tmp);
@@ -162,6 +165,137 @@ struct DerivCrfFuncIO {
     double prior;                 // log of prior probability
 };
 
+template<class Abc>
+struct DerivCrfFuncPrior {
+    virtual double operator() (const Crf<Abc>& crf) const = 0; 
+
+    virtual void CalculateGradient (
+            const Crf<Abc>& crf,
+            Vector<double>& grad,
+            const TrainingBlock& block) const = 0;
+};
+
+template<class Abc>
+struct GaussianDerivCrfFuncPrior : public DerivCrfFuncPrior<Abc> {
+
+    GaussianDerivCrfFuncPrior(
+            const double sigma_context_ = 0.2,
+            const double sigma_decay_ = 0.9,
+            const double sigma_bias_ = 1.0) :
+        sigma_context(sigma_context_),
+        sigma_decay(sigma_decay_),
+        sigma_bias(sigma_bias_) {}
+
+    double operator() (const Crf<Abc>& crf) const {
+
+        const double fac_bias = -0.5 / SQR(sigma_bias);
+        // Precalculate factors for position specific sigmas in context window
+        Vector<double> fac_context(crf.wlen());
+        const int c = crf.center();
+        for (size_t j = 0; j < crf.wlen(); ++j) {
+            double tmp = sigma_context * pow(sigma_decay, fabs(static_cast<int>(j) - c));
+            fac_context[j] = -0.5 / SQR(tmp);
+        }
+
+        double prior = 0.0;
+        for (size_t k = 0; k < crf.size(); ++k) {
+            prior += fac_bias * SQR(crf[k].bias_weight);
+            for(size_t j = 0; j < crf.wlen(); ++j)
+                for (size_t a = 0; a < Abc::kSize; ++a)
+                    prior += fac_context[j] * SQR(crf[k].context_weights[j][a]);
+        }
+        return prior;
+    }
+
+    void CalculateGradient(
+            const Crf<Abc>& crf,
+            Vector<double>& grad,
+            const TrainingBlock& block) const {
+
+        const double fac_bias = -block.frac / SQR(sigma_bias);
+        // Precalculate factors for position specific sigmas in context window
+        Vector<double> fac_context(crf.wlen());
+        const int c = crf.center();
+        for (size_t j = 0; j < crf.wlen(); ++j) {
+            double tmp = sigma_context * pow(sigma_decay, fabs(static_cast<int>(j) - c));
+            fac_context[j] = -block.frac / SQR(tmp);
+        }
+
+        Assign(grad, 0.0);  // reset gradient
+        for (size_t k = 0, i = 0; k < crf.size(); ++k) {
+            grad[i++] += fac_bias * crf[k].bias_weight;
+            for(size_t j = 0; j < crf.wlen(); ++j)
+                for (size_t a = 0; a < Abc::kSize; ++a)
+                    grad[i++] += fac_context[j] * crf[k].context_weights[j][a];
+			i += Abc::kSize;
+        }
+    }
+
+    double sigma_context;
+    double sigma_decay;
+    double sigma_bias;
+};
+
+template<class Abc>
+struct LassoDerivCrfFuncPrior : public DerivCrfFuncPrior<Abc> {
+
+    LassoDerivCrfFuncPrior(
+            const double sigma_context_ = 0.75,
+            const double sigma_decay_ = 1.0,
+            const double sigma_bias_ = 1.0) :
+        sigma_context(sigma_context_),
+        sigma_decay(sigma_decay_),
+        sigma_bias(sigma_bias_) {}
+
+    double operator() (const Crf<Abc>& crf) const {
+
+        const double fac_bias = - 1 / SQR(sigma_bias);
+        // Precalculate factors for position specific sigmas in context window
+        Vector<double> fac_context(crf.wlen());
+        const int c = crf.center();
+        for (size_t j = 0; j < crf.wlen(); ++j) {
+            double tmp = sigma_context * pow(sigma_decay, fabs(static_cast<int>(j) - c));
+            fac_context[j] = - 1 / SQR(tmp);
+        }
+
+        double prior = 0.0;
+        for (size_t k = 0; k < crf.size(); ++k) {
+            prior += fac_bias * fabs(crf[k].bias_weight);
+            for(size_t j = 0; j < crf.wlen(); ++j)
+                for (size_t a = 0; a < Abc::kSize; ++a)
+                    prior += fac_context[j] * fabs(crf[k].context_weights[j][a]);
+        }
+        return prior;
+    }
+
+    void CalculateGradient(
+            const Crf<Abc>& crf,
+            Vector<double>& grad,
+            const TrainingBlock& block) const {
+
+        const double fac_bias = -block.frac / SQR(sigma_bias);
+        // Precalculate factors for position specific sigmas in context window
+        Vector<double> fac_context(crf.wlen());
+        const int c = crf.center();
+        for (size_t j = 0; j < crf.wlen(); ++j) {
+            double tmp = sigma_context * pow(sigma_decay, fabs(static_cast<int>(j) - c));
+            fac_context[j] = -block.frac / SQR(tmp);
+        }
+
+        Assign(grad, 0.0);  // reset gradient
+        for (size_t k = 0, i = 0; k < crf.size(); ++k) {
+            grad[i++] += fac_bias * SIGN(crf[k].bias_weight);
+            for(size_t j = 0; j < crf.wlen(); ++j)
+                for (size_t a = 0; a < Abc::kSize; ++a)
+                    grad[i++] += fac_context[j] * SIGN(crf[k].context_weights[j][a]);
+			i += Abc::kSize;
+        }
+    }
+
+    double sigma_context;
+    double sigma_decay;
+    double sigma_bias;
+};
 
 template<class Abc, class TrainingPair>
 struct DerivCrfFunc : public CrfFunc<Abc, TrainingPair> {
@@ -169,14 +303,10 @@ struct DerivCrfFunc : public CrfFunc<Abc, TrainingPair> {
 
     DerivCrfFunc(const TrainingSet& trainset,
                  const SubstitutionMatrix<Abc>& m,
-                 double sig_context = 0.3,
-                 double sig_decay = 0.9,
-                 double sig_bias = 10.0)
+                 const DerivCrfFuncPrior<Abc>& p = GaussianDerivCrfFuncPrior<Abc>())
             : CrfFunc<Abc, TrainingPair>(trainset, m),
               shuffle(trainset.size()),
-              sigma_context(sig_context),
-              sigma_decay(sig_decay),
-              sigma_bias(sig_bias) {
+              prior(p) {
         for (size_t i = 0; i < trainset.size(); ++i) shuffle[i] = i;
     }
 
@@ -203,10 +333,11 @@ struct DerivCrfFunc : public CrfFunc<Abc, TrainingPair> {
         Matrix<double> mpa(block.size, Abc::kSize, 0.0);    // pseudocounts P(a|c_n)
         double loglike = 0.0;
 
+
 #pragma omp parallel for schedule(static)
         for (int n = n_beg; n < n_end; ++n) {
-            const TrainingSequence<Abc>& tseq = trainset[shuffle[n]];
-            assert_eq(center, (tseq.x.length() - 1) / 2);
+            const TrainingPair& tpair = trainset[shuffle[n]];
+            //assert_eq(center, (tpair.x.length() - 1) / 2);
             double* pp = &mpp[n - block.beg][0];
             double* pa = &mpa[n - block.beg][0];
 
@@ -214,44 +345,47 @@ struct DerivCrfFunc : public CrfFunc<Abc, TrainingPair> {
             double max = -DBL_MAX;
             for (size_t k = 0; k < s.crf.size(); ++k) {
                 pp[k] = s.crf[k].bias_weight +
-                    ContextScore(s.crf[k].context_weights, tseq.x, center, center);
+                    ContextScore(s.crf[k].context_weights, tpair.x, center, center);
                 if (pp[k] > max) max = pp[k];  // needed for log-sum-exp trick
             }
+
             // Log-sum-exp trick begins here
             double sum = 0.0;
             for (size_t k = 0; k < s.crf.size(); ++k) {
                 sum += exp(pp[k] - max);
             }
             double tmp = max + log(sum);
+
             for (size_t k = 0; k < s.crf.size(); ++k) {
                 pp[k] = exp(pp[k] - tmp);
                 // Calculate pseudocounts p(a|c_n)
-                for (size_t a = 0; a < Abc::kSize; ++a)
+                for (size_t a = 0; a < Abc::kSize; ++a) {					
                     pa[a] += s.crf[k].pc[a] * pp[k];
+				}
             }
-            double loglike_n = 0.0;
+            long double loglike_n = 0.0;
             for (size_t a = 0; a < Abc::kSize; ++a)
-                loglike_n += tseq.y[a] * (log(pa[a]) - log(sm.p(a)));
+                loglike_n += tpair.y[a] * (log(pa[a]) - log(sm.p(a)));
 #pragma omp atomic
             loglike += loglike_n;
         }
 
         s.loglike += loglike;
-        s.prior   += block.frac * CalculatePrior(s.crf);
+        s.prior   += block.frac * prior(s.crf);
 
-        CalculateLikelihoodGradient(block, s.crf, mpp, mpa, s.grad_loglike, prog_bar);
-        CalculatePriorGradient(block, s.crf, s.grad_prior);
+        CalculateLikelihoodGradient(trainset, block, s.crf, mpp, mpa, s.grad_loglike, prog_bar);
+        prior.CalculateGradient(s.crf, s.grad_prior, block);
     }
 
     // This is the performance critical method in HMC sampling. It accounts for about
     // 90% of the runtime in profiling.
-    // TODO: code template specialization for TrainingProfile
-    void CalculateLikelihoodGradient(const TrainingBlock& block,
+    void CalculateLikelihoodGradient(const std::vector<TrainingSequence<Abc> >& tset, 
+                                     const TrainingBlock& block,
                                      const Crf<Abc>& crf,
                                      const Matrix<double>& mpp,
                                      const Matrix<double>& mpa,
                                      Vector<double>& grad,
-                                     ProgressBar* prog_bar = NULL) const {
+                                     ProgressBar* prog_bar) const {
         const size_t wlen = crf.wlen();
         const int nstates = crf.size();
         Assign(grad,  0.0);  // reset gradient
@@ -262,26 +396,29 @@ struct DerivCrfFunc : public CrfFunc<Abc, TrainingPair> {
         for (int k = 0; k < nstates; ++k) {
             const double* pc = &(crf[k].pc[0]);
             double fit, sum = 0.0;
+            size_t offset = k * (1 + (wlen + 1) * Abc::kSize);
 
             for (size_t n = block.beg; n < block.end; ++n) {
                 const size_t m = n - block.beg;  // index of training point 'n' in matrices
                 const double* pa = &mpa[m][0];   // predicted pseudocounts
-                const TrainingSequence<Abc>& tseq = trainset[shuffle[n]];
-                size_t i = k * (1 + (wlen + 1) * Abc::kSize);
+                const TrainingSequence<Abc>& tseq = tset[shuffle[n]];
+                size_t i = offset;
 
                 // Precumpute fit
                 fit = 0.0;
                 for (size_t a = 0; a < Abc::kSize; ++a)
                     fit += tseq.y[a] * (pc[a] / pa[a] - 1.0);
+				double mpp_fit = mpp[m][k] * fit;
 
                 // Update gradient of bias weight
-                grad[i++] += mpp[m][k] * fit;
+                grad[i++] += mpp_fit;
 
                 // Update gradient terms of context weights
-                for(size_t j = 0; j < wlen; ++j)
+                for(size_t j = 0; j < wlen; ++j) {
                     if (tseq.x[j] != Abc::kAny)
-                        grad[i + j * Abc::kSize + tseq.x[j]] += mpp[m][k] * fit;
-                i += wlen * Abc::kSize;
+                        grad[i + tseq.x[j]] += mpp_fit;
+                    i += Abc::kSize;
+                }
 
                 // Precompute sum needed for gradient update of pseudocounts weights
                 sum = 0.0;
@@ -290,7 +427,7 @@ struct DerivCrfFunc : public CrfFunc<Abc, TrainingPair> {
 
                 // Update gradient terms of pseudocount weights
                 for (size_t a = 0; a < Abc::kSize; ++a)
-                    grad[i + a] += mpp[m][k] * pc[a] * (tseq.y[a] / pa[a] - sum);
+                    grad[i++] += mpp[m][k] * pc[a] * (tseq.y[a] / pa[a] - sum);
             }
             // Advance progress bar
             if (prog_bar) {
@@ -300,55 +437,75 @@ struct DerivCrfFunc : public CrfFunc<Abc, TrainingPair> {
         }
     }
 
-    void CalculatePriorGradient(const TrainingBlock& block,
-                                const Crf<Abc>& crf,
-                                Vector<double>& grad) const {
-        const double fac_bias = -block.frac / SQR(sigma_bias);
-        // Precalculate factors for position specific sigmas in context window
-        Vector<double> fac_context(crf.wlen());
-        const int c = crf.center();
-        for (size_t j = 0; j < crf.wlen(); ++j) {
-            double tmp = sigma_context * pow(sigma_decay, fabs(static_cast<int>(j) - c));
-            fac_context[j] = -block.frac / SQR(tmp);
-        }
+    // This is the performance critical method in HMC sampling. It accounts for about
+    // 90% of the runtime in profiling.
+    void CalculateLikelihoodGradient(const std::vector<TrainingProfile<Abc> >& tset, 
+                                     const TrainingBlock& block,
+                                     const Crf<Abc>& crf,
+                                     const Matrix<double>& mpp,
+                                     const Matrix<double>& mpa,
+                                     Vector<double>& grad,
+                                     ProgressBar* prog_bar) const {
+        const size_t wlen = crf.wlen();
+        const int nstates = crf.size();
+        Assign(grad,  0.0);  // reset gradient
 
-        Assign(grad, 0.0);  // reset gradient
-        for (size_t k = 0, i = 0; k < crf.size(); ++k) {
-            grad[i++] += fac_bias * crf[k].bias_weight;
-            for(size_t j = 0; j < crf.wlen(); ++j)
+        // We perform parallelization over training points instead of CRF states because
+        // this way we don't have to protect access to the gradient vector.
+#pragma omp parallel for schedule(static)
+        for (int k = 0; k < nstates; ++k) {
+            const double* pc = &(crf[k].pc[0]);
+            double fit, sum = 0.0;
+            size_t offset = k * (1 + (wlen + 1) * Abc::kSize);
+
+            for (size_t n = block.beg; n < block.end; ++n) {
+                const size_t m = n - block.beg;  // index of training point 'n' in matrices
+                const double* pa = &mpa[m][0];   // predicted pseudocounts
+                const TrainingProfile<Abc>& tprof = tset[shuffle[n]];
+            	size_t i = offset;
+
+                // Precumpute fit
+                fit = 0.0;
                 for (size_t a = 0; a < Abc::kSize; ++a)
-                    grad[i++] += fac_context[j] * crf[k].context_weights[j][a];
-            i += Abc::kSize;
-        }
-    }
+                    fit += tprof.y[a] * (pc[a] / pa[a] - 1.0);
+				double mpp_fit = mpp[m][k] * fit;
 
-    double CalculatePrior(const Crf<Abc>& crf) const {
-        const double fac_bias = -0.5 / SQR(sigma_bias);
-        // Precalculate factors for position specific sigmas in context window
-        Vector<double> fac_context(crf.wlen());
-        const int c = crf.center();
-        for (size_t j = 0; j < crf.wlen(); ++j) {
-            double tmp = sigma_context * pow(sigma_decay, fabs(static_cast<int>(j) - c));
-            fac_context[j] = -0.5 / SQR(tmp);
-        }
+                // Update gradient of bias weight
+	            grad[i++] += mpp_fit;
 
-        double prior = 0.0;
-        for (size_t k = 0; k < crf.size(); ++k) {
-            prior += fac_bias * SQR(crf[k].bias_weight);
-            for(size_t j = 0; j < crf.wlen(); ++j)
+                // Update gradient terms of context weights
+                for(size_t j = 0; j < wlen; ++j) {
+                    for (size_t a = 0; a < Abc::kSize; ++a) {
+                        grad[i++] += tprof.x.counts[j][a] * mpp_fit;						
+					}
+                }
+
+                // Precompute sum needed for gradient update of pseudocounts weights
+                sum = 0.0;
                 for (size_t a = 0; a < Abc::kSize; ++a)
-                    prior += fac_context[j] * SQR(crf[k].context_weights[j][a]);
+                    sum += pc[a] * tprof.y[a] / pa[a];
+
+                // Update gradient terms of pseudocount weights
+                for (size_t a = 0; a < Abc::kSize; ++a)
+                    grad[i++] += mpp[m][k] * pc[a] * (tprof.y[a] / pa[a] - sum);
+            }
+            // Advance progress bar
+            if (prog_bar) {
+#pragma omp critical (advance_progress)
+                prog_bar->Advance(block.end - block.beg);
+            }
         }
-        return prior;
+
+
     }
 
     using CrfFunc<Abc, TrainingPair>::trainset;
     using CrfFunc<Abc, TrainingPair>::sm;
     std::vector<int> shuffle;
-    double sigma_context;
-    double sigma_decay;
-    double sigma_bias;
-};
+    const DerivCrfFuncPrior<Abc>& prior;
+}; 
+
+
 
 }  // namespace cs
 
