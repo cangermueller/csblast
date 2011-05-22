@@ -50,7 +50,8 @@ plot.linetype <- rep(opt.linetype, data.n)
 plot.pch <- rep(opt.pch, data.n)
 for (i in 1:data.n) {
   lines(data.x, data.freq[[i]], type="l", lwd=opt.linewidth,
-      lty=plot.linetype[i], col=plot.colors[i], pch=plot.pch) 
+      lty=plot.linetype[i], col=plot.colors[i], pch=plot.pch)
+  abline(v=data.mean[i], lty=3, lwd=opt.linewidth, col=plot.colors[i])
 }
 axis(1, at=data.x, labels=data.x)
 

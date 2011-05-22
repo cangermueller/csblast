@@ -49,6 +49,9 @@ class CSBlast {
   // Sets command line options for PSI-BLAST
   void set_options(const CSBlastOptions& opts) { opts_ = opts; }
 
+  // Sets BLAST call emulation
+  void set_emulate(bool emulate = true) { emulate_ = emulate; }
+
  private:
   // Default path to PSI-BLAST executable
   static const char* kPsiBlastExec;
@@ -72,6 +75,8 @@ class CSBlast {
   CSBlastOptions opts_;
   // Path to PSI-BLAST executable
   std::string exec_path_;
+  // Emulate BLAST call
+  bool emulate_;
 
   DISALLOW_COPY_AND_ASSIGN(CSBlast);
 };  // class CSBlast

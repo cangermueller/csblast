@@ -15,7 +15,7 @@
 #include "count_profile-inl.h"
 #include "exception.h"
 #include "profile-inl.h"
-#include "pseudocounts.h"
+#include "pseudocounts-inl.h"
 #include "log.h"
 #include "shared_ptr.h"
 #include "utils.h"

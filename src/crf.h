@@ -7,10 +7,12 @@
 #include "context_profile-inl.h"
 #include "context_library-inl.h"
 #include "crf_state.h"
-#include "pseudocounts.h"
+#include "pseudocounts-inl.h"
 #include "sequence.h"
 
 namespace cs {
+
+using std::vector;
 
 // Forward declarations
 template<class Abc>
@@ -43,6 +45,13 @@ class Crf {
     // Constructs CRF with a specific init-strategy encapsulated by an
     // initializer.
     Crf(size_t size, size_t wlen, const CrfInit<Abc>& init);
+
+    // Constructs CRF using a context library.
+    Crf(const ContextLibrary<Abc>& lib, double weight_center = 1.6, double weight_decay = 0.85)
+              : wlen_(lib.wlen()), states_(lib.size(), CrfState<Abc>(lib.wlen())) {
+        for (size_t i = 0; i < lib.size(); ++i) 
+            states_[i] = CrfState<Abc>(lib[i], weight_center, weight_decay);                         
+    } 
 
     // Deallocates states in profile vector
     virtual ~Crf() {}
@@ -114,12 +123,16 @@ class SamplingCrfInit : public CrfInit<Abc> {
                     const Pseudocounts<Abc>& pc,
                     const Admix& admix,
                     const SubstitutionMatrix<Abc>& sm,
-                    unsigned int seed = 0)
+                    unsigned int seed = 0, 
+                    double weight_center = 1.6,
+                    double weight_decay = 0.85)
             : trainset_(trainset),
               pc_(pc),
               admix_(admix),
               sm_(sm),
-              seed_(seed) {}
+              seed_(seed),
+              weight_center_(weight_center),
+              weight_decay_(weight_decay) {}
 
     virtual ~SamplingCrfInit() {}
 
@@ -131,6 +144,8 @@ class SamplingCrfInit : public CrfInit<Abc> {
     const Admix& admix_;
     const SubstitutionMatrix<Abc>& sm_;
     const unsigned int seed_;
+    const double weight_center_;
+    const double weight_decay_;
 };  // SamplingCrfInit
 
 
@@ -157,24 +172,33 @@ template<class Abc>
 class LibraryBasedCrfInit : public CrfInit<Abc> {
   public:
     LibraryBasedCrfInit(const ContextLibrary<Abc>& lib,
-                        const SubstitutionMatrix<Abc>& sm)
-            : profiles_(lib.begin(), lib.end()), sm_(sm) {
-        // std::sort(profiles_.begin(), profiles_.end(),
-        //           ContextProfilePriorCompare<Abc>());
-    }
+                        double weight_center = 1.6,
+                        double weight_decay  = 0.85,
+                        unsigned int seed = 0)
+            : profiles_(lib.begin(), lib.end()),
+              weight_center_(weight_center), weight_decay_(weight_decay), seed_(seed) {}
 
     virtual ~LibraryBasedCrfInit() {}
 
     virtual void operator() (Crf<Abc>& crf) const {
-        if (profiles_.size() < crf.size())
-            throw Exception("Too few profiles in context library for CRF initialization!");
-        for (size_t k = 0; k < crf.size(); ++k)
-            crf.SetState(k, CrfState<Abc>(profiles_[k], sm_));
+      if (profiles_.size() < crf.size())
+          throw Exception("Too few profiles in context library for CRF initialization!");
+      vector<size_t> shuffle;
+      for (size_t i = 0; i < profiles_.size(); ++i) shuffle.push_back(i);
+      if (profiles_.size() > crf.size()) {
+        Ran ran(seed_);
+        random_shuffle(shuffle.begin(), shuffle.end(), ran);
+      }
+      for (size_t k = 0; k < crf.size(); ++k)
+        crf.SetState(k, CrfState<Abc>(profiles_[shuffle[k]], weight_center_, weight_decay_));
     }
 
   private:
-    std::vector<ContextProfile<Abc> > profiles_;
-    const SubstitutionMatrix<Abc>& sm_;
+    const vector<ContextProfile<Abc> > profiles_;
+    const SubstitutionMatrix<Abc>* sm_;
+    const double weight_center_;
+    const double weight_decay_;
+    const unsigned int seed_;
 };  // class LibraryBasedCrfInit
 
 

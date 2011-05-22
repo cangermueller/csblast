@@ -6,7 +6,7 @@
 #include "count_profile-inl.h"
 #include "emission.h"
 #include "profile-inl.h"
-#include "pseudocounts.h"
+#include "pseudocounts-inl.h"
 #include "sequence-inl.h"
 #include "crf-inl.h"
 
@@ -20,13 +20,9 @@ class CrfPseudocounts : public Pseudocounts<Abc> {
 
   virtual ~CrfPseudocounts() {}
 
-  virtual void AddToSequence(const Sequence<Abc>& seq,
-                             const Admix& pca,
-                             Profile<Abc>& p) const;
+  virtual void AddToSequence(const Sequence<Abc>& seq, Profile<Abc>& p) const;
 
-  virtual void AddToProfile(const CountProfile<Abc>& cp,
-                            const Admix& pca,
-                            Profile<Abc>& p) const;
+  virtual void AddToProfile(const CountProfile<Abc>& cp, Profile<Abc>& p) const;
 
  private:
   // CRF with context weights and pseudocount emission weights.

@@ -29,25 +29,38 @@ Profile<Abc>::Profile(size_t n, const double &a)
 template <class Abc>
 Profile<Abc>::Profile(size_t n, const double *a)
         : nn(n), v(n>0 ? new double*[n] : NULL) {
-    size_t i,j,nel=n*Abc::kSizeAny;
+    size_t i,nel=n*Abc::kSizeAny;
     if (v) v[0] = nel>0 ? new double[nel] : NULL;
     for (i=1; i< n; i++) v[i] = v[i-1] + Abc::kSizeAny;
-    for (i=0; i< n; i++) for (j=0; j<Abc::kSizeAny; j++) v[i][j] = *a++;
+    memcpy(v[0], a, nel * sizeof(double));
 }
 
 template <class Abc>
 Profile<Abc>::Profile(const Profile &rhs)
         : nn(rhs.nn), v(nn>0 ? new double*[nn] : NULL) {
+    size_t i,nel=nn*Abc::kSizeAny;
+    if (v) v[0] = nel>0 ? new double[nel] : NULL;
+    for (i=1; i< nn; i++) v[i] = v[i-1] + Abc::kSizeAny;
+    memcpy(v[0], rhs[0], nel * sizeof(double));
+}
+
+template <class Abc>
+Profile<Abc>::Profile(const CountProfile<Abc>& cp)
+        : nn(cp.length()), v(nn>0 ? new double*[nn] : NULL) {
     size_t i,j,nel=nn*Abc::kSizeAny;
     if (v) v[0] = nel>0 ? new double[nel] : NULL;
     for (i=1; i< nn; i++) v[i] = v[i-1] + Abc::kSizeAny;
-    for (i=0; i< nn; i++) for (j=0; j<Abc::kSizeAny; j++) v[i][j] = rhs[i][j];
+    for (i=0; i< nn; i++) 
+      for (j=0; j<Abc::kSizeAny; j++) 
+        v[i][j] = cp.neff[i] > 0 ? cp.counts[i][j] / cp.neff[i] : 0.0;
 }
+
 
 template <class Abc>
 Profile<Abc> & Profile<Abc>::operator=(const Profile<Abc> &rhs) {
     if (this != &rhs) {
-        size_t i,j,nel;
+        size_t i,nel;
+        nel = rhs.nn*Abc::kSizeAny;
         if (nn != rhs.nn) {
             if (v != NULL) {
                 delete[] v[0];
@@ -55,11 +68,10 @@ Profile<Abc> & Profile<Abc>::operator=(const Profile<Abc> &rhs) {
             }
             nn=rhs.nn;
             v = nn>0 ? new double*[nn] : NULL;
-            nel = nn*Abc::kSizeAny;
             if (v) v[0] = nel>0 ? new double[nel] : NULL;
             for (i=1; i< nn; i++) v[i] = v[i-1] + Abc::kSizeAny;
         }
-        for (i=0; i< nn; i++) for (j=0; j<Abc::kSizeAny; j++) v[i][j] = rhs[i][j];
+        memcpy(v[0], rhs[0], nel * sizeof(double));
     }
     return *this;
 }
@@ -117,6 +129,12 @@ void Profile<Abc>::Assign(size_t newn, const double& a) {
     for (i=0; i< nn; i++) for (j=0; j<*Abc::kSizeAny; j++) v[i][j] = a;
 }
 
+template<class Abc>
+void Profile<Abc>::Insert(size_t idx, const Profile<Abc>& other) {
+    size_t n = MIN(other.length(), length() - idx);
+    memcpy(v[idx], other[0], n * Abc::kSizeAny * sizeof(double));
+}
+
 template <class Abc>
 Profile<Abc>::~Profile() {
     if (v != NULL) {
@@ -141,7 +159,7 @@ inline void Normalize(Profile<Abc>& p, double val, bool incl_any) {
     for (size_t i = 0; i < p.length(); ++i) {
         double sum = 0.0;
         for (size_t a = 0; a < abc_size; ++a) sum += p[i][a];
-        if (sum != 0.0) {
+        if (fabs(val - sum) > kNormalize && sum != 0.0) {
             double fac = val / sum;
             for (size_t a = 0; a < abc_size; ++a) p[i][a] *= fac;
         }
@@ -156,7 +174,7 @@ inline void Normalize(Profile<Abc>& p, const Vector<double>& norm, bool incl_any
     for (size_t i = 0; i < p.length(); ++i) {
         double sum = 0.0;
         for (size_t a = 0; a < abc_size; ++a) sum += p[i][a];
-        if (sum != 0.0) {
+        if (fabs(norm[i] - sum) > kNormalize && sum != 0.0) {
             double fac = norm[i] / sum;
             for (size_t a = 0; a < abc_size; ++a) p[i][a] *= fac;
         }
@@ -178,6 +196,24 @@ std::ostream& operator<< (std::ostream& out, const Profile<Abc>& p) {
     }
     return out;
 }
+
+// Calculates the entropy of the given profile using logarithm base 2.
+template <class Abc>
+inline double Entropy(const Profile<Abc>& p) {
+  double rv = 0.0;
+  for (size_t i = 0; i < p.length(); ++i) {
+    for (size_t a = 0; a < Abc::kSize; ++a)
+      if (p[i][a] > FLT_MIN) rv -= p[i][a] * log2(p[i][a]);
+  }
+  return rv;
+}
+
+// Calculates the Neff in the given profile.
+template <class Abc>
+inline double Neff(const Profile<Abc>& p) {
+  return p.length() > 0 ? pow(2, Entropy(p) / p.length()) : 0;
+}
+
 
 }  // namespace cs
 

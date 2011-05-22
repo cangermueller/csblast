@@ -8,7 +8,7 @@
 #include "context_profile.h"
 #include "context_library.h"
 #include "emission.h"
-#include "pseudocounts.h"
+#include "pseudocounts-inl.h"
 
 namespace cs {
 

@@ -6,7 +6,7 @@
 #include "profile.h"
 #include "context_profile.h"
 #include "count_profile.h"
-#include "pseudocounts.h"
+#include "pseudocounts-inl.h"
 #include "shared_ptr.h"
 
 namespace cs {

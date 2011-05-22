@@ -115,6 +115,8 @@ void CSBuildApp<Abc>::ParseOptions(GetOpt_pp& ops) {
   ops >> Option('D', "context-data", opts_.modelfile, opts_.modelfile);
   ops >> Option('p', "pc-engine", opts_.pc_engine, opts_.pc_engine);
   ops >> OptionPresent(' ', "global-weights", opts_.global_weights);
+  ops >> Option(' ', "weight-center", opts_.weight_center, opts_.weight_center);
+  ops >> Option(' ', "weight-decay", opts_.weight_decay, opts_.weight_decay);
 
   opts_.Validate();
 
@@ -162,6 +164,10 @@ void CSBuildApp<Abc>::PrintOptions() const {
           "Constant in pseudocount calculation for alignments", opts_.pc_ali);
   fprintf(out_, "  %-30s %s\n", "    --global-weights",
           "Use global instead of position-specific sequence weights (def=off)");
+  fprintf(out_, "  %-30s %s (def=%-.2f)\n", "    --weight-center [0,inf[",
+         "Weight of central profile column for context-specific pseudocounts", opts_.weight_center);
+  fprintf(out_, "  %-30s %s (def=%-.2f)\n", "    --weight-decay [0,inf[",
+          "Parameter for exponential decay of window weights", opts_.weight_decay);
 }
 
 template<class Abc>

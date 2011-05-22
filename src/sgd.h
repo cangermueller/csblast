@@ -6,6 +6,7 @@
 #include "crf-inl.h"
 #include "func.h"
 #include "progress_bar.h"
+#include "crf_pseudocounts-inl.h"
 
 namespace cs {
 
@@ -19,20 +20,30 @@ struct SgdParams {
               max_eta(1.0),
               gamma(0.9),
               toll(1e-3),
+              early_delta(0.01),
               min_epochs(10),
               max_epochs(100),
+              sigma_pc_min(0.01),
+              sigma_pc_max(10.0),
+              sigma_pc_delta(0.001),
+              sigma_pc_epoch(0),
               seed(0) {}
 
-    size_t nblocks;     // number of training blocks
-    double eta;         // learning rate eta for context and pseudocount weights
-    double mu;          // meta learning rate
-    double rho;         // lower bound for multiplier in learning rate adaption
-    double max_eta;     // upper bound for learning rates
-    double gamma;       // parameter governing exponential average of derivatives
-    double toll;        // LL change for convergence
-    int min_epochs;     // minimal number of epochs
-    int max_epochs;     // maximal number of epochs
-    unsigned int seed;  // seed for rng that shuffles training set after each epoch
+    size_t nblocks;            // number of training blocks
+    double eta;                // learning rate eta for context and pseudocount weights
+    double mu;                 // meta learning rate
+    double rho;                // lower bound for multiplier in learning rate adaption
+    double max_eta;            // upper bound for learning rates
+    double gamma;              // parameter governing exponential average of derivatives
+    double toll;               // LL change for convergence
+    double early_delta;        // Deviation from the maximal LL on the validation set for early-stopping
+    int min_epochs;            // minimal number of epochs
+    int max_epochs;            // maximal number of epochs
+    double sigma_pc_min;       // Minimum sigma in prior for pseudocounts weights
+    double sigma_pc_max;       // Maximum sigma in prior for pseudocounts weights
+    double sigma_pc_delta;     // Gradient for activating prior for pseudocounts weights
+    size_t sigma_pc_epoch;    // Epoch for activating prior for pseudocounts weights
+    unsigned int seed;         // seed for rng that shuffles training set after each epoch
 };
 
 
@@ -55,15 +66,10 @@ struct SgdState : public DerivCrfFuncIO<Abc> {
 template<class Abc, class TrainingPair>
 struct Sgd {
     Sgd(const DerivCrfFunc<Abc, TrainingPair>& tf,
-        const SgdParams& params)
+        const SgdParams& p)
             : func(tf),
-              nblocks(params.nblocks),
-              eta(params.eta),
-              mu(params.mu),
-              rho(params.rho),
-              max_eta(params.max_eta),
-              gamma(params.gamma),
-              ran(params.seed) {}
+              params(p),
+              ran(p.seed) {}
 
     // Shuffles training set and then runs one epoche of stochastic gradient descent
     // comprising of 'nblocks' individual gradient descent steps.
@@ -73,12 +79,12 @@ struct Sgd {
         // Shuffle training set before each epoch
         random_shuffle(func.shuffle.begin(), func.shuffle.end(), ran);
 
-        for (size_t b = 0; b < nblocks; ++b) {
+        for (size_t b = 0; b < params.nblocks; ++b) {
             // Save previous gradient of likelihood and prior as combined vector
             for (size_t i = 0; i < s.grad_prev.size(); ++i)
                 s.grad_prev[i] = s.grad_loglike[i] + s.grad_prior[i];
             // Calculate gradient and increment likelihood based on training block 'b'
-            func.df(s, b, nblocks, prog_bar);
+            func.df(s, b, params.nblocks, prog_bar);
             // Udpate averages of partial derivatives
             UpdateAverages(s);
             // Udpate learning rates
@@ -97,14 +103,11 @@ struct Sgd {
             s.crf[k].bias_weight += s.eta[i] * (s.grad_loglike[i] + s.grad_prior[i]);
             ++i;
             for (size_t j = 0; j < s.crf.wlen(); ++j)
-                for (size_t a = 0; a < Abc::kSize; ++a, ++i) {
+                for (size_t a = 0; a < Abc::kSize; ++a, ++i)
                     s.crf[k].context_weights[j][a] += s.eta[i] * (s.grad_loglike[i] +
                                                                   s.grad_prior[i]);
-				}
-		
-            for (size_t a = 0; a < Abc::kSize; ++a, ++i) {
+            for (size_t a = 0; a < Abc::kSize; ++a, ++i) 
                 s.crf[k].pc_weights[a] += s.eta[i] * (s.grad_loglike[i] + s.grad_prior[i]);
-			}
             UpdatePseudocounts(s.crf[k]);
         }
     }
@@ -113,101 +116,147 @@ struct Sgd {
     // gradient and the exponential average vector.
     void UpdateLearningRates(SgdState<Abc>& s) {
         if (s.steps == 0) {
-            Assign(s.eta, eta); // start with constant eta
+            Assign(s.eta, params.eta); // start with constant eta
         } else {
             double tmp = 0.0;
             for (size_t i = 0; i < s.eta.size(); ++i) {
                 tmp = (s.grad_loglike[i] + s.grad_prior[i]) * s.grad_prev[i] / s.avg[i];
-                s.eta[i] = MIN(max_eta, s.eta[i] * MAX(rho, 1.0 + mu * tmp));
+                s.eta[i] = MIN(params.max_eta, s.eta[i] * MAX(params.rho, 1.0 + params.mu * tmp));
             }
         }
     }
 
     // Updates exponential averages with new gradient
     void UpdateAverages(SgdState<Abc>& s) {
-        double tmp = s.steps == 0 ? 1.0 : 1.0 - gamma;
+        double tmp = s.steps == 0 ? 1.0 : 1.0 - params.gamma;
         for (size_t i = 0; i < s.avg.size(); ++i)
-            s.avg[i] = gamma * s.avg[i] + tmp * SQR(s.grad_loglike[i] + s.grad_prior[i]);
+            s.avg[i] = params.gamma * s.avg[i] + tmp * SQR(s.grad_loglike[i] + s.grad_prior[i]);
     }
 
-    DerivCrfFunc<Abc, TrainingPair> func;  // training set function
-    size_t nblocks;     // number of training blocks
-    double eta;         // learning rate eta for context and pseudocount weights
-    double mu;          // meta learning rate
-    double rho;         // lower bound for multiplier in learning rate adaption
-    double max_eta;     // upper bound for learning rates
-    double gamma;       // parameter governing exponential average of derivatives
-    Ran ran;            // RNG for shuffling of training set
+    DerivCrfFunc<Abc, TrainingPair> func; // training set function
+    const SgdParams& params;              // SGD parameter
+    Ran ran;                              // RNG for shuffling of training set
 };
 
 
-template<class Abc, class TrainingPair>
+template<class Abc, class TrainingPairT, class TrainingPairV>
 struct SgdOptimizer {
-    SgdOptimizer(const DerivCrfFunc<Abc, TrainingPair>& tf,
-                 const CrfFunc<Abc, TrainingPair>& vf,
-                 const SgdParams& params)
-            : sgd(tf, params),
+    SgdOptimizer(const DerivCrfFunc<Abc, TrainingPairT>& tf,
+                 const CrfFunc<Abc, TrainingPairV>& vf,
+                 const SgdParams& p,
+                 const vector<CountProfile<Abc> >& ns = vector<CountProfile<Abc> >(),
+                 double npc = 0.0,
+                 std::string cf = "")
+            : sgd(tf, p),
               func(vf),
-              toll(params.toll),
-              min_epochs(params.min_epochs),
-              max_epochs(params.max_epochs) {}
+              params(p),
+              neff_samples(ns),
+              neff_pc(npc),
+              crffile(cf) {}
+
 
     double Optimize(Crf<Abc>& crf, FILE* fout = NULL) {
         scoped_ptr<ProgressBar> prog_bar;
         SgdState<Abc> s(crf);
-        int epoch = 0, nconv = 0;
+        int epoch = 1, best_epoch = 1, nconv = 0, nearly = 0;
         double best_loglike = -DBL_MAX, delta = DBL_MAX, old_loglike, val_loglike;
+        std::string best_line;
 
         if (fout) {
             prog_bar.reset(new ProgressBar(fout, 16));
-            fprintf(fout, "%-5s %-16s  %8s %7s  %9s  %7s\n", "Epoch",
-                    "Gradient descent", "LL-Train", "+/-", "Prior", "LL-Val");
-            fprintf(fout, "%s\n", std::string(60, '-').c_str());
+            fprintf(fout, "%-5s %-16s %8s %8s %8s %8s %8s\n", 
+                "Epoch", "Gradient descent", "LL-Train", "+/-", "Prior", "LL-Val", "Neff");
+            fprintf(fout, "%s\n", std::string(67, '-').c_str());
         }
 
-        while ((nconv < kMaxConvBumps || epoch < min_epochs) && epoch < max_epochs) {
+        // Compute the initial likelihood
+        s.loglike =  sgd.func(s.crf) / sgd.func.trainset.size();
+        while (((nconv < kMaxConvBumps && nearly < kMaxEarlyBumps) || epoch <= params.min_epochs) 
+            && epoch <= params.max_epochs) {
             // Print first part of table row
             if (fout) {
-                fprintf(fout, "%-4d  ", epoch + 1); fflush(fout);
-                prog_bar->Init(sgd.func.trainset.size() * crf.size());
+                fprintf(fout, "%-4d  ", epoch); fflush(fout);
+                prog_bar->Init((sgd.func.trainset.size() + 1) * crf.size());
             }
+            
             // Save last likelihood for calculation of delta
             old_loglike = s.loglike;
+            // Update sigma in prior for pseudocounts weights
+            sgd.func.prior.sigma_pc = params.sigma_pc_min + (params.sigma_pc_max - params.sigma_pc_min) / 
+                (1 + exp((static_cast<int>(params.sigma_pc_epoch - epoch)) / params.sigma_pc_delta));
             // Run on epoche of SGD
             sgd(s, prog_bar.get());
             // Normalize likelihood and prior to user friendly scale
             s.loglike /= sgd.func.trainset.size();
             s.prior /= crf.nweights();
-            delta = s.loglike - old_loglike;
-            // Keep track of how many times we were under convergence threshold
-            if (fabs(delta) > toll) nconv = 0;
-            else ++nconv;
             // Calculate likelihood on validation set
             val_loglike = func(s.crf) / func.trainset.size();
-            if (val_loglike > best_loglike) {
+            // Calculate delta for convergence
+            delta = s.loglike - old_loglike;
+            // Keep track of how many times we were under convergence threshold
+            if (fabs(delta) > params.toll) nconv = 0;
+            else ++nconv;
+            // Keep track of how many times we were under the maximal likelihood
+            if (val_loglike > best_loglike - params.early_delta) nearly = 0;
+            else ++nearly;
+            // Save CRF with the maximum likelihood
+            if (val_loglike >= best_loglike) {
                 best_loglike = val_loglike;
+                best_epoch = epoch;
                 crf = s.crf;
+                if (!crffile.empty()) {
+                    FILE* fout = fopen(crffile.c_str(), "w");
+                    if (!fout) throw Exception("Can't write to file '%s'!", crffile.c_str());
+                    crf.Write(fout);
+                    fclose(fout);
+                }
             }
+            // Compute the Neff for the given samples
+            ConstantAdmix admix(neff_pc);
+            CrfPseudocounts<Abc> pc(s.crf);
+            double neff = 0.0;
+            if (neff_samples.size() > 0) {
+              int nsamples = static_cast<int>(neff_samples.size());
+#pragma omp parallel for schedule(static)
+              for (int i = 0; i < nsamples; ++i) {
+                double n = Neff(pc.AddTo(neff_samples[i], admix));
+#pragma omp atomic
+                neff += n;
+              }
+              neff /= neff_samples.size();
+            }
+            prog_bar->Complete();
+
             // Print second part of table row
             if (fout) {
-                fprintf(fout, " %8.4f %+8.4f %10.4f %8.4f\n",
-                        s.loglike, epoch == 0 ? 0.0 : delta, s.prior, val_loglike);
+                char line[100];
+                sprintf(line, " %8.4f %+8.4f %8.4f %8.4f %8.4f",
+                        s.loglike, delta, s.prior, val_loglike, neff);
+                fprintf(fout, "%s\n", line);
+                if (epoch == best_epoch) best_line = line;
+
             }
 		
             epoch++;
         }
-
+        if (fout && !best_line.empty()) {
+            fprintf(fout, "%s\n", std::string(67, '-').c_str());
+            fprintf(fout, "%-4d %16s %s\n", best_epoch, "", best_line.c_str());
+        }
         return best_loglike;
     }
 	
 
     static const int kMaxConvBumps = 3;
+    static const int kMaxEarlyBumps = 5;
 
-    Sgd<Abc, TrainingPair> sgd;       // SGD algorithm encapsulation
-    CrfFunc<Abc, TrainingPair> func;  // validation set function
-    double toll;                      // LL change for convergence
-    int min_epochs;                   // minimal number of epochs
-    int max_epochs;                   // maximal number of epochs
+    Sgd<Abc, TrainingPairT> sgd;      // SGD algorithm encapsulation
+    CrfFunc<Abc, TrainingPairV> func; // validation set function
+    const SgdParams& params;          // SGD parameters
+    const vector<CountProfile<Abc> >&
+      neff_samples;                   // samples for computing the Neff
+    const double neff_pc;             // pseudocounts admix for computing the Neff
+    std::string crffile;                   // CRF output file for writing the best CRF online
 };
 
 

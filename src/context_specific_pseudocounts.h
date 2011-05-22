@@ -9,7 +9,7 @@
 #include "count_profile-inl.h"
 #include "matrix.h"
 #include "profile-inl.h"
-#include "pseudocounts.h"
+#include "pseudocounts-inl.h"
 #include "repeat_penalizer.h"
 #include "sequence-inl.h"
 

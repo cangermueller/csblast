@@ -25,7 +25,7 @@ class ProgressBar {
   // Advances the progress bar proportional to the amount of work done.
   void Advance(long work = 1) {
     assert_ne(0, todo_);
-    int incr = round(static_cast<double>(done_ + work) / todo_ * steps_) - prog_;
+    int incr = static_cast<int>(round(static_cast<double>(done_ + work) / todo_ * steps_) - prog_);
 
     if (done_ == 0) fputc('[', fout_);
     fputs(std::string(incr, '=').c_str(), fout_);

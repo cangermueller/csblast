@@ -14,18 +14,17 @@ class LrSgdTest : public testing::Test {
 
   static const size_t kWlen = 13;
   static const size_t kKlen = 4;
-  static const size_t kTsetSize = 25000000;
+  static const size_t kTsetSize = 100;
 
   LrSgdTest() : cfg_(kWlen, kKlen) ,file_(new char[100]) {}
   ~LrSgdTest() { delete[] file_; }
 
   virtual void SetUp() {
-		  /*
 	sprintf(file_, "../data/test/lr_sgd/lr_sgd_%zu_%zu_%zu.lr", 
 			kWlen, kKlen, kTsetSize);
     srand(0);
     const size_t c = (kWlen - 1) / 2;
-    for (size_t n = 0; n < kTsetSize - kTsetSize; ++n) {
+    for (size_t n = 0; n < kTsetSize; ++n) {
       // Generate input sequence by sampling from Blosum background freqs
       Sequence<AA> seq(kWlen);
       seq.set_header(strprintf("seq%u", n + 1));
@@ -45,8 +44,9 @@ class LrSgdTest : public testing::Test {
 
       tset_.push_back(TrainingSequence<AA>(seq, col));
     }
-	sparams_.max_epochs = 150;*/
+	sparams_.max_epochs = 150;
   }
+
   LrCfg<AA> cfg_;
   TrainingSet tset_;
   BlosumMatrix sm_;
@@ -54,7 +54,7 @@ class LrSgdTest : public testing::Test {
   char* const file_;
 };
 
-TEST_F(LrSgdTest, DISABLED_Learning) {
+TEST_F(LrSgdTest, Learning) {
   GaussianLrParamsInit<AA> init(0.1);
   LrParams<AA> params(cfg_, init);
   DerivLrFunc<AA, TrainingSequence<AA> > func(cfg_, tset_, sm_);
@@ -66,7 +66,7 @@ TEST_F(LrSgdTest, DISABLED_Learning) {
   fclose(fout);
 }
 
-TEST_F(LrSgdTest, Prediction) {
+TEST_F(LrSgdTest, DISABLED_Prediction) {
 	//FILE* fin = fopen(file_, "r");
 	FILE* fin = fopen("../data/lr/nr30_neff2.5_hhblast_1round_neff6_min2_W13_N5000000_s1.lr", "r");
 	LrParams<AA> params(fin);
@@ -95,8 +95,3 @@ TEST_F(LrSgdTest, Prediction) {
 
 
 }  // namespace cs
-
-int main(int argc, char** argv) {
-	::testing::InitGoogleTest(&argc, argv);
-	return RUN_ALL_TESTS();
-}

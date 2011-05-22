@@ -1,31 +1,27 @@
 #!/bin/bash
 
-#$ -cwd
-#$ -pe pe_mpi 4
-#$ -q mpi
-
 source $HOME/src/cs/.cs.sh
 
-if [ $# -eq 0 ]; then
-    echo "Missing arguments!"
-	echo "neff_model.sh MODEL TRAINSET"
+if [ $# -ne 2 ]; then
+	echo "neff_model.sh MODEL ADMIX"
 	exit 1
 fi
 
 MODEL=$1
-TRAINSET=$2
-DB="$DBS/scop20_1.75_bench"
-ROOT="$CSD/neff"
-OUT_DIR=$ROOT/`basename $MODEL`
+ADMIX=$2
+DB="$DBS/scop20_1.75_opt"
+OUT_DIR=$CSD/neff/`basename $MODEL`
+OUT_FILE=`printf '%s/x%.2f.dat' $OUT_DIR $ADMIX`
 
 mkdir -p $OUT_DIR
+rm -f $OUT_FILE
 for SEQ in $DB/*seq; do
-	neff_seq.sh $SEQ $MODEL >> $OUT_DIR/prediction.dat
+	NEFF=`neff_seq.sh $MODEL $ADMIX $SEQ`
+  if [[ ! $NEFF =~ ^[0-9]+\.[0-9]+$ ]]; then
+    echo $NEFF
+    echo $SEQ
+    exit 0
+  else
+    echo $NEFF >> $OUT_FILE
+  fi
 done
-
-if [ ${#TRAINSET} -gt 0 ]; then
-	trainset_neff -i $TRAINSET -x $OUT_DIR/trainset_x.dat -y $OUT_DIR/trainset_y.dat
-fi
-
-R --vanilla --slave -f $CSS/neff_plot.R --args $OUT_DIR/neff.pdf `basename $MODEL` $OUT_DIR/*.dat
-

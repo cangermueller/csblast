@@ -10,15 +10,10 @@ namespace cs {
 
 
 template<class Abc>
-void LrPseudocounts<Abc>::AddToSequence(
-		const Sequence<Abc>& seq, 
-		const Admix& pca, 
-		Profile<Abc>& p) const {
-
+void LrPseudocounts<Abc>::AddToSequence(const Sequence<Abc>& seq, Profile<Abc>& p) const {
 	assert_eq(seq.length(), p.length());
-  	LOG(INFO) << "Adding lr pseudocounts to sequence ...";
+  LOG(INFO) << "Adding lr pseudocounts to sequence ...";
 	LrKmerBuilder<Abc> b(params_.cfg());
-	double tau = pca(1.0);
 	size_t w = params_.cfg().wlen / 2;
 	for (size_t i = 0; i < seq.length(); i++) {
 		vector<long> kmers = b(seq, i - w);
@@ -29,19 +24,16 @@ void LrPseudocounts<Abc>::AddToSequence(
 			e_sum += e[a];
 		}
 		for (size_t a = 0; a < Abc::kSize; a++)
-			p[i][a] = (1.0 - tau) * (seq[i] == a ? 1.0 : 0.0) + tau * e[a] / e_sum;
+			p[i][a] = e[a] / e_sum;
 	}
 }
 
 template<class Abc>
-void LrPseudocounts<Abc>::AddToProfile(
-		const CountProfile<Abc>& cp, 
-		const Admix& pca, 
-		Profile<Abc>& p) const {
+void LrPseudocounts<Abc>::AddToProfile(const CountProfile<Abc>& cp, Profile<Abc>& p) const {
 
  	assert_eq(cp.counts.length(), p.length());
-  	LOG(INFO) << "Adding lr pseudocounts to profile ...";
-   	Sequence<Abc> seq = ConsensusSeq(cp);
+  LOG(INFO) << "Adding lr pseudocounts to profile ...";
+  Sequence<Abc> seq = ConsensusSeq(cp);
 	LrKmerBuilder<Abc> b(params_.cfg());
 	size_t w = params_.cfg().wlen / 2;
 	for (size_t i = 0; i < cp.counts.length(); i++) {
@@ -52,9 +44,8 @@ void LrPseudocounts<Abc>::AddToProfile(
 			e[a] = exp(params_.sum(kmers, a));
 			e_sum += e[a];
 		}
-		double tau = pca(cp.neff[i]);
 		for (size_t a = 0; a < Abc::kSize; a++)
-			p[i][a] = (1.0 - tau) * cp.counts[i][a] / cp.neff[i] + tau * e[a] / e_sum;
+			p[i][a] = e[a] / e_sum;
 	}
 }
 

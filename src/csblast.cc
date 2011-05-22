@@ -47,11 +47,19 @@ int CSBlast::Run(FILE* fout, BlastHits* hits) {
 
     WriteQuery(queryfile);
     WriteCheckpoint(checkpointfile);
-    FILE* fres = fopen(resultsfile.c_str(),"w+");
-    if (!fres) throw Exception("Unable to open file '%s'!", resultsfile.c_str());
 
     // Run PSI-BLAST with provided options
     string command(ComposeCommandString(queryfile, checkpointfile));
+    if (emulate_) {
+      fprintf(fout, "%s\n", command.c_str());
+      if (!basename.empty()) remove(basename.c_str());
+      if (!queryfile.empty()) remove(queryfile.c_str());
+      if (!checkpointfile.empty()) remove(checkpointfile.c_str());
+      return 0;
+    }
+
+    FILE* fres = fopen(resultsfile.c_str(),"w+");
+    if (!fres) throw Exception("Unable to open file '%s'!", resultsfile.c_str());
     FILE* blast_out = popen(command.c_str(), "r");
     if (!blast_out) throw Exception("Error executing '%s'", command.c_str());
 

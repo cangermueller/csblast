@@ -5,7 +5,7 @@
 
 #include "count_profile.h"
 #include "profile-inl.h"
-#include "pseudocounts.h"
+#include "pseudocounts-inl.h"
 #include "sequence.h"
 #include "substitution_matrix.h"
 
@@ -20,11 +20,11 @@ class MatrixPseudocounts : public Pseudocounts<Abc> {
     virtual ~MatrixPseudocounts() {}
 
   private:
-    virtual void AddToSequence(const Sequence<Abc>& seq, const Admix& pca, Profile<Abc>& p) const;
+    virtual void AddToSequence(const Sequence<Abc>& seq, Profile<Abc>& p) const;
 
-    virtual void AddToProfile(const CountProfile<Abc>& cp, const Admix& pca, Profile<Abc>& p) const;
+    virtual void AddToProfile(const CountProfile<Abc>& cp, Profile<Abc>& p) const;
 
-    virtual void AddToPOHmm(const Admix& pca, POHmm<Abc>* hmm) const;
+    virtual void AddToPOHmm(const POHmm<Abc>* hmm, Profile<Abc>& p) const;
 
     // Substitution matrix with conditional probabilities for pseudocounts.
     const SubstitutionMatrix<Abc>& m_;

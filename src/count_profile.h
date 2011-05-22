@@ -4,9 +4,9 @@
 #define CS_COUNT_PROFILE_H_
 
 #include "alignment.h"
-#include "profile.h"
 #include "sequence.h"
 #include "substitution_matrix-inl.h"
+#include "profile-inl.h"
 
 namespace cs {
 
@@ -51,6 +51,7 @@ struct CountProfile {
     // Returns number of columns.
     size_t length() const { return counts.length(); }
 
+
     std::string name;               // optional name descriptor
     Profile<Abc> counts;            // absolute counts of alphabet letters
     Vector<double> neff;            // effective number of sequences at column i
@@ -76,6 +77,7 @@ std::string ConservationSequence(const CountProfile<Abc>& cp,
 // Prints counts and neff in human-readable format for debugging.
 template<class Abc>
 std::ostream& operator<< (std::ostream& out, const CountProfile<Abc>& cp);
+
 
 }  // namespace cs
 

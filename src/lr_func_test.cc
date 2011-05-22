@@ -193,16 +193,5 @@ TEST(LrFuncTest, DISABLED_LrFuncDerivTest) {
 }		
 
 
-
-
-
-
-
 }  // namespace cs
-
-int main(int argc, char** argv) {
-	::testing::InitGoogleTest(&argc, argv);
-	return RUN_ALL_TESTS();
-}
-
 

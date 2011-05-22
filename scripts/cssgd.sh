@@ -1,41 +1,57 @@
 #!/bin/sh
 
-#$ -cwd
-#$ -pe pe_mpi 8
-#$ -q mpi
+#$ -q normal
+#$ -pe threads.pe 1 
 
 source $HOME/src/cs/.cs.sh
 
 if [ $# -eq 0 ]; then 
     echo "Missing arguments!"
-    echo "cssgd.sh [BIN] TRAINSET"
+    echo "cssgd.sh TRAINSET [STATES] [SB] [SC] [SP] [SPE] [MODEL]"
     exit 1
 fi
 
 BIN=cssgd
-if [ $1 == "DEBUG" ]; then 
-    BIN=${BIN}_debug 
-    shift
-fi
 TRAINSET=$1
-VALSET=$TRAINSET
-K=75       # states
-P=2        # prior
-SC=1.0     # sigma context
-SD=1.0     # sigma decay
-SB=1.0     # sigma bias 
+VALSET=$VSET
+K=${2:-200}       # states
+P=2
+SB=${3:-10.0}     # sigma bias 
+SC=${4:-10.0}     # sigma context
+SD=1.0            # sigma decay
+SP=${5:-10.0}
+SPE=${6:-0}
+SPD=0.001
+MODEL=$7
+ETA=0.001
+BLOCKS=1000
 
 BASENAME=`basename $TRAINSET`
-BASENAME=${BASENAME%\.*}`printf '_K%d_p%d_sb%1.2f_sc%1.2f_sd%1.2f' $K $P $SB $SC $SD`
-if [ $2 ]; then BASENAME=${BASENAME}_$2; fi
-$BIN	  -i $TRAINSET \
-		    -j $VALSET \
-		    -o $CM/$BASENAME.crf \
-        -e 0.0001 \
-        -B 500 \
-        -K $K \
-        -P $P \
-        --sigma-bias $SB \
-        --sigma-context $SC \
-        --sigma-decay $SD \
-		    &> $CM/$BASENAME.log
+BASENAME=${BASENAME%\.*}`printf '_K%d_b%.1f_c%.1f_p%.1f' $K $SB $SC $SP`
+if [ $SPE -gt 0 ]; then
+  SPD=2.0
+  BASENAME=`printf '%s_q%d_r%.1f' $BASENAME $SPE $SPD`
+fi
+
+
+if [ ! -z $MODEL ]; then
+  BASENAME=${BASENAME}_m`basename $MODEL`
+  M="-m $MODEL"
+fi
+
+$BIN  -i $TRAINSET \
+      -j $VALSET \
+		  -o $CSC/$BASENAME.crf \
+      -e $ETA \
+      -B $BLOCKS \
+      -K $K \
+      -P $P \
+      -b $SB \
+      -c $SC \
+      -d $SD \
+      -p $SP \
+      -q $SPE \
+      -Q $SPD \
+      $M \
+      --save \
+		  &> $CSC/$BASENAME.log

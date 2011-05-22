@@ -22,6 +22,7 @@ class Vector {
   inline size_t size() const;
   void Resize(size_t newn);
   void Assign(size_t newn, const T &a);
+  inline void Assign(const T &a);
 
  private:
   size_t nn;
@@ -106,6 +107,11 @@ void Vector<T>::Assign(size_t newn, const T& a) {
     v = nn > 0 ? new T[nn] : NULL;
   }
   for (size_t i=0;i<nn;i++) v[i] = a;
+}
+
+template <class T>
+inline void Vector<T>::Assign(const T& a) {
+  Assign(nn, a);
 }
 
 template <class T>

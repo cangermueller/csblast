@@ -28,28 +28,54 @@ struct CSTrainSetAppOptions {
 
   void Init() {
     dir             = "./";
+    dir_col         = "";
     nsamples        = 1000000;
     wlen            = 0;
     seed            = 0;
     pc_admix        = 0.01;
     pc_ali          = 12.0;
+    neff_col        = 0.0;
     min_neff        = 0;
+    min_neff_col    = 0;
     max_win         = 1000;
     sampling_mode   = 0;
-    pc_profile_mode = 0;
     weight_center   = 1.6;
     weight_decay    = 0.85;
     pc_engine       = "auto";
+    singletons      = 0;
   }
 
   // Validates the parameter settings and throws exception if needed.
   void Validate() {
-    if ((sampling_mode == 1 || sampling_mode == 2) && wlen == 0) throw Exception("No window length given!");
+    if ((sampling_mode == 1 || sampling_mode == 2 || sampling_mode == 3) 
+        && wlen == 0) throw Exception("No window length given!");
     if (outfile.empty()) throw Exception("No output file provided!");
     if (wlen > 0 && !(wlen & 1)) throw Exception("Window length must be odd!");
+    if (pc_admix < 0 || pc_admix > 1.0) throw Exception("Pseudocounts admix invalid!");
+    if (min_neff < 1.0 && min_neff != 0.0) throw Exception("Minimum Neff invalid!");
+    if (min_neff_col < 1.0 && min_neff_col != 0.0) throw Exception("Minimum Neff in pseuocounts column invalid!");
+    if (neff_col < 1.0 && neff_col != 0.0) throw Exception("Neff in pseuocounts column invalid!");
+  }
+
+  void PrintOptions(FILE* out) const {
+    fprintf(out, "  %-20s: %s\n", "-d, --dir", dir.c_str()); 
+    fprintf(out, "  %-20s: %s\n", "-e, --dir-col", dir_col.c_str()); 
+    fprintf(out, "  %-20s: %s\n", "-o, --outfile", outfile.c_str()); 
+    fprintf(out, "  %-20s: %zu\n", "-N, --size", nsamples); 
+    fprintf(out, "  %-20s: %zu\n", "-W, --wlen", wlen); 
+    fprintf(out, "  %-20s: %i\n", "-s, --sampling-mode", sampling_mode); 
+    fprintf(out, "  %-20s: %s\n", "-D, --context-data", modelfile.c_str()); 
+    fprintf(out, "  %-20s: %.2f\n", "-x, --pc-admix", pc_admix); 
+    fprintf(out, "  %-20s: %.1f\n", "-c, --pc-ali", pc_ali); 
+    fprintf(out, "  %-20s: %.1f\n", "-z, --neff-col", neff_col); 
+    fprintf(out, "  %-20s: %.1f\n", "-n, --min-neff", min_neff); 
+    fprintf(out, "  %-20s: %.1f\n", "-m, --min-neff-col",min_neff_col); 
+    fprintf(out, "  %-20s: %i\n", "-r, --seed", seed); 
+    fprintf(out, "  %-20s: %.2f\n", "-g, --singletons", singletons); 
   }
  
   string dir;            // directory with input data to build trainset from
+  string dir_col;         // directory with count profiles for training pseudocounts column
   string ext;            // file extension of input files with counts
   string outfile;        // created training set
   string modelfile;      // input file with context profile library or HMM
@@ -58,13 +84,15 @@ struct CSTrainSetAppOptions {
   size_t wlen;           // length of context window (zero means full-length)
   double pc_admix;       // minimal pseudocount admix for count profiles
   double pc_ali;         // constant in pseudocount calculation for alignments
-  double min_neff;       // minimum Neff of count profiles
+  double neff_col;       // target Neff in training pseudocounts column
+  double min_neff;       // minimum Neff in count profiles
+  double min_neff_col;   // minimum Neff in in training pseudocounts column
   size_t max_win;        // maximal number of windows per protein
   int sampling_mode;     // sample sequence-column pairs from alignments
-  int pc_profile_mode;   // pseudocounts mode for count profiles
   double weight_center;  // weight of central column in multinomial emission
   double weight_decay;   // exponential decay of window weights
   unsigned int seed;     // seed
+  double singletons;     // fraction of singletons in training profiles
 };  // CSTrainSetAppOptions
 
 
@@ -73,7 +101,7 @@ class CSTrainSetApp : public Application {
  protected:
   typedef vector<CountProfile<Abc> > ProfileSet;
   typedef vector<TrainingSequence<Abc> > TrainSeqs;
-  typedef vector<TrainingProfile<Abc> > TrainProfs;
+  typedef vector<TrainingProfile<Abc> > TrainProfiles;
   typedef vector<string> Files;
 
   // Runs the csbuild application.
@@ -91,14 +119,15 @@ class CSTrainSetApp : public Application {
   // Samples profile windows from database of profiles.
   void SampleProfileWindows(ProfileSet& samples);
   // Samples sequence-column pairs from database of profiles and alignments.
-  void SampleTrainingSeqs(TrainSeqs& samples);
+  void SampleTrainingSeqs(TrainSeqs& samples, size_t nsamples_);
+  // Samples profile-column pairs from database of profiles and alignments.
+  void SampleTrainingProfiles(TrainProfiles& samples);
   // Initializes substitution matrix (specialized by alphabet type).
   void InitSubstitutionMatrix();
-  // Create training profiles for the sampled count profiles and write them to the output file.
-  void WriteTrainingProfiles(ProfileSet& samples); 
 
   CSTrainSetAppOptions opts_;
   ProfileSet profiles_;
+  ProfileSet* profiles_col_;
   Files files_;
   scoped_ptr<SubstitutionMatrix<Abc> > sm_;
   scoped_ptr<ContextLibrary<Abc> > lib_;
@@ -111,15 +140,18 @@ template<class Abc>
 void CSTrainSetApp<Abc>::ParseOptions(GetOpt_pp& ops) {
   ops >> Option('o', "outfile", opts_.outfile, opts_.outfile);
   ops >> Option('d', "dir", opts_.dir, opts_.dir);
+  ops >> Option('e', "dir-col", opts_.dir_col, opts_.dir_col);
   ops >> Option('N', "size", opts_.nsamples, opts_.nsamples);
   ops >> Option('W', "wlen", opts_.wlen, opts_.wlen);
   ops >> Option('r', "seed", opts_.seed, opts_.seed);
   ops >> Option('x', "pc-admix", opts_.pc_admix, opts_.pc_admix);
   ops >> Option('c', "pc-ali", opts_.pc_ali, opts_.pc_ali);
-  ops >> Option('n', "neff", opts_.min_neff, opts_.min_neff);
+  ops >> Option('z', "neff-col", opts_.neff_col, opts_.neff_col);
+  ops >> Option('n', "min-neff", opts_.min_neff, opts_.min_neff);
+  ops >> Option('m', "min-neff-col", opts_.min_neff_col, opts_.min_neff_col);
   ops >> Option('D', "context-data", opts_.modelfile, opts_.modelfile);
   ops >> Option('s', "sampling-mode", opts_.sampling_mode, opts_.sampling_mode);
-  ops >> Option('p', "pc-profile", opts_.pc_profile_mode, opts_.pc_profile_mode);
+  ops >> Option('g', "singletons", opts_.singletons, opts_.singletons);
 
   opts_.Validate();
 
@@ -144,37 +176,34 @@ void CSTrainSetApp<Abc>::PrintOptions() const {
           "Output file with sampled training set");
   fprintf(out_, "  %-30s %s (def=%s)\n", "-d, --dir <dir>",
           "Directory with count profiles (and A3M alignments)", opts_.dir.c_str());
+  fprintf(out_, "  %-30s %s (def=%s)\n", "-e, --dir-col <dir>",
+          "Directory with count profiles for training pseudocounts column", opts_.dir_col.c_str());
   fprintf(out_, "  %-30s %s (def=%zu)\n", "-N, --size [0,inf[",
           "Size of training set to sample", opts_.nsamples);
   fprintf(out_, "  %-30s %s\n", "-W, --wlen [0,inf[",
           "Sample profile windows of length W instead of full-length");
-  fprintf(out_, "  %-30s %s (def=%d)\n", "-s, --sampling-mode [0-13]",
+  fprintf(out_, "  %-30s %s (def=%d)\n", "-s, --sampling-mode [0-3]",
           "Sampling mode", opts_.sampling_mode);
   fprintf(out_, "  %-30s %s\n", "", "0: sample count profiles");
   fprintf(out_, "  %-30s %s\n", "", "1: sample training seqs from alignment query");
   fprintf(out_, "  %-30s %s\n", "", "2: sample training seqs from full alignment");
   fprintf(out_, "  %-30s %s\n", "", "3: sample training profiles");
-  fprintf(out_, "  %-30s %s\n", "", "4: sample training profiles and choose the maximum in the central column");
-  fprintf(out_, "  %-30s %s\n", "", "5: sample training profiles like training seqs from alignment query");
-  fprintf(out_, "  %-30s %s\n", "", "6: sample training profiles and sample 1 times a central column value");
-  fprintf(out_, "  %-30s %s\n", "", "7: sample training profiles and sample 2 times a central column value");
-  fprintf(out_, "  %-30s %s\n", "", "8: sample training profiles and sample 5 times a central column value");
-  fprintf(out_, "  %-30s %s\n", "", "9: sample training profiles and sample 10 times a central column value");
-  fprintf(out_, "  %-30s %s\n", "", "10: sample training profiles and sample 15 times a central column value");
-  fprintf(out_, "  %-30s %s\n", "", "11: sample training profiles and use equally distributed counts in the central column");
-  fprintf(out_, "  %-30s %s\n", "", "12: sample training profiles and use blosum scores of the maximal residue for the central column");
-  fprintf(out_, "  %-30s %s\n", "", "13: sample training profiles and use a mixture of blosum scores in the central column");
-
   fprintf(out_, "  %-30s %s\n", "-D, --context-data <file>",
           "Context data for adding cs-pseudocounts instead of subst. matrix PCs");
   fprintf(out_, "  %-30s %s (def=%.2f)\n", "-x, --pc-admix [0,1]",
           "Pseudocount admix to be added to count profiles", opts_.pc_admix);
   fprintf(out_, "  %-30s %s (def=%-.1f)\n", "-c, --pc-ali [0,inf[",
           "Constant in pseudocount calculation for alignments", opts_.pc_ali);
-  fprintf(out_, "  %-30s %s (def=%.1f)\n", "-n, --neff [1,20]",
+  fprintf(out_, "  %-30s %s (def=%.1f)\n", "-z, --neff-col [1,inf[",
+          "Target number of effective sequences in training pseudocounts column", opts_.neff_col);
+  fprintf(out_, "  %-30s %s (def=%.1f)\n", "-n, --min-neff [1,20]",
           "Minimum number of effective sequences in profiles", opts_.min_neff);
+  fprintf(out_, "  %-30s %s (def=%.1f)\n", "-m, --min-neff-col [1,20]",
+          "Minimum number of effective sequences in training pseudocounts column", opts_.min_neff_col);
   fprintf(out_, "  %-30s %s (def=%u)\n", "-r, --seed [0,inf[",
           "Seed for random number generator", opts_.seed);
+  fprintf(out_, "  %-30s %s (def=%.1f)\n", "-g, --singletons [0,1]",
+          "Fraction of singletons in training profiles", opts_.singletons);
 }
 
 template<class Abc>
@@ -189,6 +218,10 @@ void CSTrainSetApp<Dna>::InitSubstitutionMatrix() {
 
 template<class Abc>
 int CSTrainSetApp<Abc>::Run() {
+  fputs("Running cstrainset with following parameters:\n", out_);
+  opts_.PrintOptions(out_);
+  fputs("\n", out_);
+
   InitSubstitutionMatrix();
   Ran ran(opts_.seed);  // random number generator for sorting
 
@@ -240,86 +273,129 @@ int CSTrainSetApp<Abc>::Run() {
     progress.Advance();
 
     // Filter out count profiles with insufficient Neff
-    if (Neff(prof) < opts_.min_neff || prof.counts.length() < opts_.wlen) {
-      it = files_.erase(it);
-      continue;
+    if (Neff(prof) < opts_.min_neff || prof.counts.length() < opts_.wlen ||
+        (opts_.dir_col.length() == 0 && Neff(prof) < opts_.min_neff_col)) {
+        it = files_.erase(it);
+        continue;
     }
 
     // Add profile to pool
     profiles_.push_back(prof);
     it++;
   }
+
+  if (opts_.dir_col.length()) {
+    // Reading count profiles for training pseudocounts column
+    fprintf(out_, "\nReading %zu profiles for training pseudocounts column into memory ...\n", files_.size());
+    ProgressBar progress(out_, 70, files_.size());
+    Files::iterator it = files_.begin();
+    typename vector<CountProfile<Abc> >::iterator profiles_it = profiles_.begin();
+    profiles_col_ = new ProfileSet();
+    while (it != files_.end()) {
+      // Read next count profile
+      progress.Advance();
+      string filename = opts_.dir_col + kDirSep + *it;
+      LOG(ERROR) << *it;
+      FILE* fp = fopen(filename.c_str(), "r");
+      if (!fp) {
+        it = files_.erase(it);
+        profiles_it = profiles_.erase(profiles_it);
+        continue;
+      }
+      CountProfile<Abc> prof(fp);
+      fclose(fp);
+      if (prof.counts.length() != profiles_it->counts.length()) {
+        throw Exception("Size of profile '%s' does not match the size of the corresponding profile!",
+            filename.c_str());
+      }
+      if (Neff(prof) < opts_.min_neff_col || prof.counts.length() < opts_.wlen) {
+        it = files_.erase(it);
+        profiles_it = profiles_.erase(profiles_it);
+        continue;
+      }
+      profiles_col_->push_back(prof);
+      it++;
+      profiles_it++;
+    }
+  } else {
+    profiles_col_ = &profiles_;
+  }
+
   assert_eq(profiles_.size(), files_.size());
-  fprintf(out_, "\n%zu profiles passed filter for minimum Neff=%.2f\n",
-          profiles_.size(), opts_.min_neff);
+  assert_eq(profiles_.size(), profiles_col_->size());
+  fprintf(out_, "\n%zu profiles passed filter\n", profiles_.size());
 
   // Add pseudocounts to count profiles in parallel
-  fputs("Adding pseudocounts to profiles ...\n", out_);
-  CSBlastAdmix admix(opts_.pc_admix, opts_.pc_ali);
-  const int nprof = profiles_.size();
-  progress.Init(nprof);
+  if (opts_.pc_admix > 0.0) {
+    fputs("Adding pseudocounts to profiles ...\n", out_);
+    CSBlastAdmix admix(opts_.pc_admix, opts_.pc_ali);
+    const int nprof = profiles_.size();
+    progress.Init(nprof);
 #pragma omp parallel for schedule(static)
-  for (int n = 0; n < nprof; ++n) {
-    profiles_[n].counts = pc_->AddTo(profiles_[n], admix);
-    Normalize(profiles_[n].counts, profiles_[n].neff);
+    for (int n = 0; n < nprof; ++n) {
+      profiles_[n].counts = pc_->AddTo(profiles_[n], admix);
+      Normalize(profiles_[n].counts, profiles_[n].neff);
 #pragma omp critical (pseudocounts_advance_progress)
-    progress.Advance();
+      progress.Advance();
+    }
+    fputs("\n", out_);
   }
-  fputs("\n", out_);
+
+  if (opts_.dir_col.length() > 0) {
+    // Add pseudocounts to count profiles for training pseuodcounts in parallel
+    fputs("Adding pseudocounts to profiles for training pseudocounts column...\n", out_);
+    CSBlastAdmix admix(opts_.pc_admix, opts_.pc_ali);
+    const int nprof = profiles_col_->size();
+    progress.Init(nprof);
+#pragma omp parallel for schedule(static)
+    for (int n = 0; n < nprof; ++n) {
+      profiles_col_->at(n).counts = pc_->AddTo(profiles_col_->at(n), admix);
+      Normalize(profiles_col_->at(n).counts, profiles_col_->at(n).neff);
+#pragma omp critical (pseudocounts_advance_progress)
+      progress.Advance();
+    }
+    fputs("\n", out_);
+  }
 
   // Now we can call the actual sampling method
-  if (opts_.sampling_mode == 1 || opts_.sampling_mode == 2 || opts_.sampling_mode == 5) {
-    TrainSeqs samples;
-    samples.reserve(opts_.nsamples);
-    SampleTrainingSeqs(samples);
-
-    if (opts_.sampling_mode == 5) {
-        TrainProfs sampleProfiles;
-        for (size_t i = 0; i < samples.size(); ++i) {
-            sampleProfiles.push_back(TrainingProfile<Abc>(CountProfile<Abc>(samples[i].x), samples[i].y));
-        }
-        FILE* fout = fopen(opts_.outfile.c_str(), "w");
-        if (!fout) throw Exception("Can't open outfile '%s'!", opts_.outfile.c_str());
-        fprintf(out_, "Writing %zu training profiles to %s ...", sampleProfiles.size(),
-            opts_.outfile.c_str());
-        fflush(out_);
-        WriteAll(sampleProfiles, fout);
-        fclose(fout);
-
-        fout = fopen((opts_.outfile + "2").c_str(), "w");
-        if (!fout) throw Exception("Can't open outfile '%s'!", opts_.outfile.c_str());
-        fprintf(out_, "Writing %zu training sequences to %s ...", samples.size(),
-            (opts_.outfile + "2").c_str());
-        fflush(out_);
-        WriteAll(samples, fout);
-        fclose(fout);
-    } else {
-        FILE* fout = fopen(opts_.outfile.c_str(), "w");
-        if (!fout) throw Exception("Can't open outfile '%s'!", opts_.outfile.c_str());
-        fprintf(out_, "Writing %zu training sequences to %s ...", samples.size(),
-            opts_.outfile.c_str());
-        fflush(out_);
-        WriteAll(samples, fout);
-        fclose(fout);
-    }
-
-  } else {
+  if (opts_.sampling_mode == 0) {
     ProfileSet samples;
     samples.reserve(opts_.nsamples);
     if (opts_.wlen == 0)
       SampleFullLengthProfiles(samples);
     else
       SampleProfileWindows(samples);
+    FILE* fout = fopen(opts_.outfile.c_str(), "w");
+    if (!fout) throw Exception("Can't open outfile '%s'!", opts_.outfile.c_str());
+    fprintf(out_, "Writing %zu count profiles to %s ...", samples.size(), opts_.outfile.c_str());
+    fflush(out_);
 
-    if (opts_.sampling_mode == 0) {
-      FILE* fout = fopen(opts_.outfile.c_str(), "w");
-      if (!fout) throw Exception("Can't open outfile '%s'!", opts_.outfile.c_str());
-      fprintf(out_, "Writing %zu count profiles to %s ...", samples.size(), opts_.outfile.c_str());
-      fflush(out_);
-    } else {
-      WriteTrainingProfiles(samples);
-    }
+  } else if (opts_.sampling_mode == 1 || opts_.sampling_mode == 2) {
+    TrainSeqs samples;
+    samples.reserve(opts_.nsamples);
+    SampleTrainingSeqs(samples, opts_.nsamples);
+    FILE* fout = fopen(opts_.outfile.c_str(), "w");
+    if (!fout) throw Exception("Can't open outfile '%s'!", opts_.outfile.c_str());
+    fprintf(out_, "Writing %zu training sequences to %s ...", samples.size(),
+        opts_.outfile.c_str());
+    fflush(out_);
+    WriteAll(samples, fout);
+    fclose(fout);
+
+  } else {
+    TrainProfiles samples;
+    samples.reserve(opts_.nsamples);
+    SampleTrainingProfiles(samples);
+    FILE* fout = fopen(opts_.outfile.c_str(), "w");
+    if (!fout) throw Exception("Can't open outfile '%s'!", opts_.outfile.c_str());
+    fprintf(out_, "Writing %zu training profiles to %s ...", samples.size(),
+        opts_.outfile.c_str());
+    fflush(out_);
+    WriteAll(samples, fout);
+    fclose(fout);
+
   }
+  if (opts_.dir_col.length()) delete profiles_col_;
   fputs("\nDone!\n", out_);
 
   return 0;
@@ -365,8 +441,7 @@ void CSTrainSetApp<Abc>::SampleProfileWindows(ProfileSet& samples) {
   fprintf(out_, "Sampling %zu profiles with W=%zu out of %zu windows ...\n",
           nsamples, opts_.wlen, nall);
 
-  // Iterate over input data and build counts profiles either by full-length
-  // conversion or by sampling of context windows
+  // Iterate over input data and build counts profiles
   ProgressBar progress(out_, 70, nsamples);
 #pragma omp parallel for schedule(static)
   for (size_t n = 0; n < profiles_.size(); ++n) {
@@ -408,7 +483,7 @@ void CSTrainSetApp<Abc>::SampleProfileWindows(ProfileSet& samples) {
 }
 
 template<class Abc>
-void CSTrainSetApp<Abc>::SampleTrainingSeqs(TrainSeqs& samples) {
+void CSTrainSetApp<Abc>::SampleTrainingSeqs(TrainSeqs& samples, size_t nsamples_) {
   const size_t center = (opts_.wlen - 1) / 2;
   Vector<double> neff(profiles_.size(), 0.0);
   double nall = 0.0;  // total pool size
@@ -419,17 +494,18 @@ void CSTrainSetApp<Abc>::SampleTrainingSeqs(TrainSeqs& samples) {
     const size_t ncol = cp.counts.length() - opts_.wlen + 1;
     size_t unmasked = 0;
     for (size_t i = 0; i < ncol; ++i) {
-      if (cp.neff[i + center] >= opts_.min_neff) {
+      if (cp.neff[i + center] >= opts_.min_neff &&
+          profiles_col_->at(n).neff[i + center] >= opts_.min_neff_col) {
         unmasked++;
-        neff[n] += opts_.sampling_mode == 1 ? 1.0 : cp.neff[i + center];
+        neff[n] += opts_.sampling_mode == 2 ? cp.neff[i + center] : 1.0;
       }
     }
     neff[n] /= unmasked;  // average Neff in columns that passed Neff-filter
     nall += MIN(opts_.max_win, unmasked) * neff[n];
   }
-  const size_t nsamples = MIN(opts_.nsamples, floor(nall));
+  const size_t nsamples = MIN(nsamples_, floor(nall));
 
-  fprintf(out_, "Sampling %zu seq-col pairs out of %.0f virtual windows ...\n",
+  fprintf(out_, "Sampling %zu training sequences out of %.0f windows ...\n",
           nsamples, nall);
 
   // Iterate over profile-alignment pairs and sample from each pair a certain
@@ -441,26 +517,15 @@ void CSTrainSetApp<Abc>::SampleTrainingSeqs(TrainSeqs& samples) {
     if (samples.size() < nsamples) {
       Ran ran(opts_.seed + n);
       const CountProfile<Abc>& cp = profiles_[n];
-
-      // Read-in the underlying A3M alignment of profile 'n'
-      string file = opts_.dir + kDirSep + GetBasename(files_[n], false) + ".a3m";
-      FILE* fp = fopen(file.c_str(), "r");
-      if (!fp) throw Exception("Can't open alignment file '%s'!", file.c_str());
-      Alignment<Abc> ali(fp, A3M_ALIGNMENT);
-      fclose(fp);
-      size_t nmatch = ali.nmatch();
-
-      // Check if number of match columns in profile and alignment are correct
-      if (nmatch != cp.counts.length())
-        throw Exception("Number of matchcols in ali '%s' should be %zu but is %zu!",
-                        GetBasename(file).c_str(), cp.counts.length(), nmatch);
+      size_t nmatch = cp.counts.length();
 
       // Filter out columns that don't suffice Neff-filter, same as above
       size_t ncol = nmatch - opts_.wlen + 1;
       Vector<bool> masked(ncol, false);
       int unmasked = 0;
       for (size_t i = 0; i < ncol; ++i) {
-        if (cp.neff[i + center] < opts_.min_neff) masked[i] = true;
+        if (cp.neff[i + center] < opts_.min_neff ||
+            profiles_col_->at(n).neff[i + center] < opts_.min_neff_col) masked[i] = true;
         else unmasked++;
       }
 
@@ -469,6 +534,8 @@ void CSTrainSetApp<Abc>::SampleTrainingSeqs(TrainSeqs& samples) {
       double todo = MIN(1.0, nprf / MAX(0.0, nall)) * (nsamples - samples.size());
       double left = unmasked * neff[n];
 
+      if (todo == 0.0 || samples.size() >= nsamples) continue;
+
       LOG(ERROR) <<
         strprintf("n=%4zu neff=%4.1f L=%4zu nall=%9.1f nprf=%9.1f todo=%5.1f",
                   n, neff[n], nmatch, nall, nprf, todo);
@@ -476,12 +543,25 @@ void CSTrainSetApp<Abc>::SampleTrainingSeqs(TrainSeqs& samples) {
 #pragma omp atomic
       nall -= nprf;
 
+      // Read-in the underlying A3M alignment of profile 'n'
+      string file = opts_.dir + kDirSep + GetBasename(files_[n], false) + ".a3m";
+      FILE* fp = fopen(file.c_str(), "r");
+      if (!fp) throw Exception("Can't open alignment file '%s'!", file.c_str());
+      Alignment<Abc> ali(fp, A3M_ALIGNMENT);
+      fclose(fp);
+
+      // Check if number of match columns in profile and alignment are correct
+      if (nmatch != ali.nmatch())
+        throw Exception("Number of matchcols in ali '%s' should be %zu but is %zu!",
+                        GetBasename(file).c_str(), cp.counts.length(), nmatch);
+
       // Try out sequences within each column in random order
       vector<int> shuffle;
-      if (opts_.sampling_mode == 1) {
-        shuffle.push_back(0);
+      if (opts_.sampling_mode == 2) {
+        for (size_t k = 0; k < ali.nseqs(); ++k) 
+          shuffle.push_back(k);
       } else {
-        for (size_t k = 0; k < ali.nseqs(); ++k) shuffle.push_back(k);
+        shuffle.push_back(0);
       }
 
       while (todo > 0.0 && samples.size() < nsamples && unmasked > 0) {
@@ -489,7 +569,7 @@ void CSTrainSetApp<Abc>::SampleTrainingSeqs(TrainSeqs& samples) {
         size_t m = ran(ncol);
         if (masked[m]) continue;
         // Determine sampling work load for column 'm' (10% more as safe-guard)
-        double neff_center = opts_.sampling_mode == 1 ? 1.0 : cp.neff[m + center];
+        double neff_center = opts_.sampling_mode == 2 ? cp.neff[m + center] : 1.0;
         double s = 1.1 * todo * (neff_center / left);
         LOG(ERROR) << strprintf("todo=%5.2f  neff[%2zu]=%4.1f  left=%9.1f  s=%4.2f",
                                 todo, m, cp.neff[m + center], left, s);
@@ -529,13 +609,20 @@ void CSTrainSetApp<Abc>::SampleTrainingSeqs(TrainSeqs& samples) {
 
             if (valid && samples.size() < nsamples) {
               assert(j == opts_.wlen);
-              ProfileColumn<Abc> col(&cp.counts[m + center][0]);
+              // Cut training pseudocounts column from profiles_col_
+              CountProfile<Abc> cp_col = CountProfile<Abc>(profiles_col_->at(n), m, opts_.wlen);
+              if (opts_.neff_col != 0.0 && Neff(cp_col) < opts_.neff_col) {
+                cp_col.counts = pc_->AddTo(cp_col, opts_.neff_col);
+                Assign(cp_col.neff, Neff(cp_col.counts));
+                Normalize(cp_col.counts, cp_col.neff);
+              }
+              ProfileColumn<Abc> col(cp_col.counts[center]);
 #pragma omp critical (add_sample)
               {
                 samples.push_back(TrainingSequence<Abc>(seq, col));
                 progress.Advance();
               }
-              s -= 1;     // reduce work load for this column by onea
+              s -= 1;     // reduce work load for this column by one
               todo -= 1;  // reduce work load for whole profile by one
               LOG(ERROR) << strprintf("SUCCESS!  todo=%5.2f  s=%4.2f seqs=%zu",
                                       todo, s, shuffle.size() - l);
@@ -547,7 +634,7 @@ void CSTrainSetApp<Abc>::SampleTrainingSeqs(TrainSeqs& samples) {
     }
   }
 
-  fputs("\nShuffling sampled sequence-column pairs ...", out_);
+  fputs("\nShuffling sampled training sequences ...", out_);
   fflush(out_);
   Ran ran(opts_.seed);
   random_shuffle(samples.begin(), samples.end(), ran);
@@ -555,109 +642,88 @@ void CSTrainSetApp<Abc>::SampleTrainingSeqs(TrainSeqs& samples) {
 }
 
 template<class Abc>
-void CSTrainSetApp<Abc>::WriteTrainingProfiles(ProfileSet& samples) {
-    FILE* fout = fopen(opts_.outfile.c_str(), "w");
-    if (!fout) throw Exception("Can't open outfile '%s'!", opts_.outfile.c_str());
-    fprintf(out_, "Writing %zu profiles to %s ...", samples.size(), opts_.outfile.c_str());
-    fflush(out_);
+void CSTrainSetApp<Abc>::SampleTrainingProfiles(TrainProfiles& samples) {
 
-    TrainProfs train_profs;
-    for (size_t i = 0; i < samples.size(); ++i) {
-      ProfileColumn<Abc> pc;
-      memcpy(&pc[0], samples[i].counts[(samples[i].length() - 1) / 2], Abc::kSizeAny * sizeof(double));
-      train_profs.push_back(TrainingProfile<Abc>(samples[i], pc));
+  size_t nsingletons = static_cast<size_t>(opts_.singletons * opts_.nsamples);
+  if (nsingletons > 0) {
+    // Sample singletons
+    TrainSeqs samples_seqs;
+    samples_seqs.reserve(nsingletons);
+    SampleTrainingSeqs(samples_seqs, nsingletons);
+    nsingletons = samples_seqs.size();
+    for (size_t n = 0; n < nsingletons; ++n)
+      samples.push_back(TrainingProfile<Abc>(samples_seqs[n].x, samples_seqs[n].y));
+  }
+
+  // Precompute total pool size taking masking into account
+  const size_t center = (opts_.wlen - 1) / 2;
+  size_t nall = 0;
+  for (size_t n = 0; n < profiles_.size(); ++n) {
+    const CountProfile<Abc>& cp = profiles_[n];
+    const size_t ncol =  cp.counts.length() - opts_.wlen + 1;
+    size_t unmasked = 0;
+    for (size_t i = 0; i < ncol; ++i) {
+      if (cp.neff[i + center] >= opts_.min_neff &&
+          profiles_col_->at(n).neff[i + center] >= opts_.min_neff_col) unmasked++;
     }
+    nall += MIN(opts_.max_win, unmasked);
+  }
+  const size_t nsamples = MIN(opts_.nsamples - nsingletons, nall);
 
-    if (opts_.sampling_mode == 4) { // Maximum
-      for (size_t i = 0; i < train_profs.size(); ++i) {
-        size_t c = (train_profs[i].x.length() - 1) / 2;
-        double* pc = train_profs[i].x.counts[c];
-        size_t max = 0;
-        for (size_t a = 1; a < Abc::kSizeAny; ++a)
-          max = pc[a] > pc[max] ? a : max;
-        for (size_t a = 0; a < Abc::kSizeAny; ++a)
-          if (a != max)
-            pc[a] = 0;
-        train_profs[i].x.neff[c] = pc[max];
-      }
+  fprintf(out_, "Sampling %zu training profiles with W=%zu out of %zu windows ...\n",
+          nsamples, opts_.wlen, nall);
 
-    } else if (opts_.sampling_mode >= 6 && opts_.sampling_mode <= 10) { // Sampling
-      size_t n;
-      switch (opts_.sampling_mode) {
-        case 6: n = 1; break;
-        case 7: n = 2; break;
-        case 8: n = 5; break;
-        case 9: n = 10; break;
-        case 10: n = 15; break;
-      }
-                
-      Ran ran(opts_.seed);
-      for (size_t i = 0; i < train_profs.size(); ++i) {
-        size_t c = (train_profs[i].x.length() - 1) / 2;
-        double* pc = train_profs[i].x.counts[c];
-        double& neff = train_profs[i].x.neff[c];
-        ProfileColumn<Abc> y = train_profs[i].y;
-        memset(pc, 0, Abc::kSize * sizeof(double));
-        for (size_t j = 0; j < n; ++j) {
-          double rand = static_cast<double>(ran(INT_MAX)) / INT_MAX * neff;
-          double sum = 0;
-          for (size_t a = 0; a < Abc::kSize; ++a) {
-            sum += y[a];
-            if (sum >= rand) {
-              pc[a] = y[a];
-              break;
-            }
-          }
-        }
-        neff = 0;
-        for (size_t a = 0; a < Abc::kSize; ++a) {
-          neff += pc[a];
-        }
-      }
+  // Iterate over input data and build training profiles
+  ProgressBar progress(out_, 70, nsamples);
+#pragma omp parallel for schedule(static)
+  for (size_t n = 0; n < profiles_.size(); ++n) {
+    if (samples.size() < nsamples + nsingletons) {
+      Ran ran(opts_.seed + n + 1);
+      const CountProfile<Abc>& cp = profiles_[n];
+      LOG(ERROR) << "sampling " << files_[n];
 
-    } else if (opts_.sampling_mode == 11) { // Equal distribution
-      for (size_t i = 0; i < train_profs.size(); ++i) {
-        size_t c = (train_profs[i].x.length() - 1) / 2;
-        double* pc = train_profs[i].x.counts[c];
-        double& neff = train_profs[i].x.neff[c];
-        double counts = neff / Abc::kSize;
-        for (size_t a = 0; a < Abc::kSize; ++a) {
-          pc[a] = counts;
-        }
+      vector<int> shuffle;
+      for (size_t i = 0; i <= cp.counts.length() - opts_.wlen; ++i) {
+        if (cp.neff[i + center] >= opts_.min_neff &&
+            profiles_col_->at(n).neff[i + center] >= opts_.min_neff_col) shuffle.push_back(i);
       }
+      random_shuffle(shuffle.begin(), shuffle.end(), ran);
 
-    } else if (opts_.sampling_mode == 12) { // Blosum scores of the maximum
-      for (size_t i = 0; i < train_profs.size(); ++i) {
-        size_t c = (train_profs[i].x.length() - 1) / 2;
-        double* pc = train_profs[i].x.counts[c];
-        size_t max = 0;
-        for (size_t a = 1; a < Abc::kSize; ++a) {
-          if (pc[a] > pc[max]) {
-            max = a;
-          }
-        }
-        for (size_t a = 0; a < Abc::kSize; ++a) {
-          pc[a] = sm_->r(max, a);
-        }
-      }
+      // Proportional number of training windows we need to sample
+      size_t w = MIN(opts_.max_win, shuffle.size());
+      size_t s = ceil(nsamples * (static_cast<double>(w) / nall));
+      LOG(ERROR) << strprintf("n=%zu nsamples=%zu  nall=%zu  len=%zu  s=%zu",
+                              n, nsamples, nall, cp.counts.length(), s);
+      s = MIN(s, shuffle.size());
 
-    } else if (opts_.sampling_mode == 13) { // Mixed Blosum scores
-      for (size_t i = 0; i < train_profs.size(); ++i) {
-        size_t c = (train_profs[i].x.length() - 1) / 2;
-        double* pc = train_profs[i].x.counts[c];
-        ProfileColumn<Abc> y = train_profs[i].y;
-        for (size_t a = 0; a < Abc::kSize; ++a) {
-          pc[a] = 0;
-          for (size_t b = 0; b < Abc::kSize; ++b) {
-            pc[a] += y[b] * sm_->r(a, b);
-          }
+      // Copy profile windows into 'samples' vector
+      for (size_t i = 0; i < s; ++i) {
+        CountProfile<Abc> p(cp, shuffle[i], opts_.wlen);
+        // Cut training pseudocounts column from profiles_col_
+        CountProfile<Abc> cp_col = CountProfile<Abc>(profiles_col_->at(n), shuffle[i], opts_.wlen);
+        if (opts_.neff_col != 0.0 && Neff(cp_col) < opts_.neff_col) {
+          cp_col.counts = pc_->AddTo(cp_col, opts_.neff_col);
+          Assign(cp_col.neff, Neff(cp_col.counts));
+          Normalize(cp_col.counts, cp_col.neff);
+        }
+        ProfileColumn<Abc> col(cp_col.counts[center]);
+#pragma omp critical (add_sample)
+        if (samples.size() < nsamples + nsingletons) {
+          Normalize(p.counts, p.neff);
+          samples.push_back(TrainingProfile<Abc>(p, col));
+          progress.Advance();
         }
       }
     }
+  }
 
-    WriteAll(train_profs, fout);
-    fclose(fout);
+  fputs("\nShuffling sampled training profiles ...", out_);
+  fflush(out_);
+  Ran ran(opts_.seed);
+  random_shuffle(samples.begin(), samples.end(), ran);
+  fputs("\n", out_);
 }
+
 
 }  // namespace cs
 

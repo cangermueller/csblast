@@ -113,6 +113,7 @@ void CountProfile<Abc>::Write(FILE* fout) const {
   fputs("//\n", fout);
 }
 
+
 // Returns the average Neff in given count profile.
 template<class Abc>
 inline double Neff(const CountProfile<Abc>& cp) {

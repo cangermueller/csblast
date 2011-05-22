@@ -6,7 +6,7 @@
 #include "count_profile-inl.h"
 #include "emission.h"
 #include "profile-inl.h"
-#include "pseudocounts.h"
+#include "pseudocounts-inl.h"
 #include "sequence-inl.h"
 #include "context_library-inl.h"
 
@@ -21,27 +21,11 @@ class LibraryPseudocounts : public Pseudocounts<Abc> {
 
     virtual ~LibraryPseudocounts() {}
 
-    virtual void AddToSequence(const Sequence<Abc>& seq, const Admix& pca, Profile<Abc>& p) const;
+    virtual void AddToSequence(const Sequence<Abc>& seq, Profile<Abc>& p) const;
 
-    virtual void AddToProfile(const CountProfile<Abc>& cp, const Admix& pca, Profile<Abc>& p) const;
+    virtual void AddToProfile(const CountProfile<Abc>& cp, Profile<Abc>& p) const;
 
-    virtual void AddToPOHmm(const Admix& pca, POHmm<Abc>* hmm) const;
-
-    //  // Rescales context specific profile with repeat penalty heuristic
-    //  virtual void RescaleProfile(const matrix<double>& pp,
-    //                              Profile<Abc>* profile) const;
-
-    //  // Calculates posterior probability matrix for an input sequence.
-    //  virtual void CalculatePosteriorsForSequence(const Sequence<Abc>& seq,
-    //                                              matrix<double>* m) const;
-
-    //  // Calculates posterior probability matrix for an input profile.
-    //  virtual void CalculatePosteriorsForProfile(const CountProfile<Abc>& profile,
-    //                                             matrix<double>* m) const;
-
-    // protected:
-    //  // Needed to access names in templatized base class
-    //  using ContextSpecificPseudocounts<Abc>::penalizer_;
+    virtual void AddToPOHmm(const POHmm<Abc>* hmm, Profile<Abc>& p) const;
 
   private:
     // Profile library with context profiles.

@@ -7,7 +7,7 @@
 
 #include "abstract_state_matrix-inl.h"
 #include "context_profile-inl.h"
-#include "pseudocounts.h"
+#include "pseudocounts-inl.h"
 
 namespace cs {
 

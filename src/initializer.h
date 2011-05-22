@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "profile_library.h"
-#include "pseudocounts.h"
+#include "pseudocounts-inl.h"
 
 namespace cs {
 

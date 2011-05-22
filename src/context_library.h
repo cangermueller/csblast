@@ -6,7 +6,7 @@
 #include "abstract_state_matrix.h"
 #include "co_emission.h"
 #include "context_profile.h"
-#include "pseudocounts.h"
+#include "pseudocounts-inl.h"
 
 namespace cs {
 

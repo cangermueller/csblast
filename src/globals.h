@@ -13,6 +13,7 @@ const int GB = KB * KB * KB;
 const int kMaxInt = 0x7FFFFFFF;
 const int kMinInt = -kMaxInt - 1;
 const int kScale  = 1000; // scaling factor for serialization
+const double kNormalize = 1e-6;
 
 const int kCharSize     = sizeof(char);
 const int kShortSize    = sizeof(short);

@@ -14,86 +14,74 @@ LibraryPseudocounts<Abc>::LibraryPseudocounts(const ContextLibrary<Abc>& lib,
         : lib_(lib), emission_(lib.wlen(), weight_center, weight_decay) {}
 
 template<class Abc>
-void LibraryPseudocounts<Abc>::AddToSequence(const Sequence<Abc>& seq,
-                                             const Admix& pca,
-                                             Profile<Abc>& p) const {
+void LibraryPseudocounts<Abc>::AddToSequence(const Sequence<Abc>& seq, Profile<Abc>& p) const {
     assert_eq(seq.length(), p.length());
     LOG(INFO) << "Adding library pseudocounts to sequence ...";
 
-    const double tau = pca(1.0);  // effective number of sequences is one
     Matrix<double> pp(seq.length(), lib_.size(), 0.0);  // posterior probabilities
-    Vector<double> pc(Abc::kSize);                      // pseudocount vector P(a|X_i)
+    int len = static_cast<int>(seq.length());
 
     // Calculate and add pseudocounts for each sequence window X_i separately
-    for (size_t i = 0; i < seq.length(); ++i) {
+#pragma omp parallel for schedule(static)
+    for (int i = 0; i < len; ++i) {
         double* ppi = &pp[i][0];
         // Calculate posterior probability of state k given sequence window around 'i'
         CalculatePosteriorProbs(lib_, emission_, seq, i, ppi);
         // Calculate pseudocount vector P(a|X_i)
-        Assign(pc, 0.0);
-        for (size_t k = 0; k < lib_.size(); ++k)
+        double* pc = p[i];
+        for (size_t a = 0; a < Abc::kSize; ++a) pc[a] = 0.0;
+        for (size_t k = 0; k < lib_.size(); ++k) {
             for(size_t a = 0; a < Abc::kSize; ++a)
                 pc[a] += ppi[k] * lib_[k].pc[a];
-        // FIXME: is normalization here really needed?
+        }
         Normalize(&pc[0], Abc::kSize);
-        // Add pseudocounts to sequence
-        for(size_t a = 0; a < Abc::kSize; ++a)
-            p[i][a] = (1.0 - tau) * (seq[i] == a ? 1.0 : 0.0) + tau * pc[a];
     }
 }
 
 template<class Abc>
-void LibraryPseudocounts<Abc>::AddToProfile(const CountProfile<Abc>& cp,
-                                            const Admix& pca,
-                                            Profile<Abc>& p) const {
+void LibraryPseudocounts<Abc>::AddToProfile(const CountProfile<Abc>& cp, Profile<Abc>& p) const {
     assert_eq(cp.counts.length(), p.length());
     LOG(INFO) << "Adding library pseudocounts to profile ...";
 
     Matrix<double> pp(cp.counts.length(), lib_.size(), 0.0);  // posterior probs
-    Vector<double> pc(Abc::kSize, 0.0);                       // pseudocount vector P(a|X_i)
+    int len = static_cast<int>(cp.length());
 
     // Calculate and add pseudocounts for each sequence window X_i separately
-    for (size_t i = 0; i < cp.counts.length(); ++i) {
+#pragma omp parallel for schedule(static)
+    for (int i = 0; i < len; ++i) {
         double* ppi = &pp[i][0];
         // Calculate posterior probability of state k given sequence window around 'i'
         CalculatePosteriorProbs(lib_, emission_, cp, i, ppi);
         // Calculate pseudocount vector P(a|X_i)
-        Assign(pc, 0.0);
-        for (size_t k = 0; k < lib_.size(); ++k)
+        double* pc = p[i];
+        for (size_t a = 0; a < Abc::kSize; ++a) pc[a] = 0.0;
+        for (size_t k = 0; k < lib_.size(); ++k) {
             for(size_t a = 0; a < Abc::kSize; ++a)
                 pc[a] += ppi[k] * lib_[k].pc[a];
-        // FIXME: is normalization here really needed?
+        }
         Normalize(&pc[0], Abc::kSize);
-        // Add pseudocounts to profile
-        double tau = pca(cp.neff[i]);
-        for(size_t a = 0; a < Abc::kSize; ++a)
-            p[i][a] = (1.0 - tau) * cp.counts[i][a] / cp.neff[i] + tau * pc[a];
     }
 }
 
 template<class Abc>
-void LibraryPseudocounts<Abc>::AddToPOHmm(const Admix& pca, POHmm<Abc>* hmm) const {
+void LibraryPseudocounts<Abc>::AddToPOHmm(const POHmm<Abc>* hmm, Profile<Abc>& p) const {
     LOG(INFO) << "Adding library pseudocounts to profile ...";
-    typedef typename POHmm<Abc>::Graph Graph;
-    Graph& g = hmm->g;
-    Vector<double> pp(lib_.size(), 0.0);  // posterior probs
-    Vector<double> pc(Abc::kSize, 0.0);   // pseudocount vector P(a|X_i)
+    Matrix<double> pp(hmm->size(), lib_.size(), 0.0);  // posterior probs
+    int len = static_cast<int>(hmm->size());
 
-    for (size_t i = 1; i <= hmm->size(); ++i) {
-        double* ppi = &pp[0];
+#pragma omp parallel for schedule(static)
+    for (int i = 1; i <= len; ++i) {
+        double* ppi = pp[i - 1];
         // Calculate posterior probability of state k given sequence window around 'i'
         CalculatePosteriorProbs(lib_, emission_, hmm->g, i, ppi);
         // Calculate pseudocount vector P(a|X_i)
-        Assign(pc, 0.0);
-        for (size_t k = 0; k < lib_.size(); ++k)
+        double* pc = p[i - 1];
+        for (size_t a = 0; a < Abc::kSize; ++a) pc[a] = 0.0;
+        for (size_t k = 0; k < lib_.size(); ++k) {
             for(size_t a = 0; a < Abc::kSize; ++a)
                 pc[a] += ppi[k] * lib_[k].pc[a];
-        // FIXME: is normalization here really needed?
+        }
         Normalize(&pc[0], Abc::kSize);
-        // Add pseudocounts to probs vector in PO-HMM vertex
-        double tau = pca(g[i].neff);
-        for(size_t a = 0; a < Abc::kSize; ++a)
-            g[i].probs[a] = (1.0 - tau) * g[i].counts[a] / g[i].neff + tau * pc[a];
     }
 }
 

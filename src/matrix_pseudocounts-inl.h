@@ -14,46 +14,42 @@
 namespace cs {
 
 template<class Abc>
-void MatrixPseudocounts<Abc>::AddToSequence(const Sequence<Abc>& seq, const Admix& pca, Profile<Abc>& p) const {
+void MatrixPseudocounts<Abc>::AddToSequence(const Sequence<Abc>& seq, Profile<Abc>& p) const {
     assert_eq(seq.length(), p.length());
     LOG(DEBUG) << "Adding substitution matrix pseudocounts to sequence ...";
 
-    double tau = pca(1.0);
     for(size_t i = 0; i < p.length(); ++i) {
-        for(size_t a = 0; a < Abc::kSize; ++a) {
-            p[i][a] = (1.0 - tau) * (seq[i] == a ? 1.0 : 0.0) + tau * m_.r(a, seq[i]);
-        }
+        for(size_t a = 0; a < Abc::kSize; ++a)
+            p[i][a] = m_.r(a, seq[i]);
     }
 }
 
 template<class Abc>
-void MatrixPseudocounts<Abc>::AddToProfile(const CountProfile<Abc>& cp, const Admix& pca, Profile<Abc>& p) const {
+void MatrixPseudocounts<Abc>::AddToProfile(const CountProfile<Abc>& cp, Profile<Abc>& p) const {
     assert_eq(cp.counts.length(), p.length());
     LOG(DEBUG) << "Adding substitution matrix pseudocounts to profile ...";
 
     for(size_t i = 0; i < cp.counts.length(); ++i) {
-        double tau = pca(cp.neff[i]);
         for(size_t a = 0; a < Abc::kSize; ++a) {
             double sum = 0.0;
             for(size_t b = 0; b < Abc::kSize; ++b)
                 sum += m_.r(a,b) * cp.counts[i][b] / cp.neff[i];
-            p[i][a] = (1.0 - tau) * cp.counts[i][a] / cp.neff[i] + tau * sum;
+            p[i][a] = sum;
         }
     }
 }
 
 template<class Abc>
-void MatrixPseudocounts<Abc>::AddToPOHmm(const Admix& pca, POHmm<Abc>* hmm) const {
+void MatrixPseudocounts<Abc>::AddToPOHmm(const POHmm<Abc>* hmm, Profile<Abc>& p) const {
     typedef typename POHmm<Abc>::Graph Graph;
-    Graph& g = hmm->g;
+    const Graph& g = hmm->g;
 
     for (size_t i = 1; i <= hmm->size(); ++i) {
-        double tau = pca(g[i].neff);
         for(size_t a = 0; a < Abc::kSize; ++a) {
             double sum = 0.0;
             for(size_t b = 0; b < Abc::kSize; ++b)
                 sum += m_.r(a,b) * g[i].counts[b] / g[i].neff;
-            g[i].probs[a] = (1.0 - tau) * g[i].counts[a] / g[i].neff + tau * sum;
+            p[i - 1][a] = sum;
         }
     }
 }

@@ -13,7 +13,7 @@
 #include "count_profile-inl.h"
 #include "profile-inl.h"
 #include "profile_library-inl.h"
-#include "pseudocounts.h"
+#include "pseudocounts-inl.h"
 #include "shared_ptr.h"
 #include "utils.h"
 

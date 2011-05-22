@@ -16,7 +16,7 @@
 #include "hmm-inl.h"
 #include "profile-inl.h"
 #include "profile_library-inl.h"
-#include "pseudocounts.h"
+#include "pseudocounts-inl.h"
 #include "profile.h"
 #include "shared_ptr.h"
 #include "substitution_matrix.h"

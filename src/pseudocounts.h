@@ -31,88 +31,56 @@ class Pseudocounts {
     Pseudocounts() {}
     virtual ~Pseudocounts() {}
 
-    // Adds pseudocounts to sequence and returns normalized profile.
-    Profile<Abc> AddTo(const Sequence<Abc>& seq, const Admix& pca) const {
-        Profile<Abc> rv(seq.length());
-        AddToSequence(seq, pca, rv);
-        for(size_t i = 0; i < seq.length(); ++i) rv[i][Abc::kAny] = 0.0;
-        Normalize(rv, 1.0);
-        return rv;
-    }
+    // Adds pseudocounts to sequence using admixture and returns normalized profile.
+    Profile<Abc> AddTo(const Sequence<Abc>& seq, const Admix& admix) const;
 
-    // Adds pseudocounts to sequence and returns normalized profile.
-    Profile<Abc> AddTo(const CountProfile<Abc>& cp, const Admix& pca) const {
-        Profile<Abc> rv(cp.counts.length());
-        AddToProfile(cp, pca, rv);
-        for(size_t i = 0; i < cp.counts.length(); ++i) rv[i][Abc::kAny] = 0.0;
-        Normalize(rv, 1.0);
-        return rv;
-    }
+    // Adds pseudocounts to sequence using target Neff and returns normalized profile.
+    Profile<Abc> AddTo(const Sequence<Abc>& seq, double neff, double delta = kNeffDelta) const;
 
-    // Adds pseudocounts to counts in PO-HMM vertices and stores results in 'probs' vector.
-    void AddTo(const Admix& pca, POHmm<Abc>* hmm) const {
-        AddToPOHmm(pca, hmm);
-        for (size_t i = 1; i <= hmm->size(); ++i) {
-            hmm->g[i].probs[Abc::kAny] = 1.0;
-            Normalize(hmm->g[i].probs, 1.0);
-        }
-    }
+    // Adds pseudocounts to sequence using admixture and returns normalized profile.
+    Profile<Abc> AddTo(const CountProfile<Abc>& cp, const Admix& admix) const;
+
+    // Adds pseudocounts to sequence using target Neff and returns normalized profile.
+    Profile<Abc> AddTo(const CountProfile<Abc>& cp, double neff, double delta = kNeffDelta) const;
+
+    // Adds pseudocounts to counts in PO-HMM vertices using admixture and stores results in 'probs' vector.
+    void AddTo(POHmm<Abc>* hmm, const Admix& admix) const;
+
+    // Adds pseudocounts to counts in PO-HMM vertices using target Neff and stores results in 'probs' vector.
+    void AddTo(POHmm<Abc>* hmm, double neff, double delta = kNeffDelta) const;
 
   private:
     // Adds pseudocounts to sequence and stores resulting frequencies in given
     // profile.
-    virtual void AddToSequence(const Sequence<Abc>& seq, const Admix& pca, Profile<Abc>& p) const = 0;
+    virtual void AddToSequence(const Sequence<Abc>& seq, Profile<Abc>& p) const = 0;
 
     // Adds pseudocounts to alignment derived profile.
-    virtual void AddToProfile(const CountProfile<Abc>& cp, const Admix& pca, Profile<Abc>& p) const = 0;
+    virtual void AddToProfile(const CountProfile<Abc>& cp, Profile<Abc>& p) const = 0;
 
     // Adds pseudocounts to alignment derived profile.
-    virtual void AddToPOHmm(const Admix& /* pca */, POHmm<Abc>* /* hmm */) const { }
+    virtual void AddToPOHmm(const POHmm<Abc>* hhm, Profile<Abc>& p) const {};
+
+    // Mixes profile 'p' and sequence 'q': tau * p + (1 - tau) * q
+    void Mix(Profile<Abc>& p, const Sequence<Abc>& q, double tau) const;
+
+    // Mixes profile 'p' and profile 'q': tau * p + (1 - tau) * q
+    void Mix(Profile<Abc>& p, const Profile<Abc>& q, double tau) const;
+
+    // Adjusts the Neff in 'p' to 'neff_' by admixing q and returns tau
+    template<class T>
+    double AdjustNeff(Profile<Abc>& p, const T& q, double neff, double delta) const;
+
+
+
+  private:
+    static const double kNormalize   = 1e-5; // Normalization threshold
+    static const double kNeffTauInit = 0.8;  // Initial pseudocounts admixture for adjusting the Neff
+    static const double kNeffTauMin  = 0.0;  // Minimal pseudocounts admixture for adjusting the Neff
+    static const double kNeffTauMax  = 1.0;  // Maximal pseudocounts admixture for adjusting the Neff
+    static const double kNeffDelta   = 0.1;  // Tolerance for adjusting the Neff
 
     DISALLOW_COPY_AND_ASSIGN(Pseudocounts);
 };  // Pseudocounts
-
-
-// Calculates constant pseudocount admixture independent of number of effective
-// sequences.
-struct ConstantAdmix : public Admix {
-    ConstantAdmix(double a) : pca(a) {}
-    virtual ~ConstantAdmix() {}
-
-    virtual double operator() (double) const { return pca; }
-
-    const double pca;
-};
-
-// Calculates divergence-dependent pseudocount admixture as in CS-BLAST
-// tau = A * (B + 1) / (B + Neff)
-struct CSBlastAdmix : public Admix {
-    CSBlastAdmix(double a, double b) : pca(a), pcb(b) {}
-    virtual ~CSBlastAdmix() {}
-
-    virtual double operator() (double neff) const {
-        return MIN(1.0, pca * (pcb + 1.0) / (pcb + neff));
-    }
-
-    double pca, pcb;
-};
-
-// Calculates divergence-dependent pseudocount admixture as in HHsearch
-struct HHsearchAdmix : public Admix {
-    HHsearchAdmix(double a, double b, double c = 1.0) : pca(a), pcb(b), pcc(c) {}
-    virtual ~HHsearchAdmix() {}
-
-    virtual double operator() (double neff) const {
-        double rv = 0.0;
-        if (pcc == 1.0)
-            rv = MIN(1.0, pca / (1.0 + neff / pcb));
-        else
-            rv = MIN(1.0, pca / (1.0 + pow(neff / pcb, pcc)));
-        return rv;
-    }
-
-    double pca, pcb, pcc;
-};
 
 }  // namespace cs
 

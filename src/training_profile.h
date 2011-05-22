@@ -5,6 +5,7 @@
 
 #include "count_profile-inl.h"
 #include "profile_column.h"
+#include "training_sequence.h"
 
 namespace cs {
 
@@ -18,6 +19,9 @@ struct TrainingProfile {
   TrainingProfile(const CountProfile<Abc>& cp, const ProfileColumn<Abc>& col)
     : x(cp), y(col) {}
 
+  TrainingProfile(const TrainingSequence<Abc>& tseq)
+    : x(CountProfile<Abc>(tseq.x)), y(tseq.y) {}
+
   TrainingProfile(FILE* fin) {
     if (!StreamStartsWith(fin, "TrainingProfile"))
       throw Exception("Stream does not start with class id 'TrainingProfile'!");
@@ -30,9 +34,12 @@ struct TrainingProfile {
     x.Read(fin);
   }
 
+  static bool IsTrainingProfile(FILE* fin) {
+    return StreamStartsWith(fin, "TrainingProfile");
+  }
+
   void Write(FILE* fout) const {
     fputs("TrainingProfile\n", fout);
-    x.Write(fout);
     for (size_t a = 0; a < Abc::kSizeAny; ++a)
       fprintf(fout, "\t%c", Abc::kIntToChar[a]);
     fputs("\nPC", fout);
@@ -43,7 +50,6 @@ struct TrainingProfile {
     }
     fputs("\n", fout);
     x.Write(fout);
-    fputs("//\n", fout);
   }
 
   CountProfile<Abc> x;   // input count profile window representing context

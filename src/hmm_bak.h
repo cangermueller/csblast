@@ -16,7 +16,7 @@
 #include "chain_graph-inl.h"
 #include "profile.h"
 #include "profile_library.h"
-#include "pseudocounts.h"
+#include "pseudocounts-inl.h"
 #include "shared_ptr.h"
 #include "sparse_matrix.h"
 

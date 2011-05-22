@@ -246,6 +246,7 @@ class POHmm {
 template<class Abc>
 std::ostream& operator<< (std::ostream& out, const POHmm<Abc>& hmm);
 
+
 }  // namespace cs
 
 #endif  // CS_PO_HMM_H_

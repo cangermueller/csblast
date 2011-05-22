@@ -7,7 +7,7 @@
 #include "profile-inl.h"
 #include "sequence-inl.h"
 #include "lr_func-inl.h"
-#include "pseudocounts.h"
+#include "pseudocounts-inl.h"
 #include "blosum_matrix.h"
 #include "tamura_nei_matrix.h"
 
@@ -21,15 +21,9 @@ class LrPseudocounts : public Pseudocounts<Abc> {
 
   virtual ~LrPseudocounts() {}
 
-  virtual void AddToSequence(
-		  const Sequence<Abc>& seq, 
-		  const Admix& pca, 
-		  Profile<Abc>& p) const;
+  virtual void AddToSequence(const Sequence<Abc>& seq, Profile<Abc>& p) const;
 
-  virtual void AddToProfile(
-		  const CountProfile<Abc>& cp,
-		  const Admix& pca, 
-		  Profile<Abc>& p) const;
+  virtual void AddToProfile(const CountProfile<Abc>& cp, Profile<Abc>& p) const;
 
  private:
   Sequence<Abc> ConsensusSeq(const CountProfile<Abc>& cp) const;

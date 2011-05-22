@@ -1,29 +1,43 @@
 #!/bin/bash
 
-#$ -cwd
-#$ -pe pe_mpi 8
-#$ -q mpi
+#$ -q normal
+#$ -pe threads.pe 2
 
 source $HOME/src/cs/.cs.sh
 
-DB="$DBS/nr20_sampled_clusters_hhblits_3rounds"
-NEFF=8
-WLEN=13
-N=2000000
-S=4
+DB=$DBS/nr20_neff3.0_1hhblits
+#DB=$DBS/nr20_3hhblits
+#DB=$DBS/scop20_1.75_opt
+#DB=$DBS/uniprot20_neff2.5_neff2.5-6.5
+#DB_PC=$DBS/uniprot20_neff2.5_neff7.0-12.0
+#BASENAME="uniprot20_neff2.5-6.0_7.0-12.0"
 
-HOME=/cluster/user/christof
+S=3
+N=3000000
+G=0.5
+NEFF_X=6.0
+NEFF_Y=6.0
+NEFF_Z=0.0
+WLEN=13
+
+if [ ! -z $DB_PC ]; then E="-e $DB_PC"; fi
+if [ $N -lt 1000000 ]; then
+    N_SHORT=$N
+else 
+    N_SHORT=`printf '%d.%dM' ${N:0:1} ${N:1:1}`
+fi
 for DB_ in $DB; do
-	for NEFF_ in $NEFF; do
-		for WLEN_ in $WLEN; do
-            for S_ in $S; do
-                OUT_BASE=`printf '%s/%s_n%i_W%i_N%iM_s%i' $CST $(basename $DB_) $NEFF_ $WLEN ${N:0:2} $S`
-                EXT="tpr"
-                if [ $S_ == 1 ]; then EXT="tsq"; fi
-                cstrainset -d $DB_ -o $OUT_BASE.$EXT -s $S_ --neff $NEFF_ --wlen $WLEN_ --size $N &> $OUT_BASE.log
-            done
-		done
-	done
+  BASENAME=${BASENAME:-`basename $DB_`}
+  for S_ in $S; do
+    if [ $S_ -eq 1 ]; then
+      OUT_BASE=`printf '%s/%s_s%i_n%.1f_z%.1f_W%i_N%s' $CST $BASENAME $S_ $NEFF_X $NEFF_Z $WLEN $N_SHORT`
+      EXT="tsq"
+    else 
+      OUT_BASE=`printf '%s/%s_s%i_g%.2f_n%.1f_m%.1f_z%.1f_W%i_N%s' $CST $BASENAME $S_ $G $NEFF_X $NEFF_Y $NEFF_Z $WLEN $N_SHORT`
+      EXT="tpr"
+    fi
+    cstrainset -d $DB_ $E -o $OUT_BASE.$EXT -g $G -n $NEFF_X -m $NEFF_Y -z $NEFF_Z -W $WLEN -N $N -s $S_ -x 0.0 -D $K4000 &> $OUT_BASE.log
+  done
 done
 
 

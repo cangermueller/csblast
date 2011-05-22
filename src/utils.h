@@ -58,7 +58,7 @@ inline float SIGN(const double &a, const float &b) {
 
 template<class T>
 inline int SIGN(const T& a) {
-    return a >= 0 ? 1 : -1;
+    return (a > 0) ? 1 : ((a < 0) ? -1 : 0);
 }
 
 template<class T>
@@ -261,7 +261,7 @@ inline float Normalize(float* array, size_t length,
                        const float* default_array = NULL) {
   float sum = 0.0f;
   for (size_t i = 0; i < length; ++i) sum += array[i];
-  if (sum != 0.0f) {
+  if (fabs(1.0 - sum) > kNormalize) {
     float fac = 1.0f / sum;
     for (size_t i = 0; i < length; ++i) array[i] *= fac;
   } else if (default_array) {
@@ -276,7 +276,7 @@ inline double Normalize(double* array, size_t length,
                         const double* default_array = NULL) {
   double sum = 0.0;
   for (size_t i = 0; i < length; ++i) sum += array[i];
-  if (sum != 0.0) {
+  if (fabs(1.0 - sum) > kNormalize) {
     double fac = 1.0 / sum;
     for (size_t i = 0; i < length; ++i) array[i] *= fac;
   } else if (default_array) {
@@ -441,9 +441,19 @@ inline std::string GetDirname(const std::string& s) {
   return "";
 }
 
+// Concatenates pathname and a filename.
+inline const char* PathCat(const std::string& path, const std::string& file) {
+  std::string cat = path;
+  if (*(cat.rbegin()) != kDirSep) cat += kDirSep;
+  cat += file;
+  return cat.c_str();
+}
+
 // Reads all files in 'path' and pushes them onto given vector.
 void GetAllFiles(const std::string& path, std::vector<std::string>& files,
                  const std::string& ext = "");
+
+
 
 }  // namespace cs
 

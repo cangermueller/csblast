@@ -7,6 +7,59 @@
 
 namespace cs {
 
+// Default construction
+template<class Abc>
+ContextProfile<Abc>::ContextProfile() 
+  : prior(0.0), probs(), pc() {};
+
+// Constructs a context profile with 'len' columns
+template<class Abc>
+ContextProfile<Abc>::ContextProfile(size_t len) 
+  : prior(0.0), is_log(false), probs(len), pc() {
+    assert(len & 1);
+}
+
+template<class Abc>
+ContextProfile<Abc>::ContextProfile(FILE* fin) { Read(fin); }
+
+// Constructs a context profile from normalized values in given profile 'p'.
+template<class Abc>
+ContextProfile<Abc>::ContextProfile(const Profile<Abc>& p)
+  : prior(0.0),
+    is_log(false),
+    probs(p),
+    pc(&p[(p.length() - 1) / 2][0]) {
+
+    assert(p.length() & 1);
+    for (size_t i = 0; i < probs.length(); ++i)
+        probs[i][Abc::kAny] = 1.0;
+    pc[Abc::kAny] = 1.0;
+
+    Normalize(probs, 1.0);
+    Normalize(pc, 1.0);
+}
+
+// Construct a context profile by copying subprofile starting at index 'start'
+// for 'len' columns and normalizing afterwards.
+template<class Abc>
+ContextProfile<Abc>::ContextProfile(const Profile<Abc>& p, size_t start, size_t len)
+  : prior(0.0),
+    is_log(false),
+    probs(len),
+    pc(&p[start + (len - 1) / 2][0]) {
+
+    assert(len & 1);
+    for (size_t i = 0; i < len; ++i) {
+        for (size_t a = 0; a < Abc::kSize; ++a)
+          probs[i][a] = p[start + i][a];
+        probs[i][Abc::kAny] = 1.0;
+    }
+    pc[Abc::kAny] = 1.0;
+
+    Normalize(probs, 1.0);
+    Normalize(pc, 1.0);
+}
+
 template<class Abc>
 void ContextProfile<Abc>::Read(FILE* fin) {
     // Parse and check header information
@@ -104,6 +157,15 @@ void ContextProfile<Abc>::Write(FILE* fout) const {
     }
     fputs("//\n", fout);
 }
+
+// Returns number of columns.
+template <class Abc>
+size_t ContextProfile<Abc>::length() const { return probs.length(); }
+
+
+
+
+
 
 // Prints context profile probabilities in human-readable format for debugging.
 template<class Abc>

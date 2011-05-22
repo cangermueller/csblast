@@ -28,12 +28,15 @@ struct CSHmcAppOptions {
     pc_init        = 0.5f;
     gauss_init     = 0.0;
     theta          = 1.0;
+    prior          = 1;
     sigma_context  = 0.2;
     sigma_decay    = 0.9;
     sigma_bias     = 1.0;
     no_sort        = false;
     hmc.sgd_epochs = 0;
     sgd.eta        = 0.001;
+    weight_center  = 1.6;
+    weight_decay   = 0.85;
   }
 
   // Validates the parameter settings and throws exception if needed.
@@ -67,6 +70,8 @@ struct CSHmcAppOptions {
   double gauss_init;
   // Probability for trying a replica exchange
   double theta;
+  // Prior to be used for calculating the likelihood
+  size_t prior;
   // Sigma of gaussian prior for context weights
   double sigma_context;
   // Parameter governing exponential decay of context sigma
@@ -79,6 +84,10 @@ struct CSHmcAppOptions {
   HmcParams hmc;
   // Parameter wrapper for SGD in basin hopping
   SgdParams sgd;
+  // Weight of central column in multinomial emission
+  double weight_center;
+  // Exponential decay of window weights
+  double weight_decay;
 };  // CSHmcAppOptions
 
 
@@ -138,6 +147,7 @@ void CSHmcApp<Abc>::ParseOptions(GetOpt_pp& ops) {
   ops >> Option('r', "seed", opts_.hmc.seed, opts_.hmc.seed);
   ops >> Option('g', "gauss-init", opts_.gauss_init, opts_.gauss_init);
   ops >> Option('E', "epochs", opts_.hmc.sgd_epochs, opts_.hmc.sgd_epochs);
+  ops >> Option('P', "prior", opts_.prior, opts_.prior);
   ops >> Option('c', "sigma-context", opts_.sigma_context, opts_.sigma_context);
   ops >> Option('b', "sigma-bias", opts_.sigma_bias, opts_.sigma_bias);
   ops >> Option('d', "sigma-decay", opts_.sigma_decay, opts_.sigma_decay);
@@ -148,6 +158,8 @@ void CSHmcApp<Abc>::ParseOptions(GetOpt_pp& ops) {
   ops >> Option('S', "sgd-blocks", opts_.sgd.nblocks, opts_.sgd.nblocks);
   ops >> Option(' ', "eps-up", opts_.hmc.epsilon_up, opts_.hmc.epsilon_up);
   ops >> Option(' ', "eps-down", opts_.hmc.epsilon_down, opts_.hmc.epsilon_down);
+  ops >> Option(' ', "weight-center", opts_.weight_center, opts_.weight_center);
+  ops >> Option(' ', "weight-decay", opts_.weight_decay, opts_.weight_decay);
   ops >> OptionPresent(' ', "no-sort", opts_.no_sort);
 
   opts_.Validate();
@@ -198,6 +210,10 @@ void CSHmcApp<Abc>::PrintOptions() const {
 #endif
   fprintf(out_, "  %-30s %s (def=%zu)\n", "-S, --sgd-blocks [1,N]",
           "Number of training blocks in SGD", opts_.sgd.nblocks);
+  fprintf(out_, "  %-30s %s (def=%zu)\n", "-P, --prior [1-2]",
+          "Prior of the likelihood function", opts_.prior);
+  fprintf(out_, "  %-30s %s\n", "", "1: gaussian prior");
+  fprintf(out_, "  %-30s %s\n", "", "2: lasso prior");
   fprintf(out_, "  %-30s %s (def=%.2f)\n", "-c, --sigma-context [0,inf]",
           "Std. deviation sigma in gaussian prior of context weights",
           opts_.sigma_context);
@@ -219,6 +235,11 @@ void CSHmcApp<Abc>::PrintOptions() const {
    fprintf(out_, "  %-30s %s\n", "    --no-sort",
           "Use conventional instead of strictly sorted parallel tempering");
 #endif
+  fprintf(out_, "  %-30s %s (def=%-.2f)\n", "    --weight-center [0,inf[",
+         "Weight of central profile column in CRF initialization", opts_.weight_center);
+  fprintf(out_, "  %-30s %s (def=%-.2f)\n", "    --weight-decay [0,inf[",
+          "Parameter for exponential decay of window weights in CRF initialization", 
+          opts_.weight_decay);
 }
 
 template<class Abc>
@@ -272,10 +293,8 @@ void CSHmcApp<Abc>::InitCrf() {
     if (!fin) throw Exception("Unable to read file '%s'!", opts_.modelfile.c_str());
     ContextLibrary<Abc> lib(fin);
     fclose(fin);
-
-    TransformToLin(lib);
-    LibraryBasedCrfInit<Abc> init(lib, *sm_);
     size_t nstates = opts_.nstates == 0 ? lib.size() : opts_.nstates;
+    LibraryBasedCrfInit<Abc> init(lib, opts_.weight_center, opts_.weight_decay);
     crf_.reset(new Crf<Abc>(nstates, lib.wlen(), init));
 
   } else if (opts_.gauss_init != 0.0) {  // init by sampling weights from gaussian
@@ -287,8 +306,8 @@ void CSHmcApp<Abc>::InitCrf() {
     fputs("Initializing CRF by sampling from training set ...\n", out_);
     MatrixPseudocounts<Abc> pc(*sm_);
     ConstantAdmix admix(opts_.pc_init);
-    SamplingCrfInit<Abc, TrainingSequence<Abc> > init(trainset_, pc, admix,
-                                                      *sm_, opts_.hmc.seed);
+    SamplingCrfInit<Abc, TrainingSequence<Abc> > init(trainset_, pc, admix, *sm_, opts_.hmc.seed, 
+        opts_.weight_center, opts_.weight_decay);
     crf_.reset(new Crf<Abc>(opts_.nstates, trainset_.front().x.length(), init));
   }
 }
@@ -332,9 +351,19 @@ int CSHmcApp<Abc>::Run() {
   FILE* fout = opts_.outfile.empty() ? out_ : fopen(opts_.outfile.c_str(), "w");
 
   // Setup function objects on training set and validation set
+  scoped_ptr<DerivCrfFuncPrior<Abc> > prior;
+  if (opts_.prior == 1)
+      prior.reset(new GaussianDerivCrfFuncPrior<Abc>(
+          opts_.sigma_context, 
+          opts_.sigma_decay, 
+          opts_.sigma_bias));
+  else
+      prior.reset(new LassoDerivCrfFuncPrior<Abc>(
+          opts_.sigma_context, 
+          opts_.sigma_decay, 
+          opts_.sigma_bias));
   Likelihood loglike(valset_, *sm_);
-  Gradient gradient(trainset_, *sm_, opts_.sigma_context,
-                    opts_.sigma_decay, opts_.sigma_bias);
+  Gradient gradient(trainset_, *sm_, *prior);
   HmcState<Abc> state(*crf_);
 
   // Setup leapfrog proposal functor

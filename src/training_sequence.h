@@ -27,6 +27,10 @@ struct TrainingSequence {
     x.Read(fin);
   }
 
+  static bool IsTrainingSequence(FILE* fin) {
+    return StreamStartsWith(fin, "TrainingSequence");
+  }
+
   void Write(FILE* fout) const {
     fputs("TrainingSequence\n", fout);
     for (size_t a = 0; a < Abc::kSizeAny; ++a)

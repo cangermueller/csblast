@@ -20,7 +20,6 @@ TEST(LrPseudocountsTest, LrPseudocountsTest) {
 			sum += p[i][a];
 		ASSERT_NEAR(sum, 1.0, 0.00001);
 	}
-	std::cout << p << "\n";
 }		
 
 
@@ -30,10 +29,3 @@ TEST(LrPseudocountsTest, LrPseudocountsTest) {
 
 
 }  // namespace cs
-
-int main(int argc, char** argv) {
-	::testing::InitGoogleTest(&argc, argv);
-	return RUN_ALL_TESTS();
-}
-
-
