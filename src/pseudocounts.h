@@ -35,19 +35,21 @@ class Pseudocounts {
     Profile<Abc> AddTo(const Sequence<Abc>& seq, const Admix& admix) const;
 
     // Adds pseudocounts to sequence using target Neff and returns normalized profile.
-    Profile<Abc> AddTo(const Sequence<Abc>& seq, double neff, double delta = kNeffDelta) const;
+    Profile<Abc> AddTo(const Sequence<Abc>& seq, double neff, 
+        double delta = kNeffDelta, double &tau = NeffTauDump) const;
 
     // Adds pseudocounts to sequence using admixture and returns normalized profile.
     Profile<Abc> AddTo(const CountProfile<Abc>& cp, const Admix& admix) const;
 
     // Adds pseudocounts to sequence using target Neff and returns normalized profile.
-    Profile<Abc> AddTo(const CountProfile<Abc>& cp, double neff, double delta = kNeffDelta) const;
+    Profile<Abc> AddTo(const CountProfile<Abc>& cp, double neff, 
+        double delta = kNeffDelta, double &tau = NeffTauDump) const;
 
     // Adds pseudocounts to counts in PO-HMM vertices using admixture and stores results in 'probs' vector.
     void AddTo(POHmm<Abc>* hmm, const Admix& admix) const;
 
     // Adds pseudocounts to counts in PO-HMM vertices using target Neff and stores results in 'probs' vector.
-    void AddTo(POHmm<Abc>* hmm, double neff, double delta = kNeffDelta) const;
+    void AddTo(POHmm<Abc>* hmm, double neff, double delta = kNeffDelta, double &tau = NeffTauDump) const;
 
   private:
     // Adds pseudocounts to sequence and stores resulting frequencies in given
@@ -71,12 +73,14 @@ class Pseudocounts {
     double AdjustNeff(Profile<Abc>& p, const T& q, double neff, double delta) const;
 
 
-
   private:
     static const double kNormalize   = 1e-5; // Normalization threshold
     static const double kNeffTauInit = 0.8;  // Initial pseudocounts admixture for adjusting the Neff
     static const double kNeffTauMin  = 0.0;  // Minimal pseudocounts admixture for adjusting the Neff
     static const double kNeffTauMax  = 1.0;  // Maximal pseudocounts admixture for adjusting the Neff
+    static double NeffTauDump;
+
+  public:
     static const double kNeffDelta   = 0.1;  // Tolerance for adjusting the Neff
 
     DISALLOW_COPY_AND_ASSIGN(Pseudocounts);

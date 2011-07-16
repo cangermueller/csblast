@@ -170,14 +170,16 @@ inline bool StreamStartsWith(FILE* fp, const char* id) {
 
 // Reads all serialized records of class type 'T' from stream 'fin' into vector.
 template<class T>
-void ReadAll(FILE* fin, std::vector<T>& vec) {
-  while (!feof(fin)) {
+void ReadAll(FILE* fin, std::vector<T>& vec, int max = -1) {
+  int n = 0;
+  while (!feof(fin) && (max == -1 || n < max)) {
     // Parse next record
     vec.push_back(T(fin));
     // Check for EOF
     int c = getc(fin);
     if (c == EOF) break;
     ungetc(c, fin);
+    ++n;
   }
 }
 

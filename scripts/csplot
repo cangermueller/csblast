@@ -1,0 +1,205 @@
+#!/usr/bin/ruby
+require 'optparse'
+require 'fileutils'
+require 'erb'
+require 'yaml'
+
+class CSPlot
+  @@template = %q{
+    #set terminal png nocrop enhanced font verdana 8 size 800,600
+    set terminal postscript color size 15,9 linewidth 2
+    set output '<%= psfile %>'
+
+    set key <%= plot==:tpfp ? "bottom right" : "top right" %>
+    set title "<%= title||'' %>"
+    set xlabel "<%= xlabel %>"
+    set ylabel "<%= ylabel %>"
+    set grid
+    <% if plot==:tpfp %>
+    set xrange [0:<%= @xmax %>]
+    set yrange [0:<%= @ymax %>]
+    <% elsif plot==:wtpfp %>
+    set xrange [1:<%= @wxmax %>]
+    set yrange [0:<%= @wymax %>]
+    set log x
+    <% elsif plot==:fdr %>
+    set xrange [0:0.5]
+    set yrange [0:0.2]
+    <% elsif plot==:rocx %>
+    set xrange [0:1.0]
+    set yrange [0:<%= @ymax_rocx %>]
+    <% elsif plot==:pvalue %>
+    set xrange [1e-6:1.0]
+    set logscale x 10
+    set logscale y 10
+    set format y "10^{%L}"
+    <% elsif plot==:evalue %>
+    set xrange [1e-4:100.0]
+    set logscale x 10
+    set logscale y 10
+    <% end %>
+
+    set style function lines
+    set style line 1 linetype 2 linewidth 5 linecolor rgb "#6c7b8b"   # slate grey
+    set style line 2 linetype 1 linewidth 5 linecolor rgb "#ff1493"   # deep pink
+    set style line 3 linetype 1 linewidth 5 linecolor rgb "#32cd32"   # lime green
+    set style line 4 linetype 1 linewidth 5 linecolor rgb "#1e90ff"   # dodger blue
+    set style line 5 linetype 1 linewidth 5 linecolor rgb "#ffa500"   # orange
+    set style line 6 linetype 1 linewidth 5 linecolor rgb "#ff3030"   # firebrick
+    set style line 7 linetype 1 linewidth 5 linecolor rgb "#8470ff"   # slate blue
+    set style line 8 linetype 1 linewidth 5 linecolor rgb "#b3ee3a"   # olive drab
+    set style line 9 linetype 0 linewidth 3 linecolor rgb "#000000"   # 20% error rate
+
+    <% cmds=[] %>
+    <% rundirs.each_index do |i| %>
+       <% cmds << "'#{datafiles[i]}' title '#{legends[i]}' with lines ls #{i + (@dashed ? 1 : 2)}" %>
+    <% end %>
+    <% if plot==:tpfp || plot==:wtpfp %>
+    <% cmds << "4*x notitle with lines ls 9" %>
+    <% cmds << "9*x notitle with lines ls 9" %>
+    <% cmds << "99*x notitle with lines ls 9" %>
+    <% elsif plot==:pvalue || plot==:evalue %>
+    <% cmds << "x notitle with lines ls 9" %>
+    <% end %>
+    plot <%= cmds.join(", ")+"\n" %>
+    }.gsub(/^    /, '').strip
+
+  def initialize
+    @verbose      = true
+    @infile       = nil
+    @workdir      = './'
+    @keep_files   = false
+    @xmax         = 1000
+    @ymax         = 8000
+    @wxmax        = 600
+    @wymax        = 500
+    @ymax_rocx    = 0.5
+    @name         = ""
+    @title        = ""
+    @dashed       = true
+    @plots        = [:wtpfp, :rocx, :pvalue, :evalue, :tpfp, :rocx, :fdr]
+    @benchfiles   = {
+      :tpfp => 'tpfp.dat',
+      :wtpfp => 'wtpfp.dat',
+      :rocx => 'rocx.dat',
+      :pvalue => 'pvalue.dat',
+      :evalue => 'evalue.dat',
+      :fdr => 'fdr.dat'
+    }
+
+    self
+  end
+
+  def options
+    OptionParser.new do |o|
+      o.set_summary_indent('  ')
+      o.banner = "Usage: #{$0} -i infile [options]"
+      o.define_head( "Plot homology detection performance of csBLAST versus BLAST.")
+      o.separator ""
+
+      o.on("-p", "--plots x,y,z", Array, "List of plots to be generated (default: #{@plots.join(',')})",
+           "tpfp  :  TP versus FP ROC (unweighted)",
+           "wtpfp :  TP versus FP ROC (weighted by number of family members)",
+           "fdr   :  Sensitivity versus false discovery rate ROC",
+           "pvalue:  Real P-value versus reported P-value.",
+           "evalue:  Real E-value versus reported E-value.",
+           "rocx  :  ROCX threshold versus fraction of queries above threshold.") do |val|
+        @plots = val.map {|p| p.to_sym }
+      end
+      o.on("-i", "--infile FILE", "Infile with YAML hash of plots (format: plotname => [dir1, dir2, ...])") { |val| @infile=val }
+      o.on("-d", "--directory DIRECTORY", "Output directory (default: #{@workdir}).") { |val| @workdir=val }
+      o.on("-t", "--title TITLE", "Base title of plots (default: #{@title}).") { |val| @title=val }
+      o.on("-n", "--name NAME", "Basename for datafiles (default: #{@name}).") { |val| @name=val }
+      o.on("-k", "--keep-files", TrueClass, "Keep gnuplot scripts (default: keep #{@keep_files})." ) {|val| @keep_files=true }
+      o.on("--xmax-tpfp INT", Integer, "Set range of x-axis in TP-FP ROC plot (default: #{@xmax})." ) { |val| @xmax = val }
+      o.on("--ymax-tpfp INT", Integer, "Set range of y-axis in TP-FP ROC plot (default: #{@ymax})." ) { |val| @ymax = val }
+      o.on("--xmax-wtpfp INT", Integer, "Set range of x-axis in weighted TP-FP ROC plot (default: #{@wxmax})." ) { |val| @wxmax = val }
+      o.on("--ymax-wtpfp INT", Integer, "Set range of y-axis in weighted TP-FP ROC plot (default: #{@wymax})." ) { |val| @wymax = val }
+      o.on("--ymax-rocx PROB", Float, "Set range of y-axis in ROCX plot (default: #{@ymax_rocx})." ) { |val| @ymax_rocx = val }
+      o.on("--no-dashed", FalseClass, "Don't use dashed line for first dataset.") { |val| @dashed=false }
+      o.on("-q", "--quiet", "Turn output off.") { |val| @verbose=false }
+      o.on("-h", "--help", "Show this help message.") { puts o; exit }
+    end
+  end
+
+  def run(args)
+    if args.empty? then puts options; exit end
+    options.parse!(args)
+    if @infile.nil?
+      $stderr.puts "No infile given!"
+      exit 1
+    end
+
+    fh = File.open(@infile, 'r')
+    @data = YAML::load(ERB.new(fh.read).result(binding))
+    fh.close
+
+    draw_roc_plots
+  end
+
+  def draw_roc_plots
+    puts "Generating plots..." if @verbose
+    FileUtils.mkdir_p(@workdir) unless File.directory?(@workdir)
+    @plots.each do |plot|
+      @data.keys.sort.each do |plotname|
+        rundirs = @data[plotname]
+        psfile      = File.join(@workdir, (@name.empty? ? '' : "#{name}_") + "#{plotname}_#{plot}.ps")
+        gnuplotfile = File.join(@workdir, (@name.empty? ? '' : "#{name}_") + "#{plotname}_#{plot}.gp")
+        xlabel = get_xlabel(plot)
+        ylabel = get_ylabel(plot)
+        title = (@title.empty? ? "" : @title+" - ") + (@name.empty? ? "" : @name+" ") + plotname.gsub(/_/, ' ') + ": " + get_subtitle(plot)
+        datafiles = rundirs.map {|d| (@name.empty? ? '' : "#{name}_") + File.join(d, @benchfiles[plot]) }
+        legends   = rundirs.map {|d| File.basename(d).gsub(/_/, ' ') }
+
+        # Write gnuplot file
+        File.open(gnuplotfile, 'w') do |f|
+          erb = ERB.new(@@template)
+          content = erb.result(binding).split("\n").select {|line| line !~ /^\s*$/ }.join("\n")
+          f.write(content)
+        end
+        cmd = "gnuplot #{gnuplotfile}"
+        success = system(cmd)
+        raise "Error in execution of '#{cmd}'!" unless success
+        puts "    "+psfile if @verbose
+
+        File.delete(gnuplotfile) unless @keep_files
+      end
+    end
+  end
+
+  def get_subtitle(plot)
+    case plot
+    when :tpfp: "TP-FP ROC"
+    when :wtpfp: "Weighted TP-FP ROC"
+    when :fdr: "False discovery rate ROC"
+    when :pvalue: "Reported versus actual P-value"
+    when :evalue: "Reported versus actual E-value"
+    when :rocx: "ROC#{@rocx} plot"
+    end
+  end
+
+  def get_xlabel(plot)
+    case plot
+    when :tpfp: "FPs"
+    when :wtpfp: "weighted FPs"
+    when :fdr: "False discovery rate"
+    when :pvalue: "Reported P-value"
+    when :evalue: "Reported E-value"
+    when :rocx: "ROC#{@rocx}"
+    end
+  end
+
+  def get_ylabel(plot)
+    case plot
+    when :tpfp: "TPs"
+    when :wtpfp: "weighted TPs"
+    when :fdr: "Sensitivity"
+    when :pvalue: "Actual P-value"
+    when :evalue: "Actual E-value"
+    when :rocx: "Fraction of queries"
+    end
+  end
+
+end
+
+CSPlot.new.run(ARGV)

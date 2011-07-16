@@ -77,7 +77,7 @@ void PdfWriter::WriteToFile(std::string outfile) {
     // Compile texfile with pdflatex
     //  cmd = strprintf("pdflatex -output-directory=%s %s > /dev/null 2> /dev/null",
     //                dirname.c_str(), texfile.c_str());
-    cmd = strprintf("pdflatex -output-directory=%s %s > /dev/shm/pdflatex.out 2> /dev/shm/pdflatex.out",
+    cmd = strprintf("pdflatex -output-directory=%s %s > /dev/null 2> /dev/null",
                     dirname.c_str(), texfile.c_str());
     exit_code = system(cmd.c_str());
     if (exit_code) throw Exception("Error executing command '%s'!", cmd.c_str());

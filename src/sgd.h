@@ -10,6 +10,8 @@
 
 namespace cs {
 
+using std::string;
+
 // Parameter wrapper for various SGD parameters
 struct SgdParams {
     SgdParams()
@@ -145,17 +147,20 @@ struct SgdOptimizer {
                  const CrfFunc<Abc, TrainingPairV>& vf,
                  const SgdParams& p,
                  const vector<CountProfile<Abc> >& ns = vector<CountProfile<Abc> >(),
-                 double npc = 0.0,
-                 std::string cf = "")
+                 double npc = 0.0, 
+                 string cf_vset = "",
+                 string cf_tset = "")
             : sgd(tf, p),
               func(vf),
               params(p),
               neff_samples(ns),
               neff_pc(npc),
-              crffile(cf) {}
+              crffile_vset(cf_vset),
+              crffile_tset(cf_tset) {}
 
 
-    double Optimize(Crf<Abc>& crf, FILE* fout = NULL) {
+    double Optimize(Crf<Abc>& crf, FILE* fout = NULL) { 
+
         scoped_ptr<ProgressBar> prog_bar;
         SgdState<Abc> s(crf);
         int epoch = 1, best_epoch = 1, nconv = 0, nearly = 0;
@@ -199,18 +204,28 @@ struct SgdOptimizer {
             // Keep track of how many times we were under the maximal likelihood
             if (val_loglike > best_loglike - params.early_delta) nearly = 0;
             else ++nearly;
-            // Save CRF with the maximum likelihood
+
+            // Save CRF with the maximum likelihood on the validation set
             if (val_loglike >= best_loglike) {
                 best_loglike = val_loglike;
                 best_epoch = epoch;
                 crf = s.crf;
-                if (!crffile.empty()) {
-                    FILE* fout = fopen(crffile.c_str(), "w");
-                    if (!fout) throw Exception("Can't write to file '%s'!", crffile.c_str());
+                if (!crffile_vset.empty()) {
+                    FILE* fout = fopen(crffile_vset.c_str(), "w");
+                    if (!fout) throw Exception("Can't write to file '%s'!", crffile_vset.c_str());
                     crf.Write(fout);
                     fclose(fout);
                 }
             }
+
+            // Save CRF of the current epoch
+            if (!crffile_tset.empty()) {
+                FILE* fout = fopen(crffile_tset.c_str(), "w");
+                if (!fout) throw Exception("Can't write to file '%s'!", crffile_tset.c_str());
+                s.crf.Write(fout);
+                fclose(fout);
+            }
+
             // Compute the Neff for the given samples
             ConstantAdmix admix(neff_pc);
             CrfPseudocounts<Abc> pc(s.crf);
@@ -256,7 +271,8 @@ struct SgdOptimizer {
     const vector<CountProfile<Abc> >&
       neff_samples;                   // samples for computing the Neff
     const double neff_pc;             // pseudocounts admix for computing the Neff
-    std::string crffile;                   // CRF output file for writing the best CRF online
+    string crffile_vset;              // Output file for best CRF on the validation set
+    string crffile_tset;              // Output file for last CRF on the training set
 };
 
 

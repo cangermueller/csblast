@@ -19,7 +19,9 @@ struct CSTrainsetNeffAppOptions {
   virtual ~CSTrainsetNeffAppOptions() {}
 
   // Set csbuild default parameters
-  void Init() { }
+  void Init() {
+    n = -1;
+  }
 
   // Validates the parameter settings and throws exception if needed.
   void Validate() {
@@ -32,6 +34,8 @@ struct CSTrainsetNeffAppOptions {
   string outfile_x;
   // The output file with Neff of the training profiles' central column.
   string outfile_y;
+  // Maximum number of training samples
+  int n;
 
 };  // CSTrainsetNeffAppOptions
 
@@ -63,6 +67,7 @@ void CSTrainsetNeffApp<Abc>::ParseOptions(GetOpt_pp& ops) {
   ops >> Option('i', "infile", opts_.infile, opts_.infile);
   ops >> Option('x', "outfile-x", opts_.outfile_x, opts_.outfile_x);
   ops >> Option('y', "outfile-y", opts_.outfile_y, opts_.outfile_y);
+  ops >> Option('N', "size", opts_.n, opts_.n);
   opts_.Validate();
 }
 
@@ -84,6 +89,8 @@ void CSTrainsetNeffApp<Abc>::PrintOptions() const {
           "Output file with Neff in the training profiles");
   fprintf(out_, "  %-30s %s\n", "-y, --outfile-y <file>",
           "Output file with Neff in the column to be predicted");
+  fprintf(out_, "  %-30s %s (def=%i)\n", "-N, --size",
+          "Maximum number of training samples", opts_.n);
 }
 
 template<class Abc>
@@ -111,7 +118,7 @@ int CSTrainsetNeffApp<Abc>::Run() {
   fprintf(out_, "Computing Neff...\n");
   if (GetFileExt(opts_.infile) == "tsq") {
     vector<TrainingSequence<Abc> > trainset;
-    ReadAll(fin, trainset);
+    ReadAll(fin, trainset, opts_.n);
     for (size_t i = 0; i < trainset.size(); ++i) {
       double nx = 1.0;
       double ny = 0.0;
@@ -126,7 +133,7 @@ int CSTrainsetNeffApp<Abc>::Run() {
 
   } else {
     vector<TrainingProfile<Abc> > trainset;
-    ReadAll(fin, trainset);
+    ReadAll(fin, trainset, opts_.n);
     for (size_t i = 0; i < trainset.size(); ++i) {
       double nx = Neff(trainset[i].x);
       double ny = 0;

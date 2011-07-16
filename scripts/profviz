@@ -1,0 +1,5 @@
+#!/usr/bin/env ruby
+
+require File.expand_path(ENV['HOME'] + "/lib/rcs")
+
+Script::ProfViz.new.execute(STDOUT, ARGV)

@@ -20,10 +20,11 @@ Profile<Abc> Pseudocounts<Abc>::AddTo(const Sequence<Abc>& seq, const Admix& adm
 
 // Adds pseudocounts to sequence using target Neff and returns normalized profile.
 template<class Abc>
-Profile<Abc> Pseudocounts<Abc>::AddTo(const Sequence<Abc>& seq, double neff, double delta) const {
+Profile<Abc> Pseudocounts<Abc>::AddTo(const Sequence<Abc>& seq, double neff, 
+                                      double delta, double &tau) const {
     Profile<Abc> rv(seq.length());
     AddToSequence(seq, rv);
-    AdjustNeff(rv, seq, neff, delta);
+    tau = AdjustNeff(rv, seq, neff, delta);
     for(size_t i = 0; i < seq.length(); ++i) rv[i][Abc::kAny] = 0.0;
     Normalize(rv, 1.0);
     return rv;
@@ -49,10 +50,11 @@ Profile<Abc> Pseudocounts<Abc>::AddTo(const CountProfile<Abc>& cp, const Admix& 
 
 // Adds pseudocounts to sequence using target Neff and returns normalized profile.
 template<class Abc>
-Profile<Abc> Pseudocounts<Abc>::AddTo(const CountProfile<Abc>& cp, double neff, double delta) const {
+Profile<Abc> Pseudocounts<Abc>::AddTo(const CountProfile<Abc>& cp, double neff, 
+                                      double delta, double &tau) const {
     Profile<Abc> rv(cp.counts.length());
     AddToProfile(cp, rv);
-    AdjustNeff(rv, Profile<Abc>(cp), neff, delta);
+    tau = AdjustNeff(rv, Profile<Abc>(cp), neff, delta);
     for(size_t i = 0; i < cp.counts.length(); ++i)
         rv[i][Abc::kAny] = 0.0;
     Normalize(rv, 1.0);
@@ -81,7 +83,7 @@ void Pseudocounts<Abc>::AddTo(POHmm<Abc>* hmm, const Admix& admix) const {
 
 // Adds pseudocounts to counts in PO-HMM vertices and stores results in 'probs' vector.
 template<class Abc>
-void Pseudocounts<Abc>::AddTo(POHmm<Abc>* hmm, double neff, double delta) const {
+void Pseudocounts<Abc>::AddTo(POHmm<Abc>* hmm, double neff, double delta, double &tau) const {
     typedef typename POHmm<Abc>::Graph Graph;
     Graph& g = hmm->g;
     size_t size = hmm->size();
@@ -93,7 +95,7 @@ void Pseudocounts<Abc>::AddTo(POHmm<Abc>* hmm, double neff, double delta) const 
         for (size_t a = 0; a < Abc::kSize; ++a)
             p_hmm[i - 1][a] = g[i].counts[a] / g[i].neff;
     }
-    AdjustNeff(rv, p_hmm, neff, delta);
+    tau = AdjustNeff(rv, p_hmm, neff, delta);
     for (size_t i = 1; i <= size; ++i) {
         memcpy(&g[i].probs[0], rv[i - 1], Abc::kSize * sizeof(double));
         g[i].probs[Abc::kAny] = 1.0;
@@ -200,6 +202,9 @@ struct HHsearchAdmix : public Admix {
 
     double pca, pcb, pcc;
 };
+
+template<class Abc>
+double Pseudocounts<Abc>::NeffTauDump = 0.0;
 
 }  // namespace cs
 

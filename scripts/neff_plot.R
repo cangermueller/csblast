@@ -3,8 +3,11 @@ opt.res <- 300
 opt.size <- c(8, 8)
 opt.legend.cex <- 1.0
 opt.linewidth <- 1.5
+opt.abline.linewidth <- 2.0
 opt.pch <- 18
 opt.linetype <- 1
+opt.colors <- c("red", "green", "blue", "darkorange", "darkmagenta")
+
 opt.args <- commandArgs(TRUE)
 if (length(opt.args) < 3) {
   print("Missing arguments!")
@@ -45,15 +48,19 @@ pdf(opt.outfile, title=opt.title, opt.size[1], opt.size[2])
 xrange <- range(data.breaks)
 yrange <- range(0, data.freq.max + 0.1)
 plot(xrange, yrange, type="n", xlab="Neff", ylab="Frequency", xaxt="n")
-plot.colors <- rainbow(data.n)
+plot.colors <- opt.colors
+if (data.n > length(plot.colors)) {
+	plot.colors <- c(opt.colors, rainbow(data.n - length(opt.colors)))
+}
 plot.linetype <- rep(opt.linetype, data.n)
 plot.pch <- rep(opt.pch, data.n)
 for (i in 1:data.n) {
   lines(data.x, data.freq[[i]], type="l", lwd=opt.linewidth,
       lty=plot.linetype[i], col=plot.colors[i], pch=plot.pch)
-  abline(v=data.mean[i], lty=3, lwd=opt.linewidth, col=plot.colors[i])
+  abline(v=data.mean[i], lty=3, lwd=opt.abline.linewidth, col=plot.colors[i])
 }
 axis(1, at=data.x, labels=data.x)
 
 legend("topright", hor = FALSE, cex = opt.legend.cex,
 	data.labels, col=plot.colors, pch=plot.pch)
+quit()

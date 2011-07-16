@@ -37,14 +37,13 @@ struct CSSgdAppOptions {
         neff_ext       = "seq";
         neff_nsamples  = 100;
         neff_pc        = 1.0;
-        save           = false;
     }
 
     // Validates the parameter settings and throws exception if needed.
     void Validate() {
         if (trainfile.empty()) throw Exception("No training set provided!");
         if (valfile.empty()) throw Exception("No validation set provided!");
-        if (crffile.empty()) throw Exception("No output file for CRF provided!");
+        if (crffile_vset.empty()) throw Exception("No output file for CRF provided!");
         if (prior < 1 || prior > 2) throw Exception("Invalid prior!");
         if (pc_init <= 0 || pc_init > 1.0) throw Exception("Pseudocounts admix for initialization invalid!");
         if (neff_pc <= 0 || neff_pc > 1.0) throw Exception("Pseudocounts admix for computing the Neff invalid!");
@@ -53,7 +52,8 @@ struct CSSgdAppOptions {
     void PrintOptions(FILE* out) const {
         fprintf(out, "  %-20s: %s\n", "--trainset", trainfile.c_str()); 
         fprintf(out, "  %-20s: %s\n", "--valset", valfile.c_str()); 
-        fprintf(out, "  %-20s: %s\n", "--outfile", crffile.c_str()); 
+        fprintf(out, "  %-20s: %s\n", "--outfile", crffile_vset.c_str()); 
+        fprintf(out, "  %-20s: %s\n", "--outfile-tset", crffile_tset.c_str()); 
         fprintf(out, "  %-20s: %s\n", "--progress", outfile.c_str()); 
         fprintf(out, "  %-20s: %s\n", "--model", modelfile.c_str()); 
         fprintf(out, "  %-20s: %zu\n", "--states", nstates); 
@@ -78,7 +78,6 @@ struct CSSgdAppOptions {
         fprintf(out, "  %-20s: %s\n", "--neff-ext", neff_ext.c_str()); 
         fprintf(out, "  %-20s: %zu\n", "--neff-nsamples", neff_nsamples); 
         fprintf(out, "  %-20s: %.2f\n", "--neff-pc", neff_pc); 
-        fprintf(out, "  %-20s: %d\n", "--save", save); 
     }
 
 
@@ -86,8 +85,10 @@ struct CSSgdAppOptions {
     string trainfile;
     // Input file with validation.
     string valfile;
-    // Output file for CRF
-    string crffile;
+    // Output file for the best CRF on the validation set
+    string crffile_vset;
+    // Output file for the last CRF on the training set
+    string crffile_tset;
     // Output file for progress table.
     string outfile;
     // Crf input file with context library or CRF for initialization.
@@ -122,8 +123,6 @@ struct CSSgdAppOptions {
     size_t neff_nsamples;
     // PC admixture for calculating the Neff
     double neff_pc;
-    // Save currently best CRF on-line
-    bool save;
 
 };  // CSSgdAppOptions
 
@@ -283,18 +282,14 @@ struct CSSgdRunner {
         CrfFunc<Abc, TrainingPairV> val_func(valset_, *sm_);
         DerivCrfFunc<Abc, TrainingPairT> train_func(trainset_, *sm_, *prior);
         SgdOptimizer<Abc, TrainingPairT, TrainingPairV> sgd(train_func, val_func, 
-                opts_.sgd, neff_samples_, opts_.neff_pc, opts_.save ? opts_.crffile : "");
+                opts_.sgd, neff_samples_, opts_.neff_pc, opts_.crffile_vset, opts_.crffile_tset);
         sgd.Optimize(*crf_, fout);
 
         if (!opts_.outfile.empty()) fclose(fout);
 
-        if (!opts_.save) {
-            fout = fopen(opts_.crffile.c_str(), "w");
-            if (!fout) throw Exception("Can't write to file '%s'!", opts_.crffile.c_str());
-            crf_->Write(fout);
-            fclose(fout);
-        }
-        fprintf(out_, "\nWrote CRF to %s!\n", opts_.crffile.c_str());
+        fprintf(out_, "\nWrote best CRF on validation set to %s!\n", opts_.crffile_vset.c_str());
+        if (!opts_.crffile_tset.empty())
+          fprintf(out_, "Wrote last CRF on training set to %s!\n", opts_.crffile_tset.c_str());
 
         return 0;
     }
@@ -343,8 +338,9 @@ template<class Abc>
 void CSSgdApp<Abc>::ParseOptions(GetOpt_pp& ops) {
     ops >> Option('i', "trainset", opts_.trainfile, opts_.trainfile);
     ops >> Option('j', "valset", opts_.valfile, opts_.valfile);
-    ops >> Option('o', "outfile", opts_.crffile, opts_.crffile);
-    ops >> Option('O', "progress", opts_.outfile, opts_.outfile);
+    ops >> Option('o', "outfile", opts_.crffile_vset, opts_.crffile_vset);
+    ops >> Option('O', "outfile-tset", opts_.crffile_tset, opts_.crffile_tset);
+    ops >> Option('R', "progress", opts_.outfile, opts_.outfile);
     ops >> Option('m', "model", opts_.modelfile, opts_.modelfile);
     ops >> Option('K', "states", opts_.nstates, opts_.nstates);
     ops >> Option('N', "epochs", opts_.sgd.max_epochs, opts_.sgd.max_epochs);
@@ -368,7 +364,6 @@ void CSSgdApp<Abc>::ParseOptions(GetOpt_pp& ops) {
     ops >> Option(' ', "neff-nsamples", opts_.neff_nsamples, opts_.neff_nsamples);
     ops >> Option(' ', "neff-pc", opts_.neff_pc, opts_.neff_pc);
     ops >> Option(' ', "pc-init", opts_.pc_init, opts_.pc_init);
-    ops >> OptionPresent(' ', "save", opts_.save);
 
     opts_.Validate();
 }
@@ -387,8 +382,11 @@ template<class Abc>
 void CSSgdApp<Abc>::PrintOptions() const {
     fprintf(out_, "  %-30s %s\n", "-i, --trainset <file>", "File with training set");
     fprintf(out_, "  %-30s %s\n", "-j, --valset <file>", "File with validation set");
-    fprintf(out_, "  %-30s %s\n", "-o, --outfile <file>", "CRF output file");
-    fprintf(out_, "  %-30s %s\n", "-O, --progress <file>",
+    fprintf(out_, "  %-30s %s\n", "-o, --outfile <file>", 
+            "Output file for best CRF on the validation set");
+    fprintf(out_, "  %-30s %s\n", "-O, --outfile-tset <file>", 
+            "Output file for last CRF on the training set");
+    fprintf(out_, "  %-30s %s\n", "-R, --progress <file>",
             "Progress table output (def=stdout)");
     fprintf(out_, "  %-30s %s\n", "-m, --model <file>",
             "Model file with CRF or context library for initialization");
@@ -417,7 +415,7 @@ void CSSgdApp<Abc>::PrintOptions() const {
             opts_.sgd.sigma_pc_max);
     fprintf(out_, "  %-30s %s (def=%zu)\n", "-q, --sigma-pc-epoch [0,inf[",
             "SGD epoche for activating prior of pseudocounts weights", opts_.sgd.sigma_pc_epoch);
-    fprintf(out_, "  %-30s %s (def=%.3f)\n", "-r, --sigma-pc-delta [0,inf[",
+    fprintf(out_, "  %-30s %s (def=%.3f)\n", "-Q, --sigma-pc-delta [0,inf[",
             "Gradient for activating prior of pseudocounts weights", opts_.sgd.sigma_pc_delta);
     fprintf(out_, "  %-30s %s (def=%.2f)\n", "-c, --sigma-context ]0,inf]",
             "Std. deviation sigma in prior of context weights",
@@ -443,8 +441,6 @@ void CSSgdApp<Abc>::PrintOptions() const {
            "Number of samples to be used for calculating the Neff", opts_.neff_nsamples);
     fprintf(out_, "  %-30s %s (def=%.2f)\n", "    --neff-pc ]0,1]",
            "Pseudocounts admix for calculating the Neff", opts_.neff_pc);
-    fprintf(out_, "  %-30s %s (def=off)\n", "    --save",
-           "Save currently best CRF on-line");
 }
 
 template<class Abc>
