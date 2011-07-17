@@ -57,8 +57,8 @@ my $vset      = 0;
 my $suffix;
 my @args;
 
-my $pe        = "threads.pe 1";
-my $q         = undef;
+my $pe        = "default 8";
+my $q         = "all.q";
 
 
 
