@@ -609,10 +609,11 @@ void CSTrainSetApp<Abc>::SampleTrainingSeqs(TrainSeqs& samples, size_t nsamples_
               // Cut training pseudocounts column from profiles_col_
               CountProfile<Abc> cp_col = CountProfile<Abc>(profiles_col_->at(n), m, opts_.wlen);
               if (opts_.neff_col != 0.0 && cp_col.neff[center] < opts_.neff_col) {               
-                Profile<Abc> p = cp_col.counts;
-                Normalize(p, 1.0);
+                // Profile<Abc> p = cp_col.counts;
+                // Normalize(p, 1.0);
                 // Estimated target Neff in count profile = Neff / Neff(M_i) * Neff(CP_i)
-                p = pc_->AddTo(cp_col, opts_.neff_col / cp_col.neff[center] * Neff(p));
+                // Profile<Abc> p = pc_->AddTo(cp_col, opts_.neff_col / cp_col.neff[center] * Neff(p));
+                Profile<Abc> p = pc_->AddTo(cp_col, opts_.neff_col);
                 cp_col.counts = p;
                 Assign(cp_col.neff, Neff(p));
                 Normalize(cp_col.counts, cp_col.neff);
