@@ -53,12 +53,12 @@ my $W         = 13;
 my $D         = undef;
 
 my $bn;
-my $vset      = 0;
+my $vset      = 1;
 my $suffix;
 my @args;
 
-my $pe        = "default 8";
-my $q         = "all.q";
+my $pe        = "threads.pe 4";
+my $q         = undef;
 
 
 
@@ -76,6 +76,9 @@ GetOptions(
   "m=f"          => \$m,
   "M=f"          => \$M,
   "y=f"          => \$y,
+  "x=f"          => \$x,
+  "W=i"          => \$W,
+  "D=s"          => \$D,
   "B|basename=s" => \$bn,
   "S|suffix=s"   => \$suffix,
   "V|vset!"      => \$vset,
@@ -115,7 +118,7 @@ sub submit {
     $NN = 1500000;
   }
 
-  my $ext = $ss == 1 ? "tsq" : "tpr";
+  my $ext = $g == 1.0 ? "tsq" : "tpr";
   my $out = sprintf("%s/%s_g%.2f%s_m%.1f_M%.1f_y%.1f_N%s", $CST, $bb, $g, 
     $ee ? sprintf("_n%.1f", $n) : "", 
     $m, $M, $y, &get_N_short($NN));

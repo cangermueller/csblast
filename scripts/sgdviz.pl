@@ -194,7 +194,7 @@ sub plot {
     set xlabel "Iteration"
     set ylabel "Likelihood"/;
   if ($params{NEFF}) { $cmd .= qq/
-    set y2label "N'(p_{cs}) or {\/Symbol t}=1.0"
+    set y2label "N'(p_{cs}) for {\/Symbol t}=1.0"
     set y2range [$y2range[0]:$y2range[1]]
     set y2tics
     set ytics nomirror/;

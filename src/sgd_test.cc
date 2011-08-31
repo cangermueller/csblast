@@ -68,7 +68,7 @@ TYPED_TEST(SgdTestBlosum, DISABLED_InitWithGaussian) {
   EXPECT_NEAR(0.4308, loglike, 0.0001);
 }
 
-TYPED_TEST(SgdTestBlosum, InitWithOptimalSolution) {
+TYPED_TEST(SgdTestBlosum, DISABLED_InitWithOptimalSolution) {
   Crf<AA> crf(this->kNumStates, this->kWindowLength);
   for (size_t k = 0; k < this->kNumStates; ++k) {
     CrfState<AA> state(this->kWindowLength);

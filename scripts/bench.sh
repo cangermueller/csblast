@@ -1,5 +1,6 @@
 #!/bin/bash
 
+hostname
 
 source $HOME/src/cs/.cs.sh
 
@@ -39,7 +40,6 @@ esac
 DB_FILE=${DB}_db
 PLOTS="tpfp,wtpfp,rocx,evalue,pvalue"
 
-echo test
 if [ ${MODEL##*.} == "sh" ]; then
   rsub --mult 100 --quiet -g "$DB/*.seq" -s $MODEL
 else
@@ -56,7 +56,10 @@ else
     *) OUTDIR="$CSD/bench/scop20_1.73/opt";;
   esac
   OUTDIR=$OUTDIR/$DIR/$NAME
-  if [ -e $OUTDIR ]; then exit 0; fi
+  if [ -e $OUTDIR ]; then 
+    exit 0
+    #rm -r $OUTDIR; 
+  fi
   mkdir -p $OUTDIR
   rsub --logfile $HOME/jobs/bench$$.log --mult 100 --quiet -g "$DB/*.seq" -c "csblast -i FILENAME -D $MODEL --blast-path /cluster/bioprogs/blast/bin -o $OUTDIR/BASENAME.bla -d $DB_FILE -e 1e5 -v 10000 -b 0 -$PC $NEFF"
   qsub -b y csbin -i \"$OUTDIR/\*.bla\" -d $OUTDIR -s $DB_FILE -p $PLOTS

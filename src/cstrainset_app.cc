@@ -137,6 +137,7 @@ class CSTrainSetApp : public Application {
   scoped_ptr<ContextLibrary<Abc> > lib_;
   scoped_ptr<Crf<Abc> > crf_;
   scoped_ptr<Pseudocounts<Abc> > pc_;
+  vector<vector<size_t> > stats_;
 
 };  // CSTrainSetApp
 
@@ -326,6 +327,8 @@ int CSTrainSetApp<Abc>::Run() {
       profiles_col_->push_back(prof_col);
     }
   }
+  for (size_t i = 0; i < profiles_.size(); ++i)
+    stats_.push_back(vector<size_t>(profiles_[i].length(), 0));
   assert(files_.size() == profiles_.size());
   assert(profiles_.size() == profiles_col_->size());
   fprintf(out_, "\n%zu profiles passed filter\n", profiles_.size());
@@ -389,6 +392,59 @@ int CSTrainSetApp<Abc>::Run() {
     fclose(fout);
 
   }
+  // Calculate sampling statistics
+  if (stats_.size() > 0) {
+    double stats_profiles[] = {0.0, 0.0, 0.0, DBL_MAX, -DBL_MAX};
+    double stats_cols[] = {0.0, 0.0, 0.0, DBL_MAX, -DBL_MAX};
+    size_t nused_cols = 0;
+    for (size_t n = 0; n < stats_.size(); ++n) {
+      size_t nused = 0;
+      size_t nsamples = 0;
+      for (size_t m = 0; m < stats_[n].size(); ++m) {
+        if (stats_[n][m] > 0) {
+          nused++;
+          nsamples += stats_[n][m];
+          stats_cols[1] += stats_[n][m];
+          stats_cols[3] = MIN(stats_cols[3], stats_[n][m]);
+          stats_cols[4] = MAX(stats_cols[4], stats_[n][m]);
+        }
+      }
+      stats_cols[0] += static_cast<double>(nused) / stats_[n].size();
+      nused_cols += nused;
+      if (nsamples > 0) {
+        stats_profiles[0]++;
+        stats_profiles[1] += nsamples;
+        stats_profiles[3] = MIN(stats_profiles[3], nsamples);
+        stats_profiles[4] = MAX(stats_profiles[4], nsamples);
+      }
+    }
+    stats_cols[0] /= stats_.size();
+    stats_cols[1] /= nused_cols;
+    stats_profiles[1] /= stats_profiles[0]; 
+    for (size_t n = 0; n < stats_.size(); ++n) {
+      size_t nsamples = 0;
+      for (size_t m = 0; m < stats_[n].size(); ++m) {
+        if (stats_[n][m] > 0) {
+          nsamples += stats_[n][m];
+          stats_cols[2] += pow(stats_[n][m] - stats_cols[1], 2);
+        }
+      }
+      if (nsamples > 0)
+        stats_profiles[2] += pow(nsamples - stats_profiles[1], 2);
+    }
+    stats_cols[2] = sqrt(stats_cols[2] / nused_cols);
+    stats_profiles[2] = sqrt(stats_profiles[2] / stats_profiles[0]);
+    stats_profiles[0] /= stats_.size();
+    fprintf(out_, "\nSampling statistics:\n");
+    fprintf(out_, " %-20s %8s %8s %8s %8s %8s\n", "", "used", "avg", "std", "min", "max");
+    fprintf(out_, " %-20s %8.2f %8.2f %8.2f %8d %8d\n", "Samples per profile", 
+        stats_profiles[0], stats_profiles[1], stats_profiles[2], 
+        static_cast<int>(stats_profiles[3]), static_cast<int>(stats_profiles[4]));
+    fprintf(out_, " %-20s %8.2f %8.2f %8.2f %8d %8d\n", "Samples per column", 
+        stats_cols[0], stats_cols[1], stats_cols[2], 
+        static_cast<int>(stats_cols[3]), static_cast<int>(stats_cols[4]));
+  }
+
   if (opts_.dir_col.length()) delete profiles_col_;
   fputs("\nDone!\n", out_);
 
@@ -463,6 +519,7 @@ void CSTrainSetApp<Abc>::SampleProfileWindows(ProfileSet& samples) {
 #pragma omp critical (add_sample)
         if (samples.size() < nsamples) {
           samples.push_back(p);
+          stats_[n][shuffle[i]]++;
           progress.Advance();
         }
       }
@@ -609,13 +666,11 @@ void CSTrainSetApp<Abc>::SampleTrainingSeqs(TrainSeqs& samples, size_t nsamples_
               // Cut training pseudocounts column from profiles_col_
               CountProfile<Abc> cp_col = CountProfile<Abc>(profiles_col_->at(n), m, opts_.wlen);
               if (opts_.neff_col != 0.0 && cp_col.neff[center] < opts_.neff_col) {               
-                // Profile<Abc> p = cp_col.counts;
-                // Normalize(p, 1.0);
-                // Estimated target Neff in count profile = Neff / Neff(M_i) * Neff(CP_i)
-                // Profile<Abc> p = pc_->AddTo(cp_col, opts_.neff_col / cp_col.neff[center] * Neff(p));
-                Profile<Abc> p = pc_->AddTo(cp_col, opts_.neff_col);
-                cp_col.counts = p;
-                Assign(cp_col.neff, Neff(p));
+                Profile<Abc> p = cp_col.counts;
+                Normalize(p, 1.0);
+                // Estimated target Neff in count profile = Neff / Neff(cp_i) * Neff(p)
+                cp_col.counts = pc_->AddTo(cp_col, opts_.neff_col / cp_col.neff[center] * Neff(p));
+                Assign(cp_col.neff, Neff(cp_col.counts));
                 Normalize(cp_col.counts, cp_col.neff);
               }
               ProfileColumn<Abc> col(cp_col.counts[center]);
@@ -623,6 +678,7 @@ void CSTrainSetApp<Abc>::SampleTrainingSeqs(TrainSeqs& samples, size_t nsamples_
 #pragma omp critical (add_sample)
                 {
                   samples.push_back(TrainingSequence<Abc>(seq, col));
+                  stats_[n][m]++;
                   progress.Advance();
                 }
                 s -= 1;     // reduce work load for this column by one
@@ -721,6 +777,7 @@ void CSTrainSetApp<Abc>::SampleTrainingProfiles(TrainProfiles& samples) {
         if (samples.size() < nsamples + nsingletons) {
           Normalize(p.counts, p.neff);
           samples.push_back(TrainingProfile<Abc>(p, col));
+          stats_[n][shuffle[i]]++;
           progress.Advance();
         }
       }
@@ -744,3 +801,4 @@ int main(int argc, char* argv[]) {
   else
     return cs::CSTrainSetApp<cs::AA>().main(argc, argv, stdout, "cstrainset");
 }
+

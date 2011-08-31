@@ -160,7 +160,8 @@ sub plot {
 
     set xlabel "Neff"
     set xrange [$xrange[0]:$xrange[1]]
-    set xtics $bin_size out nomirror
+    set xtics $bin_size out nomirror add 0,1.0
+    set mxtics 2
 
     set ylabel "Frequency"
     set yrange[$yrange[0]:$yrange[1]]
@@ -171,6 +172,7 @@ sub plot {
     set style line 3 lt 1 lw 1 lc rgb "black"
 
     set style fill solid 0.5 border
+    set boxwidth $bin_size
 
     plot /;
   $cmd .= sprintf("%s, %s", &cmd_curve($entities[0], 1), &cmd_curve($entities[1], 2));

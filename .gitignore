@@ -1,11 +1,12 @@
+
+*~
+.cs.sh
 bin
 build
 tmp
-scripts
-.cs.sh
-
 src/build
 src/test
+src/tags
 src/*.o
 src/*.a
 src/*_aa
@@ -26,5 +27,4 @@ src/cssgd
 src/cstest
 src/csviz
 src/csalign*
-*~
 src/.*

@@ -57,23 +57,24 @@ struct CSSgdAppOptions {
         fprintf(out, "  %-20s: %s\n", "--progress", outfile.c_str()); 
         fprintf(out, "  %-20s: %s\n", "--model", modelfile.c_str()); 
         fprintf(out, "  %-20s: %zu\n", "--states", nstates); 
-        fprintf(out, "  %-20s: %u\n", "--epochs", sgd.max_epochs); 
+        fprintf(out, "  %-20s: %zu\n", "--epochs", sgd.max_epochs); 
         fprintf(out, "  %-20s: %1.5f\n", "--toll", sgd.toll); 
         fprintf(out, "  %-20s: %1.5f\n", "--early-delta", sgd.early_delta); 
         fprintf(out, "  %-20s: %1.5f\n", "--eta", sgd.eta); 
         fprintf(out, "  %-20s: %u\n", "--seed", sgd.seed); 
         fprintf(out, "  %-20s: %1.5f\n", "--gauss-init", gauss_init); 
         fprintf(out, "  %-20s: %zu\n", "--prior", prior); 
-        fprintf(out, "  %-20s: %1.5f\n", "--sigma_bias", sigma_bias); 
-        fprintf(out, "  %-20s: %1.5f\n", "--sigma_context", sigma_context); 
-        fprintf(out, "  %-20s: %1.5f\n", "--sigma_decay", sigma_decay); 
-        fprintf(out, "  %-20s: %1.5f\n", "--sigma_pc", sgd.sigma_pc_max); 
-        fprintf(out, "  %-20s: %zu\n", "--sigma_pc_epoch", sgd.sigma_pc_epoch); 
-        fprintf(out, "  %-20s: %1.5f\n", "--sigma_pc_delta", sgd.sigma_pc_delta); 
+        fprintf(out, "  %-20s: %1.5f\n", "--sigma-bias", sigma_bias); 
+        fprintf(out, "  %-20s: %1.5f\n", "--sigma-context", sigma_context); 
+        fprintf(out, "  %-20s: %1.5f\n", "--sigma-decay", sigma_decay); 
+        fprintf(out, "  %-20s: %1.5f\n", "--sigma-pc", sgd.sigma_pc_max); 
+        fprintf(out, "  %-20s: %zu\n", "--sigma-pc-epoch", sgd.sigma_pc_epoch); 
+        fprintf(out, "  %-20s: %1.5f\n", "--sigma-pc-delta", sgd.sigma_pc_delta); 
+        fprintf(out, "  %-20s: %zu\n", "--sigma-pc-steps", sgd.sigma_pc_steps); 
         fprintf(out, "  %-20s: %1.5f\n", "--pc-init", pc_init); 
         fprintf(out, "  %-20s: %zu\n", "--blocks", sgd.nblocks); 
-        fprintf(out, "  %-20s: %.2f\n", "--weight_center", weight_center); 
-        fprintf(out, "  %-20s: %.2f\n", "--weight_decay", weight_decay); 
+        fprintf(out, "  %-20s: %.2f\n", "--weight-center", weight_center); 
+        fprintf(out, "  %-20s: %.2f\n", "--weight-decay", weight_decay); 
         fprintf(out, "  %-20s: %s\n", "--neff-dir", neff_dir.c_str()); 
         fprintf(out, "  %-20s: %s\n", "--neff-ext", neff_ext.c_str()); 
         fprintf(out, "  %-20s: %zu\n", "--neff-nsamples", neff_nsamples); 
@@ -282,7 +283,9 @@ struct CSSgdRunner {
         CrfFunc<Abc, TrainingPairV> val_func(valset_, *sm_);
         DerivCrfFunc<Abc, TrainingPairT> train_func(trainset_, *sm_, *prior);
         SgdOptimizer<Abc, TrainingPairT, TrainingPairV> sgd(train_func, val_func, 
-                opts_.sgd, neff_samples_, opts_.neff_pc, opts_.crffile_vset, opts_.crffile_tset);
+            opts_.sgd, neff_samples_, opts_.neff_pc);
+        sgd.crffile_tset = opts_.crffile_tset;
+        sgd.crffile_vset = opts_.crffile_vset;
         sgd.Optimize(*crf_, fout);
 
         if (!opts_.outfile.empty()) fclose(fout);
@@ -351,8 +354,9 @@ void CSSgdApp<Abc>::ParseOptions(GetOpt_pp& ops) {
     ops >> Option('g', "gauss-init", opts_.gauss_init, opts_.gauss_init);
     ops >> Option('P', "prior", opts_.prior, opts_.prior);
     ops >> Option('p', "sigma-pc", opts_.sgd.sigma_pc_max, opts_.sgd.sigma_pc_max);
-    ops >> Option('q', "sigma-pc-epoch", opts_.sgd.sigma_pc_epoch, opts_.sgd.sigma_pc_epoch);
-    ops >> Option('Q', "sigma-pc-delta", opts_.sgd.sigma_pc_delta, opts_.sgd.sigma_pc_delta);
+    ops >> Option('q', "sigma-pc-delta", opts_.sgd.sigma_pc_delta, opts_.sgd.sigma_pc_delta);
+    ops >> Option('Q', "sigma-pc-steps", opts_.sgd.sigma_pc_steps, opts_.sgd.sigma_pc_steps);
+    ops >> Option(' ', "sigma-pc-epoch", opts_.sgd.sigma_pc_epoch, opts_.sgd.sigma_pc_epoch);
     ops >> Option('c', "sigma-context", opts_.sigma_context, opts_.sigma_context);
     ops >> Option('d', "sigma-decay", opts_.sigma_decay, opts_.sigma_decay);
     ops >> Option('b', "sigma-bias", opts_.sigma_bias, opts_.sigma_bias);
@@ -392,7 +396,7 @@ void CSSgdApp<Abc>::PrintOptions() const {
             "Model file with CRF or context library for initialization");
     fprintf(out_, "  %-30s %s (def=%zu)\n", "-K, --states [1,inf[",
             "Number of states in CRF to be trained", opts_.nstates);
-    fprintf(out_, "  %-30s %s (def=%d)\n", "-N, --epochs [1,inf[",
+    fprintf(out_, "  %-30s %s (def=%zu)\n", "-N, --epochs [1,inf[",
             "Maximal number of SGD epochs", opts_.sgd.max_epochs);
     fprintf(out_, "  %-30s %s (def=%.2g)\n", "-t, --toll [0,1]",
             "Log-likelihood change per column for convergence", opts_.sgd.toll);
@@ -410,21 +414,24 @@ void CSSgdApp<Abc>::PrintOptions() const {
             "Prior of the likelihood function", opts_.prior);
     fprintf(out_, "  %-30s %s\n", "", "1: gaussian prior");
     fprintf(out_, "  %-30s %s\n", "", "2: lasso prior");
-    fprintf(out_, "  %-30s %s (def=%.2f)\n", "-p, --sigma-pc ]0,inf]",
-            "Std. deviation sigma in prior of pseudocounts weights",
-            opts_.sgd.sigma_pc_max);
-    fprintf(out_, "  %-30s %s (def=%zu)\n", "-q, --sigma-pc-epoch [0,inf[",
-            "SGD epoche for activating prior of pseudocounts weights", opts_.sgd.sigma_pc_epoch);
-    fprintf(out_, "  %-30s %s (def=%.3f)\n", "-Q, --sigma-pc-delta [0,inf[",
-            "Gradient for activating prior of pseudocounts weights", opts_.sgd.sigma_pc_delta);
+    fprintf(out_, "  %-30s %s (def=%.2f)\n", "-b, --sigma-bias ]0,inf]",
+            "Std. deviation sigma in prior of bias weights",
+            opts_.sigma_bias);
     fprintf(out_, "  %-30s %s (def=%.2f)\n", "-c, --sigma-context ]0,inf]",
             "Std. deviation sigma in prior of context weights",
             opts_.sigma_context);
     fprintf(out_, "  %-30s %s (def=%.2f)\n", "-d, --sigma-decay [0,1]",
-            "Exponential decay of sigma for context weights", opts_.sigma_decay);
-    fprintf(out_, "  %-30s %s (def=%.2f)\n", "-b, --sigma-bias ]0,inf]",
-            "Std. deviation sigma in prior of bias weights",
-            opts_.sigma_bias);
+            "Exponential decay of sigma of context weights", opts_.sigma_decay);
+    fprintf(out_, "  %-30s %s (def=%.2f)\n", "-p, --sigma-pc ]0,inf]",
+            "Std. deviation sigma in prior of pseudocounts weights",
+            opts_.sgd.sigma_pc_max);
+    fprintf(out_, "  %-30s %s (def=%.3f)\n", "-q, --sigma-pc-delta [0,inf[",
+            "Gradient of training curve for beginning to relax the prior for pseudocounts weights", opts_.sgd.sigma_pc_delta);
+    fprintf(out_, "  %-30s %s (def=%zu)\n", "-Q, --sigma-pc-steps [0,inf[",
+            "Number of steps for relaxing the prior of pseudocounts weights", opts_.sgd.sigma_pc_steps);
+    fprintf(out_, "  %-30s %s (def=%zu)\n", "    --sigma-pc-epoch [0,inf[",
+            "SGD epoche for beginning to relax the prior of pseudocounts weights", opts_.sgd.sigma_pc_epoch);
+    fprintf(out_, "  %-30s %s\n", "", "0: Use gradient of training curve");
     fprintf(out_, "  %-30s %s (def=%.2f)\n", "    --pc-init ]0,1]",
             "Constant pseudocount admix in CRF initialization by sampling",
             opts_.pc_init);

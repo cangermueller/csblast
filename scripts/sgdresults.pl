@@ -4,6 +4,10 @@ use strict;
 use warnings;
 use Pod::Usage;
 use Getopt::Long;
+use Cwd qw(abs_path);
+use File::Basename qw(dirname basename);
+use My::Utils qw(is_numeric);
+
 
 =pod
 =head1 NAME
@@ -54,6 +58,10 @@ GetOptions(
   "h|help"         => sub { pod2usage(2); }
 ) or die pos2usage(1);
 unless (@infiles) { pod2usage("Not input files provided!"); }
+unless ($benchdir) {
+  $benchdir = sprintf("%s/%s", $ENV{CSBENCH}, basename(dirname(abs_path($infiles[0]))));
+  unless (-d $benchdir) { $benchdir = undef; }
+}
 unless ($sort) { $sort = $benchdir ? "rocx" : "ll-val"; }
 
 foreach my $infile (@infiles) {
@@ -68,10 +76,10 @@ elsif ($sort eq "param" && scalar(@params)) { @results = sort({
 				if ($a->{PARAMS}->[$i] != $b->{PARAMS}->[$i]) { return $a->{PARAMS}->[$i] cmp $b->{PARAMS}->[$i]; }
 			}
 			0; } @results); }
-elsif ($sort eq "ll-train") { @results = sort({ $b->{SGD}->{LLT} <=> $a->{SGD}->{LLT} } @results); }
+elsif ($sort eq "ll-train") { @results = sort({ &comp_num($b->{SGD}->{LLT}, $a->{SGD}->{LLT}) } @results); }
 elsif ($sort eq "neff") { @results = sort({ $b->{SGD}->{NEFF} <=> $a->{SGD}->{NEFF} } @results); }
 elsif ($sort eq "rocx") { @results = sort({ $b->{ROCX}->{ROCX} <=> $a->{ROCX}->{ROCX} } @results); }
-else { @results = sort({ $b->{SGD}->{LLV} <=> $a->{SGD}->{LLV} } @results); }
+else { @results = sort({ &comp_num($b->{SGD}->{LLV}, $a->{SGD}->{LLV}) } @results); }
 
 my @len = ((0) x (scalar(@params) + 1), 1, 3, 3, 8, 8, 8, 8, 8);
 foreach my $r (@results) {
@@ -181,4 +189,12 @@ sub get_rocx {
 		}
 	}
 	return $rocx;
+}
+
+sub comp_num {
+  my ($a, $b) = @_;
+  print "$a $b\n";
+  unless (is_numeric($a)) { return -1; }
+  unless (is_numeric($b)) { return 1; }
+  return $a <=> $b;
 }

@@ -10,7 +10,7 @@ fi
 MODEL=$1
 shift
 ARGS=$@
-S="u"
+S="mad"
 for A in $ARGS; do
   if [ $A == "-s" ]; then 
     S="s"

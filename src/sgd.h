@@ -24,28 +24,30 @@ struct SgdParams {
               toll(1e-3),
               early_delta(0.01),
               min_epochs(10),
-              max_epochs(100),
+              max_epochs(150),
               sigma_pc_min(0.01),
-              sigma_pc_max(10.0),
-              sigma_pc_delta(0.001),
+              sigma_pc_max(1.0),
               sigma_pc_epoch(0),
+              sigma_pc_delta(0.002),
+              sigma_pc_steps(20),
               seed(0) {}
 
-    size_t nblocks;            // number of training blocks
-    double eta;                // learning rate eta for context and pseudocount weights
-    double mu;                 // meta learning rate
-    double rho;                // lower bound for multiplier in learning rate adaption
-    double max_eta;            // upper bound for learning rates
-    double gamma;              // parameter governing exponential average of derivatives
-    double toll;               // LL change for convergence
-    double early_delta;        // Deviation from the maximal LL on the validation set for early-stopping
-    int min_epochs;            // minimal number of epochs
-    int max_epochs;            // maximal number of epochs
-    double sigma_pc_min;       // Minimum sigma in prior for pseudocounts weights
-    double sigma_pc_max;       // Maximum sigma in prior for pseudocounts weights
-    double sigma_pc_delta;     // Gradient for activating prior for pseudocounts weights
-    size_t sigma_pc_epoch;    // Epoch for activating prior for pseudocounts weights
-    unsigned int seed;         // seed for rng that shuffles training set after each epoch
+    size_t nblocks;        // number of training blocks
+    double eta;            // learning rate eta for context and pseudocount weights
+    double mu;             // meta learning rate
+    double rho;            // lower bound for multiplier in learning rate adaption
+    double max_eta;        // upper bound for learning rates
+    double gamma;          // parameter governing exponential average of derivatives
+    double toll;           // LL change for convergence
+    double early_delta;    // Deviation from the maximal LL on the validation set for early-stopping
+    size_t min_epochs;        // minimal number of epochs
+    size_t max_epochs;        // maximal number of epochs
+    double sigma_pc_min;   // Minimum sigma in prior of pseudocounts weights
+    double sigma_pc_max;   // Maximum sigma in prior of pseudocounts weights
+    size_t sigma_pc_epoch; // Epoch for beginning to relax the prior of pseudocounts weights
+    double sigma_pc_delta; // Gradient for beginning to relax the prior of pseudocount weights
+    size_t sigma_pc_steps; // Number of steps for relaxing the prior of pseudocounts weights
+    unsigned int seed;     // seed for rng that shuffles training set after each epoch
 };
 
 
@@ -147,24 +149,20 @@ struct SgdOptimizer {
                  const CrfFunc<Abc, TrainingPairV>& vf,
                  const SgdParams& p,
                  const vector<CountProfile<Abc> >& ns = vector<CountProfile<Abc> >(),
-                 double npc = 0.0, 
-                 string cf_vset = "",
-                 string cf_tset = "")
+                 const double npc = 0.0) 
             : sgd(tf, p),
               func(vf),
               params(p),
               neff_samples(ns),
-              neff_pc(npc),
-              crffile_vset(cf_vset),
-              crffile_tset(cf_tset) {}
-
+              neff_pc(npc) { } 
 
     double Optimize(Crf<Abc>& crf, FILE* fout = NULL) { 
 
         scoped_ptr<ProgressBar> prog_bar;
         SgdState<Abc> s(crf);
-        int epoch = 1, best_epoch = 1, nconv = 0, nearly = 0;
+        size_t epoch = 1, best_epoch = 1, nconv = 0, nearly = 0, nsigma_pc = 0;
         double best_loglike = -DBL_MAX, delta = DBL_MAX, old_loglike, val_loglike;
+        size_t sigma_pc_epoch = params.sigma_pc_epoch;
         std::string best_line;
 
         if (fout) {
@@ -180,15 +178,23 @@ struct SgdOptimizer {
             && epoch <= params.max_epochs) {
             // Print first part of table row
             if (fout) {
-                fprintf(fout, "%-4d  ", epoch); fflush(fout);
+                fprintf(fout, "%-4zu  ", epoch); fflush(fout);
                 prog_bar->Init((sgd.func.trainset.size() + 1) * crf.size());
             }
             
             // Save last likelihood for calculation of delta
             old_loglike = s.loglike;
             // Update sigma in prior for pseudocounts weights
-            sgd.func.prior.sigma_pc = params.sigma_pc_min + (params.sigma_pc_max - params.sigma_pc_min) / 
-                (1 + exp((static_cast<int>(params.sigma_pc_epoch - epoch)) / params.sigma_pc_delta));
+            if (sigma_pc_epoch == 0 || epoch < sigma_pc_epoch) {
+                sgd.func.prior.sigma_pc = params.sigma_pc_min;
+            } else if (epoch >= sigma_pc_epoch + params.sigma_pc_steps) {
+                sgd.func.prior.sigma_pc = params.sigma_pc_max;
+            } else {
+                sgd.func.prior.sigma_pc = params.sigma_pc_min + 
+                    (params.sigma_pc_max - params.sigma_pc_min) / params.sigma_pc_steps * (epoch - sigma_pc_epoch);
+            }
+            // sgd.func.prior.sigma_pc = params.sigma_pc_min + (params.sigma_pc_max - params.sigma_pc_min) / 
+            //     (1 + exp((static_cast<int>(params.sigma_pc_epoch - epoch)) / params.sigma_pc_delta));
             // Run on epoche of SGD
             sgd(s, prog_bar.get());
             // Normalize likelihood and prior to user friendly scale
@@ -201,6 +207,11 @@ struct SgdOptimizer {
             // Keep track of how many times we were under convergence threshold
             if (fabs(delta) > params.toll) nconv = 0;
             else ++nconv;
+            // Keep track of how many times we were under the gradient for relaxing the pseudocount weights
+            if (sigma_pc_epoch == 0) {
+                if (fabs(delta) > params.sigma_pc_delta) nsigma_pc = 0;
+                else if (++nsigma_pc >= kMaxConvBumps) sigma_pc_epoch = epoch;
+            }
             // Keep track of how many times we were under the maximal likelihood
             if (val_loglike > best_loglike - params.early_delta) nearly = 0;
             else ++nearly;
@@ -256,20 +267,20 @@ struct SgdOptimizer {
         }
         if (fout && !best_line.empty()) {
             fprintf(fout, "%s\n", std::string(67, '-').c_str());
-            fprintf(fout, "%-4d %16s %s\n", best_epoch, "", best_line.c_str());
+            fprintf(fout, "%-4zu %16s %s\n", best_epoch, "", best_line.c_str());
         }
         return best_loglike;
     }
 	
 
-    static const int kMaxConvBumps = 3;
-    static const int kMaxEarlyBumps = 5;
+    static const size_t kMaxConvBumps = 3;
+    static const size_t kMaxEarlyBumps = 5;
 
     Sgd<Abc, TrainingPairT> sgd;      // SGD algorithm encapsulation
     CrfFunc<Abc, TrainingPairV> func; // validation set function
     const SgdParams& params;          // SGD parameters
     const vector<CountProfile<Abc> >&
-      neff_samples;                   // samples for computing the Neff
+        neff_samples;                 // samples for computing the Neff
     const double neff_pc;             // pseudocounts admix for computing the Neff
     string crffile_vset;              // Output file for best CRF on the validation set
     string crffile_tset;              // Output file for last CRF on the training set
