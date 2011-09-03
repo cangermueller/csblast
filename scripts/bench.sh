@@ -1,66 +1,83 @@
 #!/bin/bash
 
-hostname
-
 source $HOME/src/cs/.cs.sh
 
-if [ $# -lt 2 ]; then
-	echo "bench.sh NEFF|ADMIX MODEL|BENCH_SCRIPT [TYPE] [DIR]" 1>&2
-	exit 1
-fi
+function synopsis {
+  cat <<END
+bench.sh - Benchmarks a given model
 
-NEFF=$1
-if [[ ! $NEFF =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
-  echo "NEFF|ADMIX invalid!"
-  exit 1
-fi
-MODEL=$2
-if [ ! -e $MODEL ]; then
-  echo "MODEL|BENCH_SCRIPT does not exist!"
-  exit 1
-fi
-TYPE=${3:-0}
-DIR=$4
-if [ -z $DIR ]; then
-  if [ ${MODEL:0:${#CSC}} == $CSC ]; then
-    DIR=`dirname $MODEL`
-    DIR=${DIR#$CSC/}
-  else
-    DIR=share
-  fi
-fi
+bench.sh [OPTIONS] -m MODEL
+
+  OPTIONS:
+    -m MODEL                 The input model
+    -x TAU                   Admixture coefficient tau
+    -z GAMMA                 Admixture coefficient gamma
+    -c CATEGORY              Output catecory
+    -d DB                    Database name
+    -t                       Use the test set instead of the optimization set
+    -h                       Show this text
+END
+}
+
+DB="scop20_1.75_K3"
+MODEL=
+X=
+T=
+CAT=
+TSET=0
 
 
-case $TYPE in
-  0) DB=$DBS/scop20_1.75_bench;;
-  1) DB=$DBS/scop20_1.75_opt;;
-  2) DB=$DBS/scop20_1.73_bench;;
-  *) DB=$DBS/scop20_1.73_opt;;
-esac
-DB_FILE=${DB}_db
-PLOTS="tpfp,wtpfp,rocx,evalue,pvalue"
+### Initialization ###
 
-if [ ${MODEL##*.} == "sh" ]; then
-  rsub --mult 100 --quiet -g "$DB/*.seq" -s $MODEL
-else
-  if [ ${NEFF%.*} -gt 1 ]; then
-    PC="z"
-  else 
-    PC="x"
-  fi
-  NAME=`printf '%s_%s%.2f' $(basename $MODEL) $PC $NEFF`
-  case $TYPE in
-    0) OUTDIR="$CSD/bench/scop20_1.75/bench";;
-    1) OUTDIR="$CSD/bench/scop20_1.75/opt";;
-    2) OUTDIR="$CSD/bench/scop20_1.73/bench";;
-    *) OUTDIR="$CSD/bench/scop20_1.73/opt";;
+
+while getopts "m:x:z:c:d:th" OPT; do
+  case $OPT in
+    m) MODEL=$OPTARG;;
+    x) X=$OPTARG;;    
+    z) Z=$OPTARG;;    
+    c) CAT=$OPTARG;;    
+    d) DB=$OPTARG;;
+    t) TSET=1 ;;
+    h) synopsis; exit 0 ;;
+    *) exit 1
   esac
-  OUTDIR=$OUTDIR/$DIR/$NAME
-  if [ -e $OUTDIR ]; then 
-    exit 0
-    #rm -r $OUTDIR; 
-  fi
-  mkdir -p $OUTDIR
-  rsub --logfile $HOME/jobs/bench$$.log --mult 100 --quiet -g "$DB/*.seq" -c "csblast -i FILENAME -D $MODEL --blast-path /cluster/bioprogs/blast/bin -o $OUTDIR/BASENAME.bla -d $DB_FILE -e 1e5 -v 10000 -b 0 -$PC $NEFF"
-  qsub -b y csbin -i \"$OUTDIR/\*.bla\" -d $OUTDIR -s $DB_FILE -p $PLOTS
+done
+if [ -z "$MODEL" ]; then 
+  echo "No model provided!"
+  synopsis
+  exit 1
 fi
+if [ -z "$X" -a -z "$Z" ]; then Z=12.5; fi
+
+if [ $TSET -eq 0 ]; then
+  TYPE="opt"
+else
+  TYPE="test"
+fi
+DB_DIR=`ls -d $DBS/$DB/*_01_$TYPE 2> /dev/null`
+DB_FILE=$DB_DIR/db
+if [ ! -f $DB_FILE ]; then 
+  echo "'$DB_FILE' does not exits!"
+  exit 1
+fi
+if [ -z "$X" ]; then 
+  ADMIX="-z $Z"
+else
+  ADMIX="-x $X"
+fi
+OUTDIR=$CSD/bench/$DB/$TYPE/blast
+if [ ! -d "$OUTDIR" ]; then 
+  echo "'$OUTDIR' does not exist!"
+  exit 1
+fi
+if [ $CAT ]; then OUTDIR=$OUTDIR/$CAT; fi
+OUTDIR=$OUTDIR/`basename $MODEL`
+
+
+### Run ##
+
+
+mkdir -p $OUTDIR
+rsub --logfile $HOME/jobs/bench$$.log --mult 100 --quiet -g "$DB_DIR/*.seq" \
+  -c "csblast -i FILENAME -D $MODEL --blast-path /cluster/bioprogs/blast/bin -o $OUTDIR/BASENAME.bla -d $DB_FILE -e 1e5 -v 10000 -b 0 $ADMIX"
+qsub -b y csbin -i \"$OUTDIR/\*.bla\" -d $OUTDIR -s $DB_FILE -p tpfp,wtpfp,rocx,evalue,pvalue

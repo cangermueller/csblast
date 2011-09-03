@@ -15,8 +15,10 @@ using std::string;
 // Parameter wrapper for various SGD parameters
 struct SgdParams {
     SgdParams()
-            : nblocks(100),
-              eta(0.001),
+            : nblocks(1000),
+              eta_init(0.001),
+              eta_mode(ETA_MODE_ALAP),
+              eta_decay(2),
               mu(0.01),
               rho(0.5),
               max_eta(1.0),
@@ -33,21 +35,26 @@ struct SgdParams {
               seed(0) {}
 
     size_t nblocks;        // number of training blocks
-    double eta;            // learning rate eta for context and pseudocount weights
+    double eta_init;       // initial learning rate eta
+    size_t eta_mode;       // mode for updating the learning rate eta
+    double eta_decay;      // decay of the function for updating the learning rate eta
     double mu;             // meta learning rate
     double rho;            // lower bound for multiplier in learning rate adaption
     double max_eta;        // upper bound for learning rates
     double gamma;          // parameter governing exponential average of derivatives
     double toll;           // LL change for convergence
     double early_delta;    // Deviation from the maximal LL on the validation set for early-stopping
-    size_t min_epochs;        // minimal number of epochs
-    size_t max_epochs;        // maximal number of epochs
+    size_t min_epochs;     // minimal number of epochs
+    size_t max_epochs;     // maximal number of epochs
     double sigma_pc_min;   // Minimum sigma in prior of pseudocounts weights
     double sigma_pc_max;   // Maximum sigma in prior of pseudocounts weights
     size_t sigma_pc_epoch; // Epoch for beginning to relax the prior of pseudocounts weights
     double sigma_pc_delta; // Gradient for beginning to relax the prior of pseudocount weights
     size_t sigma_pc_steps; // Number of steps for relaxing the prior of pseudocounts weights
     unsigned int seed;     // seed for rng that shuffles training set after each epoch
+
+    static const size_t ETA_MODE_ALAP = 1;  // Use ALAP3 for updating the learning rate
+    static const size_t ETA_MODE_FUNC = 2;  // Use a function for updateing the learning rate
 };
 
 
@@ -89,8 +96,6 @@ struct Sgd {
                 s.grad_prev[i] = s.grad_loglike[i] + s.grad_prior[i];
             // Calculate gradient and increment likelihood based on training block 'b'
             func.df(s, b, params.nblocks, prog_bar);
-            // Udpate averages of partial derivatives
-            UpdateAverages(s);
             // Udpate learning rates
             UpdateLearningRates(s);
             // Updates CRF weights based on learning rates and gradient
@@ -116,25 +121,30 @@ struct Sgd {
         }
     }
 
-    // Updates all learning rates based on the current gradient, the previous
-    // gradient and the exponential average vector.
-    void UpdateLearningRates(SgdState<Abc>& s) {
-        if (s.steps == 0) {
-            Assign(s.eta, params.eta); // start with constant eta
-        } else {
-            double tmp = 0.0;
-            for (size_t i = 0; i < s.eta.size(); ++i) {
-                tmp = (s.grad_loglike[i] + s.grad_prior[i]) * s.grad_prev[i] / s.avg[i];
-                s.eta[i] = MIN(params.max_eta, s.eta[i] * MAX(params.rho, 1.0 + params.mu * tmp));
-            }
-        }
-    }
-
     // Updates exponential averages with new gradient
     void UpdateAverages(SgdState<Abc>& s) {
         double tmp = s.steps == 0 ? 1.0 : 1.0 - params.gamma;
         for (size_t i = 0; i < s.avg.size(); ++i)
             s.avg[i] = params.gamma * s.avg[i] + tmp * SQR(s.grad_loglike[i] + s.grad_prior[i]);
+    }
+
+    // Updates all learning rates
+    void UpdateLearningRates(SgdState<Abc>& s) {
+        if (s.steps == 0) {
+            Assign(s.eta, params.eta_init); // start with constant eta
+        } else {
+            if (params.eta_mode == SgdParams::ETA_MODE_ALAP) {
+                UpdateAverages(s);
+                double tmp = 0.0;
+                for (size_t i = 0; i < s.eta.size(); ++i) {
+                    tmp = (s.grad_loglike[i] + s.grad_prior[i]) * s.grad_prev[i] / s.avg[i];
+                    s.eta[i] = MIN(params.max_eta, s.eta[i] * MAX(params.rho, 1.0 + params.mu * tmp));
+                }
+            } else {
+                double eta = params.eta_init / (s.steps * (params.eta_decay - 1) / params.nblocks + 1);
+                Assign(s.eta, eta);
+            }
+        }
     }
 
     DerivCrfFunc<Abc, TrainingPair> func; // training set function

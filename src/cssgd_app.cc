@@ -47,6 +47,8 @@ struct CSSgdAppOptions {
         if (prior < 1 || prior > 2) throw Exception("Invalid prior!");
         if (pc_init <= 0 || pc_init > 1.0) throw Exception("Pseudocounts admix for initialization invalid!");
         if (neff_pc <= 0 || neff_pc > 1.0) throw Exception("Pseudocounts admix for computing the Neff invalid!");
+        if (sgd.eta_mode < 1 || sgd.eta_mode > 2) throw Exception("Invalid mode for updating the learning rate eta!");
+        if (sgd.eta_decay < 1) throw Exception("Eta decay must greater/equal one!");
     }
 
     void PrintOptions(FILE* out) const {
@@ -60,7 +62,9 @@ struct CSSgdAppOptions {
         fprintf(out, "  %-20s: %zu\n", "--epochs", sgd.max_epochs); 
         fprintf(out, "  %-20s: %1.5f\n", "--toll", sgd.toll); 
         fprintf(out, "  %-20s: %1.5f\n", "--early-delta", sgd.early_delta); 
-        fprintf(out, "  %-20s: %1.5f\n", "--eta", sgd.eta); 
+        fprintf(out, "  %-20s: %1.5f\n", "--eta", sgd.eta_init); 
+        fprintf(out, "  %-20s: %zu\n", "--eta-mode", sgd.eta_mode); 
+        fprintf(out, "  %-20s: %.2f\n", "--eta-decay", sgd.eta_decay); 
         fprintf(out, "  %-20s: %u\n", "--seed", sgd.seed); 
         fprintf(out, "  %-20s: %1.5f\n", "--gauss-init", gauss_init); 
         fprintf(out, "  %-20s: %zu\n", "--prior", prior); 
@@ -349,7 +353,9 @@ void CSSgdApp<Abc>::ParseOptions(GetOpt_pp& ops) {
     ops >> Option('N', "epochs", opts_.sgd.max_epochs, opts_.sgd.max_epochs);
     ops >> Option('t', "toll", opts_.sgd.toll, opts_.sgd.toll);
     ops >> Option('T', "early-delta", opts_.sgd.early_delta, opts_.sgd.early_delta);
-    ops >> Option('e', "eta", opts_.sgd.eta, opts_.sgd.eta);
+    ops >> Option('e', "eta", opts_.sgd.eta_init, opts_.sgd.eta_init);
+    ops >> Option('E', "eta-mode", opts_.sgd.eta_mode, opts_.sgd.eta_mode);
+    ops >> Option('D', "eta-decay", opts_.sgd.eta_decay, opts_.sgd.eta_decay);
     ops >> Option('r', "seed", opts_.sgd.seed, opts_.sgd.seed);
     ops >> Option('g', "gauss-init", opts_.gauss_init, opts_.gauss_init);
     ops >> Option('P', "prior", opts_.prior, opts_.prior);
@@ -402,10 +408,16 @@ void CSSgdApp<Abc>::PrintOptions() const {
             "Log-likelihood change per column for convergence", opts_.sgd.toll);
     fprintf(out_, "  %-30s %s (def=%.2g)\n", "-T, --early-delta [0,inf[",
             "Deviation from the maximal LL on the validation set for early-stopping", opts_.sgd.early_delta);
-    fprintf(out_, "  %-30s %s (def=%.3f)\n", "-e, --eta [0,1]",
-            "Learning rate eta in gradient steps", opts_.sgd.eta);
     fprintf(out_, "  %-30s %s (def=%zu)\n", "-B, --blocks [1,N]",
             "Number of training blocks", opts_.sgd.nblocks);
+    fprintf(out_, "  %-30s %s (def=%.3f)\n", "-e, --eta [0,1]",
+            "Initial Learning rate eta in gradient steps", opts_.sgd.eta_init);
+    fprintf(out_, "  %-30s %s (def=%zu)\n", "-E, --eta-mode [1-2]",
+            "Mode for updating the learning rate eta", opts_.sgd.eta_mode);
+    fprintf(out_, "  %-30s %s\n", "", "1: ALAP3");
+    fprintf(out_, "  %-30s %s\n", "", "2: Harmonic function");
+    fprintf(out_, "  %-30s %s (def=%.2f)\n", "-D, --eta-decay [1,inf[",
+            "Decay of harmonic function used for updating the learning rate eta", opts_.sgd.eta_decay);
     fprintf(out_, "  %-30s %s (def=off)\n", "-g, --gauss-init [0,inf[",
             "Turn on gaussian CRF initialization using given sigma");
     fprintf(out_, "  %-30s %s (def=%u)\n", "-r, --seed [0,inf[",

@@ -1,0 +1,483 @@
+#!/usr/bin/ruby
+require 'optparse'
+require 'fileutils'
+require 'erb'
+require 'yaml'
+require 'rubygems'
+require 'bioinf'
+require 'rsge'
+require 'myconfig'
+
+class CSOpt
+  class ScoreTable
+    attr_accessor :repeat, :lltrain, :llval, :rocx
+  end
+
+  def initialize
+    @verbose      = true
+    @outfile      = nil
+    @outdir       = "."
+    @seqfile      = nil
+    @paramsfile   = nil
+    @csblast_file = nil
+    @cssgd_file = nil
+    @glob         = nil
+    @outfile      = nil
+    @workdir      = File.join(MyConfig.tmp_path, Process.pid.to_s)
+    @name         = ""
+    @resglob      = '*.bla'
+    @rocx         = 5
+    @niter        = 2
+    @rounds       = 2
+    @repeats      = 1
+    @mult         = 30
+    @ymax         = 0
+    @keep_files   = false
+
+    @sge_config = SGE::CONFIGURATION.dup
+    @sge_config[:logfile] = File.join(MyConfig.jobs_path, "csopt.log")
+    @sge_config[:name] = "csopt"
+    @qm = SGE::Manager.new
+    @qm.verbose = false
+    @qm.interval = 1
+
+    @commands_stack = [] # temporary commands stack
+    @i = 0               # file counter
+    @j = 0               # submit counter
+    @csblast_cmds = []   # commands for csblast
+    @cssgd_cmds = []     # commands for cssgd
+    @round = 0           # rounds counter
+    @k = 0               # optimization counter
+    @fout = $stdout      # output stream
+    @score_opt = nil     # optimal score
+    @score_repeats = []  # score of all repeats of the current parameter configurations
+
+    self
+  end
+
+  def options
+    OptionParser.new do |o|
+      o.set_summary_indent('  ')
+      o.banner = "Usage: #{$0} -p paramsfile -c scriptfile -g glob -s seqfile [options]"
+      o.define_head( "Optimize homology detection performance of CS-BLAST using CRF pseudocounts.")
+      o.separator ""
+
+      o.on("-p", "--paramsfile OPTFILE", "Parameter optimization file in YAML format.") { |val| @paramsfile=val }
+      o.on("-b", "--csblast-script SCRIPT", "Job script for csBLAST call.") { |val| @csblast_file=val }
+      o.on("-c", "--cssgd-script SCRIPT", "Job script for cssgd call.") { |val| @cssgd_file=val }
+      o.on("-g", "--glob GLOB", String,
+           "Execute job script for each file that is matched by the GLOB expression (e.g. *.a3m).",
+           'The following substitutions are performed:',
+           "FILENAME will be substituted with the full filename of each file matched by GLOB.",
+           "BASENAME will be substituted with the basename of FILENAME.",
+           "DIRNAME will be substituted with the directory path of FILENAME.",
+           "DIRBASENAME will be substituted with DIRNAME/BASENAME.") do |val|
+        @glob = val
+      end
+      o.on("-d", "--dir DIRECTORY", "Output directory for the optimal CRF (default: #{@outdir})") { |val| @outdir=val }
+      o.on("-w", "--work-dir DIRECTORY", "Working directory (default: #{File.join(MyConfig.tmp_path, "$PID")}).") { |val| @workdir=val }
+      o.on("-s", "--seq-file SEQFILE", "Sequence file with sequences and SCOP identifiers in FASTA format.") { |val| @seqfile=val }
+      o.on("-m", "--max JOBS", Integer, "Maximal number of concurrent jobs (default: #{@sge_config[:max_jobs]})." ) { |val| @sge_config[:max_jobs] = val }
+      o.on("-o", "--outfile FILE", "Write optimization table to file.") { |val| @outfile=val }
+      o.on("-n", "--niter INT", Integer, "Number of iterations with Newtons method (default: #{@niter})." ) { |val| @niter = val }
+      o.on("-r", "--rounds INT", Integer, "Number of optimization rounds (default: #{@rounds})." ) { |val| @rounds = val }
+      o.on("-R", "--repeats INT", Integer, "Number of repeats per parameter configuration (default: #{@repeats})." ) { |val| @repeats = val }
+      o.on("--rocx INT", Integer, "Maximal number of false positives threshold in ROCX calculation  (default: #{@rocx})." ) { |val| @rocx = val }
+      o.on("--mult JOBS", Integer, "Merge multiple jobs into a jobscript to speed up csBLAST jobs (default: #{@mult})." ) { |val| @mult = val }
+      o.on("-k", "--keep-files", TrueClass, "Keep working directory (default: keep #{@keep_files})." ) {|val| @keep_files=true }
+      o.on("-q", "--quiet", "Turn output off.") { |val| @verbose=false }
+      o.on("-h", "--help", "Show this help message.") { puts o; exit }
+    end
+  end
+
+  def check_args
+    errors = []
+    errors << "No parameter file given!" if @paramsfile.nil?
+    errors << "No sequence file given!" if @seqfile.nil?
+    errors << "No csBLAST command file given!" if @csblast_file.nil?
+    errors << "No glob expression for csBLAST input files given!" if @glob.nil?
+    unless errors.empty?
+      puts errors.join("\n")
+      exit 1
+    end
+  end
+
+  def run(args)
+    options.parse!(args)
+    check_args
+
+    @sge_config[:logfile] = File.join(MyConfig.jobs_path, "csopt.log")
+    @qm.set_config(@sge_config)
+
+    #prepare output directory
+    FileUtils.mkdir_p(@workdir)
+    #read parameters for optimization
+    fh = File.open(@paramsfile, 'r')
+    @params = YAML::load(ERB.new(fh.read).result(binding))
+    fh.close
+    #read benchmark files
+    @globfiles = Dir.glob(@glob)
+    #read scriptfiles
+    File.open(@csblast_file, 'r') do  |f|
+      @csblast_cmds = f.readlines
+    end
+    if @cssgd_file
+      File.open(@cssgd_file, 'r') do  |f|
+        @cssgd_cmds = f.readlines
+      end
+    end
+    #prepare output stream
+    @fout = File.open(@outfile, 'w') if @outfile
+
+    #do the optimization
+    puts "Starting optimization in #{@workdir}..." if @verbose
+    print_table_header
+    @ymax = evaluate(@params)
+
+    1.upto(@rounds) do |r|
+      @round = r
+      @params.keys.sort_by {|k| @params[k]['order'] }.each do |param|
+        settings = @params[param]
+        val_opt = optimize(param, settings)
+        settings['value'] = val_opt
+      end
+    end
+    print_table_row(@params, @opt_score, nil, true, true)
+    @fout.close if @outfile
+    FileUtils.rm_rf(@workdir) unless @keep_files
+  end
+
+  def optimize(param, settings)
+    xmax = settings['value']
+    bounced = false
+    xl=nil # next parameter value to the left of xmax
+    yl=nil # result for xl
+    xr=nil # next parameter value to the right of xmax
+    yr=nil # result for xr
+    x =nil # next paramter value to be evaluated
+    y =nil # result for $x
+
+    loop do
+      x = change_parameter_value(xmax, settings, :right)
+      if (settings['max'] && x>settings['max'] || settings['min'] && x<settings['min'])
+        if bounced
+          return xmax
+        else
+          x = [x, settings['max'].to_f].min if settings['max']
+          x = [x, settings['min'].to_f].max if settings['min']
+          bounced=true
+        end
+      end
+      p = copy(@params)
+      p[param]['value'] = x
+      y = evaluate(p, param)
+      break if y<=@ymax
+      xl = xmax
+      yl = @ymax
+      xmax = x
+      @ymax = y
+    end
+    xr = x
+    yr = y
+
+    if xl.nil?
+      loop do
+        x = change_parameter_value(xmax, settings, :left)
+        if (settings['max'] && x>settings['max'] || settings['min'] && x<settings['min'])
+          if bounced
+            return xmax
+          else
+            x = [x, settings['max'].to_f].min
+            x = [x, settings['min'].to_f].max
+            bounced=true
+          end
+        end
+        p = copy(@params)
+        p[param]['value'] = x
+        y = evaluate(p, param)
+        break if y<=@ymax
+        xr = xmax
+        yr = @ymax
+        xmax = x
+        @ymax = y
+      end
+      xl = x
+      yl = y
+    end
+
+    @niter.times do
+      # Fit y=a*x^2+b*x+c through the three points and set x = -a/2b
+      xl2 = xl*xl
+      xr2 = xr*xr
+      xm2 = xmax*xmax
+      x = (yl*(xm2-xr2)+@ymax*(xr2-xl2)+yr*(xl2-xm2));
+      x /= 1E-10 + ( yl*(xmax-xr)+@ymax*(xr-xl) +yr*(xl-xmax)).abs.to_f*2.0;
+      if settings['format'] then x = sprintf("#{settings['format']}", x).to_f
+      else x = sprintf("%.4f", x.to_f).to_f end
+
+      if (settings['mult'] && x/xmax>1.01+1E-6 || settings['add'] && x-xmax>0.005)
+        p = copy(@params)
+        p[param]['value'] = x
+        y = evaluate(p, param)
+        if (y>@ymax)
+            xl = xmax;
+            yl = @ymax;
+            xmax = x;
+            @ymax = y;
+        else
+          xr = x
+          yr = y
+        end
+      elsif (settings['mult'] && xmax/x>1.01+1E-6 || settings['add'] && xmax-x>0.005)
+        p = copy(@params)
+        p[param]['value'] = x
+        y = evaluate(p, param)
+        if (y>@ymax)
+          xr = xmax;
+          yr = @ymax;
+          xmax = x;
+          @ymax = y;
+        else
+          xl = x
+          yl = y
+        end
+      else
+        break
+      end
+    end
+
+    return xmax
+  end
+
+  def change_parameter_value(x, settings, mode=:right)
+    ret = x
+    case mode
+    when :right: ret = settings['mult'] ? x.to_f*settings['mult'].to_f : x.to_f+settings['add'].to_f
+    when :left:  ret = settings['mult'] ? x.to_f/settings['mult'].to_f : x.to_f-settings['add'].to_f
+    end
+    if settings['format'] then ret = sprintf("#{settings['format']}", ret.to_f).to_f
+    else ret = sprintf("%.4f", ret.to_f).to_f end
+    return ret
+  end
+
+  def copy(hash)
+    ret = {}
+    hash.each do |k,v|
+      ret[k] = v.dup
+    end
+    return ret
+  end
+
+  def reset
+    @commands_stack.clear
+    @i = 0  # file counter
+    @j = 0  # submit counter
+  end
+
+  def print_table_header
+    row = ""
+    row << sprintf("%-2s  %1s  %-10s  ", "#", "r", "optimizing")
+    @params.each do |param,settings|
+      row << sprintf("%-8s  ", param)
+    end
+    row << sprintf("%-8s  %-8s  %-8s  %8s", "lltrain", "llval", "ROC#{@rocx}", "+/-%")
+    @fout.puts row
+    @fout.puts '-'*row.length
+    @fout.flush
+  end
+
+  def print_table_row(params, score, opt_param=nil, show_params=true, final=false)
+    row = ""
+    s << sprintf("%-2s  %1s  %-10s  ", opt_param||@k==1 ? @k.to_s : " ", opt_param ? @round.to_s : " ", opt_param||" ")
+    params.each do |param,settings|
+      s << sprintf("%-8.4g  ", settings['value'])
+    end
+    if show_params then
+      row << s
+    else
+      row << " " * s.length
+    end
+    row << sprintf("%-8.4f  %-8.4f  %-8.4f  %+8.1f%", 
+                   score.lltrain, score.llval, score.rocx, score.rocx/(@score_opt.rocx/100.0)-100.0)
+    @fout.puts '-'*row.length if final
+    @fout.puts row
+    @fout.flush
+  end
+
+  def evaluate(params, opt_param = nil)
+    # clear the working directory
+    FileUtils.rm_rf(@workdir)
+    Dir.mkdir(@workdir)
+
+    # evaluate the parameter configuration several times in parallel
+    @score_repeats = []
+    1.upto(repeats) do |r|
+      Thread.new{evaluate_repeat(params, r)}
+    end
+    while Thread.list.length > 1
+      Thread.list.last.join
+    end
+
+    # output the results
+    @score_repeats.sort! {|a, b| b['rocx'] <=> a['rocx']}
+    0.upto(@score_repeats.length - 1) do |i|
+      print_table_row(@params, @score_results[i], opt_param, i == 0)
+    end
+
+    # save the best crf
+    if @score_opt.nil? || @score_repeats[0].rocx > @score_opt.rocx then
+      @score_opt = @score_repeats[0]
+      exec(sprintf("mv %s/%02d/crf %s", @workdir, @score_opt.repeat))
+    end
+
+    return @score_repeats[0].rocx
+  end
+
+  def evaluate_repeat(params, repeat)
+    score = ScoreTable.new
+    # reset
+    # @k+=1
+
+    #prepare static template variables
+    tplvars = Hash.new
+    params.each do |param,settings|
+      tplvars[param] = settings['value']
+    end
+
+    tplvars['workdir'] = @workdir
+
+    #submit cssgd job
+    tplvars['crfdir'] = sprintf("%s/%02d/crf", @workdir, repeat)
+    tplvars['crfout'] = sprintf("%s/out", tplvars['crfdir'], repeat)
+    Dir.mkdir(tplvars['crfdir'])
+    unless @cssgd_file.nil?
+      run_sgd(@cssgd_cmds.dup, tplvars)
+    end
+    File.open(tplvars['crfout'], 'r') do  |f|
+      score.lltrain = nil
+      score.lltrain = nil
+      is_iter = false
+      f.readlines.each do |l|
+        if line =~ /^\d+\s+(\S+)\s+\S+\s+\S+\s+(\S+)\s+\S+$/ then
+          if score.llval.nil? || $2.to_f >= score.llval then
+            score.lltrain = $1.to_f
+            score.llval = $2.to_f
+            is_iter = true
+          elsif is_iter then 
+            break
+          end
+        end
+      end
+      if score.llval.nil? then
+        $stderr.puts "Can't parse '#{tplvars['crfout']}'!"
+        exit 1
+      end
+    end
+
+    #submit csblast jobs
+    tplvars['csblastdir'] = sprintf("%s/%02d/csblast", @workdir, repeat)
+    Dir.mkdir(tplvars['csblastdir'])
+    command_stack[]
+    @globfiles.each do |filename|
+      basename = File.basename(filename, filename[-(filename.size-filename.rindex("."))..-1])
+      dirname = File.dirname(filename)
+      cmds = @csblast_cmds.dup
+      cmds = cmds.map {|cmd| cmd.gsub(/DIRBASENAME/, "#{dirname}/#{basename}") }
+      cmds = cmds.map {|cmd| cmd.gsub(/FILENAME/, filename) }
+      cmds = cmds.map {|cmd| cmd.gsub(/BASENAME/, basename) }
+      cmds = cmds.map {|cmd| cmd.gsub(/DIRNAME/, dirname) }
+
+      tplvars['dirbasename'] = "#{dirname}/#{basename}"
+      tplvars['filename']    = filename
+      tplvars['basename']    = basename
+      tplvars['dirname']     = dirname
+
+      # submit the job
+      cg = SGE::CommandGenerator.new
+      cg.generate(cmds.join("\n"), tplvars, {})
+      cg.commands.each do |c|
+        command_stack.concat(c)
+        if !mult || command_stack.length == @mult
+          @qm.submit(command_stack)
+          command_stack.clear
+        end
+      end
+    end
+    # submit remaining jobs regardless of mult setting
+    unless command_stack.empty?
+      @qm.submit(command_stack)
+      commands_stack.clear
+    end
+    @qm.wait
+    check_for_errors
+
+    # compute roc score
+    cmd = ["csbin -i '#{tplvars['csblastdir']}/#{@resglob}' -d #{tplvars['csblastdir']} --rocx #{@rocx} -s #{@seqfile}"]
+    @qm.submit(cmd)
+    @qm.wait
+    check_for_errors
+    score.rocx = rocx_score
+    score_repeats.push(score)
+
+    return score.rocx
+  end
+
+  def run_sgd(cmds, tplvars={})
+    #generate commands for parameter grid
+    cg = SGE::CommandGenerator.new
+    cg.generate(cmds.join("\n"), tplvars, {})
+    @qm.submit(@cg.commands)
+    check_for_error
+  end
+
+  def submit_tpl_job(cmds, tplvars={}, mult=true)
+    #generate commands for parameter grid
+    cg = SGE::CommandGenerator.new
+    cg.generate(cmds.join("\n"), tplvars, {})
+
+    #submit jobs to queue
+    cg.commands.each do |c|
+      @i += 1
+      @commands_stack.concat(c)
+      if !mult || @i%@mult==0
+        @j += 1
+        @qm.submit(@commands_stack)
+        @commands_stack.clear
+      end
+    end
+  end
+
+  def check_for_errors
+    if !@qm.jobs_error.empty?
+      $stderr.puts "There were #{@qm.jobs_error.size} error(s) during parsing of results. Check following file(s):"
+      @qm.jobs_error.each { |job| $stderr.puts job.outfile }
+      exit 1
+    end
+  end
+
+  def rocx_score
+    #calculate ROCX score integral
+    rocxfile = File.join(@workdir, 'rocx.dat')
+    raise "Unable to parse ROCX data file #{rocxfile}" unless File.exists?(rocxfile)
+    sum = 0.0
+    File.open(rocxfile, 'r') do |f|
+      lines = f.readlines.map {|line| line.strip }
+      lines = lines.select {|line| line[0].chr!='#' }
+      line = lines.shift
+      x = line.split(/\s+/).first.to_f
+      y = line.split(/\s+/).last.to_f
+      lines.each do |line|
+        tokens = line.split(/\s+/)
+        x_new = tokens.first.to_f
+        y_new = tokens.last.to_f
+        sum += (x_new-x)*(y_new+y)/2
+        x = x_new
+        y = y_new
+      end
+    end
+    return sum
+  end
+
+end
+
+CSOpt.new.run(ARGV)

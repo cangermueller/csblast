@@ -2,9 +2,14 @@
 
 source $HOME/src/cs/.cs.sh
 
-DB=/data/fs03/scratch_ssd_raid/hhblits_dbs/uniprot20_29Mar11/second_round/alignments
+
 NEFF_MIN=2.5
 OUT_DIR=$DBS/uni20v2
+if [ $1 ]; then 
+  DB=$1
+else 
+  DB=/data/fs03/scratch_ssd_raid/hhblits_dbs/uniprot20_29Mar11/second_round/alignments
+fi
 
 function build_a3m {
     SEQ=$1

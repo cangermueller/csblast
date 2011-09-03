@@ -119,16 +119,18 @@ sub submit {
   }
 
   my $ext = $g == 1.0 ? "tsq" : "tpr";
-  my $out = sprintf("%s/%s_g%.2f%s_m%.1f_M%.1f_y%.1f_N%s", $CST, $bb, $g, 
+  my $out = sprintf("%s/%s_g%.2f%s_m%.1f_M%.1f_y%.1f_N%s%s", $CST, $bb, $g, 
     $ee ? sprintf("_n%.1f", $n) : "", 
-    $m, $M, $y, &get_N_short($NN));
+    $m, $M, $y, &get_N_short($NN),
+    $D ? sprintf("_D%s", basename($D)) : "",
+  );
   if ($suffix) { $out .= sprintf("_%s", $suffix); }
   if ($vs && -e "$out.$ext") { print "Validation set already exists!\n"; return; }
   my $cmd = sprintf(
 "qsub -pe $pe %s -o $out.log -e $out.log -b y " .
 "cstrainset -d $dd %s -s $ss -g $g -n $n -m $m -M $M -y $y -N $NN -W $W -x $x -o $out.$ext %s %s",
 $q ? "-q '$q'" : "", $ee ? "-e $ee" : "", $D ? "-D $D" : "", join(" ", @args));
-  # print "$cmd\n";
+  # print "$cmd\n"; exit 0;
   system($cmd);
   if ($?) { die "Error calling cstrainset!"; }
 }

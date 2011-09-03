@@ -62,7 +62,7 @@ unless ($benchdir) {
   $benchdir = sprintf("%s/%s", $ENV{CSBENCH}, basename(dirname(abs_path($infiles[0]))));
   unless (-d $benchdir) { $benchdir = undef; }
 }
-unless ($sort) { $sort = $benchdir ? "rocx" : "ll-val"; }
+unless ($sort) { $sort = ($benchdir ? "rocx" : "ll-val"); }
 
 foreach my $infile (@infiles) {
 	if (-e $infile) { 
@@ -193,7 +193,6 @@ sub get_rocx {
 
 sub comp_num {
   my ($a, $b) = @_;
-  print "$a $b\n";
   unless (is_numeric($a)) { return -1; }
   unless (is_numeric($b)) { return 1; }
   return $a <=> $b;
