@@ -177,9 +177,9 @@ struct SgdOptimizer {
 
         if (fout) {
             prog_bar.reset(new ProgressBar(fout, 16));
-            fprintf(fout, "%-5s %-16s %8s %8s %8s %8s %8s\n", 
+            fprintf(fout, "%-5s %-16s %8s %8s %9s %8s %8s\n", 
                 "Epoch", "Gradient descent", "LL-Train", "+/-", "Prior", "LL-Val", "Neff");
-            fprintf(fout, "%s\n", std::string(67, '-').c_str());
+            fprintf(fout, "%s\n", std::string(68, '-').c_str());
         }
 
         // Compute the initial likelihood
@@ -215,7 +215,7 @@ struct SgdOptimizer {
             // Calculate delta for convergence
             delta = s.loglike - old_loglike;
             // Keep track of how many times we were under convergence threshold
-            if (fabs(delta) > params.toll) nconv = 0;
+            if (delta > params.toll) nconv = 0;
             else ++nconv;
             // Keep track of how many times we were under the gradient for relaxing the pseudocount weights
             if (sigma_pc_epoch == 0) {
@@ -266,7 +266,7 @@ struct SgdOptimizer {
             // Print second part of table row
             if (fout) {
                 char line[100];
-                sprintf(line, " %8.4f %+8.4f %8.4f %8.4f %8.4f",
+                sprintf(line, " %8.4f %+8.4f %9.4f %8.4f %8.4f",
                         s.loglike, delta, s.prior, val_loglike, neff);
                 fprintf(fout, "%s\n", line);
                 if (epoch == best_epoch) best_line = line;
@@ -276,7 +276,7 @@ struct SgdOptimizer {
             epoch++;
         }
         if (fout && !best_line.empty()) {
-            fprintf(fout, "%s\n", std::string(67, '-').c_str());
+            fprintf(fout, "%s\n", std::string(68, '-').c_str());
             fprintf(fout, "%-4zu %16s %s\n", best_epoch, "", best_line.c_str());
         }
         return best_loglike;

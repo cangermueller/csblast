@@ -62,14 +62,17 @@ unless ($benchdir) {
   $benchdir = sprintf("%s/%s", $ENV{CSBENCH}, basename(dirname(abs_path($infiles[0]))));
   unless (-d $benchdir) { $benchdir = undef; }
 }
-unless ($sort) { $sort = ($benchdir ? "rocx" : "ll-val"); }
 
+my $is_rocx;
 foreach my $infile (@infiles) {
 	if (-e $infile) { 
 		my $r = &get_results($infile);
+    if ($r->{ROCX}->{ROCX}) { $is_rocx = 1; }
 		if ($r) { push(@results, $r); }
 	}
 }
+unless ($sort) { $sort = ($is_rocx ? "rocx" : "ll-val"); }
+
 if ($sort eq "name") { @results = sort({ $a->{NAME} cmp $b->{NAME} } @results); }
 elsif ($sort eq "param" && scalar(@params)) { @results = sort({ 
 			for my $i (0 .. $#{$a->{PARAMS}}) {

@@ -6,6 +6,7 @@ use Pod::Usage;
 use Getopt::Long;
 use File::Basename qw(basename dirname);
 use List::Util qw(shuffle);
+use My::Config;
 
 
 =pod
@@ -42,7 +43,7 @@ my $out_dir;
 my %sfolds;
 my @folds;
 my $nseqs;
-
+my %cfg = new My::Config;
 
 ### Initialization ###
 
@@ -104,16 +105,23 @@ print "Done!\n";
 
 
 sub create_set {
-  my ($dir, $fold_ids) = @_;
-  &exec("rm -rf $dir; mkdir $dir");
+  my ($out_base, $fold_ids) = @_;
+  my $db = $out_base;
+  my $db_file = "${out_base}_db";
+  # copy sequence files and create databases file
+  &exec("rm -rf $db; mkdir $db");
   for my $k (@{$fold_ids}) {
     for my $f (@{$folds[$k]}) {
       my $file = "$db_dir/$f";
-      &exec("cat $file >> $dir/db");
+      &exec("cat $file >> $db_file");
       $file =~ s/$ext$//;
-      &exec("cp $file* $dir");
+      &exec("cp $file* $db");
     }
   }
+  # create blast databases files
+  my $title = basename($out_base);
+  print("$cfg{'blast_path'}/formatdb -i $db_file -p T -t '$title'", "\n");
+  &exec("$cfg{'blast_path'}/formatdb -i $db_file -p T -t '$title'");
 }
 
 sub exec {

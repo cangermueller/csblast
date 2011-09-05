@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ $# -eq 0 ]; then
-	echo "sample_db.sh DB+"
+	echo "db_tset_vset.sh DB+"
 	exit 1
 fi
 

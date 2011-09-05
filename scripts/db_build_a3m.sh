@@ -4,7 +4,7 @@ source $HOME/src/cs/.cs.sh
 
 if [ $# -ne 3 ]; then
   echo "Missing arguments!"
-  echo "build_a3m.sh INPUT-A3M OUTPUT-DIR NEFF"
+  echo "db_build_a3m.sh INPUT-A3M OUTPUT-DIR NEFF"
   exit 1;
 fi
 

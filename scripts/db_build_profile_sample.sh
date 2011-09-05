@@ -10,7 +10,7 @@ DB_PRF=${DB_ALI}_neff$MIN_NEFF-$MAX_NEFF
 
 
 mkdir -p $DB_PRF
-rsub --quiet --no-sync --mult 10 -g "$DB_ALI/*.seq" -c "build_profile.pl -i DIRBASENAME*.a3m -o $DB_PRF/BASENAME -min $MIN_NEFF -max $MAX_NEFF -mode $MODE_NEFF -filter"
+rsub --quiet --no-sync --mult 10 -g "$DB_ALI/*.seq" -c "db_build_profile.pl -i DIRBASENAME*.a3m -o $DB_PRF/BASENAME -min $MIN_NEFF -max $MAX_NEFF -mode $MODE_NEFF -filter"
 
 : <<'END'
 for F in $DB_ALI/*.seq; do

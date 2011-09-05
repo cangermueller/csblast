@@ -181,6 +181,11 @@ struct CSSgdRunner {
         fprintf(out_, "%zu records read.\n", valset_.size());
         if (valset_.size() == 0)
             throw Exception("Validation set empty!");
+        size_t s = MIN(trainset_.size(), valset_.size());
+        if (s < opts_.sgd.nblocks) {
+          opts_.sgd.nblocks = s;
+          fprintf(out_, "Warning: block size changed to %zu blocks!\n", opts_.sgd.nblocks);
+        }
     }
 
     // Initializes CRF from context library, training data, or jumpstart file.
