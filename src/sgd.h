@@ -27,7 +27,7 @@ struct SgdParams {
               early_delta(0.01),
               min_epochs(10),
               max_epochs(150),
-              sigma_pc_min(0.1),
+              sigma_pc_min(0.2),
               sigma_pc_max(1.0),
               sigma_pc_epoch(0),
               sigma_pc_delta(0.002),
