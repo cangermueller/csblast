@@ -1,4 +1,5 @@
 // Copyright 2009, Andreas Biegert
+// Foo debug
 
 #ifndef CS_SGD_H_
 #define CS_SGD_H_
