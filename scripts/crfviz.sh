@@ -12,8 +12,8 @@ shift
 ARGS=$@
 S="mad"
 for A in $ARGS; do
-  if [ $A == "-s" ]; then 
-    S="s"
+  if [ $A == "-m" ]; then 
+    S="lib"
   fi
 done
 

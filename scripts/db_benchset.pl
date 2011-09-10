@@ -12,17 +12,21 @@ use My::Config;
 =pod
 =head1 NAME
 
-  csbenchset.pl - Creates a benchmark set by partitioning a database into k optimization and test sets.
+  db_benchset.pl - Creates a benchmark set by randomly partitioning a database into K blocks containing
+                   sequences of different folds and by using the first block as optimization set and 
+                   all remaining blocks as test set. If --crossval is set, K optimization and test sets 
+                   are created where block i is used as test set and the blocks [K] \ {i} as optimization set.
 
 =head1 SYNOPSIS
 
-  csbenchset.pl -d DATABASE -k [1,inf[
+  db_benchset.pl -d DATABASE -K [1,inf[
 
   OPTIONS:
     -d, --db-dir DATABASE         Path to the database containing the sequence files to be partitioned
-    -K, --folds [1,inf[           Number of folds to be created
+    -K, --folds [1,inf[           Number of folds blocks
+    -c, --crossval                Use cross-validation scheme
     -e, --ext  EXT                File extension of the sequence files [default: seq]
-    -o, --out-dir OUTPUT-DIR      Output directory [default: DATABASE]
+    -o, --out-base OUT-BASE       Output basename [default: DATABASE]
 
 =head1 AUTHOR
 
@@ -38,7 +42,8 @@ use My::Config;
 my $db_dir;
 my $K;
 my $ext = "seq";
-my $out_dir;
+my $crossval;
+my $outbase;
 
 my %sfolds;
 my @folds;
@@ -53,7 +58,8 @@ GetOptions(
   "d|db-dir=s"  => \$db_dir,
   "K|folds=i"   => \$K,
   "e|ext=s"     => \$ext,
-  "o|out-dir=s" => \$out_dir,
+  "c|crossval!" => \$crossval,
+  "o|outbase=s" => \$outbase,
   "h|help"      => sub { pod2usage(2); }
 ) or die pod2usage(1);
 unless ($db_dir) { pod2usage("No database provided!"); }
@@ -61,8 +67,8 @@ unless (-d $db_dir) { pod2usage("Database does not exist!"); }
 $db_dir =~ s/\/$//;
 unless ($K) { pod2usage("No number of folds provided!"); }
 if ($K < 2) { pod2usage("The number of folds must be greater or equal two!"); }
-unless ($out_dir) { $out_dir = dirname($db_dir); }
-$out_dir =~ s/\/$//;
+unless ($outbase) { $outbase = $db_dir; }
+$outbase =~ s/\/$//;
 
 
 ### Do the job ###
@@ -90,14 +96,22 @@ for my $k (0 .. $K - 1) {
   }
 }
 
-for my $k (0 .. $K - 1) {
-  printf "Creating fold %02d ...\n", $k + 1;
-  my $out_base = sprintf("$out_dir/%s_%02d", basename($db_dir), $k + 1);
-  &create_set("${out_base}_test", [$k]);
-  my @opt = (0 .. $K - 1);
-  splice(@opt, $k, 1);
-  &create_set("${out_base}_opt", \@opt);
+if ($crossval) {
+  for my $k (0 .. $K - 1) {
+    printf "Creating fold %02d ...\n", $k + 1;
+    my $outdir = sprintf("%s_%02d", $outbase,  $k + 1);
+    &create_set("${outdir}_test", [$k]);
+    my @opt = (0 .. $K - 1);
+    splice(@opt, $k, 1);
+    &create_set("${outdir}_opt", \@opt);
+  }
+} else {
+  print "Creating ${outbase}_opt ...\n";
+  &create_set("${outbase}_opt", [0]);
+  print "Creating ${outbase}_test ...\n";
+  &create_set("${outbase}_test", [1 .. $K]);
 }
+
 print "Done!\n";
 
 
@@ -105,9 +119,9 @@ print "Done!\n";
 
 
 sub create_set {
-  my ($out_base, $fold_ids) = @_;
-  my $db = $out_base;
-  my $db_file = "${out_base}_db";
+  my ($outbase, $fold_ids) = @_;
+  my $db = $outbase;
+  my $db_file = "${outbase}_db";
   # copy sequence files and create databases file
   &exec("rm -rf $db; mkdir $db");
   for my $k (@{$fold_ids}) {
@@ -119,9 +133,8 @@ sub create_set {
     }
   }
   # create blast databases files
-  my $title = basename($out_base);
-  print("$cfg{'blast_path'}/formatdb -i $db_file -p T -t '$title'", "\n");
-  &exec("$cfg{'blast_path'}/formatdb -i $db_file -p T -t '$title'");
+  my $title = basename($outbase);
+  &exec("$cfg{'blast_path'}/formatdb -i $db_file -p T -t '$title' -l /dev/null");
 }
 
 sub exec {

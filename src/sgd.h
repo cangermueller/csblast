@@ -16,27 +16,27 @@ using std::string;
 struct SgdParams {
     SgdParams()
             : nblocks(1000),
-              eta_init(0.001),
-              eta_mode(ETA_MODE_ALAP),
-              eta_decay(2),
+              eta_mode(ETA_MODE_FUNC),
+              eta_init(0.1),
+              eta_decay(2.0),
               mu(0.01),
               rho(0.5),
               max_eta(1.0),
               gamma(0.9),
-              toll(1e-3),
+              toll(0.001),
               early_delta(0.01),
               min_epochs(10),
               max_epochs(150),
-              sigma_pc_min(0.01),
+              sigma_pc_min(0.1),
               sigma_pc_max(1.0),
               sigma_pc_epoch(0),
               sigma_pc_delta(0.002),
-              sigma_pc_steps(20),
+              sigma_pc_steps(10),
               seed(0) {}
 
     size_t nblocks;        // number of training blocks
-    double eta_init;       // initial learning rate eta
     size_t eta_mode;       // mode for updating the learning rate eta
+    double eta_init;       // initial learning rate eta
     double eta_decay;      // decay of the function for updating the learning rate eta
     double mu;             // meta learning rate
     double rho;            // lower bound for multiplier in learning rate adaption
@@ -80,6 +80,8 @@ struct Sgd {
         const SgdParams& p)
             : func(tf),
               params(p),
+              eta_decay(static_cast<double>((params.eta_decay - 1) * tf.trainset.size()) / 
+                  (1e6 * params.nblocks)),
               ran(p.seed) {}
 
     // Shuffles training set and then runs one epoche of stochastic gradient descent
@@ -141,7 +143,7 @@ struct Sgd {
                     s.eta[i] = MIN(params.max_eta, s.eta[i] * MAX(params.rho, 1.0 + params.mu * tmp));
                 }
             } else {
-                double eta = params.eta_init / (s.steps * (params.eta_decay - 1) / params.nblocks + 1);
+                double eta = params.eta_init / (s.steps * eta_decay + 1);
                 Assign(s.eta, eta);
             }
         }
@@ -149,6 +151,7 @@ struct Sgd {
 
     DerivCrfFunc<Abc, TrainingPair> func; // training set function
     const SgdParams& params;              // SGD parameter
+    const double eta_decay;               // Parameter for calculating the decay of the learning rate
     Ran ran;                              // RNG for shuffling of training set
 };
 

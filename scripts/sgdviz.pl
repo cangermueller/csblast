@@ -154,7 +154,11 @@ foreach my $s (@sgd) {
   my ($min, $max) = (\$s->{RANGE}->[$col{PRIOR}-1]->[0], \$s->{RANGE}->[$col{PRIOR}-1]->[1]);
   for my $i (0 .. $#{$s->{VALUES}}) {
     my $v = \$s->{VALUES}->[$i]->[$col{PRIOR}-1];
-    $$v = sprintf("%.4f", $y1range[0] + ($$v - $$min) / ($$max - $$min) * ($y1range[1] - $y1range[0]));
+    if ($$min == $$max) { 
+      $$v = 0.5 * ($y1range[0] + $y1range[1]); 
+    } else {
+      $$v = sprintf("%.4f", $y1range[0] + ($$v - $$min) / ($$max - $$min) * ($y1range[1] - $y1range[0]));
+    }
   }
   $$min = $y1range[0];
   $$max = $y1range[1];
@@ -308,13 +312,13 @@ sub get_max {
   my ($s, $col) = @_;
   my $m = 0;
   for my $i (1 .. $#{$s->{VALUES}}) {
-    if ($s->{VALUES}->[$i]->[$col] > $s->{VALUES}->[$m]->[$col]) { $m = $i; }
+    if ($s->{VALUES}->[$i]->[$col] >= $s->{VALUES}->[$m]->[$col]) { $m = $i; }
   }
   return [$s->{VALUES}->[$m]->[0], $s->{VALUES}->[$m]->[$col]];
 }
 
 sub exec {
   my ($cmd) = @_;
-  if (system("$cmd &> /dev/null")) { print STDERR "Error executing '$cmd'!\n"; }
+  if (system("$cmd &> /dev/null")) { print STDERR "Error executing '$cmd'!\n"; exit 1; }
   return $?;
 }

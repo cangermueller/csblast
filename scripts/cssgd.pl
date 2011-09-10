@@ -52,7 +52,7 @@ my $suffix;
 my $cat     = "share";
 my @args;
 
-my $pe      = "threads.pe 4";
+my $pe      = "threads.pe 8";
 my $queue   = undef;
 # my $queue   = "normal,opteron2354,opteron8380,quadcore96gb,x2270,x4100,small.q";
 
@@ -110,7 +110,7 @@ my $cmd = sprintf(
   $m ? "-m $m" : "",
   join(" ", @args));
 
-#print "$cmd\n"; exit 0;
+# print "$cmd\n"; exit 0;
 system("mkdir -p $CSC/$cat");
 system("$cmd");
 if ($?) { die "Error calling cssgd!"; }

@@ -19,11 +19,11 @@ bench.sh [OPTIONS] -m MODEL
 END
 }
 
-DB="scop20_1.75_K3"
+DB="scop20_1.75"
 MODEL=
 X=
 T=
-CAT=
+CAT=share
 TSET=0
 
 
@@ -54,8 +54,12 @@ if [ $TSET -eq 0 ]; then
 else
   TYPE="test"
 fi
-DB_DIR=`ls -d $DBS/$DB/*_01_$TYPE 2> /dev/null`
-DB_FILE=$DB_DIR/db
+DB_DIR="$DBS/${DB}_$TYPE"
+if [ ! -d $DB_DIR ]; then
+  echo "'$DB_DIR' does not exist!"
+  exit 1
+fi
+DB_FILE=${DB_DIR}_db
 if [ ! -f $DB_FILE ]; then 
   echo "'$DB_FILE' does not exits!"
   exit 1
@@ -65,7 +69,7 @@ if [ -z "$X" ]; then
 else
   ADMIX="-x $X"
 fi
-OUTDIR=$CSD/bench/$DB/$TYPE/blast
+OUTDIR=$CSD/bench/$DB/$TYPE/share
 if [ ! -d "$OUTDIR" ]; then 
   echo "'$OUTDIR' does not exist!"
   exit 1
@@ -77,7 +81,12 @@ OUTDIR=$OUTDIR/`basename $MODEL`
 ### Run ##
 
 
+CMD=
+if [ $MODEL == "blast" ]; then
+  CMD="$BLAST_PATH/blastpgp -i FILENAME -o $OUTDIR/BASENAME.bla -d $DB_FILE -e 1e5 -v 10000 -b 0"
+else
+  CMD="csblast -D $MODEL --blast-path $BLAST_PATH -i FILENAME -o $OUTDIR/BASENAME.bla -d $DB_FILE -e 1e5 -v 10000 -b 0 $ADMIX"
+fi
 mkdir -p $OUTDIR
-rsub --logfile $HOME/jobs/bench$$.log --mult 100 --quiet -g "$DB_DIR/*.seq" \
-  -c "csblast -i FILENAME -D $MODEL --blast-path /cluster/bioprogs/blast/bin -o $OUTDIR/BASENAME.bla -d $DB_FILE -e 1e5 -v 10000 -b 0 $ADMIX"
+rsub --logfile $HOME/jobs/bench$$.log --mult 100 --quiet -g "$DB_DIR/*.seq" -c "$CMD"
 qsub -b y csbin -i \"$OUTDIR/\*.bla\" -d $OUTDIR -s $DB_FILE -p tpfp,wtpfp,rocx,evalue,pvalue
