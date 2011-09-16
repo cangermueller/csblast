@@ -120,6 +120,7 @@ struct Sgd {
         }
         // Scale delta vector to the maximum parameter change threshold
         if (delta_max > kDeltaMax) {
+            printf("\ndelta_max = %g\n", delta_max);
             for (size_t i = 0; i < delta.size(); ++i)
                 delta[i] = kDeltaMax * delta[i] / delta_max;
         }

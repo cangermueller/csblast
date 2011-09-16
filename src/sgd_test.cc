@@ -137,7 +137,7 @@ TEST_F(SgdTest, eta) {
   printf("%zu training samples read!\n", tset.size());
 
   SgdParams params;
-  params.eta_init = 0.1;
+  params.eta_init = 10;
   params.eta_mode = SgdParams::ETA_MODE_FUNC;
 
   params.sigma_pc_epoch = 1;

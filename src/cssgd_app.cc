@@ -283,13 +283,13 @@ struct CSSgdRunner {
 
         scoped_ptr<DerivCrfFuncPrior<Abc> > prior;
         if (opts_.prior == 1)
-            prior.reset(new GaussianDerivCrfFuncPrior<Abc>(
+            prior.reset(new LassoDerivCrfFuncPrior<Abc>(
                 opts_.sigma_bias,
                 opts_.sigma_context, 
                 opts_.sigma_decay, 
                 opts_.sgd.sigma_pc_max));
         else
-            prior.reset(new LassoDerivCrfFuncPrior<Abc>(
+            prior.reset(new GaussianDerivCrfFuncPrior<Abc>(
                 opts_.sigma_bias,
                 opts_.sigma_context, 
                 opts_.sigma_decay, 
@@ -432,8 +432,8 @@ void CSSgdApp<Abc>::PrintOptions() const {
             "Number of training blocks", opts_.sgd.nblocks);
     fprintf(out_, "  %-30s %s (def=%zu)\n", "-P, --prior [1-2]",
             "Prior of the likelihood function", opts_.prior);
-    fprintf(out_, "  %-30s %s\n", "", "1: gaussian prior");
-    fprintf(out_, "  %-30s %s\n", "", "2: lasso prior");
+    fprintf(out_, "  %-30s %s\n", "", "1: lasso prior");
+    fprintf(out_, "  %-30s %s\n", "", "2: gaussian prior");
     fprintf(out_, "  %-30s %s (def=%.2f)\n", "-b, --sigma-bias ]0,inf]",
             "Std. deviation sigma in prior of bias weights",
             opts_.sigma_bias);
