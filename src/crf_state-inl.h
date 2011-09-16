@@ -128,14 +128,13 @@ inline void UpdatePseudocounts(CrfState<Abc>& state) {
 
     // Rescale pseudocount weights and calculate their sum in lin-space
     long double sum = 0.0;
-    for (size_t a = 0; a < Abc::kSize; ++a) {
+    for (size_t a = 0; a < Abc::kSize; ++a)
         sum += exp(state.pc_weights[a] - max);
-	}
 
     // Update emission pseudocount vector
     double tmp = max + log(sum);
     for (size_t a = 0; a < Abc::kSize; ++a) {
-        state.pc[a] = exp(state.pc_weights[a] - tmp);
+        state.pc[a] = DBL_MIN + exp(state.pc_weights[a] - tmp);        
         // state.pc_weights[a] -= mean; // Not necessary if prior is applied
     }
 }

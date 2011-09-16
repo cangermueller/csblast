@@ -313,15 +313,15 @@ class CSOpt
     @params.each do |param,settings|
       row << sprintf("%-8s  ", param)
     end
-    row << sprintf("%-8s  %-8s  ", "lltrain", "llval") unless @cssgd_file.nil?
-    row << sprintf("%-8s  %6s", "score", "+/-%")
+    row << sprintf("%8s  %8s  ", "lltrain", "llval") unless @cssgd_file.nil?
+    row << sprintf("%8s  %8s", "score", "+/-%")
     @fout.puts row
     print_table_line
     @fout.flush
   end
 
   def print_table_line
-    @fout.puts '-' * (35 + @params.length * 10 + (@cssgd_file.nil? ? 0 : 20))
+    @fout.puts '-' * (37 + @params.length * 10 + (@cssgd_file.nil? ? 0 : 20))
   end
 
   def print_table_params(params, opt_param = nil, show = true)
@@ -340,8 +340,8 @@ class CSOpt
 
   def print_table_score(score)
     row = ""
-    row << sprintf("%-8.4f  %-8.4f  ", score.lltrain, score.llval) unless @cssgd_file.nil?
-    row << sprintf("%-8.4f  %+6.1f", score.score, 
+    row << sprintf("%8.4f  %8.4f  ", score.lltrain, score.llval) unless @cssgd_file.nil?
+    row << sprintf("%8.4f  %+8.2f", score.score, 
                    @score_opt.nil? || @score_opt.score == 0.0 ? 0.0 : 
                    100.0 * (score.score - @score_opt.score) / @score_opt.score)
     @fout.puts row
@@ -414,7 +414,6 @@ class CSOpt
     # submit the job
     FileUtils.mkdir_p(tplvars['cstrainsetdir'])
     sge_config           = SGE::CONFIGURATION.dup
-    sge_config[:logfile] = sprintf("%s/log", tplvars['cstrainsetdir'])
     sge_config[:args]    = sge_pe(@cpu_cstrainset)
     sge_config[:name]    = "cstrainset"
     cg = SGE::CommandGenerator.new
@@ -440,7 +439,6 @@ class CSOpt
     # submit the job
     FileUtils.mkdir_p(tplvars['cssgddir'])
     sge_config           = SGE::CONFIGURATION.dup
-    sge_config[:logfile] = sprintf("%s/log", tplvars['cssgddir'])
     sge_config[:args]    = sge_pe(@cpu_cssgd)
     sge_config[:name]    = sprintf("cssgd_%02d", repeat)
     cg = SGE::CommandGenerator.new

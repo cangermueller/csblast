@@ -29,8 +29,8 @@ struct CSSgdAppOptions {
         pc_init        = 0.75f;
         gauss_init     = 0.0;
         prior          = 2;
-        sigma_bias     = 10.0;
-        sigma_context  = 10.0;
+        sigma_bias     = 1.0;
+        sigma_context  = 1.0;
         sigma_decay    = 1.0;
         weight_center  = 1.6;
         weight_decay   = 0.85;

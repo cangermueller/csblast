@@ -121,14 +121,16 @@ struct CrfFunc {
 
             double tmp = max + log(sum);
             for (size_t k = 0; k < crf.size(); ++k) {
-                pp[k] = exp(pp[k] - tmp);
+                pp[k] = DBL_MIN + exp(pp[k] - tmp);
                 // Calculate pseudocounts p(a|c_n)
                 for (size_t a = 0; a < Abc::kSize; ++a)
                     pa[a] += crf[k].pc[a] * pp[k];
             }
             double loglike_n = 0.0;
-            for (size_t a = 0; a < Abc::kSize; ++a)
+            for (size_t a = 0; a < Abc::kSize; ++a) {
+                pa[a] = MAX(DBL_MIN, pa[a]);
                 loglike_n += trainset[n].y[a] * (log(pa[a]) - log(sm.p(a)));
+            }
 #pragma omp atomic
             loglike += loglike_n;
 
@@ -331,7 +333,7 @@ struct DerivCrfFunc : public CrfFunc<Abc, TrainingPair> {
 
     DerivCrfFunc(const TrainingSet& trainset,
                  const SubstitutionMatrix<Abc>& m,
-                 DerivCrfFuncPrior<Abc>& p = LassoDerivCrfFuncPrior<Abc>())
+                 DerivCrfFuncPrior<Abc>& p)
             : CrfFunc<Abc, TrainingPair>(trainset, m),
               shuffle(trainset.size()),
               prior(p) {
@@ -383,14 +385,17 @@ struct DerivCrfFunc : public CrfFunc<Abc, TrainingPair> {
             double tmp = max + log(sum);
 
             for (size_t k = 0; k < s.crf.size(); ++k) {
-                pp[k] = exp(pp[k] - tmp);
+                pp[k] = DBL_MIN + exp(pp[k] - tmp);
                 // Calculate pseudocounts p(a|c_n)
                 for (size_t a = 0; a < Abc::kSize; ++a)
                     pa[a] += s.crf[k].pc[a] * pp[k];
             }
+
             long double loglike_n = 0.0;
-            for (size_t a = 0; a < Abc::kSize; ++a)
+            for (size_t a = 0; a < Abc::kSize; ++a) {
+                pa[a] = MAX(DBL_MIN, pa[a]);
                 loglike_n += tpair.y[a] * (log(pa[a]) - log(sm.p(a)));
+            }
 #pragma omp atomic
             loglike += loglike_n;
         }
@@ -434,6 +439,7 @@ struct DerivCrfFunc : public CrfFunc<Abc, TrainingPair> {
                 for (size_t a = 0; a < Abc::kSize; ++a)
                     fit += tseq.y[a] * (pc[a] / pa[a] - 1.0);
                 double mpp_fit = mpp[m][k] * fit;
+                mpp_fit = MIN(DBL_MAX, mpp_fit);
 
                 // Update gradient of bias weight
                 grad[i++] += mpp_fit;
@@ -449,10 +455,15 @@ struct DerivCrfFunc : public CrfFunc<Abc, TrainingPair> {
                 sum = 0.0;
                 for (size_t a = 0; a < Abc::kSize; ++a)
                     sum += pc[a] * tseq.y[a] / pa[a];
+                sum = MIN(DBL_MAX, sum);
+
 
                 // Update gradient terms of pseudocount weights
-                for (size_t a = 0; a < Abc::kSize; ++a)
-                    grad[i++] += mpp[m][k] * pc[a] * (tseq.y[a] / pa[a] - sum);
+                for (size_t a = 0; a < Abc::kSize; ++a) {
+                    double d = tseq.y[a] / pa[a];
+                    d = MIN(DBL_MAX, d);
+                    grad[i++] += mpp[m][k] * pc[a] * (d - sum);
+                }
             }
             // Advance progress bar
             if (prog_bar) {
@@ -494,6 +505,7 @@ struct DerivCrfFunc : public CrfFunc<Abc, TrainingPair> {
                 for (size_t a = 0; a < Abc::kSize; ++a)
                     fit += tprof.y[a] * (pc[a] / pa[a] - 1.0);
                 double mpp_fit = mpp[m][k] * fit;
+                mpp_fit = MIN(DBL_MAX, mpp_fit);
 
                 // Update gradient of bias weight
                 grad[i++] += mpp_fit;
@@ -507,10 +519,14 @@ struct DerivCrfFunc : public CrfFunc<Abc, TrainingPair> {
                 sum = 0.0;
                 for (size_t a = 0; a < Abc::kSize; ++a)
                     sum += pc[a] * tprof.y[a] / pa[a];
+                sum = MIN(DBL_MAX, sum);
 
                 // Update gradient terms of pseudocount weights
-                for (size_t a = 0; a < Abc::kSize; ++a)
-                    grad[i++] += mpp[m][k] * pc[a] * (tprof.y[a] / pa[a] - sum);
+                for (size_t a = 0; a < Abc::kSize; ++a) {
+                    double d = tprof.y[a] / pa[a];
+                    d = MIN(DBL_MAX, d);
+                    grad[i++] += mpp[m][k] * pc[a] * (d - sum);
+                }
             }
             // Advance progress bar
             if (prog_bar) {

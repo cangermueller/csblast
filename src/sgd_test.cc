@@ -10,6 +10,7 @@
 namespace cs {
 
 const double kDelta = 1e-6;
+const std::string test_dir = PathCat(getenv("CS_DATA") ? getenv("CS_DATA") : "../data", "test");
 
 template<typename TrainingPair>
 class SgdTestBlosum : public testing::Test {
@@ -54,7 +55,7 @@ class SgdTestBlosum : public testing::Test {
 };
 
 typedef testing::Types<TrainingSequence<AA>, TrainingProfile<AA> > MyTypes;
-TYPED_TEST_CASE(SgdTestBlosum, TrainingProfile<AA>);
+TYPED_TEST_CASE(SgdTestBlosum, TrainingSequence<AA>);
 
 
 TYPED_TEST(SgdTestBlosum, DISABLED_InitWithGaussian) {
@@ -95,7 +96,7 @@ TYPED_TEST(SgdTestBlosum, DISABLED_InitWithOptimalSolution) {
 }
 
 
-TYPED_TEST(SgdTestBlosum, PcPrior) {
+TYPED_TEST(SgdTestBlosum, DISABLED_PcPrior) {
   MatrixPseudocounts<AA> pc(this->m_);
   ConstantAdmix admix(1.0);
   LassoDerivCrfFuncPrior<AA> prior = this->prior_;
@@ -119,6 +120,44 @@ TYPED_TEST(SgdTestBlosum, PcPrior) {
     for (size_t a = 0; a < AA::kSize; ++a)
       EXPECT_NEAR(s.crf[k].context_weights[c][a], s.crf[k].pc_weights[a], 0.1);
   }
+}
+
+class SgdTest : public testing::Test {
+
+  protected:
+  typedef vector<TrainingSequence<AA> > TrainingSet;
+};
+
+TEST_F(SgdTest, eta) {
+  FILE* fin = fopen(PathCat(test_dir, "sgd_test_eta.tsq"), "r");
+  TrainingSet tset;
+  for (size_t n = 0; n < 10000; ++n)
+    tset.push_back(TrainingSequence<AA>(fin));
+  fclose(fin);
+  printf("%zu training samples read!\n", tset.size());
+
+  SgdParams params;
+  params.eta_init = 0.1;
+  params.eta_mode = SgdParams::ETA_MODE_FUNC;
+
+  params.sigma_pc_epoch = 1;
+  params.sigma_pc_steps = 0;
+  params.sigma_pc_max = 1.0;
+  params.nblocks = 1000;
+
+  BlosumMatrix sm;
+  CrfFunc<AA, TrainingSequence<AA> > vf(tset, sm);
+  GaussianDerivCrfFuncPrior<AA> prior(1.0, 1.0, 1.0, 1.0);
+  DerivCrfFunc<AA, TrainingSequence<AA> > tf(tset, sm, prior);
+  SgdOptimizer<AA, TrainingSequence<AA>, TrainingSequence<AA> > optimizer(tf, vf, params);
+
+  MatrixPseudocounts<AA> pc(sm);
+  ConstantAdmix admix(0.75);
+  SamplingCrfInit<AA, TrainingSequence<AA> > init(tset, pc, admix, sm);
+  Crf<AA> crf(10, 13, init);
+
+  optimizer.Optimize(crf, stdout);
+
 }
 
 }  // namespace cs

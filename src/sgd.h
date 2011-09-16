@@ -30,9 +30,9 @@ struct SgdParams {
               max_epochs(150),
               sigma_pc_min(0.2),
               sigma_pc_max(1.0),
-              sigma_pc_epoch(0),
+              sigma_pc_epoch(1),
               sigma_pc_delta(0.002),
-              sigma_pc_steps(10),
+              sigma_pc_steps(0),
               seed(0) {}
 
     size_t nblocks;        // number of training blocks
@@ -111,15 +111,27 @@ struct Sgd {
     // Moves CRF weights along the gradient direction with parameter-specific
     // step sizes given in 'eta' vector.
     void UpdateCRF(SgdState<Abc>& s) {
+        // Calculate delta vector
+        Vector<double> delta(s.eta.size());
+        double delta_max = 0.0;
+        for (size_t i = 0; i < s.eta.size(); ++i) {
+            delta[i] = s.eta[i] * (s.grad_loglike[i] + s.grad_prior[i]);
+            delta_max = MAX(delta_max, fabs(delta[i]));
+        }
+        // Scale delta vector to the maximum parameter change threshold
+        if (delta_max > kDeltaMax) {
+            for (size_t i = 0; i < delta.size(); ++i)
+                delta[i] = kDeltaMax * delta[i] / delta_max;
+        }
+        // Update CRF parameters
         for (size_t k = 0, i = 0; k < s.crf.size(); ++k) {
-            s.crf[k].bias_weight += s.eta[i] * (s.grad_loglike[i] + s.grad_prior[i]);
+            s.crf[k].bias_weight += delta[i]; 
             ++i;
             for (size_t j = 0; j < s.crf.wlen(); ++j)
                 for (size_t a = 0; a < Abc::kSize; ++a, ++i)
-                    s.crf[k].context_weights[j][a] += s.eta[i] * (s.grad_loglike[i] +
-                                                                  s.grad_prior[i]);
+                    s.crf[k].context_weights[j][a] += delta[i];
             for (size_t a = 0; a < Abc::kSize; ++a, ++i) 
-                s.crf[k].pc_weights[a] += s.eta[i] * (s.grad_loglike[i] + s.grad_prior[i]);
+                s.crf[k].pc_weights[a] += delta[i];
             UpdatePseudocounts(s.crf[k]);
         }
     }
@@ -150,10 +162,11 @@ struct Sgd {
         }
     }
 
-    DerivCrfFunc<Abc, TrainingPair> func; // training set function
-    const SgdParams& params;              // SGD parameter
-    const double eta_decay;               // Parameter for calculating the decay of the learning rate
-    Ran ran;                              // RNG for shuffling of training set
+    static const double kDeltaMax = 1.0e4; // Maximum parameter change per SGD iteraton
+    DerivCrfFunc<Abc, TrainingPair> func;  // training set function
+    const SgdParams& params;               // SGD parameter
+    const double eta_decay;                // Parameter for calculating the decay of the learning rate
+    Ran ran;                               // RNG for shuffling of training set
 };
 
 
@@ -265,7 +278,7 @@ struct SgdOptimizer {
               }
               neff /= neff_samples.size();
             }
-            prog_bar->Complete();
+            if (fout) prog_bar->Complete();
 
             // Print second part of table row
             if (fout) {
