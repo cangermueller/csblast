@@ -20,10 +20,11 @@ use My::Utils qw(remove_suffix trim min max);
   OPTIONS:
     -i, --infile INFILE       CSOPT optimization table
     -o, --outfile OUTFILE     Output file [default: INFILE.pdf]
-    -p, --plot X Y            Plot X agains Y [default: lltrain,llval]
+    -p, --plot X Y            Plot X agains Y [default: lltrain llval]
     -t, --title TITLE         Title of the plots [default: PARAM]
     -x, --x-range RANGE       GNU plot x-range specification
     -y, --y-range RANGE       GNU plot y-range specification
+    -r, --rounds [1,inf[      Rounds to be plotted
     -k, --keep                Keep plot files [default: false]
     -h, --help                Show this help message
 
@@ -44,6 +45,7 @@ my $basename;
 my @plot_xy;
 my $xrange;
 my $yrange;
+my @rounds;
 my $title;
 my $keep;
 
@@ -84,6 +86,7 @@ GetOptions(
   "t|title=s"       => \$title,
   "x|x-range=s"     => \$xrange,
   "y|y-range=s"     => \$yrange,
+  "r|rounds=i{1,}"  => \@rounds,
   "k|keep!"         => \$keep,
   "h|help"          => sub { pod2usage(2); }
 ) or die pod2usage(1);
@@ -98,6 +101,18 @@ $basename = &remove_suffix($outfile);
 
 print "Reading optimization table ...\n";
 &parse_table;
+my %h;
+foreach my $g (@groups) { $h{$g->[0]->{"r"}} = 1; }
+delete $h{0};
+unless (@rounds) {
+  @rounds = keys(%h);
+} else {
+  my @rf;
+  foreach my $r (@rounds) {
+    if (defined($h{$r})) { push(@rf, $r); }
+  }
+  @rounds = @rf;
+}
 
 
 ### Create the plot ###
@@ -189,27 +204,39 @@ sub plot_lltrain_llval_cmd {
 }
 
 sub plot_xy {
-  my @rounds;
+  my @plotr;
   my @entries;
-  foreach my $g (@groups) {
+  my $opt = $groups[0]->[0];
+  foreach my $g (@groups[1 .. $#groups]) {
     my $e = $g->[0];
     if ($e->{"opt"} eq $plot_xy[0]) {
-      push(@entries, $e);
-      push(@{$rounds[$e->{"r"}]}, $e); 
+      unless (defined($plotr[$e->{"r"}])) {
+        push(@{$plotr[$e->{"r"}]}, $opt);
+      }
+      push(@{$plotr[$e->{"r"}]}, $e); 
+    }
+    if ($e->{"score"} > $opt->{"score"}) {
+      $opt = $e;
+    }
+  }
+
+  foreach my $r (@rounds) {
+    if (defined($plotr[$r])) {
+      push(@entries, @{$plotr[$r]});
     }
   }
   my %range = &get_range(\@entries);
-  my $nrounds = $#rounds;
+  my $nplots = scalar(@rounds);
 
   my $cmd = qq/
     set terminal postscript enhanced color linewidth $opts{LINEWIDTH_SCALE} font "$opts{FONT}" $opts{FONTSIZE}
     set output "$basename.ps"
-    set multiplot layout $nrounds, 1
+    set multiplot layout $nplots, 1
     set key off
     set border 15 back
     /;
-  for my $r (1 .. $nrounds) {
-    $cmd .= &plot_xy_cmd($r, $rounds[$r], %range);
+  foreach my $r (@rounds) {
+    $cmd .= &plot_xy_cmd($r, $plotr[$r], %range);
   }
   $cmd =~ s/^\s+//mg;
   return "$cmd\n";
@@ -279,7 +306,7 @@ sub parse_table {
   while (<FIN>) {
     last if /^-/;
     my %e;
-    /^(.+?)\s+(\S+\s+\S+)?\s+(\S+)\s+(\S+)$/ or &invalid_format;
+    /^(.+?)\s+(\S+\s+\S+)?\s+(\S+)\s+(\S+)$/ or last;
     $e{"score"} = $3;
     $e{"gain"} = $4;
     if ($has_ll) {

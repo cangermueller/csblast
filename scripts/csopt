@@ -35,6 +35,7 @@ class CSOpt
     @niter           = 2
     @rounds          = 2
     @repeats         = 1
+    @reuse           = false
 
     @mult            = 30
     @max_jobs        = 100
@@ -93,8 +94,9 @@ class CSOpt
       o.on("--rocx INT", Integer, "Maximal number of false positives threshold in ROCX calculation  (default: #{@rocx})." ) { |val| @rocx = val }
       o.on("--opt-ll lltrain|llval", String, "Optimize the log likelihood on the training set (lltrain) or validation set (llval)  (default: #{@opt_ll})." ) { |val| @opt_ll = val }
       o.on("--seed INT", Integer, "Seed for random number generator  (default: #{@seed})." ) { |val| @seed = val }
-      o.on("-k", "--keep-files", TrueClass, "Keep working directory (default: #{@keep_files})." ) {|val| @keep_files = true }
-      o.on("-q", "--quiet", "Turn output off.") { |val| @verbose=false }
+      o.on("--reuse", TrueClass, "Reuse existing jobs in working directory  (default: #{@reuse})." ) { |val| @reuse = true }
+      o.on("-k", "--keep-files", TrueClass, "Keep working directory (default: #{@keep_files})." ) { |val| @keep_files = true }
+      o.on("-q", "--quiet", "Turn output off.") { |val| @verbose = false }
       o.on("-h", "--help", "Show this help message.") { puts o; exit }
     end
   end
@@ -352,8 +354,10 @@ class CSOpt
     print_table_params(params, opt_param)
 
     # clear the working directory
-    FileUtils.rm_rf(@workdir)
-    FileUtils.mkdir_p(@workdir)
+    if @reuse == false then
+      FileUtils.rm_rf(@workdir)
+      FileUtils.mkdir_p(@workdir)
+    end
     @score_repeats = []
 
     # prepare static template variables
@@ -404,6 +408,7 @@ class CSOpt
       FileUtils.cp_r(dir, @outdir) if File.directory?(dir)
     end
 
+    @reuse = false
     return @score_repeats[0].score
   end
 
@@ -430,26 +435,28 @@ class CSOpt
 
   def call_cssgd(tplvars, repeat)
     # set up variables
-    tplvars['cssgddir'] = sprintf("%s/%02d/cssgd", @workdir, repeat)
-    tplvars['cssgdout'] = "#{tplvars['cssgddir']}/out"
+    tplvars['cssgddir']  = sprintf("%s/%02d/cssgd", @workdir, repeat)
+    tplvars['cssgdout']  = "#{tplvars['cssgddir']}/out"
     tplvars['cssgdseed'] = @cssgd_seeds[repeat - 1]
-    score               = ScoreTable.new
-    score.repeat        = repeat
+    score                = ScoreTable.new
+    score.repeat         = repeat
 
     # submit the job
-    FileUtils.mkdir_p(tplvars['cssgddir'])
-    sge_config           = SGE::CONFIGURATION.dup
-    sge_config[:args]    = sge_pe(@cpu_cssgd)
-    sge_config[:name]    = sprintf("cssgd_%02d", repeat)
-    cg = SGE::CommandGenerator.new
-    cg.generate(@cssgd_cmds.join("\n"), tplvars, {})
-    qm          = SGE::Manager.new
-    qm.verbose  = false
-    qm.interval = 1
-    qm.set_config(sge_config)
-    qm.submit(cg.commands)
-    qm.wait
-    check_for_errors(qm)
+    unless @reuse && File.exists?(tplvars['cssgdout']) then
+      FileUtils.mkdir_p(tplvars['cssgddir'])
+      sge_config           = SGE::CONFIGURATION.dup
+      sge_config[:args]    = sge_pe(@cpu_cssgd)
+      sge_config[:name]    = sprintf("cssgd_%02d", repeat)
+      cg = SGE::CommandGenerator.new
+      cg.generate(@cssgd_cmds.join("\n"), tplvars, {})
+      qm          = SGE::Manager.new
+      qm.verbose  = false
+      qm.interval = 1
+      qm.set_config(sge_config)
+      qm.submit(cg.commands)
+      qm.wait
+      check_for_errors(qm)
+    end
 
     # parse the cssgd output file
     raise "Unable to open '#{tplvars['cssgdout']}'!" unless File.exists?(tplvars['cssgdout'])
@@ -464,7 +471,7 @@ class CSOpt
           is_tab = true
         elsif is_tab == false
           next
-        elsif l =~ /^\d+\s+\S+\s+(\S+)\s+\S+\s+\S+\s+(\S+)\s+\S+\s*$/ then
+        elsif l =~ /^\d+\s+\S+\s+(\S+)\s+\S+\s+\S+\s+(\S+)/ then
           lltrain = str_to_float($1)
           llval = str_to_float($2)
           raise "Invalid format: '#{tplvars['cssgdout']}'!" if (lltrain.nil? || llval.nil?)

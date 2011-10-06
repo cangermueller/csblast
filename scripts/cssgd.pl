@@ -5,6 +5,7 @@ use warnings;
 use Getopt::Long;
 use Pod::Usage;
 use File::Basename qw(basename);
+use File::Temp qw(tempfile);
 use My::Utils qw(filename);
 
 
@@ -18,9 +19,10 @@ use My::Utils qw(filename);
   cssgd.pl [OPTIONS] CSSGD-OPTIONS
 
   OPTIONS:
-  -S, --suffix SUFFIX     Suffix to be appended.
-  -C, --cat CAT	          Catecory of the model.
-  -h, --help              Print this help message.
+  -S, --suffix SUFFIX     Suffix to be appended
+  -C, --cat CAT	          Catecory of the model
+  -R, --rounds ROUNDS     Number of CSSGD rounds
+  -h, --help              Print this help message
 
 =head1 AUTHOR
 
@@ -35,26 +37,34 @@ use My::Utils qw(filename);
 
 my $i;
 my $j;
-my $K       = 4000;
+my $K       = 50;
 my $P       = 2;
-my $b       = 10.0;
-my $c       = 10.0;
+my $b       = 1.0;
+my $c       = 1.0;
 my $d       = 1.0;
-my $p       = 2.5;
+my $p       = 1.0;
 my $q       = 0.002;
-my $Q       = 30;
+my $Q       = 0;
+my $pepoch  = 1;
+my $t       = 0.001;
 my $T       = 0.001;
-my $e       = 0.001;
+my $E       = 2;
+my $e       = 0.05;
+my $D       = 2.0;
 my $B       = 1000;
 my $m;
 
 my $suffix;
 my $cat     = "share";
+my $rounds  = 1;
+my $repeats = 1;
+my $seed    = 0;
+my $submit  = 1;
 my @args;
 
-my $pe      = "threads.pe 8";
+my $cpu     = 1;
+my $pe;
 my $queue   = undef;
-# my $queue   = "normal,opteron2354,opteron8380,quadcore96gb,x2270,x4100,small.q";
 
 my $HOME    = $ENV{"HOME"};
 my $CSD     = "$HOME/data/cs";
@@ -76,12 +86,22 @@ GetOptions(
   "p=f"              => \$p,
   "q=f"              => \$q,
   "Q=i"              => \$Q,
-  "T=f"              => \$T,
+  "sigma-pc-epoch=i" => \$pepoch,
+  "E=i"              => \$E,
   "e=f"              => \$e,
+  "D=f"              => \$D,
   "B=i"              => \$B,
+  "t=f"              => \$t,
+  "T=f"              => \$T,
   "m=s"              => \$m,
   "S|suffix=s"       => \$suffix,
   "C|cat=s"          => \$cat,
+  "R|rounds=i"       => \$rounds,
+  "repeats=i"        => \$repeats,
+  "seed=i"           => \$seed,
+  "submit!"          => \$submit,
+  "cpu=i"            => \$cpu,
+  "pe=s"             => \$pe,
   "h|help"           => sub { pod2usage(2); }
 ) or pod2usage(1);
 @args = @ARGV;
@@ -89,33 +109,94 @@ unless ($i) { pod2usage("No trainset provided!"); }
 unless (-f $i) { pod2usage("Trainset does not exist!"); }
 unless ($j) { $j = &get_vset($i); }
 unless (-f $j) { pod2usage("Validation set does not exits!"); }
+unless ($pe) {
+  my @pl = `qconf -spl`;
+  unless (@pl) { die "No parallel environment available!"; }
+  $pe = $pl[0];
+  foreach my $p (@pl) {
+    chomp($p);
+    if ($p eq "default" || $p eq "threads.pe") {
+      $pe = $p;
+      last;
+    }
+  }
+}
 
 
-### Command composition ###
+### Do the job ###
 
 
-my $out = sprintf("%s/%s/%s_K%d_b%.1f_c%.1f_p%.1f", $CSC, $cat, &get_tset($i), $K, $b, $c, $p, $q);
-if ($m) { $out .= sprintf("_m%s", basename($m)); }
-if ($suffix) { $out .= sprintf("_%s", $suffix); }
-my $crf_tset = sprintf("%s_t.crf", $out);
-my $crf_vset = sprintf("%s_v.crf", $out);
-my $crf_log = sprintf("%s.log", $out);
-if (-e $crf_tset || -e $crf_vset) { die "CRF already exists!"; }
-
-my $cmd = sprintf(
-"qsub -pe $pe %s -o $crf_log -e $crf_log -b y " .
-"cssgd -i $i -j $j -K $K -P $P -b $b -c $c -d $d -p $p -q $q -Q $Q " . 
-"-T $T -e $e -B $B -o $crf_vset -O $crf_tset %s %s",
-  $queue ? "-q '$queue'": "", 
-  $m ? "-m $m" : "",
-  join(" ", @args));
-
-# print "$cmd\n"; exit 0;
-system("mkdir -p $CSC/$cat");
-system("$cmd");
-if ($?) { die "Error calling cssgd!"; }
+if ($repeats > 1) {
+  for my $r (1 .. $repeats) {
+    srand($seed + $r);
+    &submit(sprintf("%s/%s/%02d", $CSC, $cat, $r), int(rand(1e6)));
+  }
+} else {
+  &submit(sprintf("%s/%s", $CSC, $cat), $seed);
+}
 
 
+### Utilities ###
+
+
+sub submit {
+  my ($dir, $seed) = @_;
+  my $outbase = sprintf("$dir/%s_K%d", &get_tset($i), $K);
+  if ($m) { $outbase .= sprintf("_m%s", basename($m)); }
+  if ($suffix) { $outbase .= sprintf("_%s", $suffix); }
+  my ($fout, $scriptfile) = tempfile("cssgdXXXX", DIR => "/tmp", SUFFIX => ".sh");
+
+  print $fout "export OMP_NUM_THREADS=\$NSLOTS\n";
+  my $cmdbase = sprintf(qq/cssgd \\
+    -i $i \\
+    -j $j \\
+    -o CRF-VSET \\
+    -O CRF-TSET \\
+    -K $K \\
+    -P $P \\
+    -b $b \\
+    -c $c \\
+    -d $d \\
+    -p $p \\
+    -q $q \\
+    -Q $Q \\
+    --sigma-pc-epoch $pepoch \\
+    -E $E \\
+    -e $e \\
+    -D $D \\
+    -B $B \\
+    -t $t \\
+    -T $T \\
+    -m MODEL \\
+    --seed $seed \\
+    %s &> LOGFILE/,
+    join(" ", @args));
+
+  print $fout "mkdir -p $dir\n";
+  for my $r (1 .. $rounds) {
+    my $out = $outbase;
+    if ($rounds > 1) { $out = sprintf("%s_%02d", $out, $r); }
+    my $cmd = $cmdbase;
+    $cmd =~ s/CRF-VSET/${out}_v.crf/;
+    $cmd =~ s/CRF-TSET/${out}_t.crf/;
+    $cmd =~ s/LOGFILE/${out}.log/;
+    if ($r > 1) { 
+      my $m = sprintf("%s_%02d_v.crf", $outbase, $r - 1);
+      $cmd =~ s/MODEL/$m/;
+    } elsif ($m) {
+      $cmd =~ s/MODEL/$m/;
+    } else { 
+      $cmd =~ s/\s*-m MODEL.*$//m; 
+    }
+    print $fout "$cmd\n";
+    print $fout 'if [ $? -ne 0 ]; then exit $?; fi', "\n";
+  }
+  close($fout);
+
+  system("chmod u+x $scriptfile");
+  print "Job script: $scriptfile\n";
+  if ($submit) { system("qsub -pe $pe $cpu $scriptfile"); } 
+}
 
 sub get_vset {
   my ($t) = @_;

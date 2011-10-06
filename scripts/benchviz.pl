@@ -128,9 +128,9 @@ sub plot {
 
     set style line 1 linetype 2 linewidth $opts{LINEWIDTH} linecolor rgb "$opts{COLORS}->[0]"
     set style line 2 linetype 1 linewidth $opts{LINEWIDTH} linecolor rgb "$opts{COLORS}->[1]"
-    set style line 3 linetype 3 linewidth $opts{LINEWIDTH} linecolor rgb "$opts{COLORS}->[1]"
-    set style line 4 linetype 1 linewidth $opts{LINEWIDTH} linecolor rgb "$opts{COLORS}->[2]"
-    set style line 5 linetype 3 linewidth $opts{LINEWIDTH} linecolor rgb "$opts{COLORS}->[2]"
+    set style line 3 linetype 1 linewidth $opts{LINEWIDTH} linecolor rgb "$opts{COLORS}->[2]"
+    set style line 4 linetype 1 linewidth $opts{LINEWIDTH} linecolor rgb "$opts{COLORS}->[3]"
+    set style line 5 linetype 1 linewidth $opts{LINEWIDTH} linecolor rgb "$opts{COLORS}->[4]"
     set style line 6 linetype 1 linewidth $opts{LINEWIDTH} linecolor rgb "$opts{COLORS}->[5]"
     set style line 7 linetype 1 linewidth $opts{LINEWIDTH} linecolor rgb "$opts{COLORS}->[6]"
     set style line 8 linetype 1 linewidth $opts{LINEWIDTH} linecolor rgb "$opts{COLORS}->[7]"
@@ -150,14 +150,14 @@ sub plot {
   } elsif ($plot eq "wtpfp") { $cmd .= qq/
     set key top right
     set xrange [1:600]
-    set yrange [0:600]
+    set yrange [0:400]
     set log x
     set grid
     set xlabel "weighted FP"
     set ylabel "weighted TP" 
-    set label "1%" at 3,390 textcolor ls 9
-    set label "10%" at 30,390 textcolor ls 9
-    set label "20%" at 70,390 textcolor ls 9/;
+    set label "1%" at 2,275 textcolor ls 9
+    set label "10%" at 20,275 textcolor ls 9
+    set label "20%" at 50,275 textcolor ls 9/;
   } elsif ($plot eq "rocx") { $cmd .= qq/
     set key top right
     set xrange [0:1.0]

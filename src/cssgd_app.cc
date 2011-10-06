@@ -29,9 +29,6 @@ struct CSSgdAppOptions {
         pc_init        = 0.75f;
         gauss_init     = 0.0;
         prior          = 2;
-        sigma_bias     = 1.0;
-        sigma_context  = 1.0;
-        sigma_decay    = 1.0;
         weight_center  = 1.6;
         weight_decay   = 0.85;
         neff_ext       = "seq";
@@ -44,7 +41,7 @@ struct CSSgdAppOptions {
         if (trainfile.empty()) throw Exception("No training set provided!");
         if (valfile.empty()) throw Exception("No validation set provided!");
         if (crffile_vset.empty()) throw Exception("No output file for CRF provided!");
-        if (prior < 1 || prior > 2) throw Exception("Invalid prior!");
+        if (prior < 1 || prior > 3) throw Exception("Invalid prior!");
         if (pc_init <= 0 || pc_init > 1.0) throw Exception("Pseudocounts admix for initialization invalid!");
         if (neff_pc <= 0 || neff_pc > 1.0) throw Exception("Pseudocounts admix for computing the Neff invalid!");
         if (sgd.eta_mode < 1 || sgd.eta_mode > 2) throw Exception("Invalid mode for updating the learning rate eta!");
@@ -59,29 +56,28 @@ struct CSSgdAppOptions {
         fprintf(out, "  %3s %-20s: %s\n", "-R,", "--progress", outfile.c_str()); 
         fprintf(out, "  %3s %-20s: %zu\n", "-K,", "--states", nstates); 
         fprintf(out, "  %3s %-20s: %zu\n", "-N,", "--epochs", sgd.max_epochs); 
-        fprintf(out, "  %3s %-20s: %1.5f\n", "-t,", "--toll", sgd.toll); 
-        fprintf(out, "  %3s %-20s: %1.5f\n", "-T,", "--early-delta", sgd.early_delta); 
+        fprintf(out, "  %3s %-20s: %.3g\n", "-t,", "--toll", sgd.toll); 
+        fprintf(out, "  %3s %-20s: %.3g\n", "-T,", "--early-delta", sgd.early_delta); 
         fprintf(out, "\n");
 
         fprintf(out, "  %3s %-20s: %zu\n", "-E,", "--eta-mode", sgd.eta_mode); 
-        fprintf(out, "  %3s %-20s: %1.5f\n", "-e,", "--eta", sgd.eta_init); 
+        fprintf(out, "  %3s %-20s: %.3g\n", "-e,", "--eta", sgd.eta_init); 
         fprintf(out, "  %3s %-20s: %.2f\n", "-D,", "--eta-decay", sgd.eta_decay); 
         fprintf(out, "  %3s %-20s: %zu\n", "-B,", "--blocks", sgd.nblocks); 
         fprintf(out, "  %3s %-20s: %zu\n", "-P,", "--prior", prior); 
-        fprintf(out, "  %3s %-20s: %1.5f\n", "-b,", "--sigma-bias", sigma_bias); 
-        fprintf(out, "  %3s %-20s: %1.5f\n", "-c,", "--sigma-context", sigma_context); 
-        fprintf(out, "  %3s %-20s: %1.5f\n", "-d,", "--sigma-decay", sigma_decay); 
-        fprintf(out, "  %3s %-20s: %1.5f\n", "-p,", "--sigma-pc", sgd.sigma_pc_max); 
-        fprintf(out, "  %3s %-20s: %1.5f\n", "-q,", "--sigma-pc-delta", sgd.sigma_pc_delta); 
-        fprintf(out, "  %3s %-20s: %zu\n", "-Q,", "--sigma-pc-steps", sgd.sigma_pc_steps); 
-        fprintf(out, "  %3s %-20s: %zu\n", " ", "--sigma-pc-epoch", sgd.sigma_pc_epoch); 
+        fprintf(out, "  %3s %-20s: %.2f\n", "-b,", "--sigma-bias", sgd.sigma_bias); 
+        fprintf(out, "  %3s %-20s: %.2f\n", "-c,", "--sigma-context", sgd.sigma_context); 
+        fprintf(out, "  %3s %-20s: %.2f\n", "-C,", "--sigma-context-pos", sgd.sigma_context_pos_max); 
+        fprintf(out, "  %3s %-20s: %.2f\n", "-d,", "--sigma-decay", sgd.sigma_decay); 
+        fprintf(out, "  %3s %-20s: %zu\n", "-p,", "--sigma-relax-epoch", sgd.sigma_relax_epoch); 
+        fprintf(out, "  %3s %-20s: %zu\n", " ", "--sigma-relax-steps", sgd.sigma_relax_steps); 
         fprintf(out, "\n");
 
         fprintf(out, "  %3s %-20s: %s\n", "-m,", "--model", modelfile.c_str()); 
         fprintf(out, "  %3s %-20s: %.2f\n", " ", "--weight-center", weight_center); 
         fprintf(out, "  %3s %-20s: %.2f\n", " ", "--weight-decay", weight_decay); 
-        fprintf(out, "  %3s %-20s: %1.5f\n", "-g,", "--gauss-init", gauss_init); 
-        fprintf(out, "  %3s %-20s: %1.5f\n", " ", "--pc-init", pc_init); 
+        fprintf(out, "  %3s %-20s: %.2f\n", "-g,", "--gauss-init", gauss_init); 
+        fprintf(out, "  %3s %-20s: %.2f\n", " ", "--pc-init", pc_init); 
         fprintf(out, "  %3s %-20s: %u\n", "-r,", "--seed", sgd.seed); 
         fprintf(out, "\n");
 
@@ -114,12 +110,6 @@ struct CSSgdAppOptions {
     double gauss_init;
     // Prior to be used for calculating the likelihood
     size_t prior;
-    // Sigma of prior for context weights
-    double sigma_context;
-    // Parameter governing exponential decay of context sigma
-    double sigma_decay;
-    // Sigma of prior for bias weights
-    double sigma_bias;
     // Weight of central column in multinomial emission
     double weight_center;
     // Exponential decay of window weights
@@ -284,16 +274,24 @@ struct CSSgdRunner {
         scoped_ptr<DerivCrfFuncPrior<Abc> > prior;
         if (opts_.prior == 1)
             prior.reset(new LassoDerivCrfFuncPrior<Abc>(
-                opts_.sigma_bias,
-                opts_.sigma_context, 
-                opts_.sigma_decay, 
+                opts_.sgd.sigma_bias,
+                opts_.sgd.sigma_context, 
+                opts_.sgd.sigma_decay, 
                 opts_.sgd.sigma_pc_max));
-        else
+        else if (opts_.prior == 2) {
             prior.reset(new GaussianDerivCrfFuncPrior<Abc>(
-                opts_.sigma_bias,
-                opts_.sigma_context, 
-                opts_.sigma_decay, 
+                opts_.sgd.sigma_bias,
+                opts_.sgd.sigma_context, 
+                opts_.sgd.sigma_decay, 
                 opts_.sgd.sigma_pc_max));
+        } else {
+            prior.reset(new UnsymmetricDerivCrfFuncPrior<Abc>(
+                opts_.sgd.sigma_bias,
+                opts_.sgd.sigma_context, 
+                opts_.sgd.sigma_context_pos_max, 
+                opts_.sgd.sigma_decay, 
+                opts_.sgd.sigma_pc_max));
+        }
 
         CrfFunc<Abc, TrainingPairV> val_func(valset_, *sm_);
         DerivCrfFunc<Abc, TrainingPairT> train_func(trainset_, *sm_, *prior);
@@ -370,13 +368,13 @@ void CSSgdApp<Abc>::ParseOptions(GetOpt_pp& ops) {
     ops >> Option('r', "seed", opts_.sgd.seed, opts_.sgd.seed);
     ops >> Option('g', "gauss-init", opts_.gauss_init, opts_.gauss_init);
     ops >> Option('P', "prior", opts_.prior, opts_.prior);
+    ops >> Option('b', "sigma-bias", opts_.sgd.sigma_bias, opts_.sgd.sigma_bias);
+    ops >> Option('c', "sigma-context", opts_.sgd.sigma_context, opts_.sgd.sigma_context);
+    ops >> Option('C', "sigma-context-pos", opts_.sgd.sigma_context_pos_max, opts_.sgd.sigma_context_pos_max);
+    ops >> Option('d', "sigma-decay", opts_.sgd.sigma_decay, opts_.sgd.sigma_decay);
     ops >> Option('p', "sigma-pc", opts_.sgd.sigma_pc_max, opts_.sgd.sigma_pc_max);
-    ops >> Option('q', "sigma-pc-delta", opts_.sgd.sigma_pc_delta, opts_.sgd.sigma_pc_delta);
-    ops >> Option('Q', "sigma-pc-steps", opts_.sgd.sigma_pc_steps, opts_.sgd.sigma_pc_steps);
-    ops >> Option(' ', "sigma-pc-epoch", opts_.sgd.sigma_pc_epoch, opts_.sgd.sigma_pc_epoch);
-    ops >> Option('c', "sigma-context", opts_.sigma_context, opts_.sigma_context);
-    ops >> Option('d', "sigma-decay", opts_.sigma_decay, opts_.sigma_decay);
-    ops >> Option('b', "sigma-bias", opts_.sigma_bias, opts_.sigma_bias);
+    ops >> Option('q', "sigma-relax-epoch", opts_.sgd.sigma_relax_epoch, opts_.sgd.sigma_relax_epoch);
+    ops >> Option(' ', "sigma-relax-steps", opts_.sgd.sigma_relax_steps, opts_.sgd.sigma_relax_steps);
     ops >> Option('B', "blocks", opts_.sgd.nblocks, opts_.sgd.nblocks);
     ops >> Option(' ', "weight-center", opts_.weight_center, opts_.weight_center);
     ops >> Option(' ', "weight-decay", opts_.weight_decay, opts_.weight_decay);
@@ -401,82 +399,84 @@ void CSSgdApp<Abc>::PrintUsage() const {
 
 template<class Abc>
 void CSSgdApp<Abc>::PrintOptions() const {
-    fprintf(out_, "  %-30s %s\n", "-i, --trainset <file>", "File with training set");
-    fprintf(out_, "  %-30s %s\n", "-j, --valset <file>", "File with validation set");
-    fprintf(out_, "  %-30s %s\n", "-o, --outfile <file>", 
+    fprintf(out_, "  %-35s %s\n", "-i, --trainset <file>", "File with training set");
+    fprintf(out_, "  %-35s %s\n", "-j, --valset <file>", "File with validation set");
+    fprintf(out_, "  %-35s %s\n", "-o, --outfile <file>", 
             "Output file for best CRF on the validation set");
-    fprintf(out_, "  %-30s %s\n", "-O, --outfile-tset <file>", 
+    fprintf(out_, "  %-35s %s\n", "-O, --outfile-tset <file>", 
             "Output file for last CRF on the training set");
-    fprintf(out_, "  %-30s %s\n", "-R, --progress <file>",
+    fprintf(out_, "  %-35s %s\n", "-R, --progress <file>",
             "Progress table output (def=stdout)");
 
-    fprintf(out_, "  %-30s %s (def=%zu)\n", "-K, --states [1,inf[",
+    fprintf(out_, "  %-35s %s (def=%zu)\n", "-K, --states [1,inf[",
             "Number of states in CRF to be trained", opts_.nstates);
-    fprintf(out_, "  %-30s %s (def=%zu)\n", "-N, --epochs [1,inf[",
+    fprintf(out_, "  %-35s %s (def=%zu)\n", "-N, --epochs [1,inf[",
             "Maximal number of SGD epochs", opts_.sgd.max_epochs);
-    fprintf(out_, "  %-30s %s (def=%.2g)\n", "-t, --toll [0,1]",
+    fprintf(out_, "  %-35s %s (def=%.2g)\n", "-t, --toll [0,1]",
             "Log-likelihood change per column for convergence", opts_.sgd.toll);
-    fprintf(out_, "  %-30s %s (def=%.2g)\n", "-T, --early-delta [0,inf[",
+    fprintf(out_, "  %-35s %s (def=%.2g)\n", "-T, --early-delta [0,inf[",
             "Deviation from the maximal LL on the validation set for early-stopping", opts_.sgd.early_delta);
     fprintf(out_, "\n");
 
-    fprintf(out_, "  %-30s %s (def=%zu)\n", "-E, --eta-mode [1-2]",
+    fprintf(out_, "  %-35s %s (def=%zu)\n", "-E, --eta-mode [1-2]",
             "Mode for updating the learning rate eta", opts_.sgd.eta_mode);
-    fprintf(out_, "  %-30s %s\n", "", "1: ALAP3");
-    fprintf(out_, "  %-30s %s\n", "", "2: Harmonic function");
-    fprintf(out_, "  %-30s %s (def=%.3g)\n", "-e, --eta [0,1]",
+    fprintf(out_, "  %-35s %s\n", "", "1: ALAP3");
+    fprintf(out_, "  %-35s %s\n", "", "2: Harmonic function");
+    fprintf(out_, "  %-35s %s (def=%.3g)\n", "-e, --eta [0,1]",
             "Initial Learning rate eta in gradient steps", opts_.sgd.eta_init);
-    fprintf(out_, "  %-30s %s (def=%.2f)\n", "-D, --eta-decay [1,inf[",
+    fprintf(out_, "  %-35s %s (def=%.2f)\n", "-D, --eta-decay [1,inf[",
             "Decay of harmonic function used for updating the learning rate eta", opts_.sgd.eta_decay);
-    fprintf(out_, "  %-30s %s (def=%zu)\n", "-B, --blocks [1,N]",
+    fprintf(out_, "  %-35s %s (def=%zu)\n", "-B, --blocks [1,N]",
             "Number of training blocks", opts_.sgd.nblocks);
-    fprintf(out_, "  %-30s %s (def=%zu)\n", "-P, --prior [1-2]",
+    fprintf(out_, "  %-35s %s (def=%zu)\n", "-P, --prior [1-3]",
             "Prior of the likelihood function", opts_.prior);
-    fprintf(out_, "  %-30s %s\n", "", "1: lasso prior");
-    fprintf(out_, "  %-30s %s\n", "", "2: gaussian prior");
-    fprintf(out_, "  %-30s %s (def=%.2f)\n", "-b, --sigma-bias ]0,inf]",
+    fprintf(out_, "  %-35s %s\n", "", "1: Lasso prior");
+    fprintf(out_, "  %-35s %s\n", "", "2: Gaussian prior");
+    fprintf(out_, "  %-35s %s\n", "", "3: Unsymmetric prior");
+    fprintf(out_, "  %-35s %s (def=%.2f)\n", "-b, --sigma-bias ]0,inf]",
             "Std. deviation sigma in prior of bias weights",
-            opts_.sigma_bias);
-    fprintf(out_, "  %-30s %s (def=%.2f)\n", "-c, --sigma-context ]0,inf]",
+            opts_.sgd.sigma_bias);
+    fprintf(out_, "  %-35s %s (def=%.2f)\n", "-c, --sigma-context ]0,inf]",
             "Std. deviation sigma in prior of context weights",
-            opts_.sigma_context);
-    fprintf(out_, "  %-30s %s (def=%.2f)\n", "-d, --sigma-decay [0,1]",
-            "Exponential decay of sigma of context weights", opts_.sigma_decay);
-    fprintf(out_, "  %-30s %s (def=%.2f)\n", "-p, --sigma-pc ]0,inf]",
+            opts_.sgd.sigma_context);
+    fprintf(out_, "  %-35s %s (def=%.2f)\n", "-C, --sigma-context-pos ]0,inf]",
+            "Std. deviation sigma in unsymmetric prior of positive context weights",
+            opts_.sgd.sigma_context_pos_max);
+    fprintf(out_, "  %-35s %s (def=%.2f)\n", "-d, --sigma-decay [0,1]",
+            "Exponential decay of sigma of context weights", opts_.sgd.sigma_decay);
+    fprintf(out_, "  %-35s %s (def=%.2f)\n", "-p, --sigma-pc ]0,inf]",
             "Std. deviation sigma in prior of pseudocounts weights",
             opts_.sgd.sigma_pc_max);
-    fprintf(out_, "  %-30s %s (def=%.3f)\n", "-q, --sigma-pc-delta [0,inf[",
-            "Gradient of training curve for beginning to relax the prior for pseudocounts weights", opts_.sgd.sigma_pc_delta);
-    fprintf(out_, "  %-30s %s (def=%zu)\n", "-Q, --sigma-pc-steps [0,inf[",
-            "Number of steps for relaxing the prior of pseudocounts weights", opts_.sgd.sigma_pc_steps);
-    fprintf(out_, "  %-30s %s (def=%zu)\n", "    --sigma-pc-epoch [0,inf[",
-            "SGD epoche for beginning to relax the prior of pseudocounts weights", opts_.sgd.sigma_pc_epoch);
-    fprintf(out_, "  %-30s %s\n", "", "0: Use gradient of training curve");
+    fprintf(out_, "  %-35s %s (def=%zu)\n", "-q, --sigma-relax-epoch [0,inf[",
+            "SGD epoche for beginning to relax the prior", opts_.sgd.sigma_relax_epoch);
+    fprintf(out_, "  %-35s %s\n", "", "0: Always use relaxed prior");
+    fprintf(out_, "  %-35s %s (def=%zu)\n", "    --sigma-pc-steps [0,inf[",
+            "Number of steps for relaxing the prior", opts_.sgd.sigma_relax_steps);
     fprintf(out_, "\n");
 
-    fprintf(out_, "  %-30s %s\n", "-m, --model <file>",
+    fprintf(out_, "  %-35s %s\n", "-m, --model <file>",
             "Model file with CRF or context library for initialization");
-    fprintf(out_, "  %-30s %s (def=%-.2f)\n", "    --weight-center [0,inf[",
+    fprintf(out_, "  %-35s %s (def=%-.2f)\n", "    --weight-center [0,inf[",
            "Weight of central profile column in CRF initialization", opts_.weight_center);
-    fprintf(out_, "  %-30s %s (def=%-.2f)\n", "    --weight-decay [0,inf[",
+    fprintf(out_, "  %-35s %s (def=%-.2f)\n", "    --weight-decay [0,inf[",
             "Parameter for exponential decay of window weights in CRF initialization", 
             opts_.weight_decay);
-    fprintf(out_, "  %-30s %s (def=off)\n", "-g, --gauss-init [0,inf[",
+    fprintf(out_, "  %-35s %s (def=off)\n", "-g, --gauss-init [0,inf[",
             "Turn on gaussian CRF initialization using given sigma");
-    fprintf(out_, "  %-30s %s (def=%.2f)\n", "    --pc-init ]0,1]",
+    fprintf(out_, "  %-35s %s (def=%.2f)\n", "    --pc-init ]0,1]",
             "Constant pseudocount admix in CRF initialization by sampling",
             opts_.pc_init);
-    fprintf(out_, "  %-30s %s (def=%u)\n", "-r, --seed [0,inf[",
+    fprintf(out_, "  %-35s %s (def=%u)\n", "-r, --seed [0,inf[",
             "Seed for random number generator", opts_.sgd.seed);
     fprintf(out_, "\n");
 
-    fprintf(out_, "  %-30s %s (def=%s)\n", "    --neff-dir <dir>",
+    fprintf(out_, "  %-35s %s (def=%s)\n", "    --neff-dir <dir>",
            "Directory with sequences or profiles to be used for calculating the Neff", opts_.neff_dir.c_str());
-    fprintf(out_, "  %-30s %s (def=%s)\n", "    --neff-ext <file-ext>",
+    fprintf(out_, "  %-35s %s (def=%s)\n", "    --neff-ext <file-ext>",
            "File extension of sequences or profiles to be used for calculating the Neff", opts_.neff_ext.c_str());
-    fprintf(out_, "  %-30s %s (def=%zu)\n", "    --neff-nsamples [0,inf[",
+    fprintf(out_, "  %-35s %s (def=%zu)\n", "    --neff-nsamples [0,inf[",
            "Number of samples to be used for calculating the Neff", opts_.neff_nsamples);
-    fprintf(out_, "  %-30s %s (def=%.2f)\n", "    --neff-pc ]0,1]",
+    fprintf(out_, "  %-35s %s (def=%.2f)\n", "    --neff-pc ]0,1]",
            "Pseudocounts admix for calculating the Neff", opts_.neff_pc);
 }
 

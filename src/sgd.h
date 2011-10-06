@@ -28,31 +28,39 @@ struct SgdParams {
               early_delta(0.01),
               min_epochs(10),
               max_epochs(150),
-              sigma_pc_min(0.2),
+              sigma_bias(1.0),
+              sigma_context(0.6),
+              sigma_context_pos_min(0.1),
+              sigma_context_pos_max(0.6),
+              sigma_decay(0.8),
+              sigma_pc_min(0.1),
               sigma_pc_max(1.0),
-              sigma_pc_epoch(1),
-              sigma_pc_delta(0.002),
-              sigma_pc_steps(0),
+              sigma_relax_epoch(0),
+              sigma_relax_steps(3),
               seed(0) {}
 
-    size_t nblocks;        // number of training blocks
-    size_t eta_mode;       // mode for updating the learning rate eta
-    double eta_init;       // initial learning rate eta
-    double eta_decay;      // decay of the function for updating the learning rate eta
-    double mu;             // meta learning rate
-    double rho;            // lower bound for multiplier in learning rate adaption
-    double max_eta;        // upper bound for learning rates
-    double gamma;          // parameter governing exponential average of derivatives
-    double toll;           // LL change for convergence
-    double early_delta;    // Deviation from the maximal LL on the validation set for early-stopping
-    size_t min_epochs;     // minimal number of epochs
-    size_t max_epochs;     // maximal number of epochs
-    double sigma_pc_min;   // Minimum sigma in prior of pseudocounts weights
-    double sigma_pc_max;   // Maximum sigma in prior of pseudocounts weights
-    size_t sigma_pc_epoch; // Epoch for beginning to relax the prior of pseudocounts weights
-    double sigma_pc_delta; // Gradient for beginning to relax the prior of pseudocount weights
-    size_t sigma_pc_steps; // Number of steps for relaxing the prior of pseudocounts weights
-    unsigned int seed;     // seed for rng that shuffles training set after each epoch
+    size_t nblocks;               // number of training blocks
+    size_t eta_mode;              // mode for updating the learning rate eta
+    double eta_init;              // initial learning rate eta
+    double eta_decay;             // decay of the function for updating the learning rate eta
+    double mu;                    // meta learning rate
+    double rho;                   // lower bound for multiplier in learning rate adaption
+    double max_eta;               // upper bound for learning rates
+    double gamma;                 // parameter governing exponential average of derivatives
+    double toll;                  // LL change for convergence
+    double early_delta;           // Deviation from the maximal LL on the validation set for early-stopping
+    size_t min_epochs;            // minimal number of epochs
+    size_t max_epochs;            // maximal number of epochs
+    double sigma_bias;            // sigma in prior of bias weights
+    double sigma_context;         // sigma in prior of context weights
+    double sigma_context_pos_min; // minimum sigma in unsymmetric prior of positive context weights
+    double sigma_context_pos_max; // maximum sigma in unsymmetric prior of positive context weights
+    double sigma_decay;           // exponential decay of sigma in prior of context weights
+    double sigma_pc_min;          // minimum sigma in prior of pseudocounts weights
+    double sigma_pc_max;          // maximum sigma in prior of pseudocounts weights
+    size_t sigma_relax_epoch;     // epoch for beginning to relax the prior
+    size_t sigma_relax_steps;     // number of steps for relaxing the prior
+    unsigned int seed;            // seed for rng that shuffles training set after each epoch
 
     static const size_t ETA_MODE_ALAP = 1;  // Use ALAP3 for updating the learning rate
     static const size_t ETA_MODE_FUNC = 2;  // Use a function for updateing the learning rate
@@ -120,7 +128,6 @@ struct Sgd {
         }
         // Scale delta vector to the maximum parameter change threshold
         if (delta_max > kDeltaMax) {
-            printf("\ndelta_max = %g\n", delta_max);
             for (size_t i = 0; i < delta.size(); ++i)
                 delta[i] = kDeltaMax * delta[i] / delta_max;
         }
@@ -163,7 +170,7 @@ struct Sgd {
         }
     }
 
-    static const double kDeltaMax = 1.0e4; // Maximum parameter change per SGD iteraton
+    static const double kDeltaMax = 1000; // Maximum parameter change per SGD iteraton
     DerivCrfFunc<Abc, TrainingPair> func;  // training set function
     const SgdParams& params;               // SGD parameter
     const double eta_decay;                // Parameter for calculating the decay of the learning rate
@@ -188,9 +195,8 @@ struct SgdOptimizer {
 
         scoped_ptr<ProgressBar> prog_bar;
         SgdState<Abc> s(crf);
-        size_t epoch = 1, best_epoch = 1, nconv = 0, nearly = 0, nsigma_pc = 0;
+        size_t epoch = 1, best_epoch = 1, nconv = 0, nearly = 0;
         double best_loglike = -DBL_MAX, delta = DBL_MAX, old_loglike, val_loglike;
-        size_t sigma_pc_epoch = params.sigma_pc_epoch;
         std::string best_line;
 
         if (fout) {
@@ -213,16 +219,24 @@ struct SgdOptimizer {
             // Save last likelihood for calculation of delta
             old_loglike = s.loglike;
             // Update sigma in prior for pseudocounts weights
-            if (sigma_pc_epoch == 0 || epoch < sigma_pc_epoch) {
-                sgd.func.prior.sigma_pc = params.sigma_pc_min;
-            } else if (epoch >= sigma_pc_epoch + params.sigma_pc_steps) {
-                sgd.func.prior.sigma_pc = params.sigma_pc_max;
+            DerivCrfFuncPrior<Abc>& prior = sgd.func.prior;
+            UnsymmetricDerivCrfFuncPrior<Abc>* uprior = dynamic_cast<UnsymmetricDerivCrfFuncPrior<Abc>* >(&sgd.func.prior);
+            if (params.sigma_relax_epoch == 0 || epoch >= params.sigma_relax_epoch + params.sigma_relax_steps) {
+                prior.sigma_pc = params.sigma_pc_max;
+                if (uprior) uprior->sigma_context_pos = params.sigma_context_pos_max;
+            } else if (epoch >= params.sigma_relax_epoch) {
+                prior.sigma_pc = params.sigma_pc_min + 
+                    (params.sigma_pc_max - params.sigma_pc_min) / params.sigma_relax_steps * 
+                    (1 + epoch - params.sigma_relax_epoch);
+                if (uprior) 
+                    uprior->sigma_context_pos = params.sigma_context_pos_min + 
+                        (params.sigma_context_pos_max - params.sigma_context_pos_min) / params.sigma_relax_steps * 
+                        (1 + epoch - params.sigma_relax_epoch);
             } else {
-                sgd.func.prior.sigma_pc = params.sigma_pc_min + 
-                    (params.sigma_pc_max - params.sigma_pc_min) / params.sigma_pc_steps * (epoch - sigma_pc_epoch);
+                prior.sigma_pc = params.sigma_pc_min;
+                if (uprior)
+                    uprior->sigma_context_pos = params.sigma_context_pos_min;
             }
-            // sgd.func.prior.sigma_pc = params.sigma_pc_min + (params.sigma_pc_max - params.sigma_pc_min) / 
-            //     (1 + exp((static_cast<int>(params.sigma_pc_epoch - epoch)) / params.sigma_pc_delta));
             // Run on epoche of SGD
             sgd(s, prog_bar.get());
             // Normalize likelihood and prior to user friendly scale
@@ -235,11 +249,6 @@ struct SgdOptimizer {
             // Keep track of how many times we were under convergence threshold
             if (delta > params.toll) nconv = 0;
             else ++nconv;
-            // Keep track of how many times we were under the gradient for relaxing the pseudocount weights
-            if (sigma_pc_epoch == 0) {
-                if (fabs(delta) > params.sigma_pc_delta) nsigma_pc = 0;
-                else if (++nsigma_pc >= kMaxConvBumps) sigma_pc_epoch = epoch;
-            }
             // Keep track of how many times we were under the maximal likelihood
             if (val_loglike > best_loglike - params.early_delta) nearly = 0;
             else ++nearly;

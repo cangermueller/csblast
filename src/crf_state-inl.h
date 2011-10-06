@@ -135,7 +135,7 @@ inline void UpdatePseudocounts(CrfState<Abc>& state) {
     double tmp = max + log(sum);
     for (size_t a = 0; a < Abc::kSize; ++a) {
         state.pc[a] = DBL_MIN + exp(state.pc_weights[a] - tmp);        
-        // state.pc_weights[a] -= mean; // Not necessary if prior is applied
+        // state.pc_weights[a] -= mean; // Not necessary if pc_weights are centered on central context weights
     }
 }
 
