@@ -219,7 +219,7 @@ struct GaussianDerivCrfFuncPrior : public DerivCrfFuncPrior<Abc> {
             }
             const double* cw = crf[k].context_weights[c];
             for (size_t a = 0; a < Abc::kSize; ++a)
-                prior += fac_pc * SQR(crf[k].pc_weights[a] - cw[a]);
+                prior += fac_pc * SQR(crf[k].pc_weights[a] - cw[a] / sigma_context);
         }
         return prior;
     }
@@ -249,7 +249,7 @@ struct GaussianDerivCrfFuncPrior : public DerivCrfFuncPrior<Abc> {
             }
             const double* cw = crf[k].context_weights[c];
             for (size_t a = 0; a < Abc::kSize; ++a)
-                grad[i++] += fac_pc * (crf[k].pc_weights[a] - cw[a]);
+                grad[i++] += fac_pc * (crf[k].pc_weights[a] - cw[a] / sigma_context);
         }
     }
 
@@ -291,7 +291,7 @@ struct LassoDerivCrfFuncPrior : public DerivCrfFuncPrior<Abc> {
             }
             const double* cw = crf[k].context_weights[c];
             for (size_t a = 0; a < Abc::kSize; ++a)
-                prior += fac_pc * fabs(crf[k].pc_weights[a] - cw[a]);
+                prior += fac_pc * fabs(crf[k].pc_weights[a] - cw[a] / sigma_context);
         }
         return prior;
     }
@@ -321,7 +321,7 @@ struct LassoDerivCrfFuncPrior : public DerivCrfFuncPrior<Abc> {
             }
             const double* cw = crf[k].context_weights[c];
             for (size_t a = 0; a < Abc::kSize; ++a)
-                grad[i++] += fac_pc * SIGN(crf[k].pc_weights[a] - cw[a]);
+                grad[i++] += fac_pc * SIGN(crf[k].pc_weights[a] - cw[a] / sigma_context);
         }
     }
 
@@ -346,7 +346,7 @@ struct UnsymmetricDerivCrfFuncPrior : public DerivCrfFuncPrior<Abc> {
     double operator() (const Crf<Abc>& crf) const {
 
         // Precalculate factors
-        const double fac_bias = -0.5 / SQR(sigma_bias);
+        const double fac_bias = 1 / SQR(sigma_bias);
         Vector<double> fac_context_neg(crf.wlen());
         Vector<double> fac_context_pos(crf.wlen());
         const int c = crf.center();
@@ -360,7 +360,7 @@ struct UnsymmetricDerivCrfFuncPrior : public DerivCrfFuncPrior<Abc> {
         // Calculate prior
         double prior = 0.0;
         for (size_t k = 0; k < crf.size(); ++k) {
-            prior += fac_bias * SQR(crf[k].bias_weight);
+            prior += fac_bias * fabs(crf[k].bias_weight);
             for(size_t j = 0; j < crf.wlen(); ++j) {
                 for (size_t a = 0; a < Abc::kSize; ++a) {
                     if (crf[k].context_weights[j][a] < 0)
@@ -371,7 +371,7 @@ struct UnsymmetricDerivCrfFuncPrior : public DerivCrfFuncPrior<Abc> {
             }
             const double* cw = crf[k].context_weights[c];
             for (size_t a = 0; a < Abc::kSize; ++a)
-                prior += fac_pc * SQR(crf[k].pc_weights[a] - cw[a]);
+                prior += fac_pc * SQR(crf[k].pc_weights[a] - cw[a] / sigma_context);
         }
         return prior;
     }
@@ -396,7 +396,7 @@ struct UnsymmetricDerivCrfFuncPrior : public DerivCrfFuncPrior<Abc> {
         // Calculate gradients
         Assign(grad, 0.0);  // reset gradient
         for (size_t k = 0, i = 0; k < crf.size(); ++k) {
-            grad[i++] += fac_bias * crf[k].bias_weight;
+            grad[i++] += fac_bias * SIGN(crf[k].bias_weight);
             for(size_t j = 0; j < crf.wlen(); ++j) {
                 for (size_t a = 0; a < Abc::kSize; ++a) {
                     if (crf[k].context_weights[j][a] < 0)
@@ -407,7 +407,7 @@ struct UnsymmetricDerivCrfFuncPrior : public DerivCrfFuncPrior<Abc> {
             }
             const double* cw = crf[k].context_weights[c];
             for (size_t a = 0; a < Abc::kSize; ++a)
-                grad[i++] += fac_pc * (crf[k].pc_weights[a] - cw[a]);
+                grad[i++] += fac_pc * (crf[k].pc_weights[a] - cw[a] / sigma_context);
         }
     }
 

@@ -1,0 +1,288 @@
+#!/usr/bin/ruby
+require File.join(ENV['HOME'], "/lib/rcs/crf.rb")
+require 'optparse'
+require 'fileutils'
+require 'erb'
+
+
+class CrfVizDist
+  @@template = %q{
+    set terminal postscript enhanced color linewidth 4 font "bold" 14 
+    set output "<%= psfile %>"
+
+    set border 15 back
+    set title "<%= title %>"
+    set xlabel "Value"
+    set ylabel "Frequency"
+    <% if @xrange %>
+    set xrange <%= @xrange %>
+    <% end %>
+    <% if @yrange %>
+    set yrange <%= @yrange %>
+    <% end %>
+    set grid
+
+    plot <%= plot_cmd %>
+  }.gsub(/^    /, '').strip
+
+  private
+
+  def plot_cmd
+    cmds = []
+    @params.each do |p|
+      cols = p == :cws ? @cw_cols : [nil]
+      cols.each do |c|
+        cmds << "'#{plot_filename(p, c)}' using 1:2 title '#{plot_title(p, c)}' with lines lt #{plot_linetype(p, c)} lw 2 lc rgb '#{plot_color(p, c)}'"
+      end
+    end
+    return cmds.join(", ")
+  end
+
+  def plot_filename(type, col = nil) 
+    fn = sprintf("%s_%s", @outbase, type.to_s)
+    fn += sprintf("%02d", col) if type == :cws
+    return "#{fn}.dat"
+  end
+
+  def plot_title(type, col = nil)
+    case type
+    when :bw:  return "bias-weights"
+    when :cw:  return "context-weights"
+    when :cws: return sprintf("context-weights %d", col - @center)
+    when :pc:  return "pseudocount-weights"
+    end
+  end
+
+  def plot_color(type, col = nil)
+    case type
+    when :bw:  return "#FF0000"
+    when :cw:  return "#1E90FF"
+    when :cws: return "#C71585"
+    when :pc:  return "#32CD32"
+    end
+  end
+
+  def plot_linetype(type, col = nil)
+    case type
+    when :cws:  2 + (col - @center).abs
+    else return 1
+    end
+  end
+
+
+  public
+
+  def initialize
+    @infile    = nil
+    @outbase   = nil
+    @params    = [:bw, :cw, :cws, :pc]
+    @cw_cols   = [0]
+    @bin_size  = 0.1
+    @pc_scale  = 1.0
+    @xrange    = nil
+    @yrange    = nil
+    @verbose   = true
+    @keep      = false
+
+    @crf       = nil
+    @center    = nil
+    self
+  end
+
+  def options
+    OptionParser.new do |o|
+      o.set_summary_indent('  ')
+      o.banner = "Usage: #{File.basename($0)} [OPTIONS] --infile FILE"
+      o.define_head "Visualizes the distribution of CRF parameters."
+      o.separator ""
+      o.on("-i", "--infile FILE", "CRF input file") { |val| @infile = val }
+      o.on("-o", "--outbase FILE", "Basename for output files") { |val| @outbase = val }
+      o.on("-p", "--params x,y,z", Array, "CRF parameter to be plotted [default: #{@params.join(',')}]",
+           "bw  : bias-weights",
+           "cw  : context-weights",
+           "cws : context-weight columns specified by -c",
+           "pc  : pseudocount-weights.") do |val| 
+             @params = val.map do |v| 
+               v = v.to_sym
+               raise "Invalid parameter #{v}!" unless v == :bw || v == :cw || v == :cws || v == :pc
+               v
+             end
+           end
+      o.on("-c", "--cw-cols INT+", Array, "Context-weight columns to be plotted [default: #{@cw_cols.join(",")}]") { |val| @cw_cols = val.map{|v| v.to_i} }
+      o.on("-b", "--bin-size ]0;inf[", Float, "Bin size [default: #{@bin_size}]." ) {|val| @bin_size = val }
+      o.on("-s", "--pc-scale ]0;inf[", Float, "Scaling factor for pseudocount weights[default: #{@pc_scale}]." ) {|val| @pc_scale = val }
+      o.on("-x", "--x-range STRING", String, "x-range [default: #{@xrange}]." ) {|val| @xrange = val }
+      o.on("-y", "--y-range STRING", String, "y-range [default: #{@yrange}]." ) {|val| @yrange = val }
+      o.on("-k", "--keep", TrueClass, "Keep temporary files [default: #{@keep}]." ) {|val| @keep = val }
+      o.on("-v", "--[no-]verbose", TrueClass, "Output status messages [default: #{@verbose}]." ) {|val| @verbose = val }
+      o.on("-h", "--help", "Show this help message.") { puts o; exit }
+    end
+  end
+
+  def run(args)
+    if args.empty? then puts options; exit end
+    options.parse!(args)
+    if @infile.nil?
+      $stderr.puts "No CRF provided!"
+      exit 1
+    end
+    if @outbase.nil?
+      @outbase = @infile.sub(/\.\w+$/, "")
+    end
+
+    puts "Reading CRF ..." if @verbose
+    fh = File.open(@infile, 'r')
+    @crf = CS::Crf.new(fh)
+    fh.close
+    @center = (0.5 * @crf.num_cols).floor
+    @cw_cols.each do |c|
+      raise "Invalid column index #{c}!" if c < -@center || c > @center
+    end
+    @cw_cols = @cw_cols.map{|c| c + @center}
+
+    puts "Creating histograms ..." if @verbose
+    bw_hist = Histogram.new(@bin_size)
+    cw_hist = Histogram.new(@bin_size)
+    cw_hists = []
+    0.upto(@crf.num_cols - 1) do
+      cw_hists << Histogram.new(@bin_size)
+    end
+    pc_hist = Histogram.new(@bin_size)
+    @crf.each do |s|
+      bw_hist << s.bias_weight
+      0.upto(@crf.num_cols - 1) do |c|
+        cw_hist << s[c]
+        cw_hists[c] << s[c]
+      end
+      pc_hist << s.pc_weights.map{|v| v * @pc_scale}
+    end
+
+    puts "Creating plots ..." if @verbose
+    create_data_file(:bw, bw_hist) if @params.include?(:bw)
+    create_data_file(:cw, cw_hist) if @params.include?(:cw)
+    if @params.include?(:cws)
+      @cw_cols.each do |c|
+        create_data_file(:cws, cw_hists[c], c)
+      end
+    end
+    create_data_file(:pc, pc_hist) if @params.include?(:pc)
+
+    gpfile  = "#{@outbase}.gp"
+    psfile  = "#{@outbase}.ps"
+    pdffile = "#{@outbase}.pdf"
+    File.open(gpfile, 'w') do |fh|
+      title = File.basename(@infile).gsub(/_/," ")
+      erb = ERB.new(@@template)
+      content = erb.result(binding).split("\n").select {|line| line !~ /^\s*$/ }.join("\n")
+      fh.write(content)
+    end
+    execute("gnuplot #{gpfile}")
+    execute("ps2pdf #{psfile} #{pdffile}")
+    execute("bash pdfcrop #{pdffile} #{pdffile}")
+    unless @keep
+      FileUtils.rm_f(gpfile)
+      FileUtils.rm_f(psfile)
+      @params.each do |p|
+        cols = p == :cws ? @cw_cols : [nil]
+        cols.each do |c|
+          FileUtils.rm_f(plot_filename(p, c))
+        end
+      end
+    end
+
+    puts "Done!" if @verbose
+  end
+
+
+  private
+
+  def execute(cmd)
+    `#{cmd}`
+    raise "Error executing '#{cmd}'!" unless $? == 0
+  end
+
+  def create_data_file(type, hist, col = nil)
+    sum = 0.0
+    hist.each {|v, f| sum += f}
+    scale = 1 / (sum * @bin_size)
+    fh = File.open(plot_filename(type, col), "w")
+    fh.printf("#%9s  %10s  %10s  %10s\n", "VALUE", "DENSITY", "REL-FREQ", "ABS-FREQ")
+    hist.each do |v, f|      
+      fh.printf("%10.5g  %10.5g  %10.5g  %10d\n", v, f * scale, f / sum, f)
+    end
+    fh.close
+  end
+end
+
+
+
+class Histogram
+  include Enumerable
+
+  attr_reader :bin_size, :min_bin, :max_bin
+
+  def initialize(bin_size = 1.0)
+    raise "Bin size must be greater than zero!" if bin_size <= 0
+    @bin_size = bin_size
+    @neg_bins = []
+    @pos_bins = []
+    @min_bin  = nil
+    @max_bin  = nil
+    self
+  end
+
+  def << (values)
+    values = [values] unless values.class == Array
+    update_neg = false
+    update_pos = false
+    values.each do |value|
+      bin = (value / @bin_size).floor
+      if bin < 0
+        @neg_bins[bin.abs] = @neg_bins[bin.abs].nil? ? 1 : @neg_bins[bin.abs] + 1
+        if @min_bin.nil? || bin < @min_bin
+          @min_bin = bin
+          update_neg = true
+        end
+        if @max_bin.nil? || bin > @max_bin
+          @max_bin = bin
+          update_neg = true
+        end
+      else
+        @pos_bins[bin] = @pos_bins[bin].nil? ? 1 : @pos_bins[bin] + 1
+        if @min_bin.nil? || bin < @min_bin
+          @min_bin = bin
+          update_pos = true
+        end
+        if @max_bin.nil? || bin > @max_bin
+          @max_bin = bin
+          update_pos = true
+        end
+      end
+    end
+    @neg_bins = @neg_bins.map{|v| v.nil? ? 0 : v} if update_neg
+    @pos_bins = @pos_bins.map{|v| v.nil? ? 0 : v} if update_pos
+  end
+
+  def min
+    return @min_bin * @bin_size
+  end
+
+  def max
+    return (@max_bin + 1) * @bin_size
+  end
+
+  def [] (index)
+    return 0 if index < @min_bin || index > @max_bin
+    bins = index < 0 ? @neg_bins : @pos_bins
+    return bins[index.abs]
+  end
+
+  def each
+    @min_bin.upto(@max_bin) do |i|
+      bins = i < 0 ? @neg_bins : @pos_bins
+      yield i * @bin_size, bins[i.abs]
+    end
+  end
+end
+
+CrfVizDist.new.run(ARGV)

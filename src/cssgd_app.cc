@@ -69,7 +69,8 @@ struct CSSgdAppOptions {
         fprintf(out, "  %3s %-20s: %.2f\n", "-c,", "--sigma-context", sgd.sigma_context); 
         fprintf(out, "  %3s %-20s: %.2f\n", "-C,", "--sigma-context-pos", sgd.sigma_context_pos_max); 
         fprintf(out, "  %3s %-20s: %.2f\n", "-d,", "--sigma-decay", sgd.sigma_decay); 
-        fprintf(out, "  %3s %-20s: %zu\n", "-p,", "--sigma-relax-epoch", sgd.sigma_relax_epoch); 
+        fprintf(out, "  %3s %-20s: %.2f\n", "-p,", "--sigma-pc", sgd.sigma_pc_max); 
+        fprintf(out, "  %3s %-20s: %zu\n", "-q,", "--sigma-relax-epoch", sgd.sigma_relax_epoch); 
         fprintf(out, "  %3s %-20s: %zu\n", " ", "--sigma-relax-steps", sgd.sigma_relax_steps); 
         fprintf(out, "\n");
 

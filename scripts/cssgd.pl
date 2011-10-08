@@ -43,9 +43,7 @@ my $b       = 1.0;
 my $c       = 1.0;
 my $d       = 1.0;
 my $p       = 1.0;
-my $q       = 0.002;
-my $Q       = 0;
-my $pepoch  = 1;
+my $q       = 0;
 my $t       = 0.001;
 my $T       = 0.001;
 my $E       = 2;
@@ -84,9 +82,7 @@ GetOptions(
   "c=f"              => \$c,
   "d=f"              => \$d,
   "p=f"              => \$p,
-  "q=f"              => \$q,
-  "Q=i"              => \$Q,
-  "sigma-pc-epoch=i" => \$pepoch,
+  "q=i"              => \$q,
   "E=i"              => \$E,
   "e=f"              => \$e,
   "D=f"              => \$D,
@@ -159,8 +155,6 @@ sub submit {
     -d $d \\
     -p $p \\
     -q $q \\
-    -Q $Q \\
-    --sigma-pc-epoch $pepoch \\
     -E $E \\
     -e $e \\
     -D $D \\

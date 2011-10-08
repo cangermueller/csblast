@@ -90,7 +90,7 @@ class CrfTestInit : public testing::Test {
 };
 
 
-TEST_F(CrfTestInit, SamplingCrfInit) {
+TEST_F(CrfTestInit, DISABLED_SamplingCrfInit) {
   const Sequence<AA> seq("AHWTEXKLFADDF");
   const size_t nstates = 10;
   const size_t wlen    = seq.length();
@@ -131,7 +131,7 @@ TEST_F(CrfTestInit, SamplingCrfInit) {
 }
 
 
-TEST_F(CrfTestInit, GaussianCrfInit) {
+TEST_F(CrfTestInit, DISABLED_GaussianCrfInit) {
   BlosumMatrix m;
   GaussianCrfInit<AA> init(0.1, m, 0);
   Crf<AA> crf(10, 13, init);
@@ -146,7 +146,7 @@ TEST_F(CrfTestInit, GaussianCrfInit) {
   EXPECT_NEAR(-0.20, crf[0].context_weights[2][AA::kCharToInt['A']], kDelta);
 }
 
-TEST_F(CrfTestInit, LibraryCrfInit) {
+TEST_F(CrfTestInit, DISABLED_LibraryCrfInit) {
   const size_t states  = 50;
   const size_t wlen    = 13;
   const double wcenter = 1.6;
@@ -206,15 +206,23 @@ TEST_F(CrfTestInit, LibraryCrfInit) {
         EXPECT_TRUE(lib_profile.counts[i][a] > 0);
         EXPECT_NEAR(lib_profile.counts[i][a], crf_profile.counts[i][a], kDelta);
       }
-    /*
-    fout = fopen(PathCat(test_dir, "lib.prf"), "w");
-    lib_profile.Write(fout);
-    fclose(fout);
-    fout = fopen(PathCat(test_dir, "crf.prf"), "w");
-    crf_profile.Write(fout);
-    fclose(fout);*/
   }
+}
 
+TEST_F(CrfTestInit, LibToCrf) {
+  const double wcenter = 1.6;
+  const double wdecay  = 0.85;
+  std::string data_dir = getenv("CS_DATA") ? getenv("CS_DATA") : "../data";
+
+  FILE* fin = fopen(PathCat(data_dir, "K4000.lib"), "r");
+  ContextLibrary<AA> lib(fin);
+  fclose(fin);
+  Crf<AA> crf(lib, wcenter, wdecay);
+  TransformToLog(lib);
+  IsEqual(lib, crf, wcenter, wdecay);
+  FILE* fout = fopen(PathCat(data_dir, "K4000.crf"), "w");
+  crf.Write(fout);
+  fclose(fout);
 }
 
 
