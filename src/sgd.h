@@ -26,8 +26,9 @@ struct SgdParams {
               gamma(0.9),
               toll(0.001),
               early_delta(0.01),
-              min_epochs(10),
+              min_epochs(1),
               max_epochs(150),
+              min_ll(0.0),
               sigma_bias(1.0),
               sigma_context(0.6),
               sigma_context_pos_min(0.1),
@@ -51,6 +52,7 @@ struct SgdParams {
     double early_delta;           // Deviation from the maximal LL on the validation set for early-stopping
     size_t min_epochs;            // minimal number of epochs
     size_t max_epochs;            // maximal number of epochs
+    double min_ll;                // minimal LL on training set
     double sigma_bias;            // sigma in prior of bias weights
     double sigma_context;         // sigma in prior of context weights
     double sigma_context_pos_min; // minimum sigma in unsymmetric prior of positive context weights
@@ -209,7 +211,7 @@ struct SgdOptimizer {
         // Compute the initial likelihood
         s.loglike =  sgd.func(s.crf) / sgd.func.trainset.size();
         while (((nconv < kMaxConvBumps && nearly < kMaxEarlyBumps) || epoch <= params.min_epochs) 
-            && epoch <= params.max_epochs) {
+            && epoch <= params.max_epochs && (epoch == 1 || s.loglike >= params.min_ll)) {
             // Print first part of table row
             if (fout) {
                 fprintf(fout, "%-4zu  ", epoch); fflush(fout);

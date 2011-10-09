@@ -179,11 +179,12 @@ sub plot {
 sub cmd_curves {
   my ($plot) = @_;
   my @curves;
+  my $ls = 2;
   for my $i (0 .. $#entities) {
     my $e = $entities[$i];
     if ($e->{PLOTS}->{$plot}) {
       push(@curves, sprintf('"%s" title "%s" with lines ls %d', 
-          &get_datafile($plot, $e->{DIR}), $e->{LABEL}, $i + 1));
+          &get_datafile($plot, $e->{DIR}), $e->{LABEL}, basename($e->{DIR}) eq "blast" ? 1 : $ls++));
     }
   }
   return join(", ", @curves);

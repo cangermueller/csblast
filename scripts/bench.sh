@@ -12,6 +12,7 @@ bench.sh [OPTIONS] -m MODEL
     -m MODEL                 The input model
     -x TAU                   Admixture coefficient tau
     -z GAMMA                 Admixture coefficient gamma
+    -o OUTDIR                Output directory
     -c CATEGORY              Output catecory
     -d DB                    Database name
     -t                       Use the test set instead of the optimization set
@@ -30,12 +31,13 @@ TSET=0
 ### Initialization ###
 
 
-while getopts "m:x:z:c:d:th" OPT; do
+while getopts "m:x:z:c:o:d:th" OPT; do
   case $OPT in
     m) MODEL=$OPTARG;;
     x) X=$OPTARG;;    
     z) Z=$OPTARG;;    
     c) CAT=$OPTARG;;    
+    o) OUTDIR=$OPTARG;;
     d) DB=$OPTARG;;
     t) TSET=1 ;;
     h) synopsis; exit 0 ;;
@@ -69,13 +71,15 @@ if [ -z "$X" ]; then
 else
   ADMIX="-x $X"
 fi
-OUTDIR=$CSD/bench/$DB/$TYPE/share
-if [ ! -d "$OUTDIR" ]; then 
-  echo "'$OUTDIR' does not exist!"
-  exit 1
+if [ -z "$OUTDIR" ]; then
+  OUTDIR=$CSD/bench/$DB/$TYPE/share
+  if [ ! -d "$OUTDIR" ]; then 
+    echo "'$OUTDIR' does not exist!"
+    exit 1
+  fi
+  if [ $CAT ]; then OUTDIR=$OUTDIR/$CAT; fi
+  OUTDIR=$OUTDIR/`basename $MODEL`
 fi
-if [ $CAT ]; then OUTDIR=$OUTDIR/$CAT; fi
-OUTDIR=$OUTDIR/`basename $MODEL`
 
 
 ### Run ##

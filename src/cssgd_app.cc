@@ -58,6 +58,7 @@ struct CSSgdAppOptions {
         fprintf(out, "  %3s %-20s: %zu\n", "-N,", "--epochs", sgd.max_epochs); 
         fprintf(out, "  %3s %-20s: %.3g\n", "-t,", "--toll", sgd.toll); 
         fprintf(out, "  %3s %-20s: %.3g\n", "-T,", "--early-delta", sgd.early_delta); 
+        fprintf(out, "  %3s %-20s: %.3g\n", " ", "--min-ll", sgd.min_ll); 
         fprintf(out, "\n");
 
         fprintf(out, "  %3s %-20s: %zu\n", "-E,", "--eta-mode", sgd.eta_mode); 
@@ -363,6 +364,7 @@ void CSSgdApp<Abc>::ParseOptions(GetOpt_pp& ops) {
     ops >> Option('N', "epochs", opts_.sgd.max_epochs, opts_.sgd.max_epochs);
     ops >> Option('t', "toll", opts_.sgd.toll, opts_.sgd.toll);
     ops >> Option('T', "early-delta", opts_.sgd.early_delta, opts_.sgd.early_delta);
+    ops >> Option(' ', "min-ll", opts_.sgd.min_ll, opts_.sgd.min_ll);
     ops >> Option('e', "eta", opts_.sgd.eta_init, opts_.sgd.eta_init);
     ops >> Option('E', "eta-mode", opts_.sgd.eta_mode, opts_.sgd.eta_mode);
     ops >> Option('D', "eta-decay", opts_.sgd.eta_decay, opts_.sgd.eta_decay);
@@ -417,6 +419,8 @@ void CSSgdApp<Abc>::PrintOptions() const {
             "Log-likelihood change per column for convergence", opts_.sgd.toll);
     fprintf(out_, "  %-35s %s (def=%.2g)\n", "-T, --early-delta [0,inf[",
             "Deviation from the maximal LL on the validation set for early-stopping", opts_.sgd.early_delta);
+    fprintf(out_, "  %-35s %s (def=%.2g)\n", "    --min-ll ]-inf,inf[",
+            "Minimum log-likelihood on training set for convergence", opts_.sgd.min_ll);
     fprintf(out_, "\n");
 
     fprintf(out_, "  %-35s %s (def=%zu)\n", "-E, --eta-mode [1-2]",
