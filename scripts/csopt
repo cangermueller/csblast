@@ -178,20 +178,27 @@ class CSOpt
   end
 
   def optimize(param, settings)
-    xmax = settings['value']
-    bounced = false
     xl=nil # next parameter value to the left of xmax
     yl=nil # result for xl
     xr=nil # next parameter value to the right of xmax
     yr=nil # result for xr
     x =nil # next paramter value to be evaluated
     y =nil # result for $x
+    bounced = false
 
+    # go to the right side
+    rxmax = settings['value']
+    rymax = @ymax
+    rxl = rxmax
+    ryl = rymax
+    rxr = nil
+    ryr = nil
     loop do
-      x = change_parameter_value(xmax, settings, :right)
+      x = change_parameter_value(rxmax, settings, :right)
       if (settings['max'] && x >= settings['max'] || settings['min'] && x <= settings['min'])
         if bounced
-          return xmax
+          @ymax = rymax
+          return rxmax
         else
           x = [x, settings['max']].min if settings['max']
           x = [x, settings['min']].max if settings['min']
@@ -201,21 +208,29 @@ class CSOpt
       p = copy(@params)
       p[param]['value'] = x
       y = evaluate(p, param)
-      break if y <= @ymax
-      xl = xmax
-      yl = @ymax
-      xmax = x
-      @ymax = y
+      break if y <= rymax
+      rxl = rxmax
+      ryl = rymax
+      rxmax = x
+      rymax = y
     end
-    xr = x
-    yr = y
+    rxr = x
+    ryr = y
 
-    if xl.nil?
+    # go to the left side
+    if rymax <= @ymax || settings['goleft']
+      lxmax = settings['value']
+      lymax = @ymax
+      lxl = nil
+      lyl = nil
+      lxr = lxmax
+      lyr = lymax
       loop do
-        x = change_parameter_value(xmax, settings, :left)
+        x = change_parameter_value(lxmax, settings, :left)
         if (settings['max'] && x>= settings['max'] || settings['min'] && x <= settings['min'])
-          if bounced || x == xmax
-            return xmax
+          if bounced || x == lxmax
+            @ymax = lymax
+            return lxmax
           else
             x = [x, settings['max']].min
             x = [x, settings['min']].max
@@ -225,16 +240,32 @@ class CSOpt
         p = copy(@params)
         p[param]['value'] = x
         y = evaluate(p, param)
-        break if y <= @ymax
-        xr = xmax
-        yr = @ymax
-        xmax = x
-        @ymax = y
+        break if y <= lymax
+        lxr = lxmax
+        lyr = lymax
+        lxmax = x
+        lymax = y
       end
-      xl = x
-      yl = y
+      lxl = x
+      lyl = y
     end
 
+    # do newton iterations
+    if lymax.nil? || rymax > lymax
+      xmax = rxmax
+      @ymax = rymax
+      xl = rxl
+      yl = ryl
+      xr = rxr
+      yr = ryr
+    else
+      xmax = lxmax
+      @ymax = lymax
+      xl = lxl
+      yl = lyl
+      xr = rxmax == lxmax ? rxr : lxr
+      yr = rxmax == lxmax ? ryr : lyr
+    end
     @niter.times do
       # Fit y=a*x^2+b*x+c through the three points and set x = -a/2b
       xl2 = xl * xl
