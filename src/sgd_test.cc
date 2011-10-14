@@ -124,40 +124,88 @@ TYPED_TEST(SgdTestBlosum, DISABLED_PcPrior) {
 
 class SgdTest : public testing::Test {
 
+  virtual void SetUp() {
+    FILE* fin = fopen(PathCat(test_dir, "sgd_test.tsq"), "r");
+    for (size_t n = 0; n < kSamples; ++n)
+      tset_.push_back(TrainingSequence<AA>(fin));
+    fclose(fin);
+    vset_ = tset_;
+    printf("%zu training samples read!\n", tset_.size());
+
+    MatrixPseudocounts<AA> pc(sm_);
+    ConstantAdmix admix(0.75);
+    SamplingCrfInit<AA, TrainingSequence<AA> > init(tset_, pc, admix, sm_, 0, 1.6, 0.85);
+    crf_.reset(new Crf<AA>(kStates, kWlen, init));
+  }
+
   protected:
   typedef vector<TrainingSequence<AA> > TrainingSet;
+
+  static const size_t kSamples = 10000;
+  static const size_t kStates  = 20;
+  static const size_t kWlen    = 13;
+
+  TrainingSet tset_;
+  TrainingSet vset_;
+  BlosumMatrix sm_;
+  scoped_ptr<Crf<AA> > crf_;
 };
 
-TEST_F(SgdTest, eta) {
-  FILE* fin = fopen(PathCat(test_dir, "sgd_test_eta.tsq"), "r");
-  TrainingSet tset;
-  for (size_t n = 0; n < 10000; ++n)
-    tset.push_back(TrainingSequence<AA>(fin));
-  fclose(fin);
-  printf("%zu training samples read!\n", tset.size());
+TEST_F(SgdTest, SigmaPenalty) {
+  const double kSigmaContext   = 0.6;
+  const double kSigmaDecay     = 0.8;
+  const double kContextPenalty = 0.0;
 
+  Vector<double> column_weights(kWlen);
+  size_t c = crf_->center();
+  column_weights[c] = kSigmaContext;
+  for (size_t i = 1; i < c; ++i) {
+    double weight = column_weights[c + i - 1] * kSigmaDecay;
+    column_weights[c - i] = weight;
+    column_weights[c + i] = weight;
+  }
+
+  LassoDerivCrfFuncPrior<AA> prior(1.0, kSigmaContext, kSigmaDecay, 1.0, kContextPenalty);
+  DerivCrfFunc<AA, TrainingSequence<AA> > tf(tset_, sm_, prior);
+  CrfFunc<AA, TrainingSequence<AA> > vf(tset_, sm_);
+  
   SgdParams params;
-  params.eta_init = 10;
   params.eta_mode = SgdParams::ETA_MODE_FUNC;
-
-  params.sigma_pc_epoch = 1;
-  params.sigma_pc_steps = 0;
-  params.sigma_pc_max = 1.0;
+  params.eta_init = 0.1;
+  params.eta_decay = 2.0;
   params.nblocks = 1000;
 
-  BlosumMatrix sm;
-  CrfFunc<AA, TrainingSequence<AA> > vf(tset, sm);
-  GaussianDerivCrfFuncPrior<AA> prior(1.0, 1.0, 1.0, 1.0);
-  DerivCrfFunc<AA, TrainingSequence<AA> > tf(tset, sm, prior);
-  SgdOptimizer<AA, TrainingSequence<AA>, TrainingSequence<AA> > optimizer(tf, vf, params);
+  Sgd<AA, TrainingSequence<AA> > sgd(tf, params);
+  SgdState<AA> s(*crf_);
 
-  MatrixPseudocounts<AA> pc(sm);
-  ConstantAdmix admix(0.75);
-  SamplingCrfInit<AA, TrainingSequence<AA> > init(tset, pc, admix, sm);
-  Crf<AA> crf(10, 13, init);
+  printf("#    %5s %5s %5s %9s %9s\n", "MIN", "AVG", "MAX", "PRIOR", "LLTRAIN");
+  for (size_t i = 0; i < 100; ++i) {
+    Crf<AA>& crf = s.crf;
+    double min = DBL_MAX;
+    double max = -DBL_MAX;
+    double avg = 0.0;
+    size_t n   = 0;
+    size_t c   = crf.center();
+    for (size_t k = 0; k < crf_->size(); ++k) {
+      for (size_t i = c; i <=c; ++i) {
+        double sum = 0.0;
+        for (size_t a = 0; a < AA::kSize; ++a)
+          sum += exp(crf[k].context_weights[i][a] / column_weights[i]);
+        min = MIN(min, sum);
+        max = MAX(max, sum);
+        if (sum < DBL_MAX) {
+          avg += sum;
+          n++;
+        }
+      }
+    }
+    avg /= n;
+    double loglike = s.loglike / tset_.size();
+    double p = prior(crf) / crf.nweights();
 
-  optimizer.Optimize(crf, stdout);
-
+    printf("%3zu: %5.2f %5.2f %5.2f %9.4f %9.4f\n", i, min, avg, max, p, i > 0 ? loglike : 0.0);
+    sgd(s);
+  }
 }
 
 }  // namespace cs

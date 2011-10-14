@@ -151,7 +151,7 @@ sub get_sgd {
 	my @best;
 	open FIN, "< $log" or die "Can't read from '$log'!";
 	while (<FIN>) {
-		if (my @line = /^(\d+)\s+\[=+\]\s+(\S+)\s+(\S+)\s+\S+\s+(\S+)\s+(\S+)\s*$/) { 
+		if (my @line = /^(\d+)\s+\[=+\]\s+(\S+)\s+(\S+)\s+\S+\s+(\S+)\s+(\S+)/) { 
 			@last = @line;
 			if (scalar(@best) == 0 || $line[3] >= $best[3]) { @best = @line; }
 		} elsif (scalar(@last)) { 

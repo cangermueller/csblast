@@ -49,44 +49,51 @@ struct CSSgdAppOptions {
     }
 
     void PrintOptions(FILE* out) const {
-        fprintf(out, "  %3s %-20s: %s\n", "-t,", "--trainset", trainfile.c_str()); 
-        fprintf(out, "  %3s %-20s: %s\n", "-v,", "--valset", valfile.c_str()); 
-        fprintf(out, "  %3s %-20s: %s\n", "-o,", "--outfile", crffile_vset.c_str()); 
-        fprintf(out, "  %3s %-20s: %s\n", "-O,", "--outfile-tset", crffile_tset.c_str()); 
-        fprintf(out, "  %3s %-20s: %s\n", "-R,", "--progress", outfile.c_str()); 
-        fprintf(out, "  %3s %-20s: %zu\n", "-K,", "--states", nstates); 
-        fprintf(out, "  %3s %-20s: %zu\n", "-N,", "--epochs", sgd.max_epochs); 
-        fprintf(out, "  %3s %-20s: %.3g\n", "-t,", "--toll", sgd.toll); 
-        fprintf(out, "  %3s %-20s: %.3g\n", "-T,", "--early-delta", sgd.early_delta); 
-        fprintf(out, "  %3s %-20s: %.3g\n", " ", "--min-ll", sgd.min_ll); 
+        fprintf(out, "  %3s %-25s: %s\n", "-t,", "--trainset", trainfile.c_str()); 
+        fprintf(out, "  %3s %-25s: %s\n", "-v,", "--valset", valfile.c_str()); 
+        fprintf(out, "  %3s %-25s: %s\n", "-o,", "--outfile", crffile_vset.c_str()); 
+        fprintf(out, "  %3s %-25s: %s\n", "-O,", "--outfile-tset", crffile_tset.c_str()); 
+        fprintf(out, "  %3s %-25s: %s\n", "-R,", "--progress", outfile.c_str()); 
+        fprintf(out, "  %3s %-25s: %zu\n", "-K,", "--states", nstates); 
+        fprintf(out, "  %3s %-25s: %zu\n", "-N,", "--epochs", sgd.max_epochs); 
+        fprintf(out, "  %3s %-25s: %.3g\n", "-t,", "--toll", sgd.toll); 
+        fprintf(out, "  %3s %-25s: %.3g\n", "-T,", "--early-delta", sgd.early_delta); 
+        fprintf(out, "  %3s %-25s: %.3g\n", "", "--min-ll", sgd.min_ll); 
+        fprintf(out, "  %3s %-25s: %zu\n", "", "--min-ll-repeats", sgd.min_ll_repeats); 
         fprintf(out, "\n");
 
-        fprintf(out, "  %3s %-20s: %zu\n", "-E,", "--eta-mode", sgd.eta_mode); 
-        fprintf(out, "  %3s %-20s: %.3g\n", "-e,", "--eta", sgd.eta_init); 
-        fprintf(out, "  %3s %-20s: %.2f\n", "-D,", "--eta-decay", sgd.eta_decay); 
-        fprintf(out, "  %3s %-20s: %zu\n", "-B,", "--blocks", sgd.nblocks); 
-        fprintf(out, "  %3s %-20s: %zu\n", "-P,", "--prior", prior); 
-        fprintf(out, "  %3s %-20s: %.2f\n", "-b,", "--sigma-bias", sgd.sigma_bias); 
-        fprintf(out, "  %3s %-20s: %.2f\n", "-c,", "--sigma-context", sgd.sigma_context); 
-        fprintf(out, "  %3s %-20s: %.2f\n", "-C,", "--sigma-context-pos", sgd.sigma_context_pos_max); 
-        fprintf(out, "  %3s %-20s: %.2f\n", "-d,", "--sigma-decay", sgd.sigma_decay); 
-        fprintf(out, "  %3s %-20s: %.2f\n", "-p,", "--sigma-pc", sgd.sigma_pc_max); 
-        fprintf(out, "  %3s %-20s: %zu\n", "-q,", "--sigma-relax-epoch", sgd.sigma_relax_epoch); 
-        fprintf(out, "  %3s %-20s: %zu\n", " ", "--sigma-relax-steps", sgd.sigma_relax_steps); 
+        fprintf(out, "  %3s %-25s: %zu\n", "-E,", "--eta-mode", sgd.eta_mode); 
+        fprintf(out, "  %3s %-25s: %.3g\n", "-e,", "--eta", sgd.eta_init); 
+        fprintf(out, "  %3s %-25s: %.2f\n", "-D,", "--eta-decay", sgd.eta_decay); 
+        fprintf(out, "  %3s %-25s: %.3g\n", "", "--eta-reinit", sgd.eta_reinit); 
+        fprintf(out, "  %3s %-25s: %zu\n", "", "--eta-reinit-num", sgd.eta_reinit_num); 
+        fprintf(out, "  %3s %-25s: %.3g\n", "", "--eta-reinit-delta", sgd.eta_reinit_delta); 
+        fprintf(out, "  %3s %-25s: %zu\n", "-B,", "--blocks", sgd.nblocks); 
+        fprintf(out, "  %3s %-25s: %zu\n", "-P,", "--prior", prior); 
+        fprintf(out, "  %3s %-25s: %.2f\n", "-b,", "--sigma-bias", sgd.sigma_bias); 
+        fprintf(out, "  %3s %-25s: %.2f\n", "-c,", "--sigma-context", sgd.sigma_context); 
+        fprintf(out, "  %3s %-25s: %.2f\n", "-C,", "--sigma-context-pos", sgd.sigma_context_pos_max); 
+        fprintf(out, "  %3s %-25s: %.2f\n", "-d,", "--sigma-decay", sgd.sigma_decay); 
+        fprintf(out, "  %3s %-25s: %.2f\n", "-p,", "--sigma-pc", sgd.sigma_pc_max); 
+        fprintf(out, "  %3s %-25s: %zu\n", "-q,", "--sigma-relax-epoch", sgd.sigma_relax_epoch); 
+        fprintf(out, "  %3s %-25s: %zu\n", "", "--sigma-relax-steps", sgd.sigma_relax_steps); 
+        fprintf(out, "  %3s %-25s: %.2f\n", "-s,", "--context-penalty", sgd.context_penalty); 
+        fprintf(out, "  %3s %-25s: %zu\n", "-S,", "--context-penalty-epoch", sgd.context_penalty_epoch); 
+        fprintf(out, "  %3s %-25s: %zu\n", "" , "--context-penalty-steps", sgd.context_penalty_steps); 
         fprintf(out, "\n");
 
-        fprintf(out, "  %3s %-20s: %s\n", "-m,", "--model", modelfile.c_str()); 
-        fprintf(out, "  %3s %-20s: %.2f\n", " ", "--weight-center", weight_center); 
-        fprintf(out, "  %3s %-20s: %.2f\n", " ", "--weight-decay", weight_decay); 
-        fprintf(out, "  %3s %-20s: %.2f\n", "-g,", "--gauss-init", gauss_init); 
-        fprintf(out, "  %3s %-20s: %.2f\n", " ", "--pc-init", pc_init); 
-        fprintf(out, "  %3s %-20s: %u\n", "-r,", "--seed", sgd.seed); 
+        fprintf(out, "  %3s %-25s: %s\n", "-m,", "--model", modelfile.c_str()); 
+        fprintf(out, "  %3s %-25s: %.2f\n", "", "--weight-center", weight_center); 
+        fprintf(out, "  %3s %-25s: %.2f\n", "", "--weight-decay", weight_decay); 
+        fprintf(out, "  %3s %-25s: %.2f\n", "-g,", "--gauss-init", gauss_init); 
+        fprintf(out, "  %3s %-25s: %.2f\n", "", "--pc-init", pc_init); 
+        fprintf(out, "  %3s %-25s: %u\n", "-r,", "--seed", sgd.seed); 
         fprintf(out, "\n");
 
-        fprintf(out, "  %3s %-20s: %s\n", " ", "--neff-dir", neff_dir.c_str()); 
-        fprintf(out, "  %3s %-20s: %s\n", " ", "--neff-ext", neff_ext.c_str()); 
-        fprintf(out, "  %3s %-20s: %zu\n", " ", "--neff-nsamples", neff_nsamples); 
-        fprintf(out, "  %3s %-20s: %.2f\n", " ", "--neff-pc", neff_pc); 
+        fprintf(out, "  %3s %-25s: %s\n", "", "--neff-dir", neff_dir.c_str()); 
+        fprintf(out, "  %3s %-25s: %s\n", "", "--neff-ext", neff_ext.c_str()); 
+        fprintf(out, "  %3s %-25s: %zu\n", "", "--neff-nsamples", neff_nsamples); 
+        fprintf(out, "  %3s %-25s: %.2f\n", "", "--neff-pc", neff_pc); 
     }
 
 
@@ -279,20 +286,23 @@ struct CSSgdRunner {
                 opts_.sgd.sigma_bias,
                 opts_.sgd.sigma_context, 
                 opts_.sgd.sigma_decay, 
-                opts_.sgd.sigma_pc_max));
+                opts_.sgd.sigma_pc_max, 
+                opts_.sgd.context_penalty));
         else if (opts_.prior == 2) {
             prior.reset(new GaussianDerivCrfFuncPrior<Abc>(
                 opts_.sgd.sigma_bias,
                 opts_.sgd.sigma_context, 
                 opts_.sgd.sigma_decay, 
-                opts_.sgd.sigma_pc_max));
+                opts_.sgd.sigma_pc_max,
+                opts_.sgd.context_penalty));
         } else {
             prior.reset(new UnsymmetricDerivCrfFuncPrior<Abc>(
                 opts_.sgd.sigma_bias,
                 opts_.sgd.sigma_context, 
                 opts_.sgd.sigma_context_pos_max, 
                 opts_.sgd.sigma_decay, 
-                opts_.sgd.sigma_pc_max));
+                opts_.sgd.sigma_pc_max,
+                opts_.sgd.context_penalty));
         }
 
         CrfFunc<Abc, TrainingPairV> val_func(valset_, *sm_);
@@ -359,17 +369,20 @@ void CSSgdApp<Abc>::ParseOptions(GetOpt_pp& ops) {
     ops >> Option('o', "outfile", opts_.crffile_vset, opts_.crffile_vset);
     ops >> Option('O', "outfile-tset", opts_.crffile_tset, opts_.crffile_tset);
     ops >> Option('R', "progress", opts_.outfile, opts_.outfile);
-    ops >> Option('m', "model", opts_.modelfile, opts_.modelfile);
     ops >> Option('K', "states", opts_.nstates, opts_.nstates);
     ops >> Option('N', "epochs", opts_.sgd.max_epochs, opts_.sgd.max_epochs);
     ops >> Option('t', "toll", opts_.sgd.toll, opts_.sgd.toll);
     ops >> Option('T', "early-delta", opts_.sgd.early_delta, opts_.sgd.early_delta);
     ops >> Option(' ', "min-ll", opts_.sgd.min_ll, opts_.sgd.min_ll);
-    ops >> Option('e', "eta", opts_.sgd.eta_init, opts_.sgd.eta_init);
+    ops >> Option(' ', "min-ll-repeats", opts_.sgd.min_ll_repeats, opts_.sgd.min_ll_repeats);
+
     ops >> Option('E', "eta-mode", opts_.sgd.eta_mode, opts_.sgd.eta_mode);
+    ops >> Option('e', "eta", opts_.sgd.eta_init, opts_.sgd.eta_init);
     ops >> Option('D', "eta-decay", opts_.sgd.eta_decay, opts_.sgd.eta_decay);
-    ops >> Option('r', "seed", opts_.sgd.seed, opts_.sgd.seed);
-    ops >> Option('g', "gauss-init", opts_.gauss_init, opts_.gauss_init);
+    ops >> Option(' ', "eta-reinit", opts_.sgd.eta_reinit, opts_.sgd.eta_reinit);
+    ops >> Option(' ', "eta-reinit-num", opts_.sgd.eta_reinit_num, opts_.sgd.eta_reinit_num);
+    ops >> Option(' ', "eta-reinit-delta", opts_.sgd.eta_reinit_delta, opts_.sgd.eta_reinit_delta);
+    ops >> Option('B', "blocks", opts_.sgd.nblocks, opts_.sgd.nblocks);
     ops >> Option('P', "prior", opts_.prior, opts_.prior);
     ops >> Option('b', "sigma-bias", opts_.sgd.sigma_bias, opts_.sgd.sigma_bias);
     ops >> Option('c', "sigma-context", opts_.sgd.sigma_context, opts_.sgd.sigma_context);
@@ -378,14 +391,20 @@ void CSSgdApp<Abc>::ParseOptions(GetOpt_pp& ops) {
     ops >> Option('p', "sigma-pc", opts_.sgd.sigma_pc_max, opts_.sgd.sigma_pc_max);
     ops >> Option('q', "sigma-relax-epoch", opts_.sgd.sigma_relax_epoch, opts_.sgd.sigma_relax_epoch);
     ops >> Option(' ', "sigma-relax-steps", opts_.sgd.sigma_relax_steps, opts_.sgd.sigma_relax_steps);
-    ops >> Option('B', "blocks", opts_.sgd.nblocks, opts_.sgd.nblocks);
+    ops >> Option('s', "context-penalty", opts_.sgd.context_penalty, opts_.sgd.context_penalty);
+    ops >> Option('S', "context-penalty-epoch", opts_.sgd.context_penalty_epoch, opts_.sgd.context_penalty_epoch);
+    ops >> Option(' ', "context-penalty-steps", opts_.sgd.context_penalty_steps, opts_.sgd.context_penalty_steps);
+
+    ops >> Option('m', "model", opts_.modelfile, opts_.modelfile);
     ops >> Option(' ', "weight-center", opts_.weight_center, opts_.weight_center);
     ops >> Option(' ', "weight-decay", opts_.weight_decay, opts_.weight_decay);
+    ops >> Option('g', "gauss-init", opts_.gauss_init, opts_.gauss_init);
+    ops >> Option(' ', "pc-init", opts_.pc_init, opts_.pc_init);
+    ops >> Option('r', "seed", opts_.sgd.seed, opts_.sgd.seed);
     ops >> Option(' ', "neff-dir", opts_.neff_dir, opts_.neff_dir);
     ops >> Option(' ', "neff-ext", opts_.neff_ext, opts_.neff_ext);
     ops >> Option(' ', "neff-nsamples", opts_.neff_nsamples, opts_.neff_nsamples);
     ops >> Option(' ', "neff-pc", opts_.neff_pc, opts_.neff_pc);
-    ops >> Option(' ', "pc-init", opts_.pc_init, opts_.pc_init);
 
     opts_.Validate();
 }
@@ -415,12 +434,14 @@ void CSSgdApp<Abc>::PrintOptions() const {
             "Number of states in CRF to be trained", opts_.nstates);
     fprintf(out_, "  %-35s %s (def=%zu)\n", "-N, --epochs [1,inf[",
             "Maximal number of SGD epochs", opts_.sgd.max_epochs);
-    fprintf(out_, "  %-35s %s (def=%.2g)\n", "-t, --toll [0,1]",
+    fprintf(out_, "  %-35s %s (def=%.3g)\n", "-t, --toll [0,1]",
             "Log-likelihood change per column for convergence", opts_.sgd.toll);
-    fprintf(out_, "  %-35s %s (def=%.2g)\n", "-T, --early-delta [0,inf[",
+    fprintf(out_, "  %-35s %s (def=%.3g)\n", "-T, --early-delta [0,inf[",
             "Deviation from the maximal LL on the validation set for early-stopping", opts_.sgd.early_delta);
-    fprintf(out_, "  %-35s %s (def=%.2g)\n", "    --min-ll ]-inf,inf[",
-            "Minimum log-likelihood on training set for convergence", opts_.sgd.min_ll);
+    fprintf(out_, "  %-35s %s (def=%.3g)\n", "    --min-ll ]-inf,inf[",
+            "Minimum log-likelihood on training set in the first epoch", opts_.sgd.min_ll);
+    fprintf(out_, "  %-35s %s (def=%zu)\n", "    --min-ll-repeats [0,inf[",
+            "Maximal number of repetitions of the first epoch", opts_.sgd.min_ll_repeats);
     fprintf(out_, "\n");
 
     fprintf(out_, "  %-35s %s (def=%zu)\n", "-E, --eta-mode [1-2]",
@@ -431,6 +452,12 @@ void CSSgdApp<Abc>::PrintOptions() const {
             "Initial Learning rate eta in gradient steps", opts_.sgd.eta_init);
     fprintf(out_, "  %-35s %s (def=%.2f)\n", "-D, --eta-decay [1,inf[",
             "Decay of harmonic function used for updating the learning rate eta", opts_.sgd.eta_decay);
+    fprintf(out_, "  %-35s %s (def=%.3g)\n", "    --eta-reinit [0,1]",
+            "Learning rate eta for reinitialization", opts_.sgd.eta_reinit);
+    fprintf(out_, "  %-35s %s (def=%zu)\n", "    --eta-reinit-num [0,inf[",
+            "Number of eta reinitializations", opts_.sgd.eta_reinit_num);
+    fprintf(out_, "  %-35s %s (def=%.3g)\n", "    --eta-reinit-delta [0,inf[",
+            "Delta of LL change for reinitializing eta", opts_.sgd.eta_reinit_delta);
     fprintf(out_, "  %-35s %s (def=%zu)\n", "-B, --blocks [1,N]",
             "Number of training blocks", opts_.sgd.nblocks);
     fprintf(out_, "  %-35s %s (def=%zu)\n", "-P, --prior [1-3]",
@@ -452,11 +479,17 @@ void CSSgdApp<Abc>::PrintOptions() const {
     fprintf(out_, "  %-35s %s (def=%.2f)\n", "-p, --sigma-pc ]0,inf]",
             "Std. deviation sigma in prior of pseudocounts weights",
             opts_.sgd.sigma_pc_max);
-    fprintf(out_, "  %-35s %s (def=%zu)\n", "-q, --sigma-relax-epoch [0,inf[",
-            "SGD epoche for beginning to relax the prior", opts_.sgd.sigma_relax_epoch);
-    fprintf(out_, "  %-35s %s\n", "", "0: Always use relaxed prior");
-    fprintf(out_, "  %-35s %s (def=%zu)\n", "    --sigma-pc-steps [0,inf[",
-            "Number of steps for relaxing the prior", opts_.sgd.sigma_relax_steps);
+    fprintf(out_, "  %-35s %s (def=off)\n", "-q, --sigma-relax-epoch [0,inf[",
+            "SGD epoche for beginning to relax the prior");
+    fprintf(out_, "  %-35s %s (def=%zu)\n", "    --sigma-relax-steps [0,inf[",
+            "Number of epochs for relaxing the prior", opts_.sgd.sigma_relax_steps);
+    fprintf(out_, "  %-35s %s (def=%.2f)\n", "-s, --context-penalty [0,inf[",
+            "Penalty that each context-weights column refers to a density distribution", 
+            opts_.sgd.context_penalty);
+    fprintf(out_, "  %-35s %s (def=off)\n", "-S, --context-penalty-epoch [0,inf[",
+            "SGD epoche for beginning to relax the context penalty");
+    fprintf(out_, "  %-35s %s (def=%zu)\n", "    --context-penalty-steps [0,inf[",
+            "Number of epochs for relaxing the context penalty", opts_.sgd.context_penalty_steps);
     fprintf(out_, "\n");
 
     fprintf(out_, "  %-35s %s\n", "-m, --model <file>",

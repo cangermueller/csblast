@@ -257,25 +257,35 @@ sub cmd_curves {
 
 sub read_sgd {
   my ($file, $label) = @_;
-  my @values;
-  my @range;
-  for (1 .. $ncols) { push(@range, [&INT_MAX, -&INT_MAX]); }
 
   #Epoch                  LL-Train    Prior            LL-Val     Neff
   #1     [==============]   2.3253  +1.0918  -0.0325   2.1410  14.5634
+  my %table;
   open FIN, "< $file" or die "Can't read from '$file'!";
+  my $is_table = 0;
   while (<FIN>) {
-    if (my @val = /^(\d+)\s+\[=+\]\s+(\S+)\s+\S+\s+(\S+)\s+(\S+)\s+(\S+)\s*$/) { 
-      $val[2] *= -1;
-      for my $i (0 .. $ncols - 1) {
-        $range[$i]->[0] = min($range[$i]->[0], $val[$i]);
-        $range[$i]->[1] = max($range[$i]->[1], $val[$i]);
-      }
-      push(@values, \@val); 
-    } elsif (scalar(@values)) { last; }
+    if (/^-+/) {
+      if ($is_table) { last; }
+      else { $is_table = 1; }
+    } elsif ($is_table) {
+      if (my @val = /^(\d+)\s+\[=+\]\s+(\S+)\s+\S+\s+(\S+)\s+(\S+)\s+(\S+)/) { 
+        $val[2] *= -1;
+        $table{$val[0]} = \@val; 
+      } else { last; }
+    }
   }
   close FIN;
-  unless (scalar(@values)) { die "Format of '$file' invalid!"; }
+
+  my @values = values(%table);
+  unless (scalar(@values)) { die "Invalid format!"; }
+  my @range;
+  for (1 .. $ncols) { push(@range, [&INT_MAX, -&INT_MAX]); }
+  foreach my $val (@values) {
+    for my $i (0 .. $ncols - 1) {
+      $range[$i]->[0] = min($range[$i]->[0], $val->[$i]);
+      $range[$i]->[1] = max($range[$i]->[1], $val->[$i]);
+    }
+  }
 
   my %s;
   $s{FILE} = $file;

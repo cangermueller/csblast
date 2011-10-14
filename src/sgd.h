@@ -20,6 +20,9 @@ struct SgdParams {
               eta_mode(ETA_MODE_FUNC),
               eta_init(0.1),
               eta_decay(2.0),
+              eta_reinit(0.1),
+              eta_reinit_num(0),
+              eta_reinit_delta(0.05),
               mu(0.01),
               rho(0.5),
               max_eta(1.0),
@@ -29,6 +32,7 @@ struct SgdParams {
               min_epochs(1),
               max_epochs(150),
               min_ll(0.0),
+              min_ll_repeats(0),
               sigma_bias(1.0),
               sigma_context(0.6),
               sigma_context_pos_min(0.1),
@@ -38,12 +42,18 @@ struct SgdParams {
               sigma_pc_max(1.0),
               sigma_relax_epoch(0),
               sigma_relax_steps(3),
+              context_penalty(0.0),
+              context_penalty_epoch(0),
+              context_penalty_steps(3),
               seed(0) {}
 
     size_t nblocks;               // number of training blocks
     size_t eta_mode;              // mode for updating the learning rate eta
     double eta_init;              // initial learning rate eta
     double eta_decay;             // decay of the function for updating the learning rate eta
+    double eta_reinit;            // learning rate eta for reinitialization
+    size_t eta_reinit_num;        // number of reinitializations
+    double eta_reinit_delta;      // threshold of LL change for reinitializing eta
     double mu;                    // meta learning rate
     double rho;                   // lower bound for multiplier in learning rate adaption
     double max_eta;               // upper bound for learning rates
@@ -53,6 +63,7 @@ struct SgdParams {
     size_t min_epochs;            // minimal number of epochs
     size_t max_epochs;            // maximal number of epochs
     double min_ll;                // minimal LL on training set
+    size_t min_ll_repeats;        // maximal number of repetitions of the first epoch
     double sigma_bias;            // sigma in prior of bias weights
     double sigma_context;         // sigma in prior of context weights
     double sigma_context_pos_min; // minimum sigma in unsymmetric prior of positive context weights
@@ -62,6 +73,9 @@ struct SgdParams {
     double sigma_pc_max;          // maximum sigma in prior of pseudocounts weights
     size_t sigma_relax_epoch;     // epoch for beginning to relax the prior
     size_t sigma_relax_steps;     // number of steps for relaxing the prior
+    double context_penalty;       // penalty that each context weight column refers to a density distribution
+    size_t context_penalty_epoch; // epoch for relaxing the context penalty
+    size_t context_penalty_steps; // number of steps for relaxing the context penalty
     unsigned int seed;            // seed for rng that shuffles training set after each epoch
 
     static const size_t ETA_MODE_ALAP = 1;  // Use ALAP3 for updating the learning rate
@@ -91,8 +105,8 @@ struct Sgd {
         const SgdParams& p)
             : func(tf),
               params(p),
-              eta_decay(static_cast<double>((params.eta_decay - 1) * tf.trainset.size()) / 
-                  (1e6 * params.nblocks)),
+              eta_fac(static_cast<double>((p.eta_decay - 1) * tf.trainset.size()) / 
+                  (1e6 * p.nblocks)),
               ran(p.seed) {}
 
     // Shuffles training set and then runs one epoche of stochastic gradient descent
@@ -114,6 +128,7 @@ struct Sgd {
             // Updates CRF weights based on learning rates and gradient
             UpdateCRF(s);
 
+            //printf("%02zu prior: %.4g\n", s.steps, func.prior(s.crf) / s.crf.nweights());
             s.steps++;
         }
     }
@@ -155,10 +170,13 @@ struct Sgd {
 
     // Updates all learning rates
     void UpdateLearningRates(SgdState<Abc>& s) {
-        if (s.steps == 0) {
-            Assign(s.eta, params.eta_init); // start with constant eta
+        if (s.steps == 0 || eta_reinit) {
+            eta_init = eta_reinit ? params.eta_reinit : params.eta_init;
+            eta_init_step = s.steps;
+            Assign(s.eta, eta_init);
+            eta_reinit = false;
         } else {
-            if (params.eta_mode == SgdParams::ETA_MODE_ALAP) {
+            if (params.eta_mode == SgdParams::ETA_MODE_ALAP) {                                  
                 UpdateAverages(s);
                 double tmp = 0.0;
                 for (size_t i = 0; i < s.eta.size(); ++i) {
@@ -166,17 +184,20 @@ struct Sgd {
                     s.eta[i] = MIN(params.max_eta, s.eta[i] * MAX(params.rho, 1.0 + params.mu * tmp));
                 }
             } else {
-                double eta = params.eta_init / (s.steps * eta_decay + 1);
+                double eta = eta_init / ((s.steps - eta_init_step) * eta_fac + 1);
                 Assign(s.eta, eta);
             }
         }
     }
 
     static const double kDeltaMax = 1000; // Maximum parameter change per SGD iteraton
-    DerivCrfFunc<Abc, TrainingPair> func;  // training set function
-    const SgdParams& params;               // SGD parameter
-    const double eta_decay;                // Parameter for calculating the decay of the learning rate
-    Ran ran;                               // RNG for shuffling of training set
+    DerivCrfFunc<Abc, TrainingPair> func; // training set function
+    const SgdParams& params;              // SGD parameter    
+    const double eta_fac;                 // Parameter for calculating the decay of the learning rate
+    bool eta_reinit;                      // Indicates whether eta is to be reinitialized
+    double eta_init;                      // Eta used for (re)initialization
+    size_t eta_init_step;                 // Step when eta was (re)initialized
+    Ran ran;                              // RNG for shuffling of training set
 };
 
 
@@ -197,21 +218,23 @@ struct SgdOptimizer {
 
         scoped_ptr<ProgressBar> prog_bar;
         SgdState<Abc> s(crf);
-        size_t epoch = 1, best_epoch = 1, nconv = 0, nearly = 0;
-        double best_loglike = -DBL_MAX, delta = DBL_MAX, old_loglike, val_loglike;
+        size_t epoch = 1, max_vepoch = 1, nconv = 0, nearly = 0, neta = 0, neta_reinit = 0, nmin_ll = 0;
+        double max_tloglike = -DBL_MAX, max_vloglike = -DBL_MAX;
+        double val_loglike, old_loglike, init_loglike;
         std::string best_line;
 
+        size_t status_len = 80;
         if (fout) {
             prog_bar.reset(new ProgressBar(fout, 16));
-            fprintf(fout, "%-5s %-16s %8s %8s %9s %8s %8s\n", 
-                "Epoch", "Gradient descent", "LL-Train", "+/-", "Prior", "LL-Val", "Neff");
-            fprintf(fout, "%s\n", std::string(68, '-').c_str());
+            fprintf(fout, "%-5s %-16s %9s %9s %9s %9s %9s %7s\n", 
+                "Epoch", "Gradient descent", "LL-Train", "+/-", "Prior", "LL-Val", "Neff", "Eta");
+            fprintf(fout, "%s\n", std::string(status_len, '-').c_str());
         }
 
         // Compute the initial likelihood
-        s.loglike =  sgd.func(s.crf) / sgd.func.trainset.size();
-        while (((nconv < kMaxConvBumps && nearly < kMaxEarlyBumps) || epoch <= params.min_epochs) 
-            && epoch <= params.max_epochs && (epoch == 1 || s.loglike >= params.min_ll)) {
+        init_loglike =  sgd.func(s.crf) / sgd.func.trainset.size();
+        s.loglike = init_loglike;
+        while (((nconv < kMaxConvBumps && nearly < kMaxConvBumps) || epoch <= params.min_epochs) && epoch <= params.max_epochs) {
             // Print first part of table row
             if (fout) {
                 fprintf(fout, "%-4zu  ", epoch); fflush(fout);
@@ -239,26 +262,48 @@ struct SgdOptimizer {
                 if (uprior)
                     uprior->sigma_context_pos = params.sigma_context_pos_min;
             }
+            // Update context penalty
+            if (params.context_penalty_epoch == 0 || epoch < params.context_penalty_epoch) {
+              prior.context_penalty = params.context_penalty;
+            } else if (epoch >= params.context_penalty_epoch + params.context_penalty_steps - 1) {
+              prior.context_penalty = 0.0;
+            } else {
+              prior.context_penalty = params.context_penalty - (1 + epoch - params.context_penalty_epoch) * 
+                                      params.context_penalty / params.context_penalty_steps;
+            }
+
             // Run on epoche of SGD
             sgd(s, prog_bar.get());
+
             // Normalize likelihood and prior to user friendly scale
             s.loglike /= sgd.func.trainset.size();
             s.prior /= crf.nweights();
             // Calculate likelihood on validation set
             val_loglike = func(s.crf) / func.trainset.size();
             // Calculate delta for convergence
-            delta = s.loglike - old_loglike;
+            double delta = s.loglike - old_loglike;
             // Keep track of how many times we were under convergence threshold
             if (delta > params.toll) nconv = 0;
             else ++nconv;
             // Keep track of how many times we were under the maximal likelihood
-            if (val_loglike > best_loglike - params.early_delta) nearly = 0;
+            if (val_loglike > max_vloglike - params.early_delta) nearly = 0;
             else ++nearly;
+            // Keep track of how many times we were under threshold for reinitializing eta
+            if (delta > params.eta_reinit_delta) neta = 0;
+            else {
+                if (++neta >= kMaxConvBumps && neta_reinit < params.eta_reinit_num) {
+                    sgd.eta_reinit = true;
+                    ++neta_reinit;
+                    nconv = 0;
+                    nearly = 0;
+                    neta = 0;
+                }
+            }
 
             // Save CRF with the maximum likelihood on the validation set
-            if (val_loglike >= best_loglike) {
-                best_loglike = val_loglike;
-                best_epoch = epoch;
+            if (val_loglike >= max_vloglike) {
+                max_vloglike = val_loglike;
+                max_vepoch = epoch;
                 crf = s.crf;
                 if (!crffile_vset.empty()) {
                     FILE* fout = fopen(crffile_vset.c_str(), "w");
@@ -268,12 +313,15 @@ struct SgdOptimizer {
                 }
             }
 
-            // Save CRF of the current epoch
-            if (!crffile_tset.empty()) {
-                FILE* fout = fopen(crffile_tset.c_str(), "w");
-                if (!fout) throw Exception("Can't write to file '%s'!", crffile_tset.c_str());
-                s.crf.Write(fout);
-                fclose(fout);
+            // Save CRF with the maximum likelihood on the validation set
+            if (s.loglike >= max_tloglike) {
+                max_tloglike = s.loglike;
+                if (!crffile_tset.empty()) {
+                    FILE* fout = fopen(crffile_tset.c_str(), "w");
+                    if (!fout) throw Exception("Can't write to file '%s'!", crffile_tset.c_str());
+                    s.crf.Write(fout);
+                    fclose(fout);
+                }
             }
 
             // Compute the Neff for the given samples
@@ -294,26 +342,46 @@ struct SgdOptimizer {
 
             // Print second part of table row
             if (fout) {
+                double eta = s.eta[0];
+                if (params.eta_mode == SgdParams::ETA_MODE_ALAP) {
+                    double sum = 0.0;
+                    for (size_t i = 0; i < s.eta.size(); ++i)
+                        sum += s.eta[i];
+                    eta /= s.eta.size();
+                }
                 char line[100];
-                sprintf(line, " %8.4f %+8.4f %9.4f %8.4f %8.4f",
-                        s.loglike, delta, s.prior, val_loglike, neff);
+                sprintf(line, " %9.4f %+9.4f %9.4f %9.4f %9.4f %7.2g",
+                        s.loglike, delta, s.prior, val_loglike, neff, eta);
                 fprintf(fout, "%s\n", line);
-                if (epoch == best_epoch) best_line = line;
+                if (val_loglike == max_vloglike) best_line = line;
 
             }
-		
-            epoch++;
+	
+            // Repeat the first epoch if LL is to low
+            if (epoch == 1 && s.loglike < params.min_ll) {
+              if (nmin_ll < params.min_ll_repeats) {
+                  s = SgdState<Abc>(crf);
+                  nconv = 0; 
+                  nearly = 0;
+                  neta = 0;
+                  s.loglike = init_loglike;
+                  ++nmin_ll;
+              } else {
+                break;
+              }
+            } else {
+              epoch++;
+            }
         }
         if (fout && !best_line.empty()) {
-            fprintf(fout, "%s\n", std::string(68, '-').c_str());
-            fprintf(fout, "%-4zu %16s %s\n", best_epoch, "", best_line.c_str());
+            fprintf(fout, "%s\n", std::string(status_len, '-').c_str());
+            fprintf(fout, "%-4zu %16s %s\n", max_vepoch, "", best_line.c_str());
         }
-        return best_loglike;
+        return max_vloglike;
     }
 	
 
-    static const size_t kMaxConvBumps = 3;
-    static const size_t kMaxEarlyBumps = 5;
+    static const size_t kMaxConvBumps = 5;
 
     Sgd<Abc, TrainingPairT> sgd;      // SGD algorithm encapsulation
     CrfFunc<Abc, TrainingPairV> func; // validation set function

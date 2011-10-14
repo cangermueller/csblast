@@ -169,8 +169,8 @@ struct DerivCrfFuncIO {
 
 template<class Abc>
 struct DerivCrfFuncPrior {
-    DerivCrfFuncPrior(double sb, double sc, double sd, double sp) :
-      sigma_bias(sb), sigma_context(sc), sigma_decay(sd), sigma_pc(sp) {}
+    DerivCrfFuncPrior(double sb, double sc, double sd, double sp, double cp) :
+      sigma_bias(sb), sigma_context(sc), sigma_decay(sd), sigma_pc(sp), context_penalty(cp) {}
 
     virtual double operator() (const Crf<Abc>& crf) const = 0; 
 
@@ -185,6 +185,7 @@ struct DerivCrfFuncPrior {
     double sigma_context;
     double sigma_decay;
     double sigma_pc;
+    double context_penalty;
 };
 
 template<class Abc>
@@ -194,19 +195,23 @@ struct GaussianDerivCrfFuncPrior : public DerivCrfFuncPrior<Abc> {
         double sb = 1.0, 
         double sc = 0.5, 
         double sd = 0.8,
-        double sp = 1.0) : 
-      DerivCrfFuncPrior<Abc>(sb, sc, sd, sp) {}
+        double sp = 1.0,
+        double cp = 0.0) : 
+      DerivCrfFuncPrior<Abc>(sb, sc, sd, sp, cp) {}
 
     double operator() (const Crf<Abc>& crf) const {
 
         // Precalculate factors
         const double fac_bias = -0.5 / SQR(sigma_bias);
         Vector<double> fac_context(crf.wlen());
+        Vector<double> column_weights(crf.wlen());
         const int c = crf.center();
         for (size_t j = 0; j < crf.wlen(); ++j) {
             double tmp = sigma_context * pow(sigma_decay, fabs(static_cast<int>(j) - c));
+            column_weights[j] = tmp;
             fac_context[j] = -0.5 / SQR(tmp);
         }
+        const double fac_context_penalty = -context_penalty;
         const double fac_pc = -0.5 / SQR(sigma_pc);
 
         // Calculate prior
@@ -214,6 +219,12 @@ struct GaussianDerivCrfFuncPrior : public DerivCrfFuncPrior<Abc> {
         for (size_t k = 0; k < crf.size(); ++k) {
             prior += fac_bias * SQR(crf[k].bias_weight);
             for(size_t j = 0; j < crf.wlen(); ++j) {
+                if (context_penalty != 0.0) {
+                    double sum = 0.0;
+                    for (size_t a = 0; a < Abc::kSize; ++a)
+                        sum += exp(crf[k].context_weights[j][a] / column_weights[j]);
+                    prior += fac_context_penalty * fabs(sum - 1);
+                }
                 for (size_t a = 0; a < Abc::kSize; ++a)
                     prior += fac_context[j] * SQR(crf[k].context_weights[j][a]);
             }
@@ -231,12 +242,17 @@ struct GaussianDerivCrfFuncPrior : public DerivCrfFuncPrior<Abc> {
 
         // Precalculate factors
         const double fac_bias = -block.frac / SQR(sigma_bias);
+        Vector<double> fac_context_penalty(crf.wlen());
+        Vector<double> column_weights(crf.wlen());
+        Vector<double> context_col(AA::kSize);
         Vector<double> fac_context(crf.wlen());
         const int c = crf.center();
         for (size_t j = 0; j < crf.wlen(); ++j) {
             double tmp = sigma_context * pow(sigma_decay, fabs(static_cast<int>(j) - c));
+            fac_context_penalty[j] = -block.frac * context_penalty / tmp;
+            column_weights[j] = tmp;
             fac_context[j] = -block.frac / SQR(tmp);
-        }
+        }        
         const double fac_pc = -block.frac / SQR(sigma_pc);
 
         // Calculate gradients
@@ -244,6 +260,16 @@ struct GaussianDerivCrfFuncPrior : public DerivCrfFuncPrior<Abc> {
         for (size_t k = 0, i = 0; k < crf.size(); ++k) {
             grad[i++] += fac_bias * crf[k].bias_weight;
             for(size_t j = 0; j < crf.wlen(); ++j) {
+                if (context_penalty != 0.0) {
+                    double sum = 0.0;
+                    for (size_t a = 0; a < Abc::kSize; ++a) {
+                        context_col[a] = exp(crf[k].context_weights[j][a] / column_weights[j]);
+                        sum += context_col[a];
+                    }
+                    double fac = fac_context_penalty[j] * SIGN(sum - 1);
+                    for (size_t a = 0; a < Abc::kSize; ++a)
+                      grad[i + a] += fac * context_col[a];
+                }
                 for (size_t a = 0; a < Abc::kSize; ++a)
                     grad[i++] += fac_context[j] * crf[k].context_weights[j][a];
             }
@@ -257,6 +283,7 @@ struct GaussianDerivCrfFuncPrior : public DerivCrfFuncPrior<Abc> {
     using DerivCrfFuncPrior<Abc>::sigma_context;
     using DerivCrfFuncPrior<Abc>::sigma_decay;
     using DerivCrfFuncPrior<Abc>::sigma_pc;
+    using DerivCrfFuncPrior<Abc>::context_penalty;
 };
 
 template<class Abc>
@@ -266,26 +293,36 @@ struct LassoDerivCrfFuncPrior : public DerivCrfFuncPrior<Abc> {
         double sb = 1.0, 
         double sc = 0.6, 
         double sd = 0.8,
-        double sp = 1.0) : 
-      DerivCrfFuncPrior<Abc>(sb, sc, sd, sp) {}
+        double sp = 1.0,
+        double cp = 0.0) : 
+      DerivCrfFuncPrior<Abc>(sb, sc, sd, sp, cp) {}
    
     double operator() (const Crf<Abc>& crf) const {
 
         // Precalculate factors
-        const double fac_bias = -1 / SQR(sigma_bias);
+        const double fac_bias = -1 / sigma_bias;
         Vector<double> fac_context(crf.wlen());
+        Vector<double> column_weights(crf.wlen());
         const int c = crf.center();
         for (size_t j = 0; j < crf.wlen(); ++j) {
             double tmp = sigma_context * pow(sigma_decay, fabs(static_cast<int>(j) - c));
-            fac_context[j] = -1 / SQR(tmp);
+            column_weights[j] = tmp;
+            fac_context[j] = -1 / tmp;
         }
-        const double fac_pc = -1 / SQR(sigma_pc);
+        const double fac_context_penalty = -context_penalty;
+        const double fac_pc = -1 / sigma_pc;
 
         // Calculate prior
         double prior = 0.0;
         for (size_t k = 0; k < crf.size(); ++k) {
             prior += fac_bias * fabs(crf[k].bias_weight);
             for(size_t j = 0; j < crf.wlen(); ++j) {
+                if (context_penalty != 0.0) {
+                    double sum = 0.0;
+                    for (size_t a = 0; a < Abc::kSize; ++a)
+                        sum += exp(crf[k].context_weights[j][a] / column_weights[j]);
+                    prior += fac_context_penalty * fabs(sum - 1);
+                }
                 for (size_t a = 0; a < Abc::kSize; ++a)
                     prior += fac_context[j] * fabs(crf[k].context_weights[j][a]);
             }
@@ -302,20 +339,35 @@ struct LassoDerivCrfFuncPrior : public DerivCrfFuncPrior<Abc> {
             const TrainingBlock& block) const {
 
         // Precalculate factors
-        const double fac_bias = -block.frac / SQR(sigma_bias);
+        const double fac_bias = -block.frac / sigma_bias;
+        Vector<double> fac_context_penalty(crf.wlen());
+        Vector<double> column_weights(crf.wlen());
+        Vector<double> context_col(AA::kSize);
         Vector<double> fac_context(crf.wlen());
         const int c = crf.center();
         for (size_t j = 0; j < crf.wlen(); ++j) {
             double tmp = sigma_context * pow(sigma_decay, fabs(static_cast<int>(j) - c));
-            fac_context[j] = -block.frac / SQR(tmp);
+            fac_context_penalty[j] = -block.frac * context_penalty / tmp;
+            column_weights[j] = tmp;
+            fac_context[j] = -block.frac / tmp;
         }
-        const double fac_pc = -block.frac / SQR(sigma_pc);
+        const double fac_pc = -block.frac / sigma_pc;
 
         // Calculate gradients
         Assign(grad, 0.0);  // reset gradient
         for (size_t k = 0, i = 0; k < crf.size(); ++k) {
             grad[i++] += fac_bias * SIGN(crf[k].bias_weight);
             for(size_t j = 0; j < crf.wlen(); ++j) {
+                if (context_penalty != 0.0) {
+                    double sum = 0.0;
+                    for (size_t a = 0; a < Abc::kSize; ++a) {
+                        context_col[a] = exp(crf[k].context_weights[j][a] / column_weights[j]);
+                        sum += context_col[a];
+                    }
+                    double fac = fac_context_penalty[j] * SIGN(sum - 1);
+                    for (size_t a = 0; a < Abc::kSize; ++a)
+                      grad[i + a] += fac * context_col[a];
+                }
                 for (size_t a = 0; a < Abc::kSize; ++a)
                     grad[i++] += fac_context[j] * SIGN(crf[k].context_weights[j][a]);
             }
@@ -329,6 +381,7 @@ struct LassoDerivCrfFuncPrior : public DerivCrfFuncPrior<Abc> {
     using DerivCrfFuncPrior<Abc>::sigma_context;
     using DerivCrfFuncPrior<Abc>::sigma_decay;
     using DerivCrfFuncPrior<Abc>::sigma_pc;
+    using DerivCrfFuncPrior<Abc>::context_penalty;
 };
 
 template<class Abc>
@@ -339,22 +392,26 @@ struct UnsymmetricDerivCrfFuncPrior : public DerivCrfFuncPrior<Abc> {
         double scn = 0.5,
         double scp = 0.1,
         double sd  = 0.8,
-        double sp  = 1.0) :
-      DerivCrfFuncPrior<Abc>(sb, scn, sd, sp), sigma_context_pos(scp) {}
+        double sp  = 1.0,
+        double cp = 0.0) : 
+      DerivCrfFuncPrior<Abc>(sb, scn, sd, sp, cp), sigma_context_pos(scp) {}
 
    
     double operator() (const Crf<Abc>& crf) const {
 
         // Precalculate factors
-        const double fac_bias = 1 / SQR(sigma_bias);
+        const double fac_bias = -1 / sigma_bias;
         Vector<double> fac_context_neg(crf.wlen());
         Vector<double> fac_context_pos(crf.wlen());
+        Vector<double> column_weights(crf.wlen());
         const int c = crf.center();
         for (size_t j = 0; j < crf.wlen(); ++j) {
             double tmp = pow(sigma_decay, fabs(static_cast<int>(j) - c));
-            fac_context_neg[j] = 1 / SQR(sigma_context * tmp);
-            fac_context_pos[j] = -1 / SQR(sigma_context_pos * tmp);
+            column_weights[j] = tmp;
+            fac_context_neg[j] = 1 / (sigma_context * tmp);
+            fac_context_pos[j] = -1 / (sigma_context_pos * tmp);
         }
+        const double fac_context_penalty = -context_penalty;
         const double fac_pc = -0.5 / SQR(sigma_pc);
 
         // Calculate prior
@@ -362,6 +419,12 @@ struct UnsymmetricDerivCrfFuncPrior : public DerivCrfFuncPrior<Abc> {
         for (size_t k = 0; k < crf.size(); ++k) {
             prior += fac_bias * fabs(crf[k].bias_weight);
             for(size_t j = 0; j < crf.wlen(); ++j) {
+                if (context_penalty != 0.0) {
+                    double sum = 0.0;
+                    for (size_t a = 0; a < Abc::kSize; ++a)
+                        sum += exp(crf[k].context_weights[j][a] / column_weights[j]);
+                    prior += fac_context_penalty * fabs(sum - 1);
+                }
                 for (size_t a = 0; a < Abc::kSize; ++a) {
                     if (crf[k].context_weights[j][a] < 0)
                         prior += fac_context_neg[j] * crf[k].context_weights[j][a];
@@ -382,14 +445,19 @@ struct UnsymmetricDerivCrfFuncPrior : public DerivCrfFuncPrior<Abc> {
             const TrainingBlock& block) const {
 
         // Precalculate factors
-        const double fac_bias = -block.frac / SQR(sigma_bias);
+        const double fac_bias = -block.frac / sigma_bias;
+        Vector<double> fac_context_penalty(crf.wlen());
+        Vector<double> column_weights(crf.wlen());
+        Vector<double> context_col(AA::kSize);
         Vector<double> fac_context_neg(crf.wlen());
         Vector<double> fac_context_pos(crf.wlen());
         const int c = crf.center();
         for (size_t j = 0; j < crf.wlen(); ++j) {
             double tmp = pow(sigma_decay, fabs(static_cast<int>(j) - c));
-            fac_context_neg[j] = block.frac / SQR(sigma_context * tmp);
-            fac_context_pos[j] = -block.frac / SQR(sigma_context_pos * tmp);
+            fac_context_penalty[j] = -block.frac * context_penalty / tmp;
+            column_weights[j] = tmp;
+            fac_context_neg[j] = block.frac / (sigma_context * tmp);
+            fac_context_pos[j] = -block.frac / (sigma_context_pos * tmp);
         }
         const double fac_pc = -block.frac / SQR(sigma_pc);
 
@@ -398,6 +466,16 @@ struct UnsymmetricDerivCrfFuncPrior : public DerivCrfFuncPrior<Abc> {
         for (size_t k = 0, i = 0; k < crf.size(); ++k) {
             grad[i++] += fac_bias * SIGN(crf[k].bias_weight);
             for(size_t j = 0; j < crf.wlen(); ++j) {
+                if (context_penalty != 0.0) {
+                    double sum = 0.0;
+                    for (size_t a = 0; a < Abc::kSize; ++a) {
+                        context_col[a] = exp(crf[k].context_weights[j][a] / column_weights[j]);
+                        sum += context_col[a];
+                    }
+                    double fac = fac_context_penalty[j] * SIGN(sum - 1);
+                    for (size_t a = 0; a < Abc::kSize; ++a)
+                      grad[i + a] += fac * context_col[a];
+                }
                 for (size_t a = 0; a < Abc::kSize; ++a) {
                     if (crf[k].context_weights[j][a] < 0)
                         grad[i++] += fac_context_neg[j];
@@ -416,6 +494,7 @@ struct UnsymmetricDerivCrfFuncPrior : public DerivCrfFuncPrior<Abc> {
     double sigma_context_pos;
     using DerivCrfFuncPrior<Abc>::sigma_decay;
     using DerivCrfFuncPrior<Abc>::sigma_pc;
+    using DerivCrfFuncPrior<Abc>::context_penalty;
 };
 
 template<class Abc, class TrainingPair>
