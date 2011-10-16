@@ -53,7 +53,7 @@ my $legpos  = "center right";
 my $keep;
 
 my @sgd;
-my $ncols   = 5;
+my $ncols   = 6;
 my @range;
 my @y1range;
 my @y2range;
@@ -87,7 +87,8 @@ my %col = (
   LLTRAIN => 2,
   PRIOR   => 3,
   LLVAL   => 4,
-  NEFF    => 5
+  NEFF    => 5,
+  ETA     => 6
 );
 
 ### Initialization ###
@@ -114,6 +115,7 @@ foreach my $p (@aparams) {
   elsif ($p eq "ll-val") { $params{LLVAL} = 1; }
   elsif ($p eq "prior") { $params{PRIOR} = 1; }
   elsif ($p eq "neff") { $params{NEFF} = 1; }
+  elsif ($p eq "eta") { $params{ETA} = 1; }
 }
 unless (keys(%params)) { pod2usage("No valid parameters provided!"); }
 $params{LLTRAIN} = 1;
@@ -130,6 +132,7 @@ $single = scalar(@infiles) == 1;
 ### Create the plot ###
 
 
+# Read data files
 print "Creating '$outfile'...\n";
 for (1 .. $ncols) { push(@range, [&INT_MAX, -&INT_MAX]); }
 for my $i (0 .. $#infiles) {
@@ -141,6 +144,7 @@ for my $i (0 .. $#infiles) {
   push(@sgd, $s);
 }
 
+# Define y1/y2 range
 if (!defined($y1range[0])) {
   $y1range[0] = min($range[$col{LLTRAIN}-1]->[0], $range[$col{LLVAL}-1]->[0]);
 }
@@ -150,21 +154,25 @@ if (!defined($y1range[1])) {
 $y1range[1] += 0.1 * ($y1range[1]-$y1range[0]);
 @y2range = @{$range[$col{NEFF}-1]};
 
+# Scale values
 foreach my $s (@sgd) {
-  my ($min, $max) = (\$s->{RANGE}->[$col{PRIOR}-1]->[0], \$s->{RANGE}->[$col{PRIOR}-1]->[1]);
-  for my $i (0 .. $#{$s->{VALUES}}) {
-    my $v = \$s->{VALUES}->[$i]->[$col{PRIOR}-1];
-    if ($$min == $$max) { 
-      $$v = 0.5 * ($y1range[0] + $y1range[1]); 
-    } else {
-      $$v = sprintf("%.4f", $y1range[0] + ($$v - $$min) / ($$max - $$min) * ($y1range[1] - $y1range[0]));
+  foreach my $col (($col{PRIOR}-1, $col{ETA}-1)) {
+    my ($min, $max) = (\$s->{RANGE}->[$col]->[0], \$s->{RANGE}->[$col]->[1]);
+    for my $i (0 .. $#{$s->{VALUES}}) {
+      my $v = \$s->{VALUES}->[$i]->[$col];
+      if ($$min == $$max) { 
+        $$v = 0.5 * ($y1range[0] + $y1range[1]); 
+      } else {
+        $$v = sprintf("%.4f", $y1range[0] + ($$v - $$min) / ($$max - $$min) * ($y1range[1] - $y1range[0]));
+      }
     }
+    $$min = $y1range[0];
+    $$max = $y1range[1];
   }
-  $$min = $y1range[0];
-  $$max = $y1range[1];
   &write_sgd($s); 
 }
 
+# Create the plot
 my $basename = &remove_suffix($outfile);
 my $cmd = &plot("$basename.ps");
 open FOUT, "> $basename.gp" or die "Can't write to '$basename.gp'!";
@@ -231,6 +239,10 @@ sub cmd_curves {
   for my $i (0 .. $#sgd) {
     my $s = $sgd[$i];
     my $datafile = &get_datafile($s);
+    if ($params{ETA}) {
+      push(@curves, sprintf("\"$datafile\" using 1:$col{ETA} axes x1y1 with $opts{CURVETYPE} lt 9 lc rgb \"%s\" lw $opts{LINEWIDTHS} %s",
+          $opts{COLORS}->[$single ? 4 : $i], $single ? "title \"Eta\"" : "notitle"));
+    }
     if ($params{PRIOR}) {
       push(@curves, sprintf("\"$datafile\" using 1:$col{PRIOR} axes x1y1 with $opts{CURVETYPE} lt 8 lc rgb \"%s\" lw $opts{LINEWIDTHS} %s",
           $opts{COLORS}->[$single ? 3 : $i], $single ? "title \"Prior\"" : "notitle"));
@@ -258,8 +270,8 @@ sub cmd_curves {
 sub read_sgd {
   my ($file, $label) = @_;
 
-  #Epoch                  LL-Train    Prior            LL-Val     Neff
-  #1     [==============]   2.3253  +1.0918  -0.0325   2.1410  14.5634
+  #Epoch                  LL-Train    Prior            LL-Val     Neff   Eta
+  #1     [==============]   2.3253  +1.0918  -0.0325   2.1410  14.5634   0.1
   my %table;
   open FIN, "< $file" or die "Can't read from '$file'!";
   my $is_table = 0;
@@ -268,7 +280,7 @@ sub read_sgd {
       if ($is_table) { last; }
       else { $is_table = 1; }
     } elsif ($is_table) {
-      if (my @val = /^(\d+)\s+\[=+\]\s+(\S+)\s+\S+\s+(\S+)\s+(\S+)\s+(\S+)/) { 
+      if (my @val = /^(\d+)\s+\[=+\]\s+(\S+)\s+\S+\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)/) { 
         $val[2] *= -1;
         $table{$val[0]} = \@val; 
       } else { last; }

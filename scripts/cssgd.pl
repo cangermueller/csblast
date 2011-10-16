@@ -62,7 +62,7 @@ my @args;
 
 my $cpu     = 1;
 my $pe;
-my $queue   = undef;
+my $queue;
 
 my $HOME    = $ENV{"HOME"};
 my $CSD     = "$HOME/data/cs";
@@ -90,9 +90,9 @@ GetOptions(
   "t=f"              => \$t,
   "T=f"              => \$T,
   "m=s"              => \$m,
-  "suffix=s"       => \$suffix,
-  "cat=s"          => \$cat,
-  "rounds=i"       => \$rounds,
+  "suffix=s"         => \$suffix,
+  "cat=s"            => \$cat,
+  "rounds=i"         => \$rounds,
   "repeats=i"        => \$repeats,
   "seed=i"           => \$seed,
   "submit!"          => \$submit,

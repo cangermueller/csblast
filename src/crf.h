@@ -183,17 +183,23 @@ class LibraryBasedCrfInit : public CrfInit<Abc> {
     virtual void operator() (Crf<Abc>& crf) const {
       if (profiles_.size() < crf.size())
           throw Exception("Too few profiles in context library for CRF initialization!");
-      vector<size_t> shuffle;
-      for (size_t i = 0; i < profiles_.size(); ++i) shuffle.push_back(i);
+      vector<const ContextProfile<Abc>* > crf_profiles;
+      for (size_t i = 0; i < profiles_.size(); ++i)
+        crf_profiles.push_back(&profiles_[i]);
       if (profiles_.size() > crf.size()) {
-        Ran ran(seed_);
-        random_shuffle(shuffle.begin(), shuffle.end(), ran);
+        // Use context profiles with the highest probability
+        sort(crf_profiles.begin(), crf_profiles.end(), CompareProfiles);
       }
       for (size_t k = 0; k < crf.size(); ++k)
-        crf.SetState(k, CrfState<Abc>(profiles_[shuffle[k]], weight_center_, weight_decay_));
+        crf.SetState(k, CrfState<Abc>(*crf_profiles[k], weight_center_, weight_decay_));
     }
 
   private:
+
+    static bool CompareProfiles(const ContextProfile<Abc>* p, const ContextProfile<Abc>* q) {
+      return p->prior > q->prior;
+    }
+        
     const vector<ContextProfile<Abc> > profiles_;
     const SubstitutionMatrix<Abc>* sm_;
     const double weight_center_;

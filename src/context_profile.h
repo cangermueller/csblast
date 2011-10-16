@@ -58,6 +58,11 @@ struct ContextProfile {
     // for 'len' columns and normalizing afterwards.
     ContextProfile(const Profile<Abc>& p, size_t start, size_t len);
 
+    // Compares context profiles
+    bool operator < (const ContextProfile<Abc>& other) const {
+      return prior < other.prior;
+    }
+
     // Initializes count profile with a serialized profile read from stream.
     void Read(FILE* fin);
 

@@ -135,7 +135,7 @@ print FOUT $cmd;
 close FOUT;
 &exec("gnuplot $basename.gp");
 unless ($keep) {
-  foreach my $s (qw/dat gp/) {
+  foreach my $s (qw/*dat gp/) {
     &exec("rm -f $basename.$s");
   }
 }

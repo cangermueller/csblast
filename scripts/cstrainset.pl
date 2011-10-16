@@ -5,6 +5,7 @@ use warnings;
 use Getopt::Long;
 use Pod::Usage;
 use File::Basename qw(basename);
+use File::Temp qw(tempfile);
 
 
 =pod
@@ -56,10 +57,9 @@ my $bn;
 my $vset      = 1;
 my $suffix;
 my @args;
-
-my $pe        = "threads.pe 8";
-my $q         = undef;
-
+my $cpu       = 1;
+my $pe;
+my $submit    = 1;
 
 
 ### Initialization ###
@@ -77,11 +77,14 @@ GetOptions(
   "M=f"          => \$M,
   "y=f"          => \$y,
   "x=f"          => \$x,
-  "W=i"          => \$W,
   "D=s"          => \$D,
-  "B|basename=s" => \$bn,
-  "S|suffix=s"   => \$suffix,
-  "V|vset!"      => \$vset,
+  "W=i"          => \$W,
+  "pe=s"         => \$pe,
+  "cpu=i"        => \$cpu,
+  "basename=s"   => \$bn,
+  "suffix=s"     => \$suffix,
+  "vset!"        => \$vset,
+  "submit!"      => \$submit,
   "h|help"       => sub { pod2usage(2); }
 ) or pod2usage(1);
 @args = @ARGV;
@@ -91,8 +94,19 @@ if (defined($e) && ! -d $e) { pod2usage("Database for pseudocounts column does n
 $d =~ s/\/$//;
 if (defined($e)) { $e =~ s/\/$//; }
 else { $n = $m; }
+unless ($pe) {
+  my @pl = `qconf -spl`;
+  unless (@pl) { die "No parallel environment available!"; }
+  $pe = $pl[0];
+  foreach my $p (@pl) {
+    chomp($p);
+    if ($p eq "default" || $p eq "threads.pe") {
+      $pe = $p;
+      last;
+    }
+  }
+}
   
-
 
 &submit;
 if ($vset) { &submit(1); }
@@ -126,13 +140,34 @@ sub submit {
   );
   if ($suffix) { $out .= sprintf("_%s", $suffix); }
   if ($vs && -e "$out.$ext") { print "Validation set already exists!\n"; return; }
-  my $cmd = sprintf(
-"qsub -pe $pe %s -o $out.log -e $out.log -b y " .
-"cstrainset -d $dd %s -s $ss -g $g -n $n -m $m -M $M -y $y -N $NN -W $W -x $x -o $out.$ext %s %s",
-$q ? "-q '$q'" : "", $ee ? "-e $ee" : "", $D ? "-D $D" : "", join(" ", @args));
-  # print "$cmd\n"; exit 0;
-  system($cmd);
-  if ($?) { die "Error calling cstrainset!"; }
+  my $cmd = sprintf(qq/cstrainset \\
+    -d $dd %s \\
+    -s $ss \\
+    -g $g \\
+    -n $n \\
+    -m $m \\
+    -M $M \\
+    -y $y \\
+    -N $NN \\
+    -x $x \\
+    -W $W \\
+    -o $out.$ext %s %s \\
+    &> $out.log/, 
+    $ee ? "-e $ee" : "", 
+    $D ? "-D $D" : "", 
+    join(" ", @args));
+  $cmd =~ s/^\s+//mg;
+  #print "$cmd\n"; exit 0;
+
+  my ($fout, $scriptfile) = tempfile("cstrainsetXXXX", DIR => "/tmp", SUFFIX => ".sh");
+  print $fout "#!/bin/bash\n";
+  print $fout "export OMP_NUM_THREADS=\$NSLOTS\n";
+  print $fout "$cmd\n";
+  close($fout);
+
+  system("chmod u+x $scriptfile");
+  print "Job script: $scriptfile\n";
+  if ($submit) { system("qsub -pe $pe $cpu $scriptfile"); } 
 }
 
 sub get_basename {

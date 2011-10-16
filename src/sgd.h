@@ -107,6 +107,7 @@ struct Sgd {
               params(p),
               eta_fac(static_cast<double>((p.eta_decay - 1) * tf.trainset.size()) / 
                   (1e6 * p.nblocks)),
+              eta_reinit(false),
               ran(p.seed) {}
 
     // Shuffles training set and then runs one epoche of stochastic gradient descent
@@ -349,7 +350,7 @@ struct SgdOptimizer {
                         sum += s.eta[i];
                     eta /= s.eta.size();
                 }
-                char line[100];
+                char line[1000];
                 sprintf(line, " %9.4f %+9.4f %9.4f %9.4f %9.4f %7.2g",
                         s.loglike, delta, s.prior, val_loglike, neff, eta);
                 fprintf(fout, "%s\n", line);

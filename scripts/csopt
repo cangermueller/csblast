@@ -42,7 +42,7 @@ class CSOpt
     @cpu_csblast     = 1
     @cpu_cssgd       = 1
     @cpu_cstrainset  = 1
-    @sge_pe          = "threads.pe"
+    @sge_pe          = ENV['SGE_PE']
 
     @csblast_cmds = []   # commands for csblast
     @cssgd_cmds = []     # commands for cssgd
@@ -400,7 +400,7 @@ class CSOpt
     tplvars['seqfile'] = @seqfile
 
     # call cstrainset 
-    call_cstrainset(tplvars.dup) unless @cstrainset_file.nil?
+    call_cstrainset(tplvars) unless @cstrainset_file.nil?
 
     if @cssgd_file.nil? then
       # call csblast
@@ -506,17 +506,14 @@ class CSOpt
           lltrain = str_to_float($1)
           llval = str_to_float($2)
           raise "Invalid format: '#{tplvars['cssgdout']}'!" if (lltrain.nil? || llval.nil?)
-          if score.llval.nil? ||
-              (opt_llval == false && lltrain >= score.lltrain) ||
-              (opt_llval == true && llval >= score.llval) then
+          if score.lltrain.nil? || lltrain >= score.lltrain
             score.lltrain = lltrain
+          end
+          if score.llval.nil? || llval >= score.llval
             score.llval = llval
-            is_iter = true
-          elsif is_iter then 
-            break
           end
         else
-          raise "Invalid format: '#{tplvars['cssgdout']}'!"
+          break
         end
       end
       raise "Unable to parse '#{tplvars['cssgdout']}'!" if score.llval.nil?
