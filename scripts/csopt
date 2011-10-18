@@ -579,9 +579,13 @@ class CSOpt
     end
     qm.wait
     check_for_errors(qm)
+    # check if csblast result files are missing
+    if Dir.glob("#{tplvars['csblastdir']}/#{@resglob}").length < @globfiles.length
+      raise "Missing number of csblast result files!" 
+    end
 
     # compute roc score
-    cmd = ["csbin -i '#{tplvars['csblastdir']}/#{@resglob}' -d #{tplvars['csblastdir']} --rocx #{@rocx} -s #{@seqfile}"]
+    cmd = ["csbin -i '#{tplvars['csblastdir']}/#{@resglob}' -d #{tplvars['csblastdir']} --rocx #{@rocx} -s #{@seqfile} -q"]
     sge_config[:name] = sprintf("csbin_%02d", score.repeat)
     qm.set_config(sge_config)
     qm.submit(cmd)
