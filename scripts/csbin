@@ -220,7 +220,6 @@ class CSBin
     puts "Processing #{@resfiles.size} result files..." if @verbose
     i=0
     @resfiles.each do |resfile|
-      puts resfile
       hits = []
       query = parse_hits(resfile, hits)
       calc_and_append_rocx(query, hits) if @plots.include?(:rocx)

@@ -52,9 +52,6 @@ int CSBlast::Run(FILE* fout, BlastHits* hits) {
     string command(ComposeCommandString(queryfile, checkpointfile));
     if (emulate_) {
       fprintf(fout, "%s\n", command.c_str());
-      if (!basename.empty()) remove(basename.c_str());
-      if (!queryfile.empty()) remove(queryfile.c_str());
-      if (!checkpointfile.empty()) remove(checkpointfile.c_str());
       return 0;
     }
 

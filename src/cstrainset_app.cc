@@ -265,7 +265,15 @@ int CSTrainSetApp<Abc>::Run() {
   Files files_glob;
   fputs("Globbing input directory for profiles ...", out_);
   fflush(out_);
-  GetAllFiles(opts_.dir, files_glob, "prf");  
+  GetAllFiles(opts_.dir, files_glob, "prf"); 
+  // Get groups
+  // Shuffle groups
+  // profiles_, profiles_cols = vector(groups.length)
+  // get profiles for each group
+
+
+
+
   random_shuffle(files_glob.begin(), files_glob.end(), ran);
   if (!opts_.dir_col.empty()) {
     Files files;

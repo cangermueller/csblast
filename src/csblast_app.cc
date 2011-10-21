@@ -402,6 +402,10 @@ void CSBlastApp::PrepareForRun(const Sequence<AA>& query) {
       }
     }
   }
+  // Use composition based score adjustment type 1 to avoid
+  // warnings when restarting from checkpoint file
+  if (opts_.csblast.find('t') == opts_.csblast.end()) 
+    opts_.csblast['t'] = '1';
 
   // Reset number of output hits and alignments
   opts_.csblast['v']  = strprintf("%i", kNumOutputAlis);
