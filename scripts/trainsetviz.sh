@@ -3,17 +3,16 @@
 source $HOME/src/cs/.cs.sh
 
 if [ $# -eq 0 ]; then
-  echo "trainsetviz.sh TRAINSET+"
+  echo "trainsetviz.sh TRAINSET [OPTIONS]"
   exit 1
 fi
 
 N=100000
-TSETS=$@
-for TSET in $TSETS; do
-  OUTDIR=`dirname $TSET`/plots
-  mkdir -p $OUTDIR
-  trainsetviz.pl -i $TSET -o $OUTDIR/`basename $TSET`.pdf -N $N
-done
+TSET=$1
+shift
+OUTDIR=`dirname $TSET`/plots
+mkdir -p $OUTDIR
+trainsetviz.pl -i $TSET -o $OUTDIR/`basename $TSET`.pdf -N $N $@
 exit 0
 
 

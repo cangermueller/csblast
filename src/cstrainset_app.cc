@@ -27,23 +27,28 @@ struct CSTrainSetAppOptions {
   CSTrainSetAppOptions() { Init(); }
 
   void Init() {
-    dir             = "./";
-    dir_col         = "";
-    nsamples        = 1000000;
-    wlen            = 0;
-    seed            = 0;
-    pc_admix        = 0.01;
-    pc_ali          = 12.0;
-    neff_col        = 0.0;
-    min_neff        = 0.0;
-    min_neff_col    = 0.0;
-    max_neff_col    = 20.0;
-    max_win         = 1000;
-    sampling_mode   = 0;
-    weight_center   = 1.6;
-    weight_decay    = 0.85;
-    pc_engine       = "auto";
-    singletons      = 0;
+    dir           = "./";
+    profile_ext   = "prf";
+    ali_ext       = "a3m";
+    nsamples      = 1000000;
+    wlen          = 0;
+    seed          = 0;
+    pc_admix      = 0.01;
+    pc_ali        = 12.0;
+    neff_x_min    = kNeffMin;
+    neff_x_max    = kNeffMax;
+    neff_y_min    = kNeffMin;
+    neff_y_max    = kNeffMax;
+    neff_d_min    = 0.0;
+    neff_d_max    = 0.0;
+    neff_y_target = 0.0;
+    round         = 0;
+    max_win       = 1000;
+    sampling_mode = 0;
+    weight_center = 1.6;
+    weight_decay  = 0.85;
+    pc_engine     = "auto";
+    singletons    = 0;
   }
 
   // Validates the parameter settings and throws exception if needed.
@@ -53,50 +58,63 @@ struct CSTrainSetAppOptions {
     if (outfile.empty()) throw Exception("No output file provided!");
     if (wlen > 0 && !(wlen & 1)) throw Exception("Window length must be odd!");
     if (pc_admix < 0 || pc_admix > 1.0) throw Exception("Pseudocounts admix invalid!");
-    if (min_neff < 1.0 && min_neff != 0.0) throw Exception("Minimum Neff invalid!");
-    if (min_neff_col < 1.0 && min_neff_col != 0.0) throw Exception("Minimum Neff in pseuocounts column invalid!");
-    if (max_neff_col < 1.0 && max_neff_col != 0.0) throw Exception("Maximum Neff in pseuocounts column invalid!");
-    if (neff_col < 1.0 && neff_col != 0.0) throw Exception("Neff in pseuocounts column invalid!");
+    if (neff_x_min < kNeffMin) throw Exception("Minimum Neff in profiles invalid!");
+    if (neff_x_max < kNeffMin) throw Exception("Maximum Neff in profiles invalid!");
+    if (neff_y_min < kNeffMin) throw Exception("Minimum Neff in pseuocounts column invalid!");
+    if (neff_y_max < kNeffMin) throw Exception("Maximum Neff in pseuocounts column invalid!");
+    if (neff_y_target < kNeffMin && neff_y_target != 0.0) 
+      throw Exception("Target Neff in pseuocounts column invalid!");
+    if (neff_d_min > 0.0 && neff_d_max == 0.0) neff_d_max = kNeffMax;
   }
 
   void PrintOptions(FILE* out) const {
     fprintf(out, "  %-20s: %s\n", "-d, --dir", dir.c_str()); 
-    fprintf(out, "  %-20s: %s\n", "-e, --dir-col", dir_col.c_str()); 
     fprintf(out, "  %-20s: %s\n", "-o, --outfile", outfile.c_str()); 
     fprintf(out, "  %-20s: %zu\n", "-N, --size", nsamples); 
     fprintf(out, "  %-20s: %zu\n", "-W, --wlen", wlen); 
     fprintf(out, "  %-20s: %i\n", "-s, --sampling-mode", sampling_mode); 
+    fprintf(out, "  %-20s: %.2f\n", "-g, --singletons", singletons); 
     fprintf(out, "  %-20s: %s\n", "-D, --context-data", modelfile.c_str()); 
     fprintf(out, "  %-20s: %.2f\n", "-x, --pc-admix", pc_admix); 
     fprintf(out, "  %-20s: %.1f\n", "-c, --pc-ali", pc_ali); 
-    fprintf(out, "  %-20s: %.1f\n", "-y, --neff-col", neff_col); 
-    fprintf(out, "  %-20s: %.1f\n", "-n, --min-neff", min_neff); 
-    fprintf(out, "  %-20s: %.1f\n", "-m, --min-neff-col",min_neff_col); 
-    fprintf(out, "  %-20s: %.1f\n", "-M, --max-neff-col",max_neff_col); 
+    fprintf(out, "  %-20s: %.1f\n", "-u, --neff-x-min", neff_x_min); 
+    fprintf(out, "  %-20s: %.1f\n", "-U, --neff-x-max", neff_x_max); 
+    fprintf(out, "  %-20s: %.1f\n", "-v, --neff-y-min", neff_y_min); 
+    fprintf(out, "  %-20s: %.1f\n", "-V, --neff-y-max", neff_y_max); 
+    fprintf(out, "  %-20s: %.1f\n", "-y, --neff-y-target", neff_y_target);
+    fprintf(out, "  %-20s: %.1f\n", "-j, --neff-d-min", neff_d_min); 
+    fprintf(out, "  %-20s: %.1f\n", "-J, --neff-d-max", neff_d_max); 
+    fprintf(out, "  %-20s: %zu\n", "-R, --round", round);
     fprintf(out, "  %-20s: %i\n", "-r, --seed", seed); 
-    fprintf(out, "  %-20s: %.2f\n", "-g, --singletons", singletons); 
   }
  
-  string dir;            // directory with input data to build trainset from
-  string dir_col;         // directory with count profiles for training pseudocounts column
-  string ext;            // file extension of input files with counts
-  string outfile;        // created training set
-  string modelfile;      // input file with context profile library or HMM
-  string pc_engine;      // pseudocount engine
-  size_t nsamples;       // size of training set to create
-  size_t wlen;           // length of context window (zero means full-length)
-  double pc_admix;       // minimal pseudocount admix for count profiles
-  double pc_ali;         // constant in pseudocount calculation for alignments
-  double neff_col;       // target Neff in training pseudocounts column
-  double min_neff;       // minimum Neff in count profiles
-  double min_neff_col;   // minimum Neff in in training pseudocounts column
-  double max_neff_col;   // maximum Neff in in training pseudocounts column
-  size_t max_win;        // maximal number of windows per protein
-  int sampling_mode;     // sample sequence-column pairs from alignments
-  double weight_center;  // weight of central column in multinomial emission
-  double weight_decay;   // exponential decay of window weights
-  unsigned int seed;     // seed
-  double singletons;     // fraction of singletons in training profiles
+  string dir;           // directory with input data to build trainset from
+  string profile_ext;   // file extension of profiles
+  string ali_ext;       // file extension of alignments
+  string outfile;       // created training set
+  string modelfile;     // input file with context profile library or HMM
+  string pc_engine;     // pseudocount engine
+  size_t nsamples;      // size of training set to create
+  size_t wlen;          // length of context window (zero means full-length)
+  double pc_admix;      // minimal pseudocount admix for count profiles
+  double pc_ali;        // constant in pseudocount calculation for alignments
+  double neff_x_min;    // minimum Neff in profiles
+  double neff_x_max;    // maximum Neff in profiles
+  double neff_y_min;    // minimum Neff in training pseudocounts column
+  double neff_y_max;    // maximum Neff in training pseudocounts column
+  double neff_y_target; // target Neff in training pseudocounts column
+  double neff_d_min;    // minimum Neff in training pseudocounts column
+  double neff_d_max;    // maximum Neff in training pseudocounts column
+  size_t round;         // PSI-BLAST round for filtering input profiles
+  size_t max_win;       // maximal number of windows per protein
+  int sampling_mode;    // sample sequence-column pairs from alignments
+  double weight_center; // weight of central column in multinomial emission
+  double weight_decay;  // exponential decay of window weights
+  unsigned int seed;    // seed
+  double singletons;    // fraction of singletons in training profiles
+
+  static const double kNeffMin = 1.0;
+  static const double kNeffMax = 20.0;
 };  // CSTrainSetAppOptions
 
 
@@ -118,10 +136,16 @@ class CSTrainSetApp : public Application {
   virtual void PrintBanner() const;
   // Prints usage banner to stream.
   virtual void PrintUsage() const;
+  // Reads profiles which meet the filtering condition into memory.
+  void ReadProfiles(ProgressBar& progres);
+  // Computes sampling statistics.
+  void ComputeStatistics(ProgressBar& progress);
   // Samples full-length profiles from database of profiles.
   void SampleFullLengthProfiles(ProfileSet& samples);
   // Samples profile windows from database of profiles.
   void SampleProfileWindows(ProfileSet& samples);
+  // Checks whether the column diversities meet the filtering conditions.
+  inline bool IsValidPos(double neff_x, double neff_y) const;
   // Samples sequence-column pairs from database of profiles and alignments.
   void SampleTrainingSeqs(TrainSeqs& samples, size_t nsamples_);
   // Samples profile-column pairs from database of profiles and alignments.
@@ -130,9 +154,10 @@ class CSTrainSetApp : public Application {
   void InitSubstitutionMatrix();
 
   CSTrainSetAppOptions opts_;
-  ProfileSet profiles_;
-  ProfileSet* profiles_col_;
-  Files files_;
+  ProfileSet profiles_x_;
+  ProfileSet* profiles_y_;
+  bool profiles_xy_;    
+  Files files_x_;
   scoped_ptr<SubstitutionMatrix<Abc> > sm_;
   scoped_ptr<ContextLibrary<Abc> > lib_;
   scoped_ptr<Crf<Abc> > crf_;
@@ -144,21 +169,24 @@ class CSTrainSetApp : public Application {
 
 template<class Abc>
 void CSTrainSetApp<Abc>::ParseOptions(GetOpt_pp& ops) {
-  ops >> Option('o', "outfile", opts_.outfile, opts_.outfile);
   ops >> Option('d', "dir", opts_.dir, opts_.dir);
-  ops >> Option('e', "dir-col", opts_.dir_col, opts_.dir_col);
+  ops >> Option('o', "outfile", opts_.outfile, opts_.outfile);
   ops >> Option('N', "size", opts_.nsamples, opts_.nsamples);
   ops >> Option('W', "wlen", opts_.wlen, opts_.wlen);
-  ops >> Option('r', "seed", opts_.seed, opts_.seed);
-  ops >> Option('x', "pc-admix", opts_.pc_admix, opts_.pc_admix);
-  ops >> Option('c', "pc-ali", opts_.pc_ali, opts_.pc_ali);
-  ops >> Option('y', "neff-col", opts_.neff_col, opts_.neff_col);
-  ops >> Option('n', "min-neff", opts_.min_neff, opts_.min_neff);
-  ops >> Option('m', "min-neff-col", opts_.min_neff_col, opts_.min_neff_col);
-  ops >> Option('M', "max-neff-col", opts_.max_neff_col, opts_.max_neff_col);
   ops >> Option('D', "context-data", opts_.modelfile, opts_.modelfile);
   ops >> Option('s', "sampling-mode", opts_.sampling_mode, opts_.sampling_mode);
   ops >> Option('g', "singletons", opts_.singletons, opts_.singletons);
+  ops >> Option('x', "pc-admix", opts_.pc_admix, opts_.pc_admix);
+  ops >> Option('c', "pc-ali", opts_.pc_ali, opts_.pc_ali);
+  ops >> Option('u', "neff-x-min", opts_.neff_x_min, opts_.neff_x_min);
+  ops >> Option('U', "neff-x-max", opts_.neff_x_max, opts_.neff_x_max);
+  ops >> Option('v', "neff-y-min", opts_.neff_y_min, opts_.neff_y_min);
+  ops >> Option('V', "neff-y-max", opts_.neff_y_max, opts_.neff_y_max);
+  ops >> Option('y', "neff-y-target", opts_.neff_y_target, opts_.neff_y_target);
+  ops >> Option('j', "neff-d-min", opts_.neff_d_min, opts_.neff_d_min);
+  ops >> Option('J', "neff-d-max", opts_.neff_d_max, opts_.neff_d_max);
+  ops >> Option('R', "round", opts_.round, opts_.round);
+  ops >> Option('r', "seed", opts_.seed, opts_.seed);
 
   opts_.Validate();
 
@@ -179,12 +207,10 @@ void CSTrainSetApp<Abc>::PrintUsage() const {
 
 template<class Abc>
 void CSTrainSetApp<Abc>::PrintOptions() const {
-  fprintf(out_, "  %-30s %s\n", "-o, --outfile <file>",
-          "Output file with sampled training set");
   fprintf(out_, "  %-30s %s (def=%s)\n", "-d, --dir <dir>",
           "Directory with count profiles (and A3M alignments)", opts_.dir.c_str());
-  fprintf(out_, "  %-30s %s (def=%s)\n", "-e, --dir-col <dir>",
-          "Directory with count profiles for training pseudocounts column", opts_.dir_col.c_str());
+  fprintf(out_, "  %-30s %s\n", "-o, --outfile <file>",
+          "Output file with sampled training set");
   fprintf(out_, "  %-30s %s (def=%zu)\n", "-N, --size [0,inf[",
           "Size of training set to sample", opts_.nsamples);
   fprintf(out_, "  %-30s %s\n", "-W, --wlen [0,inf[",
@@ -195,24 +221,36 @@ void CSTrainSetApp<Abc>::PrintOptions() const {
   fprintf(out_, "  %-30s %s\n", "", "1: sample training seqs from alignment query");
   fprintf(out_, "  %-30s %s\n", "", "2: sample training seqs from full alignment");
   fprintf(out_, "  %-30s %s\n", "", "3: sample training profiles");
+  fprintf(out_, "  %-30s %s (def=%.1f)\n", "-g, --singletons [0,1]",
+          "Fraction of singletons in training profiles", opts_.singletons);
+
   fprintf(out_, "  %-30s %s\n", "-D, --context-data <file>",
           "Context data for adding cs-pseudocounts instead of subst. matrix PCs");
   fprintf(out_, "  %-30s %s (def=%.2f)\n", "-x, --pc-admix [0,1]",
           "Pseudocount admix to be added to count profiles", opts_.pc_admix);
   fprintf(out_, "  %-30s %s (def=%-.1f)\n", "-c, --pc-ali [0,inf[",
           "Constant in pseudocount calculation for alignments", opts_.pc_ali);
-  fprintf(out_, "  %-30s %s (def=%.1f)\n", "-y, --neff-col [1,inf[",
-          "Target number of effective sequences in training pseudocounts column", opts_.neff_col);
-  fprintf(out_, "  %-30s %s (def=%.1f)\n", "-n, --min-neff [1,20]",
-          "Minimum number of effective sequences in profiles", opts_.min_neff);
-  fprintf(out_, "  %-30s %s (def=%.1f)\n", "-m, --min-neff-col [1,20]",
-          "Minimum number of effective sequences in training pseudocounts column", opts_.min_neff_col);
-  fprintf(out_, "  %-30s %s (def=%.1f)\n", "-M, --max-neff-col [1,20]",
-          "Maximum number of effective sequences in training pseudocounts column", opts_.max_neff_col);
+
+
+  fprintf(out_, "  %-30s %s (def=%.1f)\n", "-u, --neff-x-min [1,20]",
+          "Minimum number of effective sequences in profiles", opts_.neff_x_min);
+  fprintf(out_, "  %-30s %s (def=%.1f)\n", "-U, --neff-x-max [1,20]",
+          "Maximum number of effective sequences in profiles", opts_.neff_x_max);
+  fprintf(out_, "  %-30s %s (def=%.1f)\n", "-v, --neff-y-min [1,20]",
+          "Minimum number of effective sequences in pseudocounts column", opts_.neff_y_min);
+  fprintf(out_, "  %-30s %s (def=%.1f)\n", "-V, --neff-y-max [1,20]",
+          "Maximum number of effective sequences in pseudocounts column", opts_.neff_y_max);
+  fprintf(out_, "  %-30s %s (def=%.1f)\n", "-y, --neff-y-target [1,inf[",
+          "Target number of effective sequences in training pseudocounts column", opts_.neff_y_target);
+  fprintf(out_, "  %-30s %s (def=%.1f)\n", "-j, --neff-d-min [1,20]",
+          "Minimum difference of Neff between pseudocounts column and profile", opts_.neff_d_min);
+  fprintf(out_, "  %-30s %s (def=%.1f)\n", "-J, --neff-d-max [1,20]",
+          "Maximum difference of Neff between pseudocounts column and profile", opts_.neff_d_max);
+  fprintf(out_, "  %-30s %s (def=off)\n", "-R, --round [1,inf[",
+          "Use profile ID_R.prf of PSI-BLAST round R");
+
   fprintf(out_, "  %-30s %s (def=%u)\n", "-r, --seed [0,inf[",
           "Seed for random number generator", opts_.seed);
-  fprintf(out_, "  %-30s %s (def=%.1f)\n", "-g, --singletons [0,1]",
-          "Fraction of singletons in training profiles", opts_.singletons);
 }
 
 template<class Abc>
@@ -232,7 +270,7 @@ int CSTrainSetApp<Abc>::Run() {
   fputs("\n", out_);
 
   InitSubstitutionMatrix();
-  Ran ran(opts_.seed);  // random number generator for sorting
+  ProgressBar progress(out_, 70);
 
   // Setup pseudocount engine
   if (!opts_.modelfile.empty() && opts_.pc_engine == "lib") {
@@ -260,99 +298,21 @@ int CSTrainSetApp<Abc>::Run() {
     pc_.reset(new MatrixPseudocounts<Abc>(*sm_));
   }
 
-  // Glob count-profile files with .prf extension wich are both in 
-  // opts_.dir and opts_.dir_col
-  Files files_glob;
-  fputs("Globbing input directory for profiles ...", out_);
-  fflush(out_);
-  GetAllFiles(opts_.dir, files_glob, "prf"); 
-  // Get groups
-  // Shuffle groups
-  // profiles_, profiles_cols = vector(groups.length)
-  // get profiles for each group
-
-
-
-
-  random_shuffle(files_glob.begin(), files_glob.end(), ran);
-  if (!opts_.dir_col.empty()) {
-    Files files;
-    std::map<string, bool> files_col;
-    GetAllFiles(opts_.dir_col, files, "prf");
-    for (Files::iterator it = files.begin(); it != files.end(); ++it) 
-      files_col[*it] = true;
-    files.clear();
-    for (Files::iterator it = files_glob.begin(); it != files_glob.end(); ++it) {
-      if (files_col.count(*it) > 0) files.push_back(*it);
-    }
-    files_glob = files;
-  }
-  fprintf(out_, "\n%zu files globbed\n", files_glob.size());
-
-  // Read all count profiles which fulfil filter criteria
-  fprintf(out_, "Reading %zu profiles into memory ...\n", files_glob.size());
-  ProgressBar progress(out_, 70, files_glob.size());
-  if (opts_.dir_col.empty()) 
-    profiles_col_ = &profiles_; // Use a single set of count profiles
-  else
-    profiles_col_ = new ProfileSet(); // Use two separate sets of counts profiles
-  for (Files::iterator it = files_glob.begin(); it != files_glob.end(); ++it) {
-    // Read next count profile from opts_.dir
-    string filename = opts_.dir + kDirSep + *it;
-    FILE* fin = fopen(filename.c_str(), "r");
-    if (!fin) throw Exception("Unable to open file '%s'!", filename.c_str());
-    CountProfile<Abc> prof(fin);
-    fclose(fin);
-    progress.Advance();
-
-    // Discard count profiles which are too short or with Neff < opts_.min_neff
-    double neff = Neff(prof);
-    if (neff < opts_.min_neff || prof.counts.length() < opts_.wlen)
-      continue;
-
-    if (opts_.dir_col.empty()) {
-      // Discard count profiles with Neff < opts_.min_neff_col
-      if (neff < opts_.min_neff_col || neff > opts_.max_neff_col) continue;
-      files_.push_back(*it);
-      profiles_.push_back(prof);
-
-    } else {
-      // Read next count profile from opts_.dir_col
-      filename = opts_.dir_col + kDirSep + *it;
-      fin = fopen(filename.c_str(), "r");
-      if (!fin) throw Exception("Unable to open file '%s'!", filename.c_str());
-      CountProfile<Abc> prof_col(fin);
-      fclose(fin);
-      if (prof_col.counts.length() != prof.counts.length()) {
-        throw Exception("Size of profile '%s' does not match the size of the corresponding profile!",
-            filename.c_str());
-      }
-      // Discard count profiles with Neff < opts_.min_neff_col
-      double neff_col = Neff(prof_col);
-      if (neff_col < opts_.min_neff_col || neff_col > opts_.max_neff_col) continue;
-      files_.push_back(*it);
-      profiles_.push_back(prof);
-      profiles_col_->push_back(prof_col);
-    }
-  }
-  for (size_t i = 0; i < profiles_.size(); ++i)
-    stats_.push_back(vector<size_t>(profiles_[i].length(), 0));
-  assert(files_.size() == profiles_.size());
-  assert(profiles_.size() == profiles_col_->size());
-  fprintf(out_, "\n%zu profiles passed filter\n", profiles_.size());
+  // Read profiles which meet the filtering conditions
+  ReadProfiles(progress);
 
   // Add pseudocounts to count profiles in parallel
   if (opts_.pc_admix > 0.0) {
     fputs("Adding pseudocounts to profiles ...\n", out_);
     CSBlastAdmix admix(opts_.pc_admix, opts_.pc_ali);
-    const int nprof = profiles_.size();
+    const int nprof = profiles_x_.size();
     progress.Init(nprof);
 #pragma omp parallel for schedule(static)
     for (int n = 0; n < nprof; ++n) {
-      profiles_[n].counts = pc_->AddTo(profiles_[n], admix);
-      Normalize(profiles_[n].counts, profiles_[n].neff);
-      if (!opts_.dir_col.empty()) {
-        CountProfile<Abc>& prof = profiles_col_->at(n);
+      profiles_x_[n].counts = pc_->AddTo(profiles_x_[n], admix);
+      Normalize(profiles_x_[n].counts, profiles_x_[n].neff);
+      if (profiles_xy_) {
+        CountProfile<Abc>& prof = profiles_y_->at(n);
         prof.counts = pc_->AddTo(prof, admix);
         Normalize(prof.counts, prof.neff);
       }
@@ -361,6 +321,11 @@ int CSTrainSetApp<Abc>::Run() {
     }
     fputs("\n", out_);
   }
+
+  // Initialize data for computing some statistics
+  stats_.reserve(profiles_x_.size());
+  for (size_t i = 0; i < profiles_x_.size(); ++i)
+    stats_.push_back(vector<size_t>(profiles_x_[i].length(), 0));
 
   // Now we can call the actual sampling method
   if (opts_.sampling_mode == 0) {
@@ -398,9 +363,196 @@ int CSTrainSetApp<Abc>::Run() {
     fflush(out_);
     WriteAll(samples, fout);
     fclose(fout);
-
   }
-  // Calculate sampling statistics
+
+  // Finally we calculate some sampling statistics
+  ComputeStatistics(progress);
+
+  if (profiles_xy_) delete profiles_y_;
+  fputs("\nDone!\n", out_);
+
+  return 0;
+}
+
+template<class Abc>
+void CSTrainSetApp<Abc>::ReadProfiles(ProgressBar& progress) {
+  Files files;
+  fputs("Globbing input directory for profiles ...", out_);
+  fflush(out_);
+  GetAllFiles(opts_.dir, files, opts_.profile_ext);
+  
+  // Group count-profile files of different PSI-BLAST rounds
+  typedef string GroupKey;
+  typedef std::pair<size_t, size_t> GroupValue;
+  typedef std::map<GroupKey, GroupValue> Groups;
+  Groups groups;
+  // Groups hash:
+  //  - count-profile refers to a specific round:
+  //    basename = ID_X.prf where X = [1-9]
+  //    # key = ID
+  //    round = X
+  //  - count-profile does not refer to a specifc round:
+  //    basename = ID.prf
+  //    # key = ID.prf
+  //    round = 0
+  //  # value = (rounds encoded as bit string, highest round)
+  for (Files::iterator it = files.begin(); it != files.end(); ++it) {
+    string basename = GetBasename(*it);
+    string key = basename;
+    size_t round = 0;
+    string name = GetBasename(*it, false);
+    size_t i = name.rfind('_');
+    if (i != string::npos) {
+      round = atoi(name.substr(i + 1).c_str());
+      if (round > 0) key = name.substr(0, i); // count-profiles refers to a specific round
+    }
+    Groups::iterator it = groups.find(key);
+    if (it == groups.end()) 
+      groups[key] = GroupValue(1 << round, round);
+    else {
+      it->second.first |= 1 << round;
+      it->second.second = MAX(it->second.second, round);
+    }
+  }
+  fprintf(out_, "\n%zu files globbed\n", groups.size());
+  if (groups.size() == 0) exit(0);
+  fprintf(out_, "Reading %zu profiles into memory ...\n", groups.size());
+  progress.Init(groups.size());
+
+  // Shuffle group keys
+  vector<GroupKey> group_keys;
+  group_keys.reserve(groups.size());
+  for (Groups::iterator it = groups.begin(); it != groups.end(); ++it)
+    group_keys.push_back(it->first);
+  Ran ran(opts_.seed);
+  random_shuffle(group_keys.begin(), group_keys.end(), ran);
+
+  // profiles_xy_ == true <=> profiles_x_ != profiles_y_ 
+  profiles_xy_ = opts_.neff_d_max > 0 && opts_.round == 0;
+  if (profiles_xy_)
+    profiles_y_ = new ProfileSet();
+  else
+    profiles_y_ = &profiles_x_;
+
+  for (vector<GroupKey>::iterator it = group_keys.begin(); it != group_keys.end(); ++it) {
+    GroupKey key = *it;
+    GroupValue value = groups[*it];
+    ProfileSet profiles_x;
+    ProfileSet profiles_y;
+    Files files_x;
+    vector<double> profiles_x_neff;
+    vector<double> profiles_y_neff;
+    double neff_x_min = DBL_MAX;
+    double neff_x_max = -DBL_MAX;
+    // Read profile of each round
+    for (size_t r = 0; r <= value.second; ++r) {
+      if (((value.first & (1 << r)) == 0) || 
+          (opts_.round > 0 && r != opts_.round)) continue;
+      char s[1000];
+      if (value.second == 0)
+        sprintf(s, "%s/%s", opts_.dir.c_str(), key.c_str());
+      else
+        sprintf(s, "%s/%s_%zu.%s", opts_.dir.c_str(), key.c_str(), r, opts_.profile_ext.c_str());
+      string filename = s;
+      FILE* fin = fopen(filename.c_str(), "r");
+      if (!fin) throw Exception("Unable to open file '%s'!", filename.c_str());
+      CountProfile<Abc> cp(fin);
+      fclose(fin);
+
+      // Append profile to profiles_x and profiles_y depending on the filtering contitions
+      if (cp.length() < opts_.wlen) continue;        
+      double neff = Neff(cp);
+      if (!profiles_xy_) {
+        // No specific profiles for pseudocounts column
+        if (neff >= opts_.neff_x_min && neff <= opts_.neff_x_max &&
+            neff >= opts_.neff_y_min && neff <= opts_.neff_y_max) {
+          profiles_x.push_back(cp);
+          files_x.push_back(filename);
+        }
+      } else {
+        // Specific profiles for pseudocounts column
+        if (neff >= opts_.neff_x_min && neff <= opts_.neff_x_max) {
+          profiles_x.push_back(cp);
+          profiles_x_neff.push_back(neff);
+          files_x.push_back(filename);
+          neff_x_min = MIN(neff_x_min, neff);
+          neff_x_max = MAX(neff_x_max, neff);
+        } 
+        if (neff >= opts_.neff_y_min && neff <= opts_.neff_y_max) {
+          profiles_y.push_back(cp);
+          profiles_y_neff.push_back(neff);
+        }
+      }
+    }
+    progress.Advance();
+    if (profiles_x.size() == 0) continue;
+
+    if (!profiles_xy_) {
+      // Sample profile from profiles_x
+      size_t ix = ran(profiles_x.size());
+      profiles_x_.push_back(profiles_x[ix]);
+      files_x_.push_back(files_x[ix]);
+    } else {
+      // Filter profiles_y to meet the distance condition neff_d_(min|max)
+      if (profiles_y.size() == 0) continue;
+      double neff_y_min = neff_x_min + opts_.neff_d_min;
+      double neff_y_max = neff_x_max + opts_.neff_d_max;
+      ProfileSet profiles_tmp;
+      vector<double> profiles_tmp_neff;
+      for (size_t i = 0; i < profiles_y.size(); ++i) {
+        if (profiles_y_neff[i] >= neff_y_min && profiles_y_neff[i] <= neff_y_max) {
+          profiles_tmp.push_back(profiles_y[i]);
+          profiles_tmp_neff.push_back(profiles_y_neff[i]);
+        }
+      }
+      if (profiles_tmp.size() == 0) continue;
+      // Sample profile y the for pseudocounts column
+      profiles_y = profiles_tmp;
+      profiles_y_neff = profiles_tmp_neff;
+      size_t iy = ran(profiles_y.size());
+      CountProfile<Abc>& profile_y = profiles_y[iy];
+
+      // Filter profiles_x to meet the distance condition neff_d_(min|max)
+      double neff_x_min = profiles_y_neff[iy] - opts_.neff_d_max;
+      double neff_x_max = profiles_y_neff[iy] - opts_.neff_d_min;
+      Files files_tmp;
+      profiles_tmp.clear();
+      profiles_tmp_neff.clear();
+      for (size_t i = 0; i < profiles_x.size(); ++i) {
+        if (profiles_x_neff[i] >= neff_x_min && profiles_x_neff[i] <= neff_x_max) {
+          profiles_tmp.push_back(profiles_x[i]);
+          profiles_tmp_neff.push_back(profiles_x_neff[i]);
+          files_tmp.push_back(files_x[i]);
+        }
+      }
+      if (profiles_tmp.size() == 0) continue;
+      profiles_x = profiles_tmp;
+      profiles_x_neff = profiles_tmp_neff;
+      files_x = files_tmp;
+      // Sample profile x
+      size_t ix = ran(profiles_x.size());
+      CountProfile<Abc>& profile_x = profiles_x[ix];
+
+      if (profile_x.length() != profile_y.length())
+        throw Exception("Profile sizes differ: '%s'!", files_x[ix].c_str());
+      assert(Neff(profile_x) >= opts_.neff_x_min && Neff(profile_x) <= opts_.neff_x_max);
+      assert(Neff(profile_y) >= opts_.neff_y_min && Neff(profile_y) <= opts_.neff_y_max);
+      assert(Neff(profile_y) - Neff(profile_x) >= opts_.neff_d_min && 
+           Neff(profile_y) - Neff(profile_x) <= opts_.neff_d_max);
+
+      profiles_x_.push_back(profile_x);
+      profiles_y_->push_back(profile_y);
+      files_x_.push_back(files_x[ix]);
+    }
+  }
+  assert(profiles_x_.size() == profiles_y_->size());
+  assert(profiles_x_.size() == files_x_.size());
+  fprintf(out_, "\n%zu profiles passed filter\n", profiles_x_.size());
+  if (profiles_x_.size() == 0) exit(0);
+}
+
+template<class Abc>
+void CSTrainSetApp<Abc>::ComputeStatistics(ProgressBar& progress) {
   if (stats_.size() > 0) {
     double stats_profiles[] = {0.0, 0.0, 0.0, DBL_MAX, -DBL_MAX};
     double stats_cols[] = {0.0, 0.0, 0.0, DBL_MAX, -DBL_MAX};
@@ -452,23 +604,17 @@ int CSTrainSetApp<Abc>::Run() {
         stats_cols[0], stats_cols[1], stats_cols[2], 
         static_cast<int>(stats_cols[3]), static_cast<int>(stats_cols[4]));
   }
-
-  if (opts_.dir_col.length()) delete profiles_col_;
-  fputs("\nDone!\n", out_);
-
-  return 0;
 }
-
 
 template<class Abc>
 void CSTrainSetApp<Abc>::SampleFullLengthProfiles(ProfileSet& samples) {
-  const size_t nsamples = MIN(profiles_.size(), opts_.nsamples);
+  const size_t nsamples = MIN(profiles_x_.size(), opts_.nsamples);
   fprintf(out_, "Sampling %zu profiles ...\n", nsamples);
   ProgressBar progress(out_, 70, nsamples);
 
-  for (size_t n = 0; n < profiles_.size(); ++n) {
+  for (size_t n = 0; n < profiles_x_.size(); ++n) {
     if (samples.size() < nsamples) {
-      samples.push_back(profiles_[n]);
+      samples.push_back(profiles_x_[n]);
       progress.Advance();
     }
   }
@@ -485,12 +631,13 @@ void CSTrainSetApp<Abc>::SampleProfileWindows(ProfileSet& samples) {
   // Precompute total pool size taking masking into account
   const size_t center = (opts_.wlen - 1) / 2;
   size_t nall = 0;
-  for (size_t n = 0; n < profiles_.size(); ++n) {
-    const CountProfile<Abc>& cp = profiles_[n];
+  for (size_t n = 0; n < profiles_x_.size(); ++n) {
+    const CountProfile<Abc>& cp = profiles_x_[n];
     const size_t ncol =  cp.counts.length() - opts_.wlen + 1;
     size_t unmasked = 0;
     for (size_t i = 0; i < ncol; ++i) {
-      if (cp.neff[i + center] >= opts_.min_neff) unmasked++;
+      if (cp.neff[i + center] >= opts_.neff_x_min &&
+          cp.neff[i + center] <= opts_.neff_x_max) unmasked++;
     }
     nall += MIN(opts_.max_win, unmasked);
   }
@@ -502,15 +649,16 @@ void CSTrainSetApp<Abc>::SampleProfileWindows(ProfileSet& samples) {
   // Iterate over input data and build counts profiles
   ProgressBar progress(out_, 70, nsamples);
 #pragma omp parallel for schedule(static)
-  for (size_t n = 0; n < profiles_.size(); ++n) {
+  for (size_t n = 0; n < profiles_x_.size(); ++n) {
     if (samples.size() < nsamples) {
       Ran ran(opts_.seed + n);
-      const CountProfile<Abc>& cp = profiles_[n];
-      LOG(ERROR) << "sampling " << files_[n];
+      const CountProfile<Abc>& cp = profiles_x_[n];
+      LOG(ERROR) << "sampling " << files_x_[n];
 
       vector<int> shuffle;
       for (size_t i = 0; i <= cp.counts.length() - opts_.wlen; ++i)
-        if (cp.neff[i + center] >= opts_.min_neff) shuffle.push_back(i);
+        if (cp.neff[i + center] >= opts_.neff_x_min &&
+            cp.neff[i + center] <= opts_.neff_x_max) shuffle.push_back(i);
       random_shuffle(shuffle.begin(), shuffle.end(), ran);
 
       // Proportional number of training windows we need to sample
@@ -542,22 +690,28 @@ void CSTrainSetApp<Abc>::SampleProfileWindows(ProfileSet& samples) {
 }
 
 template<class Abc>
+inline bool CSTrainSetApp<Abc>::IsValidPos(double neff_x, double neff_y) const {
+  return neff_x >= opts_.neff_x_min && neff_x <= opts_.neff_x_max &&
+         neff_y >= opts_.neff_y_min && neff_y <= opts_.neff_y_max &&
+         neff_y - neff_x >= opts_.neff_d_min &&
+         neff_y - neff_x <= opts_.neff_d_max;
+}
+
+template<class Abc>
 void CSTrainSetApp<Abc>::SampleTrainingSeqs(TrainSeqs& samples, size_t nsamples_) {
   const size_t center = (opts_.wlen - 1) / 2;
-  Vector<double> neff(profiles_.size(), 0.0);
+  Vector<double> neff(profiles_x_.size(), 0.0);
   double nall = 0.0;  // total pool size
 
   // Precompute Neff and total pool size taking masking into account
-  for (size_t n = 0; n < profiles_.size(); ++n) {
-    const CountProfile<Abc>& cp = profiles_[n];
-    const size_t ncol = cp.counts.length() - opts_.wlen + 1;
+  for (size_t n = 0; n < profiles_x_.size(); ++n) {
+    const CountProfile<Abc>& cp_x = profiles_x_[n];
+    const size_t ncol = cp_x.counts.length() - opts_.wlen + 1;
     size_t unmasked = 0;
     for (size_t i = 0; i < ncol; ++i) {
-      if (cp.neff[i + center] >= opts_.min_neff &&
-          profiles_col_->at(n).neff[i + center] >= opts_.min_neff_col &&
-          profiles_col_->at(n).neff[i + center] <= opts_.max_neff_col) {
+      if (IsValidPos(cp_x.neff[i + center], profiles_y_->at(n).neff[i + center])) {
         unmasked++;
-        neff[n] += opts_.sampling_mode == 2 ? cp.neff[i + center] : 1.0;
+        neff[n] += opts_.sampling_mode == 2 ? cp_x.neff[i + center] : 1.0;
       }
     }
     if (unmasked > 0) 
@@ -574,21 +728,21 @@ void CSTrainSetApp<Abc>::SampleTrainingSeqs(TrainSeqs& samples, size_t nsamples_
   // at the central window position.
   ProgressBar progress(out_, 70, nsamples);
 #pragma omp parallel for schedule(static)
-  for (size_t n = 0; n < profiles_.size(); ++n) {
+  for (size_t n = 0; n < profiles_x_.size(); ++n) {
     if (samples.size() < nsamples) {
       Ran ran(opts_.seed + n);
-      const CountProfile<Abc>& cp = profiles_[n];
-      size_t nmatch = cp.counts.length();
+      const CountProfile<Abc>& cp_x = profiles_x_[n];
+      size_t nmatch = cp_x.counts.length();
 
       // Filter out columns that don't suffice Neff-filter, same as above
       size_t ncol = nmatch - opts_.wlen + 1;
       Vector<bool> masked(ncol, false);
       int unmasked = 0;
       for (size_t i = 0; i < ncol; ++i) {
-        if (cp.neff[i + center] < opts_.min_neff ||
-            profiles_col_->at(n).neff[i + center] < opts_.min_neff_col ||
-            profiles_col_->at(n).neff[i + center] > opts_.max_neff_col) masked[i] = true;
-        else unmasked++;
+        if (IsValidPos(cp_x.neff[i + center], profiles_y_->at(n).neff[i + center]))
+          unmasked++;
+        else
+          masked[i] = true;
       }
 
       // Determine workload for this profile
@@ -606,7 +760,7 @@ void CSTrainSetApp<Abc>::SampleTrainingSeqs(TrainSeqs& samples, size_t nsamples_
       nall -= nprf;
 
       // Read-in the underlying A3M alignment of profile 'n'
-      string file = opts_.dir + kDirSep + GetBasename(files_[n], false) + ".a3m";
+      string file = opts_.dir + kDirSep + GetBasename(files_x_[n], false) + "." + opts_.ali_ext;
       FILE* fp = fopen(file.c_str(), "r");
       if (!fp) throw Exception("Can't open alignment file '%s'!", file.c_str());
       Alignment<Abc> ali(fp, A3M_ALIGNMENT);
@@ -615,7 +769,7 @@ void CSTrainSetApp<Abc>::SampleTrainingSeqs(TrainSeqs& samples, size_t nsamples_
       // Check if number of match columns in profile and alignment are correct
       if (nmatch != ali.nmatch())
         throw Exception("Number of matchcols in ali '%s' should be %zu but is %zu!",
-                        GetBasename(file).c_str(), cp.counts.length(), nmatch);
+                        GetBasename(file).c_str(), cp_x.counts.length(), nmatch);
 
       // Try out sequences within each column in random order
       vector<int> shuffle;
@@ -631,10 +785,10 @@ void CSTrainSetApp<Abc>::SampleTrainingSeqs(TrainSeqs& samples, size_t nsamples_
         size_t m = ran(ncol);
         if (masked[m]) continue;
         // Determine sampling work load for column 'm' (10% more as safe-guard)
-        double neff_center = opts_.sampling_mode == 2 ? cp.neff[m + center] : 1.0;
+        double neff_center = opts_.sampling_mode == 2 ? cp_x.neff[m + center] : 1.0;
         double s = 1.1 * todo * (neff_center / left);
         LOG(ERROR) << strprintf("todo=%5.2f  neff[%2zu]=%4.1f  left=%9.1f  s=%4.2f",
-                                todo, m, cp.neff[m + center], left, s);
+                                todo, m, cp_x.neff[m + center], left, s);
         assert(s > 0.0);
         // Shuffle sequences in column 'm'
         random_shuffle(shuffle.begin(), shuffle.end(), ran);
@@ -671,21 +825,21 @@ void CSTrainSetApp<Abc>::SampleTrainingSeqs(TrainSeqs& samples, size_t nsamples_
 
             if (valid && samples.size() < nsamples) {
               assert(j == opts_.wlen);
-              // Cut training pseudocounts column from profiles_col_
-              CountProfile<Abc> cp_col = CountProfile<Abc>(profiles_col_->at(n), m, opts_.wlen);
-              if (opts_.neff_col != 0.0 && cp_col.neff[center] < opts_.neff_col) {               
-                Profile<Abc> p = cp_col.counts;
-                Normalize(p, 1.0);
+              // Cut training pseudocounts column from profiles_y_
+              CountProfile<Abc> cpw_y = CountProfile<Abc>(profiles_y_->at(n), m, opts_.wlen);
+              if (opts_.neff_y_target != 0.0 && cpw_y.neff[center] < opts_.neff_y_target) {               
+                Profile<Abc> pw_y = cpw_y.counts;
+                Normalize(pw_y, 1.0);
                 // Estimated target Neff in count profile = Neff / Neff(cp_i) * Neff(p)
-                cp_col.counts = pc_->AddTo(cp_col, opts_.neff_col / cp_col.neff[center] * Neff(p));
-                Assign(cp_col.neff, Neff(cp_col.counts));
-                Normalize(cp_col.counts, cp_col.neff);
+                cpw_y.counts = pc_->AddTo(cpw_y, opts_.neff_y_target / cpw_y.neff[center] * Neff(pw_y));
+                Assign(cpw_y.neff, opts_.neff_y_target);
+                Normalize(cpw_y.counts, cpw_y.neff);
               }
-              ProfileColumn<Abc> col(cp_col.counts[center]);
+              ProfileColumn<Abc> y(cpw_y.counts[center]);
               if (samples.size() < nsamples) {
 #pragma omp critical (add_sample)
                 {
-                  samples.push_back(TrainingSequence<Abc>(seq, col));
+                  samples.push_back(TrainingSequence<Abc>(seq, y));
                   stats_[n][m]++;
                   progress.Advance();
                 }
@@ -726,14 +880,13 @@ void CSTrainSetApp<Abc>::SampleTrainingProfiles(TrainProfiles& samples) {
   // Precompute total pool size taking masking into account
   const size_t center = (opts_.wlen - 1) / 2;
   size_t nall = 0;
-  for (size_t n = 0; n < profiles_.size(); ++n) {
-    const CountProfile<Abc>& cp = profiles_[n];
-    const size_t ncol =  cp.counts.length() - opts_.wlen + 1;
+  for (size_t n = 0; n < profiles_x_.size(); ++n) {
+    const CountProfile<Abc>& cp_x = profiles_x_[n];
+    const size_t ncol =  cp_x.counts.length() - opts_.wlen + 1;
     size_t unmasked = 0;
     for (size_t i = 0; i < ncol; ++i) {
-      if (cp.neff[i + center] >= opts_.min_neff &&
-          profiles_col_->at(n).neff[i + center] >= opts_.min_neff_col &&
-          profiles_col_->at(n).neff[i + center] <= opts_.max_neff_col) unmasked++;
+      if (IsValidPos(cp_x.neff[i + center], profiles_y_->at(n).neff[i + center]))
+        unmasked++;
     }
     nall += MIN(opts_.max_win, unmasked);
   }
@@ -745,17 +898,16 @@ void CSTrainSetApp<Abc>::SampleTrainingProfiles(TrainProfiles& samples) {
   // Iterate over input data and build training profiles
   ProgressBar progress(out_, 70, nsamples);
 #pragma omp parallel for schedule(static)
-  for (size_t n = 0; n < profiles_.size(); ++n) {
+  for (size_t n = 0; n < profiles_x_.size(); ++n) {
     if (samples.size() < nsamples + nsingletons) {
       Ran ran(opts_.seed + n + 1);
-      const CountProfile<Abc>& cp = profiles_[n];
-      LOG(ERROR) << "sampling " << files_[n];
+      const CountProfile<Abc>& cp_x = profiles_x_[n];
+      LOG(ERROR) << "sampling " << files_x_[n];
 
       vector<int> shuffle;
-      for (size_t i = 0; i <= cp.counts.length() - opts_.wlen; ++i) {
-        if (cp.neff[i + center] >= opts_.min_neff &&
-            profiles_col_->at(n).neff[i + center] >= opts_.min_neff_col &&
-            profiles_col_->at(n).neff[i + center] <= opts_.max_neff_col) shuffle.push_back(i);
+      for (size_t i = 0; i <= cp_x.counts.length() - opts_.wlen; ++i) {
+        if (IsValidPos(cp_x.neff[i + center], profiles_y_->at(n).neff[i + center]))
+          shuffle.push_back(i);
       }
       random_shuffle(shuffle.begin(), shuffle.end(), ran);
 
@@ -763,28 +915,28 @@ void CSTrainSetApp<Abc>::SampleTrainingProfiles(TrainProfiles& samples) {
       size_t w = MIN(opts_.max_win, shuffle.size());
       size_t s = ceil(nsamples * (static_cast<double>(w) / nall));
       LOG(ERROR) << strprintf("n=%zu nsamples=%zu  nall=%zu  len=%zu  s=%zu",
-                              n, nsamples, nall, cp.counts.length(), s);
+                              n, nsamples, nall, cp_x.counts.length(), s);
       s = MIN(s, shuffle.size());
 
       // Copy profile windows into 'samples' vector
       for (size_t i = 0; i < s; ++i) {
-        CountProfile<Abc> p(cp, shuffle[i], opts_.wlen);
-        // Cut training pseudocounts column from profiles_col_
-        CountProfile<Abc> cp_col = CountProfile<Abc>(profiles_col_->at(n), shuffle[i], opts_.wlen);
-        if (opts_.neff_col != 0.0 && cp_col.neff[center] < opts_.neff_col) {               
-          Profile<Abc> p = cp_col.counts;
-          Normalize(p, 1.0);
+        CountProfile<Abc> cpw_x(cp_x, shuffle[i], opts_.wlen);
+        // Cut training pseudocounts column from profiles_y_
+        CountProfile<Abc> cpw_y = CountProfile<Abc>(profiles_y_->at(n), shuffle[i], opts_.wlen);
+        if (opts_.neff_y_target != 0.0 && cpw_y.neff[center] < opts_.neff_y_target) {               
+          Profile<Abc> pw_y = cpw_y.counts;
+          Normalize(pw_y, 1.0);
           // Estimated target Neff in count profile = Neff / Neff(M_i) * Neff(CP_i)
-          p = pc_->AddTo(cp_col, opts_.neff_col / cp_col.neff[center] * Neff(p));
-          cp_col.counts = p;
-          Assign(cp_col.neff, Neff(p));
-          Normalize(cp_col.counts, cp_col.neff);
+          pw_y = pc_->AddTo(cpw_y, opts_.neff_y_target / cpw_y.neff[center] * Neff(pw_y));
+          cpw_y.counts = pw_y;
+          Assign(cpw_y.neff, opts_.neff_y_target);
+          Normalize(cpw_y.counts, cpw_y.neff);
         }
-        ProfileColumn<Abc> col(cp_col.counts[center]);
+        ProfileColumn<Abc> y(cpw_y.counts[center]);
 #pragma omp critical (add_sample)
         if (samples.size() < nsamples + nsingletons) {
-          Normalize(p.counts, p.neff);
-          samples.push_back(TrainingProfile<Abc>(p, col));
+          Normalize(cpw_x.counts, cpw_x.neff);
+          samples.push_back(TrainingProfile<Abc>(cpw_x, y));
           stats_[n][shuffle[i]]++;
           progress.Advance();
         }

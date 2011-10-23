@@ -135,7 +135,8 @@ int CSTrainsetNeffApp<Abc>::Run() {
     vector<TrainingProfile<Abc> > trainset;
     ReadAll(fin, trainset, opts_.n);
     for (size_t i = 0; i < trainset.size(); ++i) {
-      double nx = Neff(trainset[i].x);
+      TrainingProfile<Abc>& tp =  trainset[i];
+      double nx = tp.x.neff[0.5 * (tp.x.length() - 1)];
       double ny = 0;
       for (size_t a = 0; a < Abc::kSize; ++a)
         ny += trainset[i].y[a];

@@ -41,19 +41,20 @@ my $K4000     = "$CSD/models/lib/K4000.lib";
 my $CST       = "$CSD/trainsets";
 
 my $d;
-my $e;
+my $W         = 13;
 my $N         = 3000000;
 my $s;
 my $g         = 1.0;
-my $n         = 4.0;
-my $m         = 4.0;
-my $M         = 20.0;
+my $D;
+my $u         = 3.5;
+my $U         = 20.0;
+my $v         = $u;
+my $V         = $U;
+my $j         = 0.0;
+my $J         = 0.0;
 my $y         = 0.0;
-my $x         = 0.0;
-my $W         = 13;
-my $D         = undef;
 
-my $bn;
+my $basename;
 my $vset      = 1;
 my $suffix;
 my @args;
@@ -68,20 +69,21 @@ my $submit    = 1;
 Getopt::Long::Configure("pass_through", "no_ignore_case");
 GetOptions(
   "d=s"          => \$d,
-  "e=s"          => \$e,
+  "W=i"          => \$W,
   "N=i"          => \$N,
   "s=i"          => \$s,
   "g=f"          => \$g,
-  "n=f"          => \$n,
-  "m=f"          => \$m,
-  "M=f"          => \$M,
-  "y=f"          => \$y,
-  "x=f"          => \$x,
   "D=s"          => \$D,
-  "W=i"          => \$W,
+  "u=f"          => \$u,
+  "U=f"          => \$U,
+  "v=f"          => \$v,
+  "V=f"          => \$V,
+  "j=f"          => \$j,
+  "J=f"          => \$J,
+  "y=f"          => \$y,
   "pe=s"         => \$pe,
   "cpu=i"        => \$cpu,
-  "basename=s"   => \$bn,
+  "basename=s"   => \$basename,
   "suffix=s"     => \$suffix,
   "vset!"        => \$vset,
   "submit!"      => \$submit,
@@ -90,10 +92,10 @@ GetOptions(
 @args = @ARGV;
 unless ($d) { pod2usage("No database provided!"); }
 unless (-d $d) { pod2usage("Database does not exist!"); }
-if (defined($e) && ! -d $e) { pod2usage("Database for pseudocounts column does not exist!"); }
 $d =~ s/\/$//;
-if (defined($e)) { $e =~ s/\/$//; }
-else { $n = $m; }
+unless ($s) { $s = $g == 1.0 ? 1 : 3; }
+if ($j > 0.0 && $J == 0.0) { $J = 3.0; }
+
 unless ($pe) {
   my @pl = `qconf -spl`;
   unless (@pl) { die "No parallel environment available!"; }
@@ -106,58 +108,57 @@ unless ($pe) {
     }
   }
 }
-  
 
 &submit;
 if ($vset) { &submit(1); }
 
 
+
 sub submit {
   my ($vs) = @_;
-  my $dd = $d;
-  my $ee = $e;
-  my $bb = &get_basename;
-  my $NN = $N;
-  my $ss = $s ? $s : ($g == 1.0 ? 1 : 3);
+  my $dd;
+  my $bn;
+  my $NN;
 
   if ($vs) {
-    $dd = &get_vset($dd);
+    $dd = &get_vset($d);
     unless (-d $dd) { return; }
-    if ($ee) {
-      $ee = &get_vset($ee);
-      unless (-d $ee) { return; }
-    }
-    $bb = &get_vset($bb);
-    unless ($bb) { return; }
+    $bn = &get_basename($dd);
     $NN = 1500000;
+  } else {
+    $dd = $d;
+    $bn = &get_basename($dd);
+    $NN = $N;
   }
 
-  my $ext = $g == 1.0 ? "tsq" : "tpr";
-  my $out = sprintf("%s/%s_g%.2f%s_m%.1f_M%.1f_y%.1f_N%s%s", $CST, $bb, $g, 
-    $ee ? sprintf("_n%.1f", $n) : "", 
-    $m, $M, $y, &get_N_short($NN),
-    $D ? sprintf("_D%s", basename($D)) : "",
-  );
+  my $out = sprintf("%s/%s_N%s_g%.2f_u%.1f_U%.1f", 
+    $CST, $bn, &get_N_short($NN), $g, $u, $U);
+  if ($s == 3) { $out .= sprintf("_v%.1f_V%.1f_j%.1f_J%.1f", $v, $V, $j, $J); }
+  if ($y) { $out .= sprintf("_y%.1f", $y); }
+  if ($D) { $out .= sprintf("_D%s", basename($D)); }
   if ($suffix) { $out .= sprintf("_%s", $suffix); }
+  my $ext = $s == 1.0 ? "tsq" : "tpr";
   if ($vs && -e "$out.$ext") { print "Validation set already exists!\n"; return; }
+
   my $cmd = sprintf(qq/cstrainset \\
-    -d $dd %s \\
-    -s $ss \\
-    -g $g \\
-    -n $n \\
-    -m $m \\
-    -M $M \\
-    -y $y \\
-    -N $NN \\
-    -x $x \\
+    -d $dd \\
     -W $W \\
+    -N $NN \\
+    -s $s \\
+    -g $g \\
+    -u $u \\
+    -U $U \\
+    -v $v \\
+    -V $V \\
+    -j $j \\
+    -J $J \\
+    -y $y \\
     -o $out.$ext %s %s \\
     &> $out.log/, 
-    $ee ? "-e $ee" : "", 
     $D ? "-D $D" : "", 
     join(" ", @args));
   $cmd =~ s/^\s+//mg;
-  #print "$cmd\n"; exit 0;
+  # print "$cmd\n"; return;
 
   my ($fout, $scriptfile) = tempfile("cstrainsetXXXX", DIR => "/tmp", SUFFIX => ".sh");
   print $fout "#!/bin/bash\n";
@@ -171,12 +172,9 @@ sub submit {
 }
 
 sub get_basename {
-  if ($bn) { return $bn; }
-  else {
-    my $bb = basename($d);
-    if (defined($e) && $e =~ /neff(.+)$/) { $bb = "${bb}_$1"; }
-    return $bb;
-  }
+  my ($db) = @_;
+  if ($basename) { return $basename; }
+  else { return basename($db); }
 }
 
 sub get_vset {
