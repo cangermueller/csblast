@@ -49,6 +49,7 @@ struct CSTrainSetAppOptions {
     weight_decay  = 0.85;
     pc_engine     = "auto";
     singletons    = 0;
+    central_mod   = false;
   }
 
   // Validates the parameter settings and throws exception if needed.
@@ -85,6 +86,7 @@ struct CSTrainSetAppOptions {
     fprintf(out, "  %-20s: %.1f\n", "-j, --neff-d-min", neff_d_min); 
     fprintf(out, "  %-20s: %.1f\n", "-J, --neff-d-max", neff_d_max); 
     fprintf(out, "  %-20s: %zu\n", "-R, --round", round);
+    fprintf(out, "  %-20s: %d\n", "-C, --central-mod", central_mod);
     fprintf(out, "  %-20s: %i\n", "-r, --seed", seed); 
   }
  
@@ -110,6 +112,7 @@ struct CSTrainSetAppOptions {
   int sampling_mode;    // sample sequence-column pairs from alignments
   double weight_center; // weight of central column in multinomial emission
   double weight_decay;  // exponential decay of window weights
+  bool central_mod;     // modify central profile columns
   unsigned int seed;    // seed
   double singletons;    // fraction of singletons in training profiles
 
@@ -185,6 +188,7 @@ void CSTrainSetApp<Abc>::ParseOptions(GetOpt_pp& ops) {
   ops >> Option('y', "neff-y-target", opts_.neff_y_target, opts_.neff_y_target);
   ops >> Option('j', "neff-d-min", opts_.neff_d_min, opts_.neff_d_min);
   ops >> Option('J', "neff-d-max", opts_.neff_d_max, opts_.neff_d_max);
+  ops >> OptionPresent('C', "central-mod", opts_.central_mod);
   ops >> Option('R', "round", opts_.round, opts_.round);
   ops >> Option('r', "seed", opts_.seed, opts_.seed);
 
@@ -246,6 +250,7 @@ void CSTrainSetApp<Abc>::PrintOptions() const {
           "Minimum difference of Neff between pseudocounts column and profile", opts_.neff_d_min);
   fprintf(out_, "  %-30s %s (def=%.1f)\n", "-J, --neff-d-max [1,20]",
           "Maximum difference of Neff between pseudocounts column and profile", opts_.neff_d_max);
+  fprintf(out_, "  %-30s %s (def=false)\n", "-C, --central-mod", "Modify central profile columns");
   fprintf(out_, "  %-30s %s (def=off)\n", "-R, --round [1,inf[",
           "Use profile ID_R.prf of PSI-BLAST round R");
 
@@ -920,8 +925,17 @@ void CSTrainSetApp<Abc>::SampleTrainingProfiles(TrainProfiles& samples) {
 
       // Copy profile windows into 'samples' vector
       for (size_t i = 0; i < s; ++i) {
+        // Cut the profile window
         CountProfile<Abc> cpw_x(cp_x, shuffle[i], opts_.wlen);
-        // Cut training pseudocounts column from profiles_y_
+        if (opts_.central_mod) {
+          double* central = cpw_x.counts[center];
+          size_t max = 0;
+          for (size_t a = 1; a < Abc::kSize; ++a)
+            if (central[a] > central[max]) max = a;
+          for (size_t a = 0; a < Abc::kSize; ++a)
+            central[a] = a == max ? cpw_x.neff[center] : 0.0;
+        }
+        // Cut the profile column
         CountProfile<Abc> cpw_y = CountProfile<Abc>(profiles_y_->at(n), shuffle[i], opts_.wlen);
         if (opts_.neff_y_target != 0.0 && cpw_y.neff[center] < opts_.neff_y_target) {               
           Profile<Abc> pw_y = cpw_y.counts;
@@ -933,6 +947,7 @@ void CSTrainSetApp<Abc>::SampleTrainingProfiles(TrainProfiles& samples) {
           Normalize(cpw_y.counts, cpw_y.neff);
         }
         ProfileColumn<Abc> y(cpw_y.counts[center]);
+        // Add the training profile
 #pragma omp critical (add_sample)
         if (samples.size() < nsamples + nsingletons) {
           Normalize(cpw_x.counts, cpw_x.neff);

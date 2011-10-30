@@ -161,6 +161,8 @@ sub submit {
     -B $B \\
     -t $t \\
     -T $T \\
+    --weight-center $c \\
+    --weight-decay $d \\
     -m MODEL \\
     --seed $seed \\
     %s &> LOGFILE/,

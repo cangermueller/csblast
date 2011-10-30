@@ -44,7 +44,7 @@ my $d;
 my $W         = 13;
 my $N         = 3000000;
 my $s;
-my $g         = 1.0;
+my $g;
 my $D;
 my $u         = 3.5;
 my $U         = 20.0;
@@ -53,6 +53,7 @@ my $V         = $U;
 my $j         = 0.0;
 my $J         = 0.0;
 my $y         = 0.0;
+my $R         = 0;
 
 my $basename;
 my $vset      = 1;
@@ -81,6 +82,7 @@ GetOptions(
   "j=f"          => \$j,
   "J=f"          => \$J,
   "y=f"          => \$y,
+  "R=i"          => \$R,
   "pe=s"         => \$pe,
   "cpu=i"        => \$cpu,
   "basename=s"   => \$basename,
@@ -93,7 +95,14 @@ GetOptions(
 unless ($d) { pod2usage("No database provided!"); }
 unless (-d $d) { pod2usage("Database does not exist!"); }
 $d =~ s/\/$//;
-unless ($s) { $s = $g == 1.0 ? 1 : 3; }
+if (!defined($s) && !defined($g)) {
+  $s = 1.0;
+  $g = 1.0;
+} elsif (!defined($s)) {
+  $s = $g == 1.0 ? 1 : 3;
+} else {
+  $g = $s == 1 ? 1.0 : 0.0;
+}
 if ($j > 0.0 && $J == 0.0) { $J = 3.0; }
 
 unless ($pe) {
@@ -133,7 +142,8 @@ sub submit {
 
   my $out = sprintf("%s/%s_N%s_g%.2f_u%.1f_U%.1f", 
     $CST, $bn, &get_N_short($NN), $g, $u, $U);
-  if ($s == 3) { $out .= sprintf("_v%.1f_V%.1f_j%.1f_J%.1f", $v, $V, $j, $J); }
+  if ($R) { $out .= sprintf("_R%d", $R); }
+  if ($j > 0) { $out .= sprintf("_v%.1f_V%.1f_j%.1f_J%.1f", $v, $V, $j, $J); }
   if ($y) { $out .= sprintf("_y%.1f", $y); }
   if ($D) { $out .= sprintf("_D%s", basename($D)); }
   if ($suffix) { $out .= sprintf("_%s", $suffix); }
@@ -153,6 +163,7 @@ sub submit {
     -j $j \\
     -J $J \\
     -y $y \\
+    -R $R \\
     -o $out.$ext %s %s \\
     &> $out.log/, 
     $D ? "-D $D" : "", 
