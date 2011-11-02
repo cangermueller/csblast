@@ -14,47 +14,60 @@ class CSOpt
   end
 
   def initialize
+    # script files
     @paramsfile      = nil
-    @csblast_file    = nil
-    @cssgd_file      = nil
     @cstrainset_file = nil
+    @cssgd_file      = nil
+    @csblast_file    = nil
+    @csopt_file      = nil
 
+    # output options
     @outfile         = nil
     @outdir          = "."
     @workdir         = File.join(MyConfig.tmp_path, Process.pid.to_s)
 
+    # cstrainset options
+    @vset            = false
+
+    # csblast benchmark options
     @seqfile         = nil
     @glob            = nil
     @resglob         = '*.bla'
     @rocx            = 5
 
-    @verbose         = true
-    @keep            = false
+    # optimization options
     @opt_ll          = nil
     @opt_mean        = false
-    @seed            = 0
     @niter           = 2
     @rounds          = 2
     @repeats         = 1
-    @reuse           = false
 
+    # SGE options
     @mult            = 30
-    @max_jobs        = 100
-    @cpu_csblast     = 1
-    @cpu_cssgd       = 1
     @cpu_cstrainset  = 1
+    @cpu_cssgd       = 1
+    @cpu_csblast     = 1
+    @cpu_csopt       = 1
     @sge_pe          = ENV['SGE_PE']
 
-    @csblast_cmds = []   # commands for csblast
-    @cssgd_cmds = []     # commands for cssgd
-    @cstrainset_cmds = []# commands for cstrainset
-    @round = 0           # rounds counter
-    @k = 0               # optimization counter
-    @fout = $stdout      # output stream
-    @score_opt = nil     # optimal score
-    @score_repeats = []  # score of all repeats of the current parameter configurations
-    @cssgd_seeds = []    # seeds to be used for CSSGD calls
-    @ymax = 0            # global maximal score
+    # miscellaneous options
+    @seed            = 0
+    @verbose         = true
+    @keep            = false
+
+    # global variables
+    @params = {}          # parameters for optimization
+    @cstrainset_cmds = [] # commands for cstrainset
+    @cssgd_cmds = []      # commands for cssgd
+    @csblast_cmds = []    # commands for csblast
+    @csopt = []           # commands for csopt
+    @round = 0            # rounds counter
+    @k = 0                # optimization counter
+    @fout = $stdout       # output stream
+    @score_opt = nil      # optimal score
+    @score_repeats = []   # score of all repeats of the current parameter configurations
+    @cssgd_seeds = []     # seeds to be used for CSSGD calls
+    @ymax = 0             # global maximal score
 
     self
   end
@@ -62,14 +75,22 @@ class CSOpt
   def options
     OptionParser.new do |o|
       o.set_summary_indent('  ')
-      o.banner = "Usage: #{$0} -p paramsfile [options]"
+      o.banner = "Usage: #{File.basename($0)} -p paramsfile [options]"
       o.define_head( "Optimize homology detection performance of CSBLAST using CRF pseudocounts.")
       o.separator ""
 
       o.on("-p", "--paramsfile OPTFILE", "Parameter optimization file in YAML format.") { |val| @paramsfile=val }
-      o.on("-b", "--csblast-script SCRIPT", "Job script for CSBLAST call.") { |val| @csblast_file=val }
-      o.on("-s", "--cssgd-script SCRIPT", "Job script for CSSGD call.") { |val| @cssgd_file=val }
       o.on("-t", "--cstrainset-script SCRIPT", "Job script for CSTRAINSET call.") { |val| @cstrainset_file=val }
+      o.on("-s", "--cssgd-script SCRIPT", "Job script for CSSGD call.") { |val| @cssgd_file=val }
+      o.on("-b", "--csblast-script SCRIPT", "Job script for CSBLAST call.") { |val| @csblast_file=val }
+      o.on("-c", "--csopt-script SCRIPT", "Job script for another CSOPT call.") { |val| @csopt_file=val }
+      o.on("")
+
+      o.on("-d", "--dir DIRECTORY", "Output directory (default: #{@outdir})") { |val| @outdir=val }
+      o.on("-o", "--outfile FILE", "Write optimization table to file.") { |val| @outfile=val }
+      o.on("-w", "--work-dir DIRECTORY", "Working directory (default: #{File.join(MyConfig.tmp_path, "$PID")}).") { |val| @workdir=val }
+      o.on("")
+
       o.on("-g", "--glob GLOB", String,
            "Execute job script for each file that is matched by the GLOB expression (e.g. *.a3m).",
            'The following substitutions are performed:',
@@ -80,23 +101,26 @@ class CSOpt
         @glob = val
       end
       o.on("-e", "--seq-file SEQFILE", "Sequence file with sequences and SCOP identifiers in FASTA format.") { |val| @seqfile=val }
-      o.on("-d", "--dir DIRECTORY", "Output directory (default: #{@outdir})") { |val| @outdir=val }
-      o.on("-o", "--outfile FILE", "Write optimization table to file.") { |val| @outfile=val }
-      o.on("-w", "--work-dir DIRECTORY", "Working directory (default: #{File.join(MyConfig.tmp_path, "$PID")}).") { |val| @workdir=val }
+      o.on("--rocx INT", Integer, "Maximal number of false positives threshold in ROCX calculation  (default: #{@rocx})." ) { |val| @rocx = val }
+      o.on("")
+
+      o.on("--mult JOBS", Integer, "Merge multiple jobs into a jobscript to speed up CSBLAST jobs (default: #{@mult})." ) { |val| @mult = val }
+      o.on("--sge-pe PE", String, "Name of the SGE parallel environment (default: #{@sge_pe})." ) { |val| @sge_pe = val }
+      o.on("--cpu-cstrainset INT", Integer, "Number of cpu cores to be used for a cstrainset job (default: #{@cpu_cstrainset})." ) { |val| @cpu_cstrainset = val }
+      o.on("--cpu-cssgd INT", Integer, "Number of cpu cores to be used for a cssgd job (default: #{@cpu_cssgd})." ) { |val| @cpu_cssgd = val }
+      o.on("--cpu-csblast INT", Integer, "Number of cpu cores to be used for a csblast job (default: #{@cpu_csblast})." ) { |val| @cpu_csblast = val }
+      o.on("--cpu-csopt INT", Integer, "Number of cpu cores to be used for a csopt job (default: #{@cpu_csblast})." ) { |val| @cpu_csblast = val }
+      o.on("")
+      
       o.on("-n", "--niter INT", Integer, "Number of iterations with Newtons method (default: #{@niter})." ) { |val| @niter = val }
       o.on("-r", "--rounds INT", Integer, "Number of optimization rounds (default: #{@rounds})." ) { |val| @rounds = val }
       o.on("-R", "--repeats INT", Integer, "Number of repeats per parameter configuration (default: #{@repeats})." ) { |val| @repeats = val }
-      o.on("-m", "--max JOBS", Integer, "Maximal number of concurrent jobs (default: #{@max_jobs})." ) { |val| @max_jobs = val }
-      o.on("--cpu-csblast INT", Integer, "Number of cpu cores to be used for a csblast job (default: #{@cpu_csblast})." ) { |val| @cpu_csblast = val }
-      o.on("--cpu-cssgd INT", Integer, "Number of cpu cores to be used for a cssgd job (default: #{@cpu_cssgd})." ) { |val| @cpu_cssgd = val }
-      o.on("--cpu-cstrainset INT", Integer, "Number of cpu cores to be used for a cstrainset job (default: #{@cpu_cstrainset})." ) { |val| @cpu_cstrainset = val }
-      o.on("--sge-pe PE", String, "Name of the SGE parallel environment (default: #{@sge_pe})." ) { |val| @sge_pe = val }
-      o.on("--mult JOBS", Integer, "Merge multiple jobs into a jobscript to speed up csBLAST jobs (default: #{@mult})." ) { |val| @mult = val }
-      o.on("--rocx INT", Integer, "Maximal number of false positives threshold in ROCX calculation  (default: #{@rocx})." ) { |val| @rocx = val }
-      o.on("--opt-ll lltrain|llval", String, "Optimize the log likelihood on the training set (lltrain) or validation set (llval)  (default: #{@opt_ll})." ) { |val| @opt_ll = val }
+      o.on("--[no-]vset", TrueClass, "Submit additional cstrainset jobs for creating the validation set (default: #{@vset})." ) { |val| @vset = val }
       o.on("--[no-]opt-mean", TrueClass, "Optimize the mean score of all repeats instead of the maximum (default: #{@opt_mean})." ) { |val| @opt_mean = val }
+      o.on("--opt-ll lltrain|llval", String, "Optimize the log likelihood on the training set (lltrain) or validation set (llval)  (default: #{@opt_ll})." ) { |val| @opt_ll = val }
+      o.on("")
+
       o.on("--seed INT", Integer, "Seed for random number generator  (default: #{@seed})." ) { |val| @seed = val }
-      o.on("--reuse", TrueClass, "Reuse existing jobs in working directory  (default: #{@reuse})." ) { |val| @reuse = true }
       o.on("-k", "--keep", TrueClass, "Keep working directory (default: #{@keep})." ) { |val| @keep = true }
       o.on("-q", "--quiet", "Turn output off.") { |val| @verbose = false }
       o.on("-h", "--help", "Show this help message.") { puts o; exit }
@@ -105,20 +129,20 @@ class CSOpt
 
   def check_args
     errors = []
-    errors << "No parameter file given!" if @paramsfile.nil?
-    if @csblast_file.nil? || !@cstrainset_file.nil? then
-      errors << "No CSSGD script file given!" if @cssgd_file.nil?
-    elsif !@csblast_file.nil?
+    if @cssgd_file.nil? && @csblast_file.nil? && @csopt_file.nil?
+      errors << "Either a CSSGD script file and/or a CSBLAST or CSOPT script file is required!"
+    end
+    if !@csblast_file.nil? && @csopt_file.nil?
       errors << "No CSBLAST command file given!" if @csblast_file.nil?
       errors << "No sequence file given!" if @seqfile.nil?
       errors << "No glob expression for CSBLAST input files given!" if @glob.nil?
     end
-    if @opt_ll
+    if !@opt_ll.nil?
       errors << "Likelihood must be either lltrain or llval!" unless @opt_ll == "lltrain" || @opt_ll == "llval"
     end
 
     unless errors.empty?
-      puts errors.join("\n")
+      $stderr.puts errors.join("\n")
       exit 1
     end
   end
@@ -128,17 +152,22 @@ class CSOpt
     check_args
 
     # read parameters for optimization
-    fh = File.open(@paramsfile, 'r')
-    @params = YAML::load(ERB.new(fh.read).result(binding))
-    fh.close
+    if @paramsfile
+      fh = File.open(@paramsfile, 'r')
+      @params = YAML::load(ERB.new(fh.read).result(binding))
+      fh.close
+      if @params.class != Hash 
+        $stderr.puts "Invalid parameter file!"
+      end
+    end
 
     # read benchmark files
     @globfiles = Dir.glob(@glob) if @glob
 
     # read scriptfiles
-    if (@csblast_file) 
-      File.open(@csblast_file, 'r') do  |f|
-        @csblast_cmds = f.readlines
+    if @cstrainset_file
+      File.open(@cstrainset_file, 'r') do  |f|
+        @cstrainset_cmds = f.readlines
       end
     end
     if @cssgd_file
@@ -146,9 +175,14 @@ class CSOpt
         @cssgd_cmds = f.readlines
       end
     end
-    if @cstrainset_file
-      File.open(@cstrainset_file, 'r') do  |f|
-        @cstrainset_cmds = f.readlines
+    if (@csblast_file) 
+      File.open(@csblast_file, 'r') do  |f|
+        @csblast_cmds = f.readlines
+      end
+    end
+    if (@csopt_file) 
+      File.open(@csopt_file, 'r') do  |f|
+        @csopt_cmds = f.readlines
       end
     end
 
@@ -387,10 +421,8 @@ class CSOpt
     print_table_params(params, opt_param)
 
     # clear the working directory
-    if @reuse == false then
-      FileUtils.rm_rf(@workdir)
-      FileUtils.mkdir_p(@workdir)
-    end
+    FileUtils.rm_rf(@workdir)
+    FileUtils.mkdir_p(@workdir)
     @score_repeats = []
 
     # prepare static template variables
@@ -399,17 +431,11 @@ class CSOpt
       tplvars[param] = settings['value']
     end
     tplvars['workdir'] = @workdir
-    tplvars['seqfile'] = @seqfile
 
     # call cstrainset 
     call_cstrainset(tplvars) unless @cstrainset_file.nil?
 
-    if @cssgd_file.nil? then
-      # call csblast
-      score = ScoreTable.new
-      score.repeat = 1
-      call_csblast(tplvars.dup, score)
-    else
+    if !@cssgd_file.nil? then
       # call cssgd several times in parallel
       Thread.abort_on_exception = true
       1.upto(@repeats) do |r|
@@ -417,6 +443,16 @@ class CSOpt
       end
       while @score_repeats.length < @repeats
         sleep(1)
+      end
+    else
+      score = ScoreTable.new
+      score.repeat = 1
+      if @csopt_file
+        # call csopt without calling cssgd
+        call_csopt(tplvars.dup, score)
+      else
+        # call csblast without calling cssgd
+        call_csblast(tplvars.dup, score)
       end
     end
 
@@ -442,16 +478,17 @@ class CSOpt
     if @score_opt.nil? || score > @score_opt.score then
       @score_opt = @score_repeats[0]
       @score_opt.score = score
-      ["cssgd", "csblast"].each do |d|
-        FileUtils.rm_rf(sprintf("%s/%s", @outdir, d))
-        dir = sprintf("%s/%02d/%s", @workdir, @score_opt.repeat, d)
-        FileUtils.cp_r(dir, @outdir) if File.directory?(dir)
+      copy = ["cstrainset"]
+      copy.concat(Dir.glob(sprintf("%s/%02d/*", @workdir, @score_opt.repeat)))
+      copy.each do |src|
+        if File.exists?(src)
+          dest = sprintf("%s/%s", @outdir, File.basename(src))
+          FileUtils.rm_rf(dest)
+          FileUtils.cp_r(src, dest)
+        end
       end
-      dir = "#{@workdir}/cstrainset"
-      FileUtils.cp_r(dir, @outdir) if File.directory?(dir)
     end
 
-    @reuse = false
     return score
   end
 
@@ -461,12 +498,42 @@ class CSOpt
 
     # submit the job
     FileUtils.mkdir_p(tplvars['cstrainsetdir'])
-    sge_config             = SGE::CONFIGURATION.dup
-    sge_config[:args]      = sge_pe(@cpu_cstrainset)
-    sge_config[:name]      = "cstrainset"
-    sge_config[:keep_file] = @keep
+    sge_config              = SGE::CONFIGURATION.dup
+    sge_config[:logfile]    = sprintf("%s/log", tplvars['cstrainsetdir'])
+    sge_config[:args]       = sge_pe(@cpu_cstrainset)
+    sge_config[:name]       = "cstrainset"
+    sge_config[:keep_files] = @keep
+    qm          = SGE::Manager.new
+    qm.verbose  = false
+    qm.interval = 1
+    qm.set_config(sge_config)
+    0.upto(@vset ? 1 : 0) do |i|
+      tplvars['cstrainsetvset'] = i
+      cg = SGE::CommandGenerator.new
+      cg.generate(@cstrainset_cmds.join("\n"), tplvars, {})
+      qm.submit(cg.commands)
+    end
+    qm.wait
+    check_for_errors(qm)
+  end
+
+  def call_cssgd(tplvars, repeat)
+    # set up variables
+    tplvars['cssgddir']  = sprintf("%s/%02d/cssgd", @workdir, repeat)
+    tplvars['cssgdout']  = "#{tplvars['cssgddir']}/out"
+    tplvars['cssgdcrf']  = "#{tplvars['cssgddir']}/out.crf"
+    tplvars['cssgdseed'] = @cssgd_seeds[repeat - 1]
+    score                = ScoreTable.new
+    score.repeat         = repeat
+
+    # submit the job
+    FileUtils.mkdir_p(tplvars['cssgddir'])
+    sge_config              = SGE::CONFIGURATION.dup
+    sge_config[:args]       = sge_pe(@cpu_cssgd)
+    sge_config[:name]       = sprintf("cssgd_%02d", repeat)
+    sge_config[:keep_files] = @keep
     cg = SGE::CommandGenerator.new
-    cg.generate(@cstrainset_cmds.join("\n"), tplvars, {})
+    cg.generate(@cssgd_cmds.join("\n"), tplvars, {})
     qm          = SGE::Manager.new
     qm.verbose  = false
     qm.interval = 1
@@ -474,34 +541,6 @@ class CSOpt
     qm.submit(cg.commands)
     qm.wait
     check_for_errors(qm)
-  end
-
-
-  def call_cssgd(tplvars, repeat)
-    # set up variables
-    tplvars['cssgddir']  = sprintf("%s/%02d/cssgd", @workdir, repeat)
-    tplvars['cssgdout']  = "#{tplvars['cssgddir']}/out"
-    tplvars['cssgdseed'] = @cssgd_seeds[repeat - 1]
-    score                = ScoreTable.new
-    score.repeat         = repeat
-
-    # submit the job
-    unless @reuse && File.exists?(tplvars['cssgdout']) then
-      FileUtils.mkdir_p(tplvars['cssgddir'])
-      sge_config             = SGE::CONFIGURATION.dup
-      sge_config[:args]      = sge_pe(@cpu_cssgd)
-      sge_config[:name]      = sprintf("cssgd_%02d", repeat)
-      sge_config[:keep_file] = @keep
-      cg = SGE::CommandGenerator.new
-      cg.generate(@cssgd_cmds.join("\n"), tplvars, {})
-      qm          = SGE::Manager.new
-      qm.verbose  = false
-      qm.interval = 1
-      qm.set_config(sge_config)
-      qm.submit(cg.commands)
-      qm.wait
-      check_for_errors(qm)
-    end
 
     # parse the cssgd output file
     raise "Unable to open '#{tplvars['cssgdout']}'!" unless File.exists?(tplvars['cssgdout'])
@@ -519,7 +558,7 @@ class CSOpt
         elsif l =~ /^\d+\s+\S+\s+(\S+)\s+\S+\s+\S+\s+(\S+)/ then
           lltrain = str_to_float($1)
           llval = str_to_float($2)
-          raise "Invalid format: '#{tplvars['cssgdout']}'!" if (lltrain.nil? || llval.nil?)
+          raise "Invalid cssgd format: '#{tplvars['cssgdout']}'!" if (lltrain.nil? || llval.nil?)
           if score.lltrain.nil? || lltrain >= score.lltrain
             score.lltrain = lltrain
           end
@@ -530,24 +569,27 @@ class CSOpt
           break
         end
       end
-      raise "Unable to parse '#{tplvars['cssgdout']}'!" if score.llval.nil?
+      raise "Invalid cssgd format: '#{tplvars['cssgdout']}'!" if score.llval.nil?
     end
+
     if (score.lltrain.infinite? || score.llval.infinite?) then
       # Invalid model
       score.score = 0.0
     elsif (@opt_ll) 
       score.score = @opt_ll == "lltrain" ? score.lltrain : score.llval
-    elsif (@csblast_file)
-      return call_csblast(tplvars, score)
+    elsif (@csopt_file)
+      return call_csopt(tplvars, score)
     else
-      score.score = score.llval
+      return call_csblast(tplvars, score)
     end
+
     @score_repeats.push(score)
     return score.score
   end
 
   def call_csblast(tplvars, score)
     # set up variables
+    tplvars['seqfile']    = @seqfile
     tplvars['csblastdir'] = sprintf("%s/%02d/csblast", @workdir, score.repeat)
 
     # submit csblast jobs
@@ -607,8 +649,62 @@ class CSOpt
     qm.wait
     check_for_errors(qm)
     score.score = rocx_score(tplvars['csblastdir'])
-    @score_repeats.push(score)
 
+    @score_repeats.push(score)
+    return score.score
+  end
+
+  def call_csopt(tplvars, score)
+    # set up variables
+    tplvars['csoptdir'] = sprintf("%s/%02d/csopt", @workdir, score.repeat)
+    tplvars['csoptout'] = "#{tplvars['csoptdir']}/out"
+    FileUtils.mkdir_p(tplvars['csoptdir'])
+
+    # substitute CSSGDCRF in the @csblast_file by the current crf
+    if !@csblast_file.nil? && !tplvars['cssgdcrf'].nil? 
+      tplvars['csoptcsblast'] = File.join(tplvars['csoptdir'], File.basename(@csblast_file))
+      fh = File.open(tplvars['csoptcsblast'], "w")
+      fh.write(@csblast_cmds.dup.map{|l| l.gsub(/CSSGDCRF/, tplvars['cssgdcrf'])})
+      fh.close
+    end
+    
+    # submit csopt job
+    sge_config              = SGE::CONFIGURATION.dup
+    sge_config[:logfile]    = sprintf("%s/log", tplvars['csoptdir'])
+    sge_config[:args]       = sge_pe(@cpu_csopt)
+    sge_config[:name]       = sprintf("csopt_%02d", score.repeat)
+    sge_config[:keep_files] = @keep
+    cg = SGE::CommandGenerator.new
+    cg.generate(@csopt_cmds.join("\n"), tplvars, {})
+    qm          = SGE::Manager.new
+    qm.verbose  = false
+    qm.interval = 1
+    qm.set_config(sge_config)
+    qm.submit(cg.commands)
+    qm.wait
+    check_for_errors(qm)
+
+    # parse csopt output 
+    raise "Unable to open '#{tplvars['csoptout']}'!" unless File.exists?(tplvars['csoptout'])
+    score.score = nil
+    File.open(tplvars['csoptout'], "r") do |fh|
+      num_dashlines = 0
+      fh.readlines.each do |line|
+        if num_dashlines == 2
+          fields = line.split(/\s+/)
+          if fields.length > 2 && fields[fields.length - 2] =~ /^(\d+\.\d+)$/ then
+            score.score = $1.to_f
+          else
+            break
+          end
+        elsif line =~ /^-+/
+          num_dashlines += 1
+        end
+      end
+    end
+    raise "Invalid csopt format: '#{tplvars['csoptout']}'!" if score.score.nil?
+
+    @score_repeats.push(score)
     return score.score
   end
 

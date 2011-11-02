@@ -103,6 +103,10 @@ if (!defined($s) && !defined($g)) {
 } else {
   $g = $s == 1 ? 1.0 : 0.0;
 }
+if ($j == 0.0) {
+  $v = $u;
+  $V = $U;
+}
 if ($j > 0.0 && $J == 0.0) { $J = 3.0; }
 
 unless ($pe) {
