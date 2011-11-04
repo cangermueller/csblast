@@ -208,12 +208,14 @@ struct SgdOptimizer {
                  const CrfFunc<Abc, TrainingPairV>& vf,
                  const SgdParams& p,
                  const vector<CountProfile<Abc> >& ns = vector<CountProfile<Abc> >(),
-                 const double npc = 0.0) 
+                 const double npc = 0.0,
+                 CrfInit<Abc>* ci = NULL) 
             : sgd(tf, p),
               func(vf),
               params(p),
               neff_samples(ns),
-              neff_pc(npc) { } 
+              neff_pc(npc),
+              crf_init(ci) { } 
 
     double Optimize(Crf<Abc>& crf, FILE* fout = NULL) { 
 
@@ -362,6 +364,7 @@ struct SgdOptimizer {
             if (epoch == 1 && s.loglike < params.min_ll) {
               if (nmin_ll < params.min_ll_repeats) {
                   s = SgdState<Abc>(crf);
+                  if (crf_init != NULL) (*crf_init)(s.crf);
                   nconv = 0; 
                   nearly = 0;
                   neta = 0;
@@ -390,6 +393,7 @@ struct SgdOptimizer {
     const vector<CountProfile<Abc> >&
         neff_samples;                 // samples for computing the Neff
     const double neff_pc;             // pseudocounts admix for computing the Neff
+    CrfInit<Abc>* crf_init;           // Object for reinitializing the CRF
     string crffile_vset;              // Output file for best CRF on the validation set
     string crffile_tset;              // Output file for last CRF on the training set
 };

@@ -24,7 +24,7 @@ class CrfInit {
   public:
     CrfInit() {}
     virtual ~CrfInit() {}
-    virtual void operator() (Crf<Abc>& crf) const = 0;
+    virtual void operator() (Crf<Abc>& crf) = 0;
 };
 
 
@@ -44,7 +44,7 @@ class Crf {
 
     // Constructs CRF with a specific init-strategy encapsulated by an
     // initializer.
-    Crf(size_t size, size_t wlen, const CrfInit<Abc>& init);
+    Crf(size_t size, size_t wlen, CrfInit<Abc>& init);
 
     // Constructs CRF using a context library.
     Crf(const ContextLibrary<Abc>& lib, double weight_center = 1.6, double weight_decay = 0.85)
@@ -131,12 +131,13 @@ class SamplingCrfInit : public CrfInit<Abc> {
               admix_(admix),
               sm_(sm),
               seed_(seed),
+              ran_(seed),
               weight_center_(weight_center),
               weight_decay_(weight_decay) {}
 
     virtual ~SamplingCrfInit() {}
 
-    virtual void operator() (Crf<Abc>& crf) const;
+    virtual void operator() (Crf<Abc>& crf);
 
   private:
     const TrainingSet& trainset_;
@@ -144,6 +145,7 @@ class SamplingCrfInit : public CrfInit<Abc> {
     const Admix& admix_;
     const SubstitutionMatrix<Abc>& sm_;
     const unsigned int seed_;
+    Ran ran_;
     const double weight_center_;
     const double weight_decay_;
 };  // SamplingCrfInit
@@ -166,6 +168,39 @@ class SamplingCrfInit : public CrfInit<Abc> {
 //   return rhs.prior < lhs.prior;
 // }
 
+// Strategy that uses CRF states from a CRF to initialize
+// CRF states.
+template<class Abc>
+class CrfBasedCrfInit : public CrfInit<Abc> {
+  public:
+    CrfBasedCrfInit(const Crf<Abc>& crf)
+            : crf_states_(crf.begin(), crf.end()) {}
+
+    virtual ~CrfBasedCrfInit() {}
+
+    virtual void operator() (Crf<Abc>& crf) {
+      if (crf_states_.size() < crf.size())
+          throw Exception("Too few CRF states for CRF initialization!");
+      vector<const CrfState<Abc>* > crf_states;
+      for (size_t i = 0; i < crf_states_.size(); ++i)
+        crf_states.push_back(&crf_states_[i]);
+      if (crf_states_.size() > crf.size()) {
+        // Use CRF states with the highest probability
+        sort(crf_states.begin(), crf_states.end(), CompareCrfStates);
+      }
+      for (size_t k = 0; k < crf.size(); ++k)
+        crf.SetState(k, *crf_states[k]);
+    }
+
+  private:
+
+    static bool CompareCrfStates(const CrfState<Abc>* p, const CrfState<Abc>* q) {
+      return p->bias_weight > q->bias_weight;
+    }
+        
+    const vector<CrfState<Abc> > crf_states_;
+};  // class CrfBasedCrfInit
+
 // Strategy that uses context profiles from a profile library to initialize
 // CRF states.
 template<class Abc>
@@ -180,7 +215,7 @@ class LibraryBasedCrfInit : public CrfInit<Abc> {
 
     virtual ~LibraryBasedCrfInit() {}
 
-    virtual void operator() (Crf<Abc>& crf) const {
+    virtual void operator() (Crf<Abc>& crf) {
       if (profiles_.size() < crf.size())
           throw Exception("Too few profiles in context library for CRF initialization!");
       vector<const ContextProfile<Abc>* > crf_profiles;
@@ -215,16 +250,18 @@ class GaussianCrfInit : public CrfInit<Abc> {
     GaussianCrfInit(double sigma,
                     const SubstitutionMatrix<Abc>& sm,
                     unsigned int seed = 0)
-            : sigma_(sigma), sm_(sm), seed_(seed) {}
+            : sigma_(sigma), sm_(sm), seed_(seed), gaussian_(0, sigma, seed) {}
 
     virtual ~GaussianCrfInit() {}
 
-    virtual void operator() (Crf<Abc>& crf) const;
+    virtual void operator() (Crf<Abc>& crf);
 
   protected:
     double sigma_;
     const SubstitutionMatrix<Abc>& sm_;
     unsigned int seed_;
+    Gaussian gaussian_;
+
 };  // class GaussianCrfInit
 
 }  // namespace cs

@@ -201,8 +201,11 @@ struct CSSgdRunner {
 
             FILE* fin = fopen(opts_.modelfile.c_str(), "r");
             if (!fin) throw Exception("Unable to read file '%s'!", opts_.modelfile.c_str());
-            crf_.reset(new Crf<Abc>(fin));
+            Crf<Abc> crf(fin);
             fclose(fin);
+            size_t nstates = opts_.nstates == 0 ? crf.size() : opts_.nstates;
+            crf_init_.reset(new CrfBasedCrfInit<Abc>(crf));
+            crf_.reset(new Crf<Abc>(nstates, crf.wlen(), *crf_init_));
 
         } else if (!opts_.modelfile.empty()) {  // init from profile library
             fprintf(out_, "Initializing CRF with context library read from %s ...\n",
@@ -213,21 +216,21 @@ struct CSSgdRunner {
             ContextLibrary<Abc> lib(fin);
             fclose(fin);
             size_t nstates = opts_.nstates == 0 ? lib.size() : opts_.nstates;
-            LibraryBasedCrfInit<Abc> init(lib, opts_.weight_center, opts_.weight_decay);
-            crf_.reset(new Crf<Abc>(nstates, lib.wlen(), init));
+            crf_init_.reset(new LibraryBasedCrfInit<Abc>(lib, opts_.weight_center, opts_.weight_decay));
+            crf_.reset(new Crf<Abc>(nstates, lib.wlen(), *crf_init_));
 
         } else if (opts_.gauss_init != 0.0) {  // init by sampling weights from gaussian
             fputs("Initializing CRF by sampling weights from gaussian ...\n", out_);
-            GaussianCrfInit<Abc> init(opts_.gauss_init, *sm_, opts_.sgd.seed);
-            crf_.reset(new Crf<Abc>(opts_.nstates, trainset_.front().x.length(), init));
+            crf_init_.reset(new GaussianCrfInit<Abc>(opts_.gauss_init, *sm_, opts_.sgd.seed));
+            crf_.reset(new Crf<Abc>(opts_.nstates, trainset_.front().x.length(), *crf_init_));
 
         } else {  // init by sampling from training set
             fputs("Initializing CRF by sampling from training set ...\n", out_);
-            MatrixPseudocounts<Abc> pc(*sm_);
-            ConstantAdmix admix(opts_.pc_init);
-            SamplingCrfInit<Abc, TrainingPairT> init(trainset_, pc, admix, *sm_, 
-                opts_.sgd.seed, opts_.weight_center, opts_.weight_decay);
-            crf_.reset(new Crf<Abc>(opts_.nstates, trainset_.front().x.length(), init));
+            pc_.reset(new MatrixPseudocounts<Abc>(*sm_));
+            admix_.reset(new ConstantAdmix(opts_.pc_init));
+            crf_init_.reset(new SamplingCrfInit<Abc, TrainingPairT>(trainset_, *pc_, *admix_, *sm_, 
+                opts_.sgd.seed, opts_.weight_center, opts_.weight_decay));
+            crf_.reset(new Crf<Abc>(opts_.nstates, trainset_.front().x.length(), *crf_init_));
         }
     }
 
@@ -308,7 +311,7 @@ struct CSSgdRunner {
         CrfFunc<Abc, TrainingPairV> val_func(valset_, *sm_);
         DerivCrfFunc<Abc, TrainingPairT> train_func(trainset_, *sm_, *prior);
         SgdOptimizer<Abc, TrainingPairT, TrainingPairV> sgd(train_func, val_func, 
-            opts_.sgd, neff_samples_, opts_.neff_pc);
+            opts_.sgd, neff_samples_, opts_.neff_pc, crf_init_.get());
         sgd.crffile_tset = opts_.crffile_tset;
         sgd.crffile_vset = opts_.crffile_vset;
         sgd.Optimize(*crf_, fout);
@@ -327,8 +330,11 @@ struct CSSgdRunner {
     TrainingSetT trainset_;
     TrainingSetV valset_;
     scoped_ptr<Crf<Abc> > crf_;
+    scoped_ptr<CrfInit<Abc> > crf_init_;
     scoped_ptr<SubstitutionMatrix<Abc> > sm_;
     vector<CountProfile<Abc> > neff_samples_;
+    scoped_ptr<Pseudocounts<Abc> > pc_;
+    scoped_ptr<Admix> admix_;
 
     static const size_t kNeffWindowsPerSample = 3;
 

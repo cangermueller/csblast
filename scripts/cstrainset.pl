@@ -149,7 +149,6 @@ sub submit {
   if ($R) { $out .= sprintf("_R%d", $R); }
   if ($j > 0) { $out .= sprintf("_v%.1f_V%.1f_j%.1f_J%.1f", $v, $V, $j, $J); }
   if ($y) { $out .= sprintf("_y%.1f", $y); }
-  if ($D) { $out .= sprintf("_D%s", basename($D)); }
   if ($suffix) { $out .= sprintf("_%s", $suffix); }
   my $ext = $s == 1.0 ? "tsq" : "tpr";
   if ($vs && -e "$out.$ext") { print "Validation set already exists!\n"; return; }

@@ -21,7 +21,7 @@ Crf<Abc>::Crf(FILE* fin)
 }
 
 template<class Abc>
-Crf<Abc>::Crf(size_t size, size_t wlen, const CrfInit<Abc>& init)
+Crf<Abc>::Crf(size_t size, size_t wlen, CrfInit<Abc>& init)
         : wlen_(wlen), states_(size, CrfState<Abc>(wlen)) {
     init(*this);
 }
@@ -70,7 +70,7 @@ void Crf<Abc>::Write(FILE* fout) const {
 
 
 template<class Abc, class TrainingPair>
-void SamplingCrfInit<Abc, TrainingPair>::operator() (Crf<Abc>& crf) const {
+void SamplingCrfInit<Abc, TrainingPair>::operator() (Crf<Abc>& crf) {
     LOG(DEBUG) << "Initializing CRF with by sampling " << crf.size()
                << " profile windows from training set ...";
 
@@ -78,12 +78,11 @@ void SamplingCrfInit<Abc, TrainingPair>::operator() (Crf<Abc>& crf) const {
       throw Exception("CRF initialization requires %zu training pairs but the"
         "training set only contains %zu training pairs!", crf.size(), trainset_.size());
           
-    Ran ran(seed_);
     Vector<bool> used(trainset_.size(), false);
 
     size_t k = 0;
     while (k < crf.size()) {
-        size_t r = ran(crf.size());
+        size_t r = ran_(crf.size());
         if (!used[r]) {
           if (crf.wlen() != trainset_[r].x.length())
             throw Exception("CRF window length does not match the training set window length!");
@@ -121,19 +120,17 @@ void SamplingCrfInit<Abc, TrainingPair>::operator() (Crf<Abc>& crf) const {
 
 
 template<class Abc>
-void GaussianCrfInit<Abc>::operator() (Crf<Abc>& crf) const {
-    Gaussian gauss(0, sigma_, seed_);
-
+void GaussianCrfInit<Abc>::operator() (Crf<Abc>& crf) {
     for (size_t k = 0; k < crf.size(); ++k) {
         CrfState<Abc> s(crf.wlen());
-        s.bias_weight = gauss();
+        s.bias_weight = gaussian_();
         for (size_t j = 0; j < crf.wlen(); ++j) {
             for (size_t a = 0; a < Abc::kSize; ++a)
-                s.context_weights[j][a] = gauss();
+                s.context_weights[j][a] = gaussian_();
             s.context_weights[j][Abc::kAny] = 0.0;
         }
         for (size_t a = 0; a < Abc::kSize; ++a)
-            s.pc_weights[a] = log(sm_.p(a)) + gauss();
+            s.pc_weights[a] = log(sm_.p(a)) + gaussian_();
         s.pc_weights[Abc::kAny] = 0.0;
         UpdatePseudocounts(s);
         crf.SetState(k, s);
