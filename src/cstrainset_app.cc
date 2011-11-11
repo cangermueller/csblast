@@ -43,6 +43,7 @@ struct CSTrainSetAppOptions {
     neff_d_max    = 0.0;
     neff_y_target = 0.0;
     round         = 0;
+    use_min_round = 0;
     max_win       = 1000;
     sampling_mode = 0;
     weight_center = 1.6;
@@ -86,8 +87,9 @@ struct CSTrainSetAppOptions {
     fprintf(out, "  %-20s: %.1f\n", "-j, --neff-d-min", neff_d_min); 
     fprintf(out, "  %-20s: %.1f\n", "-J, --neff-d-max", neff_d_max); 
     fprintf(out, "  %-20s: %zu\n", "-R, --round", round);
+    fprintf(out, "  %-20s: %d\n", "-M, --use-min-round", use_min_round);
     fprintf(out, "  %-20s: %d\n", "-C, --central-mod", central_mod);
-    fprintf(out, "  %-20s: %i\n", "-r, --seed", seed); 
+    fprintf(out, "  %-20s: %d\n", "-r, --seed", seed); 
   }
  
   string dir;           // directory with input data to build trainset from
@@ -108,6 +110,7 @@ struct CSTrainSetAppOptions {
   double neff_d_min;    // minimum Neff in training pseudocounts column
   double neff_d_max;    // maximum Neff in training pseudocounts column
   size_t round;         // PSI-BLAST round for filtering input profiles
+  bool use_min_round;   // If several profiles meet the filtering condition, use that of the minimum round
   size_t max_win;       // maximal number of windows per protein
   int sampling_mode;    // sample sequence-column pairs from alignments
   double weight_center; // weight of central column in multinomial emission
@@ -190,6 +193,7 @@ void CSTrainSetApp<Abc>::ParseOptions(GetOpt_pp& ops) {
   ops >> Option('J', "neff-d-max", opts_.neff_d_max, opts_.neff_d_max);
   ops >> OptionPresent('C', "central-mod", opts_.central_mod);
   ops >> Option('R', "round", opts_.round, opts_.round);
+  ops >> OptionPresent('M', "use-min-round", opts_.use_min_round);
   ops >> Option('r', "seed", opts_.seed, opts_.seed);
 
   opts_.Validate();
@@ -253,6 +257,8 @@ void CSTrainSetApp<Abc>::PrintOptions() const {
   fprintf(out_, "  %-30s %s (def=false)\n", "-C, --central-mod", "Modify central profile columns");
   fprintf(out_, "  %-30s %s (def=off)\n", "-R, --round [1,inf[",
           "Use profile ID_R.prf of PSI-BLAST round R");
+  fprintf(out_, "  %-30s %s (def=off)\n", "-M, --use-min-round",
+          "If several profiles meet the filtering condition, use the one of the minimum round");
 
   fprintf(out_, "  %-30s %s (def=%u)\n", "-r, --seed [0,inf[",
           "Seed for random number generator", opts_.seed);
@@ -473,20 +479,24 @@ void CSTrainSetApp<Abc>::ReadProfiles(ProgressBar& progress) {
             neff >= opts_.neff_y_min && neff <= opts_.neff_y_max) {
           profiles_x.push_back(cp);
           files_x.push_back(filename);
+          if (opts_.use_min_round) break;
         }
       } else {
         // Specific profiles for pseudocounts column
-        if (neff >= opts_.neff_x_min && neff <= opts_.neff_x_max) {
+        if (neff >= opts_.neff_x_min && neff <= opts_.neff_x_max && 
+            (!opts_.use_min_round || profiles_x.size() == 0)) {
           profiles_x.push_back(cp);
           profiles_x_neff.push_back(neff);
           files_x.push_back(filename);
           neff_x_min = MIN(neff_x_min, neff);
           neff_x_max = MAX(neff_x_max, neff);
         } 
-        if (neff >= opts_.neff_y_min && neff <= opts_.neff_y_max) {
+        if (neff >= opts_.neff_y_min && neff <= opts_.neff_y_max &&
+            (!opts_.use_min_round || profiles_y.size() == 0)) {
           profiles_y.push_back(cp);
           profiles_y_neff.push_back(neff);
         }
+        if (opts_.use_min_round && profiles_x.size() > 0 && profiles_y.size() > 0) break;
       }
     }
     progress.Advance();

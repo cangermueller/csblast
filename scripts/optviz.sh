@@ -37,7 +37,8 @@ NAME=`basename $(dirname $WORKDIR)`_`basename $WORKDIR`
 PLOTDIR=$WORKDIR/plots
 mkdir -p $PLOTDIR
 BASENAME=$PLOTDIR/$NAME
-MODEL=$WORKDIR/cssgd/*v.crf
+shopt -s extglob
+MODEL=$WORKDIR/cssgd/@(out|*v).crf
 
 if [ -f $MODEL ]; then
   crfvizdist -i $MODEL -o ${BASENAME}_dist -p bw,cw,cws,pc -c 0,6
@@ -47,6 +48,9 @@ if [ -f $SGD ]; then
   sgdviz.pl -i $SGD -o ${BASENAME}_sgd.pdf
 fi
 CSBLAST=$WORKDIR/csblast
+if [ ! -d $CSBLAST ]; then
+  CSBLAST=$WORKDIR/csopt/csblast
+fi
 if [ -d $CSBLAST ]; then
   benchviz.pl \
     -d  $REF/nr20_1hhblits_g1.00_n4.0_m4.0_y7.0_N3.0M_K4000_b10.0_c10.0_p10.0_q0_mK4000.lib_v.crf \

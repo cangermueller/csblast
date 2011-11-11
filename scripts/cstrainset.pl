@@ -144,10 +144,10 @@ sub submit {
     $NN = $N;
   }
 
-  my $out = sprintf("%s/%s_N%s_g%.2f_u%.1f_U%.1f", 
+  my $out = sprintf("%s/%s_N%s_g%.1f_u%.2f_U%.2f", 
     $CST, $bn, &get_N_short($NN), $g, $u, $U);
   if ($R) { $out .= sprintf("_R%d", $R); }
-  if ($j > 0) { $out .= sprintf("_v%.1f_V%.1f_j%.1f_J%.1f", $v, $V, $j, $J); }
+  if ($j > 0) { $out .= sprintf("_v%.2f_V%.2f_j%.1f_J%.1f", $v, $V, $j, $J); }
   if ($y) { $out .= sprintf("_y%.1f", $y); }
   if ($suffix) { $out .= sprintf("_%s", $suffix); }
   my $ext = $s == 1.0 ? "tsq" : "tpr";
