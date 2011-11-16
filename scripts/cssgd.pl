@@ -6,6 +6,7 @@ use Getopt::Long;
 use Pod::Usage;
 use File::Basename qw(basename);
 use File::Temp qw(tempfile);
+use File::Spec::Functions;
 use My::Utils qw(filename);
 
 
@@ -19,10 +20,16 @@ use My::Utils qw(filename);
   cssgd.pl [OPTIONS] CSSGD-OPTIONS
 
   OPTIONS:
-  -S, --suffix SUFFIX     Suffix to be appended
-  -C, --cat CAT	          Catecory of the model
-  -R, --rounds ROUNDS     Number of CSSGD rounds
-  -h, --help              Print this help message
+    --outdir OUTDIR         Output directory.
+    --outcat OUTCAT	        Output catecory.
+    --outsuffix OUTSUFFIX   Suffix to be appended.
+    --repeats REPEATS       Number of parallel CSSGD runs.
+    --rounds ROUNDS         Number of CSSGD rounds.
+    --seed SEED             CSSGD seed.
+    --pe PE                 SGE parallel environment.
+    --cpu CPU               Number of CPUs to be used.
+    --submit                Submit job script.
+    --help                  Print this help message.
 
 =head1 AUTHOR
 
@@ -37,23 +44,24 @@ use My::Utils qw(filename);
 
 my $i;
 my $j;
-my $K       = 50;
-my $P       = 2;
+my $K       = 200;
+my $P       = 3;
 my $b       = 1.0;
 my $c       = 1.0;
-my $d       = 1.0;
+my $d       = 0.8;
 my $p       = 1.0;
 my $q       = 0;
 my $t       = 0.001;
 my $T       = 0.001;
 my $E       = 2;
-my $e       = 0.05;
-my $D       = 2.0;
+my $e       = 0.03;
+my $D       = 1.5;
 my $B       = 1000;
 my $m;
 
-my $suffix;
-my $cat     = "share";
+my $outdir;
+my $outcat  = "share";
+my $outsuffix;
 my $rounds  = 1;
 my $repeats = 1;
 my $seed    = 0;
@@ -62,7 +70,6 @@ my @args;
 
 my $cpu     = 1;
 my $pe;
-my $queue;
 
 my $HOME    = $ENV{"HOME"};
 my $CSD     = "$HOME/data/cs";
@@ -90,8 +97,9 @@ GetOptions(
   "t=f"              => \$t,
   "T=f"              => \$T,
   "m=s"              => \$m,
-  "suffix=s"         => \$suffix,
-  "cat=s"            => \$cat,
+  "outdir=s"         => \$outdir,
+  "outcat=s"         => \$outcat,
+  "outsuffix=s"      => \$outsuffix,
   "rounds=i"         => \$rounds,
   "repeats=i"        => \$repeats,
   "seed=i"           => \$seed,
@@ -117,6 +125,9 @@ unless ($pe) {
     }
   }
 }
+unless ($outdir) {
+  $outdir = catdir($CSC, $outcat ? $outcat : "share");
+}
 
 
 ### Do the job ###
@@ -125,10 +136,10 @@ unless ($pe) {
 if ($repeats > 1) {
   for my $r (1 .. $repeats) {
     srand($seed + $r);
-    &submit(sprintf("%s/%s/%02d", $CSC, $cat, $r), int(rand(1e6)));
+    &submit(catdir($outdir, sprintf("%02d", $r), int(rand(1e6))));
   }
 } else {
-  &submit(sprintf("%s/%s", $CSC, $cat), $seed);
+  &submit($outdir, $seed);
 }
 
 
@@ -137,12 +148,14 @@ if ($repeats > 1) {
 
 sub submit {
   my ($dir, $seed) = @_;
-  my $outbase = sprintf("$dir/%s_K%d", &get_tset($i), $K);
-  if ($m) { $outbase .= sprintf("_m%s", basename($m)); }
-  if ($suffix) { $outbase .= sprintf("_%s", $suffix); }
-  my ($fout, $scriptfile) = tempfile("cssgdXXXX", DIR => "/tmp", SUFFIX => ".sh");
+  my $outbase = catdir($dir, &get_tset($i));
+  if ($outsuffix) { $outbase .= "_$outsuffix"; }
 
-  print $fout "export OMP_NUM_THREADS=\$NSLOTS\n";
+  system("mkdir -p $dir");
+  my $scriptfile = catfile($dir, "cssgd.sh");
+  open FOUT, "> $scriptfile" or die "Can't write to '$scriptfile'!";
+
+  print FOUT "export OMP_NUM_THREADS=\$NSLOTS\n";
   my $cmdbase = sprintf(qq/cssgd \\
     -i $i \\
     -j $j \\
@@ -168,7 +181,6 @@ sub submit {
     %s &> LOGFILE/,
     join(" ", @args));
 
-  print $fout "mkdir -p $dir\n";
   for my $r (1 .. $rounds) {
     my $out = $outbase;
     if ($rounds > 1) { $out = sprintf("%s_%02d", $out, $r); }
@@ -184,10 +196,10 @@ sub submit {
     } else { 
       $cmd =~ s/\s*-m MODEL.*$//m; 
     }
-    print $fout "$cmd\n";
-    print $fout 'if [ $? -ne 0 ]; then exit $?; fi', "\n";
+    print FOUT "$cmd\n";
+    print FOUT 'if [ $? -ne 0 ]; then exit $?; fi', "\n";
   }
-  close($fout);
+  close(FOUT);
 
   system("chmod u+x $scriptfile");
   print "Job script: $scriptfile\n";

@@ -1,3 +1,5 @@
+shopt -s extglob
+
 export CS=${CS:-$HOME/src/cs}
 
 export CSB=$CS/bin
@@ -28,6 +30,9 @@ export TOPT=$CST/nr20_1hhblits_t_g1.00_n4.0_m4.0_y7.0_N3.0M.tsq
 export K4000CRF=$CSC/00_opt/nr20_1hhblits_g1.00_n4.0_m4.0_y7.0_N3.0M_K4000_b10.0_c10.0_p10.0_q0_mK4000.lib_v.crf
 
 export BLAST_PATH=/cluster/bioprogs/blast/bin
+if [ ! -d $BLAST_PATH ]; then
+  BLAST_PATH=$HOME/bin/blast/bin
+fi
 export PATH=$PATH:$CSB:$CSS
 
 export OS=$CSOPT/cssgd
@@ -93,4 +98,3 @@ function cpop {
 
 
 alias csupdate="source $CS/.cs.sh"
-alias sgdresults="sgdresults.pl -i *log > results"

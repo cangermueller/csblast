@@ -54,6 +54,7 @@ my $j         = 0.0;
 my $J         = 0.0;
 my $y         = 0.0;
 my $R         = 0;
+my $M;
 
 my $basename;
 my $vset      = 1;
@@ -85,6 +86,7 @@ GetOptions(
   "R=i"          => \$R,
   "pe=s"         => \$pe,
   "cpu=i"        => \$cpu,
+  "M!"           => \$M,
   "basename=s"   => \$basename,
   "suffix=s"     => \$suffix,
   "vset!"        => \$vset,
@@ -148,6 +150,7 @@ sub submit {
     $CST, $bn, &get_N_short($NN), $g, $u, $U);
   if ($R) { $out .= sprintf("_R%d", $R); }
   if ($j > 0) { $out .= sprintf("_v%.2f_V%.2f_j%.1f_J%.1f", $v, $V, $j, $J); }
+  if ($M) { $out .= "_M"; }
   if ($y) { $out .= sprintf("_y%.1f", $y); }
   if ($suffix) { $out .= sprintf("_%s", $suffix); }
   my $ext = $s == 1.0 ? "tsq" : "tpr";
@@ -167,12 +170,13 @@ sub submit {
     -J $J \\
     -y $y \\
     -R $R \\
-    -o $out.$ext %s %s \\
+    -o $out.$ext %s %s %s \\
     &> $out.log/, 
     $D ? "-D $D" : "", 
+    $M ? "-M" : "", 
     join(" ", @args));
   $cmd =~ s/^\s+//mg;
-  # print "$cmd\n"; return;
+  #print "$cmd\n"; return;
 
   my ($fout, $scriptfile) = tempfile("cstrainsetXXXX", DIR => "/tmp", SUFFIX => ".sh");
   print $fout "#!/bin/bash\n";
