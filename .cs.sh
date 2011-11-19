@@ -47,6 +47,7 @@ export OTN=$OT/nr20_1hhblits
 export OTU=$OT/uni20v2
 
 export OB=$CSOPT/csblast
+export OBu=$OB/uni20v2_t_N3.0M_g1.0_u4.95_U10.0_R1_x0.01
 export OBU=$OB/uni20v2_t_N3.0M_g1.0_u4.00_U10.00_M
 
 export REF=$CSOPT/share/ref
@@ -98,3 +99,4 @@ function cpop {
 
 
 alias csupdate="source $CS/.cs.sh"
+alias visgd='find -name "*log" -exec vi -p {} \+;'

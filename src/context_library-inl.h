@@ -145,6 +145,74 @@ void GaussianLibraryInit<Abc>::operator() (ContextLibrary<Abc>& lib) const {
   }
 }
 
+template<class Abc>
+void CrfBasedLibraryInit<Abc>::operator() (ContextLibrary<Abc>& lib) const {
+  if (crf_.size() < lib.size())
+    throw Exception("Too few context profiles for CRF initialization!");
+
+  // Precompute column weights
+  size_t c = crf_.center();
+  double cw[crf_.wlen()];
+  cw[c] = wcenter_;
+  for (size_t j = 1; j <= c; ++j) {
+    cw[c - j] = cw[c - j + 1] * wdecay;
+    cw[c + j] = cw[c - j];
+  }   
+
+  // Initialize all context profiles
+  double prior[lib.size()]
+  for (size_t k = 0; k < lib.size(); ++k) {
+    CrfState<Abc>& state = crf_[k];
+    ContextProfile<Abc> cp(crf_.wlen());
+    cp.is_log = true;
+
+    prior[k] = 0.0;
+    for (size_t i = 0; i < crf_.wlen(); ++i) {
+      // Compute delta_k(i)
+      double col[Abc::kSize];
+      double max = -DBL_MAX;
+      for (size_t a = 0; a < Abc::kSize; ++a) {
+        col[a] = state[i][a] / cw[j];
+        if (col[a] > max) max = col[a];
+      }
+      double delta = 0.0;
+      for (size_t a = 0; a < Abc::kSize; ++a) 
+        delta += exp(col[a] - max);
+      delta = -cw[i] * (max + log(delta))
+
+      // log(p_k(i,a))
+      for (size_t a = 0; a < Abc::kSize; ++a)
+        cp.probs[i][a] = (state[i][a] + delta) / cw[i];
+      cp.probs[i][Abc::kAny] = 0.0;
+
+      // needed for computing the prior
+      prior[k] += delta;
+    }
+    // Set the pc column
+    for (size_t a = 0; a < Abc::kSizeAny; ++a)
+      cp.pc[a] = cp.probs[c][a];
+
+    lib.SetProfile(k, cp);
+  }
+
+  // Compute log(prior)
+  double max = -DBL_MAX;
+  for (size_t k = 0; k < lib.size(); ++k) {
+    prior[k] = crf_[k].bias_weight - neff_ * prior[k];
+    if (prior[k] > max) max = prior[k];
+  }
+  double delta = 0.0;
+  for (size_t k = 0; k < lib.size(); ++k) 
+    delta += exp(prior[k] - max);
+  delta = max + log(delta);
+  for (size_t k = 0; k < lib.size(); ++k) {
+    ContextProfile<Abc>& cp = lib[k];
+    cp.prior = prior[k] - shift;
+    TransformToLin(cp);
+    Normalize(cp.probs, 1.0);
+  }
+}
+
 template<class Abc, class CountsInput, class CenterPos>
 double CalculatePosteriorProbs(const ContextLibrary<Abc>& lib,
                                const Emission<Abc>& emission,

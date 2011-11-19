@@ -650,7 +650,9 @@ class CSOpt
     qm.wait
     check_for_errors(qm)
     score.score = rocx_score(tplvars['csblastdir'])
-    FileUtils.rm_rf(tplvars['csblastdir'])
+    Dir.glob(File.join(tplvars['csblastdir'], @resglob)).each do |r|
+      File.delete(r)
+    end
 
     @score_repeats.push(score)
     return score.score
