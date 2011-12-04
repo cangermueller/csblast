@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source $CS/.cs.sh
+
 WORKDIR=$PWD
 CRFVIZ=0
 WCENTER=
@@ -53,21 +55,18 @@ if [ ! -d $CSBLAST ]; then
 fi
 if [ -d $CSBLAST ]; then
   benchviz.pl \
-    -d  $REF/nr20_1hhblits_g1.00_n4.0_m4.0_y7.0_N3.0M_K4000_b10.0_c10.0_p10.0_q0_mK4000.lib_v.crf \
-        $REF/K4000.lib \
-        $REF/nr30_neff2.5_hhblast_1round_W13_N5M_neff6.0_K200.crf \
-        $REF/blast \
+    -d  $CSOPT/models/K4000.crf/csblast \
+        $CSOPT/models/K4000.lib/x/csblast
+        $CSOPT/models/blast \
         $CSBLAST \
     -l  "K4000.crf" \
-        "K4000.lib" \
-        "andreas" \
+        "K4000.lib x" \
         "blast" \
         "${NAME//_/ }" \
     -o  ${BASENAME}
-
 fi
 if [ $CRFVIZ -eq 1 ]; then
-  for M in 1 2; do
+  for M in 1; do
     crfviz -i $MODEL -o ${BASENAME}_crf_m$M -m $M
     if [ ! -z "$WCENTER" -a ! -z "$WDECAY" ]; then
       crfviz -i $MODEL -o ${BASENAME}_crf_m${M}_w${WCENTER}_d${WDECAY} -m $M --weight-center $WCENTER --weight-decay $WDECAY

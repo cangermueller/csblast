@@ -17,6 +17,12 @@ class ContextLibrary;
 template<class Abc>
 class Emission;
 
+template<class Abc>
+class Crf;
+
+template<class Abc>
+class CrfState;
+
 // Strategy class for initializing a context library
 template<class Abc>
 class LibraryInit {
@@ -169,6 +175,28 @@ class GaussianLibraryInit : public LibraryInit<Abc> {
   const SubstitutionMatrix<Abc>& sm_;
   unsigned int seed_;
 };  // class GaussianLibraryInit
+
+// Uses a CRF for initialization
+template<class Abc>
+class CrfBasedLibraryInit : public LibraryInit<Abc> {
+ public:
+  CrfBasedLibraryInit(
+      const Crf<Abc>& crf, 
+      double wcenter = 1.6,
+      double wdecay  = 0.85,
+      double neff    = 1.0) :
+    crf_(crf), wcenter_(wcenter), wdecay_(wdecay), neff_(neff) {}
+
+  virtual ~CrfBasedLibraryInit() {}
+
+  virtual void operator() (ContextLibrary<Abc>& lib) const;
+
+ protected:
+  const Crf<Abc>& crf_;
+  const double wcenter_;
+  const double wdecay_;
+  const double neff_;
+};  // class CrfBasedLibraryInit
 
 // Translate a sequence or count profile into an abstract state sequence.
 template<class AS, class Abc, class CountsInput>

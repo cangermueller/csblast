@@ -15,7 +15,7 @@ struct CSCpNeffAppOptions {
   CSCpNeffAppOptions() { Init(); }
   virtual ~CSCpNeffAppOptions() {}
 
-  // Set csbuild default parameters
+  // Set cscpneff default parameters
   void Init() { 
     neff_col = false;
   }

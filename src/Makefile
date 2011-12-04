@@ -355,3 +355,11 @@ cstrainset_neff: $(OBJECTS)
 DEPS = cstrainprofiles_app as
 cstrainprofiles: $(OBJECTS)
 	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
+
+
+### csconvert ###
+
+
+DEPS = csconvert_app as
+csconvert: $(OBJECTS)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)

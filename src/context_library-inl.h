@@ -155,14 +155,14 @@ void CrfBasedLibraryInit<Abc>::operator() (ContextLibrary<Abc>& lib) const {
   double cw[crf_.wlen()];
   cw[c] = wcenter_;
   for (size_t j = 1; j <= c; ++j) {
-    cw[c - j] = cw[c - j + 1] * wdecay;
+    cw[c - j] = cw[c - j + 1] * wdecay_;
     cw[c + j] = cw[c - j];
   }   
 
   // Initialize all context profiles
-  double prior[lib.size()]
+  double prior[lib.size()];
   for (size_t k = 0; k < lib.size(); ++k) {
-    CrfState<Abc>& state = crf_[k];
+    const CrfState<Abc>& state = crf_[k];
     ContextProfile<Abc> cp(crf_.wlen());
     cp.is_log = true;
 
@@ -172,17 +172,17 @@ void CrfBasedLibraryInit<Abc>::operator() (ContextLibrary<Abc>& lib) const {
       double col[Abc::kSize];
       double max = -DBL_MAX;
       for (size_t a = 0; a < Abc::kSize; ++a) {
-        col[a] = state[i][a] / cw[j];
+        col[a] = state.context_weights[i][a] / cw[i];
         if (col[a] > max) max = col[a];
       }
       double delta = 0.0;
       for (size_t a = 0; a < Abc::kSize; ++a) 
         delta += exp(col[a] - max);
-      delta = -cw[i] * (max + log(delta))
+      delta = -cw[i] * (max + log(delta));
 
       // log(p_k(i,a))
       for (size_t a = 0; a < Abc::kSize; ++a)
-        cp.probs[i][a] = (state[i][a] + delta) / cw[i];
+        cp.probs[i][a] = (state.context_weights[i][a] + delta) / cw[i];
       cp.probs[i][Abc::kAny] = 0.0;
 
       // needed for computing the prior
@@ -207,7 +207,7 @@ void CrfBasedLibraryInit<Abc>::operator() (ContextLibrary<Abc>& lib) const {
   delta = max + log(delta);
   for (size_t k = 0; k < lib.size(); ++k) {
     ContextProfile<Abc>& cp = lib[k];
-    cp.prior = prior[k] - shift;
+    cp.prior = prior[k] - delta;
     TransformToLin(cp);
     Normalize(cp.probs, 1.0);
   }

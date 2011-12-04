@@ -35,23 +35,17 @@ if [ ! -d $BLAST_PATH ]; then
 fi
 export PATH=$PATH:$CSB:$CSS
 
-export OS=$CSOPT/cssgd
-export OST=$OS/test
-export OSS=$OS/N300000
-export OSL=$OS/N3.0M
-export OSM=$OS/N1.0M
-
 export OT=$CSOPT/cstrainset
-export OTT=$OT/test
-export OTN=$OT/nr20_1hhblits
-export OTU=$OT/uni20v2
-
-export OB=$CSOPT/csblast
-export OBu=$OB/uni20v2_t_N3.0M_g1.0_u4.95_U10.0_R1_x0.01
-export OBU=$OB/uni20v2_t_N3.0M_g1.0_u4.00_U10.00_M
-
-export REF=$CSOPT/share/ref
-
+export OM=$CSOPT/models
+export OMu=$OM/uni20v2_t_N3.0M_g1.0_u4.00_U10.00_M
+export OMU=$OM/uni20v2_t_N6.0M_g1.0_u4.00_U10.00_M
+export OI=$CSOPT/csiblast
+export OI2=$CSOPT/csiblast/2rounds
+export TM=$CSTEST/models
+export TMu=$TM/uni20v2_t_N3.0M_g1.0_u4.00_U10.00_M
+export TMU=$TM/uni20v2_t_N6.0M_g1.0_u4.00_U10.00_M
+export TI=$CSTEST/csiblast
+export TI2=$CSTEST/csiblast/2rounds
 
 function csseriesz {
   MODEL=$1  
@@ -100,3 +94,4 @@ function cpop {
 
 alias csupdate="source $CS/.cs.sh"
 alias visgd='find -name "*log" -exec vi -p {} \+;'
+alias viwork='vi -p 0?/cssgd/out'
