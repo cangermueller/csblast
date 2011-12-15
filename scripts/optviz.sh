@@ -35,7 +35,7 @@ while getopts ":i:cw:d:h" OPT; do
   esac
 done
 if [ ! -z "$WCENTER" -a  ! -z "$WDECAY" ]; then CRFVIZ=1; fi
-NAME=`basename $(dirname $WORKDIR)`_`basename $WORKDIR`
+NAME=`basename $WORKDIR`
 PLOTDIR=$WORKDIR/plots
 mkdir -p $PLOTDIR
 BASENAME=$PLOTDIR/$NAME
@@ -55,21 +55,19 @@ if [ ! -d $CSBLAST ]; then
 fi
 if [ -d $CSBLAST ]; then
   benchviz.pl \
-    -d  $CSOPT/models/K4000.crf/csblast \
-        $CSOPT/models/K4000.lib/x/csblast
-        $CSOPT/models/blast \
+    -d  $CSBENCH/scop20_1.73_opt/K4000.lib_zX/csblast \
+        $CSBENCH/scop20_1.73_opt/K4000.lib_xX/csblast \
+        $CSBENCH/scop20_1.73_opt/blast \
         $CSBLAST \
-    -l  "K4000.crf" \
+    -l  "K4000.lib z" \
         "K4000.lib x" \
         "blast" \
         "${NAME//_/ }" \
     -o  ${BASENAME}
 fi
 if [ $CRFVIZ -eq 1 ]; then
-  for M in 1; do
-    crfviz -i $MODEL -o ${BASENAME}_crf_m$M -m $M
-    if [ ! -z "$WCENTER" -a ! -z "$WDECAY" ]; then
-      crfviz -i $MODEL -o ${BASENAME}_crf_m${M}_w${WCENTER}_d${WDECAY} -m $M --weight-center $WCENTER --weight-decay $WDECAY
-    fi
-  done
+  crfviz -i $MODEL -o ${BASENAME}_crf -m 1
+  if [ ! -z "$WCENTER" -a ! -z "$WDECAY" ]; then
+    crfviz -i $MODEL -o ${BASENAME}_crf_wcenter${WCENTER}_wdecay${WDECAY} -m 1 --weight-center $WCENTER --weight-decay $WDECAY
+  fi
 fi

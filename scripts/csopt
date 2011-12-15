@@ -499,10 +499,10 @@ class CSOpt
     # submit the job
     FileUtils.mkdir_p(tplvars['cstrainsetdir'])
     sge_config              = SGE::CONFIGURATION.dup
-    sge_config[:logfile]    = sprintf("%s/log", tplvars['cstrainsetdir'])
     sge_config[:args]       = sge_pe(@cpu_cstrainset)
+    sge_config[:jobs_paths] = tplvars['cstrainsetdir']
     sge_config[:name]       = "cstrainset"
-    sge_config[:keep_files] = @keep
+    sge_config[:keep_files] = true
     qm          = SGE::Manager.new
     qm.verbose  = false
     qm.interval = 1
@@ -530,8 +530,9 @@ class CSOpt
     FileUtils.mkdir_p(tplvars['cssgddir'])
     sge_config              = SGE::CONFIGURATION.dup
     sge_config[:args]       = sge_pe(@cpu_cssgd)
+    sge_config[:jobs_path]  = tplvars['cssgddir']
     sge_config[:name]       = sprintf("cssgd_%02d", repeat)
-    sge_config[:keep_files] = @keep
+    sge_config[:keep_files] = true
     cg = SGE::CommandGenerator.new
     cg.generate(@cssgd_cmds.join("\n"), tplvars, {})
     qm          = SGE::Manager.new
@@ -674,10 +675,10 @@ class CSOpt
     
     # submit csopt job
     sge_config              = SGE::CONFIGURATION.dup
-    sge_config[:logfile]    = sprintf("%s/log", tplvars['csoptdir'])
     sge_config[:args]       = sge_pe(@cpu_csopt)
+    sge_config[:jobs_path]  = tplvars['csoptdir']
     sge_config[:name]       = sprintf("csopt_%02d", score.repeat)
-    sge_config[:keep_files] = @keep
+    sge_config[:keep_files] = true
     cg = SGE::CommandGenerator.new
     cg.generate(@csopt_cmds.join("\n"), tplvars, {})
     qm          = SGE::Manager.new

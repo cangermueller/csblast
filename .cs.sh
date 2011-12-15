@@ -11,14 +11,8 @@ export CSM=$CSD/models
 export CSC=$CSM/crf
 export CST=$CSD/trainsets
 
-export CSBENCH=$CSD/bench/scop20_1.75
-export CSOPT=$CSBENCH/opt
-export CSTEST=$CSBENCH/test
-export CSCROSS=$CSBENCH/cross
-
-export CSE=$HOME/etc/cs
-export CSOZ=$CSE/optz.yml
-export CSOX=$CSE/optx.yml
+export CSBENCH=$CSD/bench
+export CSIBENCH=$CSD/bench_csiblast
 
 export K4000=$CSM/lib/K4000.lib
 
@@ -26,55 +20,32 @@ export DBS=$HOME/databases
 export SEQS=$HOME/seqs
 export ZINC=$SEQS/zinc_finger.seq
 
-export TOPT=$CST/nr20_1hhblits_t_g1.00_n4.0_m4.0_y7.0_N3.0M.tsq
-export K4000CRF=$CSC/00_opt/nr20_1hhblits_g1.00_n4.0_m4.0_y7.0_N3.0M_K4000_b10.0_c10.0_p10.0_q0_mK4000.lib_v.crf
-
 export BLAST_PATH=/cluster/bioprogs/blast/bin
 if [ ! -d $BLAST_PATH ]; then
   BLAST_PATH=$HOME/bin/blast/bin
 fi
 export PATH=$PATH:$CSB:$CSS
 
-export OT=$CSOPT/cstrainset
-export OM=$CSOPT/models
-export OMu=$OM/uni20v2_t_N3.0M_g1.0_u4.00_U10.00_M
-export OMU=$OM/uni20v2_t_N6.0M_g1.0_u4.00_U10.00_M
-export OI=$CSOPT/csiblast
-export OI2=$CSOPT/csiblast/2rounds
-export TM=$CSTEST/models
-export TMu=$TM/uni20v2_t_N3.0M_g1.0_u4.00_U10.00_M
-export TMU=$TM/uni20v2_t_N6.0M_g1.0_u4.00_U10.00_M
-export TI=$CSTEST/csiblast
-export TI2=$CSTEST/csiblast/2rounds
+# Temporary variables
 
-function csseriesz {
-  MODEL=$1  
-  TYPE=${2-0}
-  for Z in `seq 9.0 0.5 14`; do
-    qsub $CSS/bench.sh $Z $MODEL $TYPE series
-  done
-}
+export O5=$CSBENCH/scop20_1.75/opt
+export O5M=$O5/models
+export O5Mu=$O5M/uni20v2_t_N3.0M_g1.0_u4.00_U10.00_M
+export O5MU=$O5M/uni20v2_t_N6.0M_g1.0_u4.00_U10.00_M
+export T5=$CSBENCH/scop20_1.75/test
+export T5M=$T5/models
 
-function csseriesx {
-  MODEL=$1  
-  TYPE=${2-0}
-  for X in `seq 0.8 0.02 1.0`; do
-    qsub $CSS/bench.sh $X $MODEL $TYPE series
-  done
-}
+export O=$CSBENCH/scop20_1.73/opt
+export Ou=$O/uni20v2_t_N3.0M_g1.0_u4.00_U10.00_M
+export OU=$O/uni20v2_t_N6.0M_g1.0_u4.00_U10.00_M
+export T=$CSBENCH/scop20_1.73/test
 
-function cpbench {
-  TO=${1%/}
-  shift
-  FROM=$@
-  for F in $FROM; do
-    if [ -d $F ]; then
-      T=$TO/`basename $F`
-      mkdir -p $T
-      cp $F/*dat $T
-    fi
-  done
-}
+export OI=$CSIBENCH/scop20_1.73_opt
+export TI=$CSIBENCH/scop20_1.73_test
+
+
+### Functions ###
+
 
 function sgdviz {
   LOGS=$@
@@ -93,5 +64,5 @@ function cpop {
 
 
 alias csupdate="source $CS/.cs.sh"
-alias visgd='find -name "*log" -exec vi -p {} \+;'
-alias viwork='vi -p 0?/cssgd/out'
+alias visgd='vi -p `find -path "*/0?/cssgd/out"`'
+alias viopt='vi -p `find -path "*/0?/csopt/out"`'

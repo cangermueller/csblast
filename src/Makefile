@@ -5,11 +5,10 @@
 ### Compiler ###
 
 
-GCC_PREFIX = $(shell dirname `which gcc`)
-GCC_SUFFIX =
-CC = $(GCC_PREFIX)/gcc$(GCC_SUFFIX)
-CPP = $(GCC_PREFIX)/g++$(GCC_SUFFIX)
-CXX = $(CPP)
+GCC = $(shell which gcc)
+GPP = $(shell which g++)
+ICC = $(shell which icc)
+CXX = $(GPP)
 
 
 ### Flags ###

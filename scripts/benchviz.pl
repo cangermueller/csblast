@@ -5,6 +5,7 @@ use warnings;
 use Pod::Usage;
 use Getopt::Long;
 use File::Basename qw(basename);
+use Cwd qw(abs_path);
 
 
 =pod
@@ -25,6 +26,7 @@ use File::Basename qw(basename);
     -t, --title TITLE       Title of the plots [default: ]
     -l, --label LABEL+      List of labels to be used instead of directory names
     -s, --sort SORT+        List of directories defining the plot order
+        --db DB             Database used for scaling axis
     -k, --keep              Keep plot files [default: false]
     -h, --help              Show this help message
 
@@ -44,6 +46,7 @@ my @plots;
 my $title;
 my @labels;
 my @order;
+my $db;
 my $keep;
 
 my @entities;
@@ -80,6 +83,7 @@ GetOptions(
   "t|title=s"     => \$title,
   "l|label=s{1,}" => \@labels,
   "s|sort=s{1,}"  => \@order,
+  "db=s"          => \$db,
   "k|keep"        => \$keep,
   "h|help"        => sub { pod2usage(2); }
 ) or pod2usage(1);
@@ -87,6 +91,10 @@ unless (@dirs) { pod2usage("No benchmark directory provided!"); }
 unless (@plots) { @plots = qw/tpfp wtpfp rocx/; }
 &get_entities;
 unless (@entities) { pod2usage("No plot data found in the specified benchmark directories!"); }
+unless ($db) {
+  if (abs_path($dirs[0]) =~ /(scop20_1\.7._(opt|test))/) { $db = $1; }
+  else { $db = "scop20_1.73_test"; }
+}
 
 
 ### Create plots ###
@@ -138,34 +146,85 @@ sub plot {
 
   if ($plot eq "tpfp") { $cmd .= qq/
     set key top left
-    set xrange [1:4000]
-    set yrange [0:10000]
     set log x
     set grid
     set xlabel "FP"
-    set ylabel "TP"
-    set label "1%" at 35,5000 textcolor ls 9
-    set label "10%" at 350,5000 textcolor ls 9
-    set label "20%" at 800,5000 textcolor ls 9/;
+    set ylabel "TP"/;
+    if ($db eq "scop20_1.73_opt") { $cmd .= qq/
+      set xrange [1:4000]
+      set yrange [0:12000]
+      set label "1%" at 40,7500 textcolor ls 9
+      set label "10%" at 500,7500 textcolor ls 9
+      set label "20%" at 1150,7500 textcolor ls 9/;
+    } elsif ($db eq "scop20_1.73_test") { $cmd .= qq/
+      set xrange [1:4000]
+      set yrange [0:12000]
+      set label "1%" at 35,5000 textcolor ls 9
+      set label "10%" at 350,5000 textcolor ls 9
+      set label "20%" at 800,5000 textcolor ls 9/;
+    } elsif ($db eq "scop20_1.75_opt") { $cmd .= qq/
+      set xrange [1:4000]
+      set yrange [0:8000]
+      set label "1%" at 45,6500 textcolor ls 9
+      set label "10%" at 450,6500 textcolor ls 9
+      set label "20%" at 1000,6500 textcolor ls 9/;
+    } else { $cmd .= qq/
+      set xrange [1:4000]
+      set yrange [0:10000]
+      set label "1%" at 50,7500 textcolor ls 9
+      set label "10%" at 500,7500 textcolor ls 9
+      set label "20%" at 1100,7500 textcolor ls 9/;
+    }
+
   } elsif ($plot eq "wtpfp") { $cmd .= qq/
-    set key top right
-    set xrange [1:600]
-    set yrange [0:400]
+    set key top left
     set log x
     set grid
     set xlabel "weighted FP"
-    set ylabel "weighted TP" 
-    set label "1%" at 2,275 textcolor ls 9
-    set label "10%" at 20,275 textcolor ls 9
-    set label "20%" at 50,275 textcolor ls 9/;
+    set ylabel "weighted TP"/;
+    if ($db eq "scop20_1.73_opt") { $cmd .= qq/
+      set xrange [1:600]
+      set yrange [0:400]
+      set label "1%" at 2,275 textcolor ls 9
+      set label "10%" at 20,275 textcolor ls 9
+      set label "20%" at 50,275 textcolor ls 9/;
+    } elsif ($db eq "scop20_1.73_test") { $cmd .= qq/
+      set xrange [1:600]
+      set yrange [0:800]
+      set label "1%" at 4,550 textcolor ls 9
+      set label "10%" at 40,550 textcolor ls 9
+      set label "20%" at 95,550 textcolor ls 9/;
+    } elsif ($db eq "scop20_1.75_opt") { $cmd .= qq/
+      set xrange [1:600]
+      set yrange [0:400]
+      set label "1%" at 2,275 textcolor ls 9
+      set label "10%" at 20,275 textcolor ls 9
+      set label "20%" at 50,275 textcolor ls 9/;
+    } else { $cmd .= qq/
+      set xrange [1:600]
+      set yrange [0:600]
+      set label "1%" at 2.5,350 textcolor ls 9
+      set label "10%" at 25,350 textcolor ls 9
+      set label "20%" at 60,350 textcolor ls 9/;
+    }
+
   } elsif ($plot eq "rocx") { $cmd .= qq/
     set key top right
-    set xrange [0:1.0]
-    set yrange [0:0.5]
     set grid
-    set xlabel "ROC5"
-    set ylabel "Fraction of queries"/;
+    set xlabel "ROC"
+    set ylabel "Fraction of queries"
+    set xrange [0:1.0]/;
+    if ($db eq "scop20_1.73_opt") { $cmd .= qq/
+      set yrange [0:0.6]/;
+    } elsif ($db eq "scop20_1.73_test") { $cmd .= qq/
+      set yrange [0:0.5]/;
+    } elsif ($db eq "scop20_1.75_opt") { $cmd .= qq/
+      set yrange [0:0.5]/;
+    } else { $cmd .= qq/
+      set yrange [0:0.5]/;
+    }
   } 
+
   $cmd .= qq/
     plot /;
   if ($plot eq "tpfp" || $plot eq "wtpfp") { 

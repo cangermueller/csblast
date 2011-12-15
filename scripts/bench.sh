@@ -6,91 +6,110 @@ function synopsis {
   cat <<END
 bench.sh - Benchmarks a given model
 
-bench.sh [OPTIONS] -m MODEL
+bench.sh [OPTIONS] -m MODEL -o OUTDIR
 
   OPTIONS:
-    -m MODEL                 The input model
-    -x TAU                   Admixture coefficient tau
-    -z GAMMA                 Admixture coefficient gamma
-    -o OUTDIR                Output directory
-    -c CATEGORY              Output catecory
-    -d DB                    Database name
-    -t                       Use the test set instead of the optimization set
-    -h                       Show this text
+    -m MODEL        The input model
+    -o OUTDIR       Output directory
+    -d DB           Database name
+    -p PARAMS       Command line parameters
+    -s              Do not submit the job
+    -h              Show this text
 END
 }
 
-DB="scop20_1.75"
+function check_arg {
+  if [ -z "$2" ]; then 
+    echo "No $1 provided!"
+    synopsis
+    exit 1
+  fi
+}
+
 MODEL=
-X=
-T=
-CAT=share
-TSET=0
+OUTDIR=
+DB="scop20_1.73_opt"
+PARAMS=
+SUBMIT=1
 
 
 ### Initialization ###
 
 
-while getopts "m:x:z:c:o:d:th" OPT; do
+while getopts "m:o:d:p:sh" OPT; do
   case $OPT in
     m) MODEL=$OPTARG;;
-    x) X=$OPTARG;;    
-    z) Z=$OPTARG;;    
-    c) CAT=$OPTARG;;    
     o) OUTDIR=$OPTARG;;
     d) DB=$OPTARG;;
-    t) TSET=1 ;;
+    p) PARAMS=$OPTARG;;
+    s) unset SUBMIT;;
     h) synopsis; exit 0 ;;
     *) exit 1
   esac
 done
-if [ -z "$MODEL" ]; then 
-  echo "No model provided!"
-  synopsis
-  exit 1
-fi
-if [ -z "$X" -a -z "$Z" ]; then Z=12.5; fi
+check_arg model $MODEL
+check_arg outdir $OUTDIR
 
-if [ $TSET -eq 0 ]; then
-  TYPE="opt"
-else
-  TYPE="test"
-fi
-DB_DIR="$DBS/${DB}_$TYPE"
+DB_DIR="$DBS/$DB"
+DB_FILE="${DB_DIR}_db"
 if [ ! -d $DB_DIR ]; then
   echo "'$DB_DIR' does not exist!"
   exit 1
 fi
-DB_FILE=${DB_DIR}_db
 if [ ! -f $DB_FILE ]; then 
   echo "'$DB_FILE' does not exits!"
   exit 1
 fi
-if [ -z "$X" ]; then 
-  ADMIX="-z $Z"
-else
-  ADMIX="-x $X"
-fi
-if [ -z "$OUTDIR" ]; then
-  OUTDIR=$CSD/bench/$DB/$TYPE/share
-  if [ ! -d "$OUTDIR" ]; then 
-    echo "'$OUTDIR' does not exist!"
-    exit 1
-  fi
-  if [ $CAT ]; then OUTDIR=$OUTDIR/$CAT; fi
-  OUTDIR=$OUTDIR/`basename $MODEL`
-fi
 
 
-### Run ##
+### Create and submit job scripts ###
 
 
-CMD=
-if [ $MODEL == "blast" ]; then
-  CMD="$BLAST_PATH/blastpgp -i FILENAME -o $OUTDIR/BASENAME.bla -d $DB_FILE -e 1e5 -v 10000 -b 0"
-else
-  CMD="csblast -D $MODEL --blast-path $BLAST_PATH -i FILENAME -o $OUTDIR/BASENAME.bla -d $DB_FILE -e 1e5 -v 10000 -b 0 $ADMIX"
-fi
+# command file
 mkdir -p $OUTDIR
-rsub --logfile $HOME/jobs/bench$$.log --mult 100 --quiet -g "$DB_DIR/*.seq" -c "$CMD"
-qsub -b y csbin -i \"$OUTDIR/\*.bla\" -d $OUTDIR -s $DB_FILE -p tpfp,wtpfp,rocx,evalue,pvalue
+if [ $MODEL == "blast" ]; then
+  CMDFILE="$OUTDIR/blast.sh"
+  cat > $CMDFILE <<END 
+#!/bin/bash
+$BLAST_PATH/blastpgp \\
+  -i FILENAME \\
+  -o $OUTDIR/BASENAME.bla \\
+  -d $DB_FILE \\
+  -e 1e5 -v 10000 -b 0 $PARAMS
+END
+else
+  CMDFILE="$OUTDIR/csblast.sh"
+  cat > $CMDFILE <<END
+#!/bin/bash
+csblast \\
+  -D $MODEL \\
+  -i FILENAME \\
+  -o $OUTDIR/BASENAME.bla \\
+  -d $DB_FILE \\
+  --blast-path $BLAST_PATH \\
+  -e 1e5 -v 10000 -b 0 $PARAMS
+END
+fi
+
+# runner file
+RUNFILE="$OUTDIR/RUNME"
+cat > $RUNFILE <<END
+#!/bin/bash
+rsub --logfile $HOME/jobs/bench$$.log --mult 100 --quiet -g "$DB_DIR/*.seq" -s $CMDFILE
+SHOULD=\`ls $DB_DIR/*.seq 2> /dev/null | wc -l\`
+IS=\`ls $OUTDIR/*bla 2> /dev/null\`
+if [ ! \$IS -eq \$SHOULD ]; then
+  echo "There are only \$IS instead of \$SHOULD blast result files in '$OUTDIR'!"
+  exit 1
+fi
+csbin -i "$OUTDIR/*.bla" -d $OUTDIR -s $DB_FILE -p tpfp,wtpfp,rocx,evalue,pvalue
+if [ ! \$? -eq 0 ]; then
+  echo "Error calling csbin!"
+  exit 1
+fi
+find $OUTDIR -maxdepth 1 -type f -name "*.bla" -delete
+END
+chmod u+x $RUNFILE
+if [ $SUBMIT ]; then
+  qsub -N csbench -o "$OUTDIR/log" $RUNFILE
+fi
