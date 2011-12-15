@@ -28,17 +28,17 @@ export PATH=$PATH:$CSB:$CSS
 
 # Temporary variables
 
-export O5=$CSBENCH/scop20_1.75/opt
+export O5=$CSBENCH/scop20_1.75_opt
 export O5M=$O5/models
 export O5Mu=$O5M/uni20v2_t_N3.0M_g1.0_u4.00_U10.00_M
 export O5MU=$O5M/uni20v2_t_N6.0M_g1.0_u4.00_U10.00_M
-export T5=$CSBENCH/scop20_1.75/test
+export T5=$CSBENCH/scop20_1.75_test
 export T5M=$T5/models
 
-export O=$CSBENCH/scop20_1.73/opt
+export O=$CSBENCH/scop20_1.73_opt
 export Ou=$O/uni20v2_t_N3.0M_g1.0_u4.00_U10.00_M
 export OU=$O/uni20v2_t_N6.0M_g1.0_u4.00_U10.00_M
-export T=$CSBENCH/scop20_1.73/test
+export T=$CSBENCH/scop20_1.73_test
 
 export OI=$CSIBENCH/scop20_1.73_opt
 export TI=$CSIBENCH/scop20_1.73_test
