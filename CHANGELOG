@@ -1,3 +1,14 @@
+== CS-BLAST 2.2.0 (January 20th, 2012)
+* Encompasses all changes since February 19th, 2010.
+* CRFs allow for better results than the context library now.
+* New parameter -z <neff> to define the number of effective sequences
+  in the PSSM created by CS-BLAST. Unlike using a constant value for 
+  the admixture parameter alpha which can be set by -x, alpha is optimized
+  dynamically to adjust the number of effective sequences in the predicted
+  profile.
+* New parameter --shift <bits> which can be used to adjust profile scores.
+* Exceptions are printed to stderr instead of stdout now.
+
 == CS-BLAST 2.1.2 (February 19th, 2010)
 * Fixed bug concerning left-over tempfiles in /tmp directory when running CS-BLAST.
 * Minor changes in format of K4000.lib context library.

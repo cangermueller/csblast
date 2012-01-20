@@ -24,6 +24,49 @@ struct Admix {
     virtual double operator() (double neff) const = 0;
 };
 
+// Calculates constant pseudocount admixture independent of number of effective
+// sequences.
+struct ConstantAdmix : public Admix {
+    ConstantAdmix(double a) : pca(a) {}
+    virtual ~ConstantAdmix() {}
+
+    virtual double operator() (double) const { return pca; }
+
+    const double pca;
+};
+
+// Calculates divergence-dependent pseudocount admixture as in CS-BLAST
+// tau = A * (B + 1) / (B + Neff)
+struct CSBlastAdmix : public Admix {
+    CSBlastAdmix(double a, double b) : pca(a), pcb(b) {}
+    virtual ~CSBlastAdmix() {}
+
+    virtual double operator() (double neff) const {
+        return MIN(1.0, pca * (pcb + 1.0) / (pcb + neff));
+    }
+
+    double pca, pcb;
+};
+
+// Calculates divergence-dependent pseudocount admixture as in HHsearch
+struct HHsearchAdmix : public Admix {
+    HHsearchAdmix(double a, double b, double c = 1.0) : pca(a), pcb(b), pcc(c) {}
+    virtual ~HHsearchAdmix() {}
+
+    virtual double operator() (double neff) const {
+        double rv = 0.0;
+        if (pcc == 1.0)
+            rv = MIN(1.0, pca / (1.0 + neff / pcb));
+        else
+            rv = MIN(1.0, pca / (1.0 + pow(neff / pcb, pcc)));
+        return rv;
+    }
+
+    double pca, pcb, pcc;
+};
+
+
+
 // An abstract base class for pseudocount factories.
 template<class Abc>
 class Pseudocounts {
@@ -35,21 +78,22 @@ class Pseudocounts {
     Profile<Abc> AddTo(const Sequence<Abc>& seq, const Admix& admix) const;
 
     // Adds pseudocounts to sequence using target Neff and returns normalized profile.
-    Profile<Abc> AddTo(const Sequence<Abc>& seq, double neff, 
-        double delta = kNeffDelta, double &tau = NeffTauDump) const;
+    Profile<Abc> AddTo(const Sequence<Abc>& seq, CSBlastAdmix& admix,
+        double neff, double delta = kAdjustDelta) const;
 
     // Adds pseudocounts to sequence using admixture and returns normalized profile.
     Profile<Abc> AddTo(const CountProfile<Abc>& cp, const Admix& admix) const;
 
     // Adds pseudocounts to sequence using target Neff and returns normalized profile.
-    Profile<Abc> AddTo(const CountProfile<Abc>& cp, double neff, 
-        double delta = kNeffDelta, double &tau = NeffTauDump) const;
+    Profile<Abc> AddTo(const CountProfile<Abc>& cp, CSBlastAdmix& admix,
+        double neff, double delta = kAdjustDelta) const;
 
     // Adds pseudocounts to counts in PO-HMM vertices using admixture and stores results in 'probs' vector.
     void AddTo(POHmm<Abc>* hmm, const Admix& admix) const;
 
     // Adds pseudocounts to counts in PO-HMM vertices using target Neff and stores results in 'probs' vector.
-    void AddTo(POHmm<Abc>* hmm, double neff, double delta = kNeffDelta, double &tau = NeffTauDump) const;
+    void AddTo(POHmm<Abc>* hmm, CSBlastAdmix& admix,
+        double neff, double delta = kAdjustDelta) const;
 
   private:
     // Adds pseudocounts to sequence and stores resulting frequencies in given
@@ -62,26 +106,30 @@ class Pseudocounts {
     // Adds pseudocounts to alignment derived profile.
     virtual void AddToPOHmm(const POHmm<Abc>* hhm, Profile<Abc>& p) const {};
 
-    // Mixes profile 'p' and sequence 'q': tau * p + (1 - tau) * q
-    void Mix(Profile<Abc>& p, const Sequence<Abc>& q, double tau) const;
+    // Mixes Profile p and Sequence q
+    void Mix(Profile<Abc>& p, const Sequence<Abc>& q, const Admix& admix) const;
 
-    // Mixes profile 'p' and profile 'q': tau * p + (1 - tau) * q
-    void Mix(Profile<Abc>& p, const Profile<Abc>& q, double tau) const;
+    // Mixes Profile p and CountProfile q
+    void Mix(Profile<Abc>& p, const CountProfile<Abc>& q, const Admix& admix) const;
 
-    // Adjusts the Neff in 'p' to 'neff_' by admixing q and returns tau
+    // Mixes Profile p and POHmm q
+    void Mix(Profile<Abc>& p, const POHmm<Abc>& q, const Admix& admix) const;
+
+    // Adjusts the Neff in Profile p to neff by admixing q and returns tau
     template<class T>
-    double AdjustNeff(Profile<Abc>& p, const T& q, double neff, double delta) const;
+    double AdjustNeff(Profile<Abc>& p, const T& q, CSBlastAdmix& admix,
+        double neff, double delta) const;
 
 
   private:
-    static const double kNormalize   = 1e-5; // Normalization threshold
-    static const double kNeffTauInit = 0.8;  // Initial pseudocounts admixture for adjusting the Neff
-    static const double kNeffTauMin  = 0.0;  // Minimal pseudocounts admixture for adjusting the Neff
-    static const double kNeffTauMax  = 1.0;  // Maximal pseudocounts admixture for adjusting the Neff
-    static double NeffTauDump;
+    static const double kNormalize  = 1e-5; // Normalization threshold
+    static const double kAdjustMin  = 0.0;  // Minimal paramater value for adjusting the Neff
+    static const double kAdjustMax  = 1.0;  // Maximal parameter value for adjusting the Neff
+    static const double kAdjustInit = 0.5;  // Initial parameter value for adjusting the Neff
+    static const double kAdjustEps  = 0.01; // Convergence threshold for adjusting the Neff
 
   public:
-    static const double kNeffDelta   = 0.1;  // Tolerance for adjusting the Neff
+    static const double kAdjustDelta   = 0.025;  // Tolerance for adjusting the Neff
 
     DISALLOW_COPY_AND_ASSIGN(Pseudocounts);
 };  // Pseudocounts

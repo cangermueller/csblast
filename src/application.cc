@@ -10,10 +10,10 @@ namespace cs {
 
 Application* Application::instance_;
 
-const char* Application::kVersionNumber = "2.1.2";
+const char* Application::kVersionNumber = VERSION;
 
 const char* Application::kCopyright =
-  "Copyright (c) 2010 Andreas Biegert, Johannes Soding, and LMU Munich";
+  "Copyright (c) 2010 Andreas Biegert, Angermueller Christof, Johannes Soeding, and LMU Munich";
 
 Application::Application()
     : log_level_(Log::to_string(Log::from_int(LOG_MAX_LEVEL))),
@@ -39,33 +39,46 @@ int Application::main(int argc, char* argv[], FILE* fout, const string& name) {
   GetOpt_pp options(argc, argv, Include_Environment);
   options.exceptions_all();
 
-  try {
-    // Print usage?
-    if (argc < 2 || argv[1][0] == '?' ||
-        options >> OptionPresent(' ', std::string("help"))) {
-      PrintHelp();
-      return 1;
-    }
+  try{
+    try {
+      // Print usage?
+      if (argc < 2 || argv[1][0] == '?' ||
+          options >> OptionPresent(' ', std::string("help"))) {
+        PrintHelp();
+        return 0;
+      }
 
 #ifdef LOGGING
-    // Process logging options
-    options >> Option(' ', "loglevel", log_level_, log_level_);
-    Log::reporting_level() = Log::from_string(log_level_);
-    options >> Option(' ', "logfile", log_file_, log_file_);
-    if (log_file_.empty() || log_file_ == "stderr") log_fp_ = stderr;
-    else log_fp_ = fopen(log_file_.c_str(), "w");
-    Log::stream() = log_fp_;
+      // Process logging options
+      options >> Option(' ', "loglevel", log_level_, log_level_);
+      Log::reporting_level() = Log::from_string(log_level_);
+      options >> Option(' ', "logfile", log_file_, log_file_);
+      if (log_file_.empty() || log_file_ == "stderr") log_fp_ = stderr;
+      else log_fp_ = fopen(log_file_.c_str(), "w");
+      Log::stream() = log_fp_;
 #endif
 
-    // Let subclasses parse the command line options
-    ParseOptions(options);
+      // Let subclasses parse the command line options
+      ParseOptions(options);
 
-    // Run application
-    status = Run();
+      // Run application
+      status = Run();
+
+    } catch(const OptionNotFoundEx& e) {
+      throw Exception("Missing command line option!");
+    } catch(const ArgumentNotFoundEx& e) {
+      throw Exception("Missing argument for command line option!");
+    } catch(const TooManyOptionsEx& e) {
+      throw Exception("Invalid command line option!");
+    } catch(const TooManyArgumentsEx& e) {
+      throw Exception("Too many arguments for command line option!");
+    } catch(const GetOptEx& e) {
+      throw Exception("Error parsing command line options!");
+    }
 
   } catch(const std::exception& e) {
     LOG(ERROR) << e.what();
-    fprintf(fout, "\n%s\n", e.what());
+    fprintf(stderr, "\n%s\n", e.what());
     return 1;
   }
 

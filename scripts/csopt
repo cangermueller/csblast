@@ -147,6 +147,15 @@ class CSOpt
     end
   end
 
+  def invalid_param(param, msg = nil)
+    $stderr.printf("Invalid parameter '%s'", param)
+    if (msg) 
+      $stderr.printf(": %s", msg)
+    end
+    $stderr.puts("!")
+    exit 1
+  end
+
   def run(args)
     options.parse!(args)
     check_args
@@ -158,6 +167,18 @@ class CSOpt
       fh.close
       if @params.class != Hash 
         $stderr.puts "Invalid parameter file!"
+        exit 1
+      end
+      @params.keys.each do |p|
+        ["order", "value", "min", "max"].each do |opt|
+          invalid_param("p", "'#{opt}' not provided") if @params[p][opt].nil? 
+          if @params[p][opt].class == String then
+            @params[p][opt] = @params[p][opt].to_f
+          end
+        end
+        if @params[p]["add"].nil? && @params[p]["mult"].nil? then
+          invalid_param("p", "'add' or 'mult' not provided") 
+        end
       end
     end
 
@@ -401,7 +422,10 @@ class CSOpt
       row << ' ' * 19
     end
     params.each do |param,settings|
-      row << sprintf("%-8s  ", settings['value'])
+      row << sprintf("%-8s  ", 
+                     sprintf(settings['format'].nil? ? "%8.4g" : settings['format'], 
+                             settings['value'])
+                    )
     end
     @fout.print show ? row : " " * row.length
     @fout.flush

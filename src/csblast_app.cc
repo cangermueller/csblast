@@ -32,7 +32,7 @@ struct CSBlastAppOptions {
   CSBlastAppOptions() { Init(); }
 
   void Init() {
-    pc_admix        = 0.90;
+    pc_admix        = 0.9;
     pc_ali          = 12.0;
     pc_neff         = 0.0;
     pc_engine       = "auto";
@@ -45,6 +45,7 @@ struct CSBlastAppOptions {
     ndescr          = 500;
     nalis           = 250;
     emulate         = false;
+    shift           = 0.0;
     // penalty_alpha       = 0.0;
     // penalty_beta        = 0.1;
     // penalty_score_min   = 8.0;
@@ -74,10 +75,10 @@ struct CSBlastAppOptions {
   string checkpointfile;
   // Overall pseudocount admixture
   double pc_admix;
-  // Constant in pseudocount calculation for alignments
-  double pc_ali;
   // Target Neff for pseudocounts admixture
   double pc_neff;
+  // Constant in pseudocount calculation for alignments
+  double pc_ali;
   // Pseudocount engine
   string pc_engine;
   // Use global instead of position specific weights for sequence weighting.
@@ -100,6 +101,8 @@ struct CSBlastAppOptions {
   int nalis;
   // Emulate BLAST call
   bool emulate;
+  // Substitution score offset
+  double shift;
   // Baseline penalty for adjusting E-values.
   // double penalty_alpha;
   // Repeat penalty strength
@@ -171,8 +174,8 @@ void CSBlastApp::ParseOptions(GetOpt_pp& ops) {
   ops >> Option('B', "alifile", opts_.ali_infile, opts_.ali_infile);
   ops >> Option('C', "checkpoint", opts_.checkpointfile, opts_.checkpointfile);
   ops >> Option('x', "pc-admix", opts_.pc_admix, opts_.pc_admix);
-  ops >> Option('c', "pc-ali", opts_.pc_ali, opts_.pc_ali);
   ops >> Option('z', "pc-neff", opts_.pc_neff, opts_.pc_neff);
+  ops >> Option('c', "pc-ali", opts_.pc_ali, opts_.pc_ali);
   ops >> Option('D', "context-data", opts_.modelfile, opts_.modelfile);
   ops >> Option('j', "iters", opts_.iterations, opts_.iterations);
   ops >> Option('h', "incl-evalue", opts_.inclusion, opts_.inclusion);
@@ -183,15 +186,15 @@ void CSBlastApp::ParseOptions(GetOpt_pp& ops) {
   ops >> Option(' ', "weight-center", opts_.weight_center, opts_.weight_center);
   ops >> Option(' ', "weight-decay", opts_.weight_decay, opts_.weight_decay);
   ops >> Option(' ', "blast-path", opts_.blast_path, opts_.blast_path);
-  ops >> Option(' ', "BLAST_PATH", opts_.blast_path, opts_.blast_path);
+  ops >> Option(' ', "shift", opts_.shift, opts_.shift);
   ops >> OptionPresent(' ', "emulate", opts_.emulate);
   ops >> OptionPresent(' ', "global-weights", opts_.global_weights);
   ops >> OptionPresent(' ', "best", opts_.best);
 
   // Put remaining arguments into PSI-BLAST options map
   for(GetOpt_pp::short_iterator it = ops.begin(); it != ops.end(); ++it) {
-    if (!it.extracted())
-      opts_.csblast[it.option()] = it.args().front();
+    if (!it.extracted()) 
+      opts_.csblast[it.option()] = it.args().size() > 0 ? it.args().front() : "";
   }
 
   if (opts_.iterations > 1)
@@ -237,13 +240,12 @@ void CSBlastApp::PrintOptions() const {
           "Number of sequences to show alignments for", opts_.nalis);
   fprintf(out_, "  %-30s %s (def=%-.2f)\n", "-x, --pc-admix ]0,1]",
           "Pseudocount admix for context-specific pseudocounts", opts_.pc_admix);
-  fprintf(out_, "  %-30s %s (def=%-.1f)\n", "-c, --pc-ali [0,inf[",
-          "Constant for alignment pseudocounts in CSI-BLAST", opts_.pc_ali);
   fprintf(out_, "  %-30s %s (def=%-.2f)\n", "-z, --pc-neff [1,inf[",
           "Target Neff for pseudocounts admixture", opts_.pc_neff);
-  fprintf(out_, "  %-30s %s (def=%s)\n", "    --pc-engine <engine>",
+  fprintf(out_, "  %-30s %s (def=%-.1f)\n", "-c, --pc-ali [0,inf[",
+          "Constant for alignment pseudocounts in CSI-BLAST", opts_.pc_ali);
+  fprintf(out_, "  %-30s %s (def=%s)\n", "    --pc-engine crf|lib",
            "Specify engine for pseudocount generation", opts_.pc_engine.c_str());
-  fprintf(out_, "  %-30s %s\n", "", "<engine> = auto|crf|lib|lr");
   fprintf(out_, "  %-30s %s\n", "    --alignhits <file>",
           "Write multiple alignment of hits in PSI format to file");
   fprintf(out_, "  %-30s %s (def=%-.2f)\n", "    --weight-center [0,inf[",
@@ -260,6 +262,8 @@ void CSBlastApp::PrintOptions() const {
   //         "Turn off score penalty for repeat regions (def=penalty on).");
   fprintf(out_, "  %-30s %s\n", "    --blast-path <path>",
           "Path to directory with blastpgp executable (or set BLAST_PATH)");
+  fprintf(out_, "  %-30s %s (def=%.2f)\n", "    --shift [-1,1]",
+          "Substitution score offset", opts_.shift);
 }
 
 int CSBlastApp::Run() {
@@ -306,8 +310,10 @@ int CSBlastApp::Run() {
           CSBlastAdmix admix(opts_.pc_admix, opts_.pc_ali);
           pssm_.reset(new Pssm(*it, pc_->AddTo(ali_profile, admix)));
         } else {
-          pssm_.reset(new Pssm(*it, pc_->AddTo(ali_profile, opts_.pc_neff)));
+          CSBlastAdmix admix(1.0, opts_.pc_ali);
+          pssm_.reset(new Pssm(*it, pc_->AddTo(ali_profile, admix, opts_.pc_neff)));
         }
+        pssm_->Shift(opts_.shift);
         csblast_->set_pssm(pssm_.get());
       }
     }
@@ -356,6 +362,7 @@ void CSBlastApp::Init() {
     fclose(fin);
 
     pc_.reset(new CrfPseudocounts<AA>(*crf_));
+  /*
   } else if (opts_.pc_engine == "lr") {
     fin = fopen(opts_.modelfile.c_str(), "r");
     if (!fin) throw Exception("Unable to read file '%s'!", opts_.modelfile.c_str());
@@ -363,6 +370,7 @@ void CSBlastApp::Init() {
     fclose(fin);
 
     pc_.reset(new LrPseudocounts<AA>(*lrparams_));
+  */
   } else {
     throw Exception("Unknown pseudocount engine '%s'!", opts_.pc_engine.c_str());
   }
@@ -385,8 +393,10 @@ void CSBlastApp::PrepareForRun(const Sequence<AA>& query) {
         ConstantAdmix admix(opts_.pc_admix);
         pssm_.reset(new Pssm(query, pc_->AddTo(query, admix)));
       } else {
-        pssm_.reset(new Pssm(query, pc_->AddTo(query, opts_.pc_neff)));
+        CSBlastAdmix admix(1.0, opts_.pc_ali);
+        pssm_.reset(new Pssm(query, pc_->AddTo(query, admix, opts_.pc_neff)));
       }
+      pssm_->Shift(opts_.shift);
 
     } else {
       FILE* fp = fopen(opts_.ali_infile.c_str(), "r");
@@ -398,8 +408,10 @@ void CSBlastApp::PrepareForRun(const Sequence<AA>& query) {
         CSBlastAdmix admix(opts_.pc_admix, opts_.pc_ali);
         pssm_.reset(new Pssm(query, pc_->AddTo(ali_profile, admix)));
       } else {
-        pssm_.reset(new Pssm(query, pc_->AddTo(ali_profile, opts_.pc_neff)));
+        CSBlastAdmix admix(1.0, opts_.pc_ali);
+        pssm_.reset(new Pssm(query, pc_->AddTo(ali_profile, admix, opts_.pc_neff)));
       }
+      pssm_->Shift(opts_.shift);
     }
   }
   // Use composition based score adjustment type 1 to avoid

@@ -12,8 +12,10 @@ bench.sh [OPTIONS] -m MODEL -o OUTDIR
     -m MODEL        The input model
     -o OUTDIR       Output directory
     -d DB           Database name
+    -j ITER         Number of iterations
     -p PARAMS       Command line parameters
-    -s              Do not submit the job
+    -s              Submit the job
+    -k              Keep output files
     -h              Show this text
 END
 }
@@ -26,30 +28,43 @@ function check_arg {
   fi
 }
 
+CSBLAST="csblast-$CSVERSION"
 MODEL=
 OUTDIR=
 DB="scop20_1.73_opt"
+NR="$DBS/nr_2011-12-09/nr"
+J=1
 PARAMS=
-SUBMIT=1
+SUBMIT=
+KEEP=
+MULT=100
 
 
 ### Initialization ###
 
 
-while getopts "m:o:d:p:sh" OPT; do
+while getopts "m:o:d:j:p:skh" OPT; do
   case $OPT in
     m) MODEL=$OPTARG;;
     o) OUTDIR=$OPTARG;;
     d) DB=$OPTARG;;
+    j) J=$OPTARG;;
     p) PARAMS=$OPTARG;;
-    s) unset SUBMIT;;
+    s) SUBMIT=1;;
+    k) KEEP=1;;
     h) synopsis; exit 0 ;;
     *) exit 1
   esac
 done
 check_arg model $MODEL
 check_arg outdir $OUTDIR
+if [ $J -gt 1 ]; then MULT=10; fi
 
+eval $CSBLAST &> /dev/null
+if [ $? -ne 0 ]; then
+  echo "'$CSBLAST' binary not found!"
+  exit 1
+fi
 DB_DIR="$DBS/$DB"
 DB_FILE="${DB_DIR}_db"
 if [ ! -d $DB_DIR ]; then
@@ -69,46 +84,121 @@ fi
 mkdir -p $OUTDIR
 if [ $MODEL == "blast" ]; then
   CMDFILE="$OUTDIR/blast.sh"
-  cat > $CMDFILE <<END 
+  if [ $J -eq 1 ]; then
+    # blastpgp 1 round
+    cat > $CMDFILE <<END 
 #!/bin/bash
+
+<% dirbase = "$OUTDIR/BASENAME" %>
+<% outfile = "#{dirbase}.bla" %>
+
 $BLAST_PATH/blastpgp \\
   -i FILENAME \\
-  -o $OUTDIR/BASENAME.bla \\
+  -o <%= outfile %> \\
   -d $DB_FILE \\
   -e 1e5 -v 10000 -b 0 $PARAMS
 END
+  else
+    # blastpgp >1 round
+    cat > $CMDFILE <<END 
+#!/bin/bash
+
+<% dirbase = "$OUTDIR/BASENAME" %>
+<% outfile = "#{dirbase}.bla" %>
+<% chkfile = "#{dirbase}.chk" %>
+
+$BLAST_PATH/blastpgp \\
+  -i FILENAME \\
+  -o <%= outfile %> \\
+  -C <%= chkfile %> \\
+  -d $NR \\
+  -h 1e-3 -j $J $PARAMS
+
+$BLAST_PATH/blastpgp \\
+  -i FILENAME \\
+  -R <%= chkfile %> \\
+  -o <%= outfile %> \\
+  -d $DB_FILE \\
+  -e 1e5 -v 10000 -b 0 $PARAMS
+END
+  fi
 else
   CMDFILE="$OUTDIR/csblast.sh"
+  if [ $J -eq 1 ]; then
+    # csblast 1 round
   cat > $CMDFILE <<END
 #!/bin/bash
-csblast \\
-  -D $MODEL \\
+
+<% model = "$MODEL" %>
+<% dirbase = "$OUTDIR/BASENAME" %>
+<% outfile = "#{dirbase}.bla" %>
+
+$CSBLAST \\
+  -D <%= model %> \\
   -i FILENAME \\
-  -o $OUTDIR/BASENAME.bla \\
+  -o <%= outfile %> \\
   -d $DB_FILE \\
   --blast-path $BLAST_PATH \\
   -e 1e5 -v 10000 -b 0 $PARAMS
 END
+  else
+    # csblast >1 round
+    cat > $CMDFILE <<END 
+#!/bin/bash
+
+<% model = "$MODEL" %>
+<% dirbase = "$OUTDIR/BASENAME" %>
+<% outfile = "#{dirbase}.bla" %>
+<% chkfile = "#{dirbase}.chk" %>
+
+$CSBLAST \\
+  -D <%= model %> \\
+  -i FILENAME \\
+  -o <%= outfile %> \\
+  -C <%= chkfile %> \\
+  -d $NR \\
+  --blast-path $BLAST_PATH \\
+  -h 1e-3 -j $J $PARAMS
+
+$CSBLAST \\
+  -D <%= model %> \\
+  -i FILENAME \\
+  -R <%= chkfile %> \\
+  -o <%= outfile %> \\
+  -d $DB_FILE \\
+  --blast-path $BLAST_PATH \\
+  -e 1e5 -v 10000 -b 0 $PARAMS
+END
+  fi
 fi
 
 # runner file
 RUNFILE="$OUTDIR/RUNME"
 cat > $RUNFILE <<END
 #!/bin/bash
-rsub --logfile $HOME/jobs/bench$$.log --mult 100 --quiet -g "$DB_DIR/*.seq" -s $CMDFILE
+
+OUTDIR="$OUTDIR"
+rsub --logfile $HOME/jobs/bench$$.log --mult $MULT --quiet -g "$DB_DIR/*.seq" -s "$CMDFILE"
 SHOULD=\`ls $DB_DIR/*.seq 2> /dev/null | wc -l\`
-IS=\`ls $OUTDIR/*bla 2> /dev/null\`
+IS=\`ls \$OUTDIR/*bla 2> /dev/null\`
 if [ ! \$IS -eq \$SHOULD ]; then
-  echo "There are only \$IS instead of \$SHOULD blast result files in '$OUTDIR'!"
+  echo "There are only \$IS instead of \$SHOULD blast result files in '\$OUTDIR'!"
   exit 1
 fi
-csbin -i "$OUTDIR/*.bla" -d $OUTDIR -s $DB_FILE -p tpfp,wtpfp,rocx,evalue,pvalue
+
+csbin -i "\$OUTDIR/*.bla" -d \$OUTDIR -s "$DB_FILE" -p tpfp,wtpfp,rocx,evalue,pvalue
 if [ ! \$? -eq 0 ]; then
   echo "Error calling csbin!"
   exit 1
 fi
-find $OUTDIR -maxdepth 1 -type f -name "*.bla" -delete
 END
+if [ ! $KEEP ]; then
+  cat >> $RUNFILE <<END
+
+find \$OUTDIR -maxdepth 1 -type f -name "*.bla" -delete
+find \$OUTDIR -maxdepth 1 -type f -name "*.chk" -delete
+END
+fi
 chmod u+x $RUNFILE
 if [ $SUBMIT ]; then
   qsub -N csbench -o "$OUTDIR/log" $RUNFILE

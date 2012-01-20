@@ -30,6 +30,7 @@ struct CSBuildAppOptions {
     informat         = "auto";
     outformat        = "prf";
     pc_admix         = 0.90;
+    pc_neff          = 0.0;
     pc_ali           = 12.0;
     pc_engine        = "auto";
     match_assign     = kAssignMatchColsByQuery;
@@ -57,6 +58,8 @@ struct CSBuildAppOptions {
   string outformat;
   // Overall pseudocount admixture
   double pc_admix;
+  // Target Neff for pseudocounts admixture
+  double pc_neff;
   // Constant in pseudocount calculation for alignments
   double pc_ali;
   // Pseudocount engine
@@ -111,6 +114,7 @@ void CSBuildApp<Abc>::ParseOptions(GetOpt_pp& ops) {
   ops >> Option('O', "outformat", opts_.outformat, opts_.outformat);
   ops >> Option('M', "match-assign", opts_.match_assign, opts_.match_assign);
   ops >> Option('x', "pc-admix", opts_.pc_admix, opts_.pc_admix);
+  ops >> Option('z', "pc-neff", opts_.pc_neff, opts_.pc_neff);
   ops >> Option('c', "pc-ali", opts_.pc_ali, opts_.pc_ali);
   ops >> Option('D', "context-data", opts_.modelfile, opts_.modelfile);
   ops >> Option('p', "pc-engine", opts_.pc_engine, opts_.pc_engine);
@@ -121,7 +125,7 @@ void CSBuildApp<Abc>::ParseOptions(GetOpt_pp& ops) {
   opts_.Validate();
 
   if (opts_.outfile.empty())
-    opts_.outfile = GetBasename(opts_.infile, false) + "prf";
+    opts_.outfile = GetBasename(opts_.infile, false) + ".prf";
   if (opts_.informat == "auto")
     opts_.informat = GetFileExt(opts_.infile);
   if (opts_.pc_engine == "auto" && !opts_.modelfile.empty())
@@ -155,19 +159,21 @@ void CSBuildApp<Abc>::PrintOptions() const {
           "first sequence match columns)");
   fprintf(out_, "  %-30s %s (def=off)\n", "-D, --context-data <file>",
           "Add context-specific pseudocounts with profile library");
-  // fprintf(out_, "  %-30s %s (def=%s)\n", "-p, --pc-engine lib|crf",
-  //         "Specify engine for pseudocount generation", opts_.pc_engine.c_str());
   fprintf(out_, "  %-30s %s (def=%-.2f)\n", "-x, --pc-admix [0,1]",
           "Pseudocount admixture for context-specific pseudocounts",
           opts_.pc_admix);
+  fprintf(out_, "  %-30s %s (def=%-.2f)\n", "-z, --pc-neff [1,inf[",
+          "Target Neff for pseudocounts admixture", opts_.pc_neff);
   fprintf(out_, "  %-30s %s (def=%-.1f)\n", "-c, --pc-ali [0,inf[",
           "Constant in pseudocount calculation for alignments", opts_.pc_ali);
-  fprintf(out_, "  %-30s %s\n", "    --global-weights",
-          "Use global instead of position-specific sequence weights (def=off)");
+  fprintf(out_, "  %-30s %s (def=%s)\n", "    --pc-engine crf|lib",
+           "Specify engine for pseudocount generation", opts_.pc_engine.c_str());
   fprintf(out_, "  %-30s %s (def=%-.2f)\n", "    --weight-center [0,inf[",
          "Weight of central profile column for context-specific pseudocounts", opts_.weight_center);
   fprintf(out_, "  %-30s %s (def=%-.2f)\n", "    --weight-decay [0,inf[",
           "Parameter for exponential decay of window weights", opts_.weight_decay);
+  fprintf(out_, "  %-30s %s\n", "    --global-weights",
+          "Use global instead of position-specific sequence weights (def=off)");
 }
 
 template<class Abc>
@@ -212,7 +218,7 @@ int CSBuildApp<Abc>::Run() {
     TransformToLog(*lib_);
     fclose(fin);
     pc_.reset(new LibraryPseudocounts<Abc>(*lib_, opts_.weight_center,
-                                              opts_.weight_decay));
+                                           opts_.weight_decay));
 
   } else if (!opts_.modelfile.empty() && opts_.pc_engine == "crf") {
     fprintf(out_, "Reading CRF from %s ...\n",
@@ -237,9 +243,18 @@ int CSBuildApp<Abc>::Run() {
     profile.name = profile.name.substr(0, profile.name.length() - 1);
 
     if (pc_) {
-      fprintf(out_, "Adding cs-pseudocounts (admix=%.2f) ...\n", opts_.pc_admix);
-      profile.counts = pc_->AddTo(seq, ConstantAdmix(opts_.pc_admix));
+      if (opts_.pc_neff == 0.0) {
+        fprintf(out_, "Adding cs-pseudocounts (admix=%.2f) ...\n", opts_.pc_admix);
+        ConstantAdmix admix(opts_.pc_admix);
+        profile.counts = pc_->AddTo(seq, admix);
+      } else {
+        fprintf(out_, "Adding cs-pseudocounts (neff=%.2f) ...\n", opts_.pc_neff);
+        CSBlastAdmix admix(1.0, opts_.pc_ali);
+        profile.counts = pc_->AddTo(seq, admix, opts_.pc_neff);
+      }
     }
+    fprintf(out_, "Effective number of sequences exp(entropy) = %.2f\n", 
+        Neff(profile.counts));
 
     if (opts_.outformat == "chk")
       WriteCheckpoint(seq, profile);
@@ -261,11 +276,21 @@ int CSBuildApp<Abc>::Run() {
     profile.name = profile.name.substr(0, profile.name.length() - 1);
 
     if (pc_) {
-      fprintf(out_, "Adding cs-pseudocounts (admix=%.2f) ...\n", opts_.pc_admix);
-      CSBlastAdmix admix(opts_.pc_admix, opts_.pc_ali);
-      profile.counts = pc_->AddTo(profile, admix);
+      if (opts_.pc_neff == 0.0) {
+        fprintf(out_, "Adding cs-pseudocounts (admix=%.2f) ...\n", opts_.pc_admix);
+        CSBlastAdmix admix(opts_.pc_admix, opts_.pc_ali);
+        profile.counts = pc_->AddTo(profile, admix);
+      } else {
+        fprintf(out_, "Adding cs-pseudocounts (neff=%.2f) ...\n", opts_.pc_neff);
+        CSBlastAdmix admix(1.0, opts_.pc_ali);
+        profile.counts = pc_->AddTo(profile, admix, opts_.pc_neff);
+      }
       Normalize(profile.counts, profile.neff);
     }
+    Profile<Abc> prof = profile.counts;
+    Normalize(prof, 1.0);
+    fprintf(out_, "Effective number of sequences exp(entropy) = %.2f\n", 
+        Neff(prof));
 
     if (opts_.outformat == "chk")
       WriteCheckpoint(ali.GetSequence(0), profile);

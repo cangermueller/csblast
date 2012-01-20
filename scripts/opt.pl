@@ -23,9 +23,10 @@ use Cwd qw(abs_path);
     -m, --model FILE        The model used for optimization
     -o, --out-dir DIR       The output directory
     -d, --db STRING         The name of the database [def: scop20_1.73_opt]
-    -x, --pc-admix ]0;1]    Optimize pseudocounts admixture coefficient x [def=off]
-    -z, --pc-neff [1;inf[   Optimize pseudocounts admixture coefficient z [def=12.0]
-    -n, --iter [1;inf[      Number of iterations with Newtons method [def=2]
+    -j, --iters [1;inf[     Maximum number of iterations to use in CSI-BLAST [def: 1]
+    -x, --pc-admix ]0;1]    Optimize pseudocounts admixture coefficient x [def: off]
+    -z, --pc-neff [1;inf[   Optimize pseudocounts admixture coefficient z [def: 12.0]
+    -n, --niter [1;inf[     Number of iterations with Newtons method [def: 2]
     -s, --[no-]submit       Submit csopt job
         --seed INT          Seed for csopt
     -h, --help              Print this message
@@ -45,12 +46,14 @@ my %tplvars = (
   model   => undef,
   outdir  => undef,
   db      => "scop20_1.73_opt",
+  j       => "1",
   z       => 12.0,
   x       => undef,
   n       => 2,
-  seed    => int(rand(1e6))
+  seed    => int(rand(1e6)),
+  csblast => "csblast-$ENV{CSVERSION}",
 );
-my $submit = 1;
+my $submit = 0;
 
 my $runme = q(#!/bin/bash
 
@@ -72,7 +75,7 @@ csopt \
   --mult 100 \
   --seed [% seed %]);
 
-my $csopt_yml = "
+my $csopt_yml = "---
 [% IF x %]
 x:  
   order:    1
@@ -85,8 +88,17 @@ z:
   order:    1
   value:    [% z %]
   add:      0.5
-  min:      10
-  max:      15
+  min:      5.0
+  max:      15.0
+[% END %]
+[% IF j > 1 %]
+
+c:
+  order:    2
+  value:    12.0
+  add:      2.0
+  min:      0.0
+  max:      25.0
 [% END %]
 ";
 
@@ -94,19 +106,60 @@ my $csblast_sh = q(#!/bin/bash
 
 source $CS/.cs.sh;
 
-csblast \
-  -D [% model %] \
+<% model = "[% model %]" %>
+<% dirbase = "#{csblastdir}/#{basename}" %>
+<% outfile = "#{dirbase}.bla" %>
+
+
+[% csblast %] \
+  -D <%= model %> \
   -i FILENAME \
-  -o <%= "#{csblastdir}/#{basename}.bla" %> \
+  -o <%= outfile %> \
   -d <%= seqfile %> \
+  --blast-path $BLAST_PATH \
   [% IF x %]
   -x <%= x %> \
   [% ELSE %]
   -z <%= z %> \
   [% END %]
+  -e 1e5 -v 10000 -b 0 [% params %]);
+
+my $csiblast_sh = q(#!/bin/bash
+
+source $CS/.cs.sh;
+
+<% model = "[% model %]" %>
+<% dirbase = "#{csblastdir}/#{basename}" %>
+<% outfile = "#{dirbase}.bla" %>
+<% chkfile = "#{dirbase}.chk" %>
+
+
+[% csblast %] \
+  -D <%= model %> \
+  -i FILENAME \
+  -o <%= outfile %> \
+  -C <%= chkfile %> \
+  -d $DBS/nr_2011-12-09/nr \
   --blast-path $BLAST_PATH \
-  -e 1e5 -v 10000 -b 0 [% params %] \
-  2> /dev/null);
+  [% IF x %]
+  -x <%= x %> \
+  [% ELSE %]
+  -z <%= z %> \
+  [% END %]
+  -c <%= c %> \
+  -h 2e-4 -j [% j %] [% params %]
+
+
+[% csblast %] \\
+  -D <%= model %> \\
+  -i FILENAME \\
+  -R <%= chkfile %> \\
+  -o <%= outfile %> \\
+  -d <%= seqfile %> \\
+  --blast-path $BLAST_PATH \\
+  -e 1e5 -v 10000 -b 0 $PARAMS
+  
+rm -f <%= chkfile %>);
 
 
 ### Initialization ###
@@ -116,11 +169,12 @@ GetOptions(
   "m|model=s"    => \$tplvars{model},
   "o|out-dir=s"  => \$tplvars{outdir},
   "d|db=s"       => \$tplvars{db},
+  "j|iter=i"     => \$tplvars{j},
   "x|pc-admix=f" => \$tplvars{x},
   "z|pc-neff=f"  => \$tplvars{z},
   "p|params=s"   => \$tplvars{params},
   "s|submit!"    => \$submit,
-  "n|iter=i"     => \$tplvars{n},
+  "n|niter=i"    => \$tplvars{n},
   "seed=i"     => \$tplvars{seed},
   "h|help"       => sub { pod2usage(2); }
 ) or die pod2usage(1);
@@ -132,6 +186,9 @@ if (defined($tplvars{x})) {
     die pod2usage("Value of pc-admix x invalid!");
   }
 }
+if (system("$tplvars{csblast} &> /dev/null")) {
+  die "'$tplvars{csblast}' binary not found!";
+}
 
 
 ### Create script files and submit the optimization job ###
@@ -142,7 +199,7 @@ my $tpl = Template->new({
   });
 mkdir $tplvars{outdir};
 $tpl->process(\$csopt_yml, \%tplvars, catfile($tplvars{outdir}, "csopt.yml"));
-$tpl->process(\$csblast_sh, \%tplvars, catfile($tplvars{outdir}, "csblast.sh"));
+$tpl->process(($tplvars{j} > 1 ? \$csiblast_sh : \$csblast_sh), \%tplvars, catfile($tplvars{outdir}, "csblast.sh"));
 my $run= catfile($tplvars{outdir}, "RUNME");
 $tpl->process(\$runme, \%tplvars, $run);
 system("chmod u+x $run");

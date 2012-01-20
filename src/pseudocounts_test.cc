@@ -98,34 +98,79 @@ TEST_F(PseudocountsTest, TauNull) {
   }
 }
 
-TEST_F(PseudocountsTest, AdjustNeff) {
-  ConstantAdmix admix(1.0);
+TEST_F(PseudocountsTest, AdjustNeffSeq) {
+  CSBlastAdmix admix(0.5, 0.5);
   const double kDeltaNeff = 0.01;
   for (size_t r = 0; r < kRounds; ++r) {
     Sequence<AA> seq = GetRndSeq();
     CountProfile<AA> cp(seq);
-    double neff[] = {1.0, 4.0, 8.0};
+    const double neff[] = {1.0, 4.0, 8.0};
     for (PcEngines::iterator it = pc_engines.begin(); it != pc_engines.end(); ++it) {
       for (size_t i = 0; i < 3; ++i) {
         // printf("%.3f   %.3f\n", 
-        //    Neff((*it)->AddTo(seq, neff[i], kDeltaNeff)), Neff((*it)->AddTo(cp, neff[i], kDeltaNeff)));        
-        ASSERT_NEAR(Neff((*it)->AddTo(seq, neff[i], kDeltaNeff)), neff[i], kDeltaNeff);
-        ASSERT_NEAR(Neff((*it)->AddTo(cp, neff[i], kDeltaNeff)), neff[i], kDeltaNeff);
+        //    Neff((*it)->AddTo(seq, neff[i], admix, kDeltaNeff)), Neff((*it)->AddTo(cp, admix, neff[i], kDeltaNeff)));        
+        ASSERT_NEAR(Neff((*it)->AddTo(seq, admix, neff[i], kDeltaNeff)), neff[i], kDeltaNeff);
+        ASSERT_NEAR(Neff((*it)->AddTo(cp, admix, neff[i], kDeltaNeff)), neff[i], kDeltaNeff);
       }
       Profile<AA> p, q;
 
-      q = (*it)->AddTo(seq, 1.0, 0.0);
+      // seq: a -> 0.0
+      q = (*it)->AddTo(seq, admix, 1.0, 0.0);
       ASSERT_TRUE(IsEqual(cp.counts, q));
 
+      // seq: a -> 1.0
+      admix.pca = 1.0;
       p = (*it)->AddTo(seq, admix);
-      q = (*it)->AddTo(seq, 30, 0.0);
+      q = (*it)->AddTo(seq, admix, 30, 0.0);
       ASSERT_TRUE(IsEqual(p, q));
 
-      q = (*it)->AddTo(cp, 1.0, 0.0);
+      // cp: a -> 0.0
+      q = (*it)->AddTo(cp, admix, 1.0, 0.0);
       ASSERT_TRUE(IsEqual(cp.counts, q));
 
+      // cp: a -> 1.0
+      admix.pca = 1.0;
       p = (*it)->AddTo(seq, admix);
-      q = (*it)->AddTo(cp, 30, 0.0);
+      q = (*it)->AddTo(cp, admix, 30, 0.0);
+      ASSERT_TRUE(IsEqual(p, q));
+    }
+  }
+}
+
+TEST_F(PseudocountsTest, AdjustNeffProf) {
+  const double kDeltaNeff = 0.01;
+  const double kNeffProf = 3.0;
+  CSBlastAdmix admix(0.5, 12.0);
+
+  for (size_t r = 0; r < kRounds; ++r) {
+    // Prepare count profile cp with Neff = kNeffProf
+    Sequence<AA> cp_seq = GetRndSeq();
+    Profile<AA> cp_p = pc_engines[1]->AddTo(cp_seq, admix, kNeffProf, kDeltaNeff);
+    ASSERT_NEAR(Neff(cp_p), kNeffProf, kDeltaNeff);
+    CountProfile<AA> cp(cp_p);
+    for (size_t i = 0; i < cp.length(); ++i) 
+      cp.neff[i] = 2 * kNeffProf - ran(2 * kNeffProf - 1);
+    Normalize(cp.counts, cp.neff);
+    Profile<AA> pp(cp);
+
+    const double neff[] = {4.0, 6.0, 8.0};
+    for (PcEngines::iterator it = pc_engines.begin(); it != pc_engines.end(); ++it) {
+      for (size_t i = 0; i < 3; ++i) {
+        // printf("%.3f   %.3f\n", 
+        //    Neff((*it)->AddTo(seq, neff[i], admix, kDeltaNeff)), Neff((*it)->AddTo(cp, admix, neff[i], kDeltaNeff)));        
+        ASSERT_NEAR(Neff((*it)->AddTo(cp, admix, neff[i], kDeltaNeff)), neff[i], kDeltaNeff);
+      }
+      Profile<AA> p, q;
+
+      // seq: a -> 0.0
+      q = (*it)->AddTo(cp, admix, 1.5, 0.0);
+      ASSERT_NEAR(Neff(cp_p), Neff(q), kDeltaNeff);
+      ASSERT_TRUE(IsEqual(cp_p, q, 1e-5));
+
+      // seq: a -> 1.0
+      admix.pca = 1.0;
+      p = (*it)->AddTo(cp, admix);
+      q = (*it)->AddTo(cp, admix, 30, 0.0);
       ASSERT_TRUE(IsEqual(p, q));
     }
   }
@@ -149,13 +194,14 @@ TEST_F(PseudocountsTest, CrfLibEquality) {
       ASSERT_TRUE(IsEqual(p, q, 0.001));
     }
     for (size_t i = 0; i < 3; ++i) {
-      p = pc_engines[1]->AddTo(seq, neff[i], kNeffDelta);
-      q = pc_engines[2]->AddTo(seq, neff[i], kNeffDelta);
+      CSBlastAdmix admix(1.0, 12.0);
+      p = pc_engines[1]->AddTo(seq, admix, neff[i], kNeffDelta);
+      q = pc_engines[2]->AddTo(seq, admix, neff[i], kNeffDelta);
       ASSERT_NEAR(Neff(p), neff[i], kNeffDelta);
       ASSERT_NEAR(Neff(q), neff[i], kNeffDelta);
       ASSERT_TRUE(IsEqual(p, q, 0.001));
-      p = pc_engines[1]->AddTo(cp, neff[i], kNeffDelta);
-      q = pc_engines[2]->AddTo(cp, neff[i], kNeffDelta);
+      p = pc_engines[1]->AddTo(cp, admix, neff[i], kNeffDelta);
+      q = pc_engines[2]->AddTo(cp, admix, neff[i], kNeffDelta);
       ASSERT_NEAR(Neff(p), neff[i], kNeffDelta);
       ASSERT_NEAR(Neff(q), neff[i], kNeffDelta);
       ASSERT_TRUE(IsEqual(p, q, 0.001));
@@ -179,8 +225,9 @@ TEST_F(PseudocountsTest, POHmm) {
       ASSERT_TRUE(IsEqual(p, q, 0.001));
     }
     for (size_t i = 0; i < 3; ++i) {
-      p = pc_engines[1]->AddTo(seq, neff[i], kNeffDelta);
-      pc_engines[1]->AddTo(&hmm, neff[i], kNeffDelta);
+      CSBlastAdmix admix(1.0, 12.0);
+      p = pc_engines[1]->AddTo(seq, admix, neff[i], kNeffDelta);
+      pc_engines[1]->AddTo(&hmm, admix, neff[i], kNeffDelta);
       q = ToProfile(hmm);
       ASSERT_NEAR(Neff(p), neff[i], kNeffDelta);
       ASSERT_NEAR(Neff(q), neff[i], kNeffDelta);

@@ -2,6 +2,8 @@ shopt -s extglob
 
 export CS=${CS:-$HOME/src/cs}
 
+export CSVERSION="2.2.0"
+
 export CSB=$CS/bin
 export CSS=$CS/scripts
 export CS_DATA=$CS/data
@@ -15,12 +17,14 @@ export CSBENCH=$CSD/bench
 export CSIBENCH=$CSD/bench_csiblast
 
 export K4000=$CSM/lib/K4000.lib
+export K4000CRF=$CSC/uni20v2_t_N6.0M_g1.0_u4.00_U10.00_M_K4000_e0.10_D2.5_P2_b1.0_c1.6_d0.85_p1.0_me0.13.crf
+export K4000CRFL=`basename $K4000CRF`
 
 export DBS=$HOME/databases
 export SEQS=$HOME/seqs
 export ZINC=$SEQS/zinc_finger.seq
 
-export BLAST_PATH=/cluster/bioprogs/blast/bin
+export BLAST_PATH=/cluster/bioprogs/blast-2.2.19/bin
 if [ ! -d $BLAST_PATH ]; then
   BLAST_PATH=$HOME/bin/blast/bin
 fi
@@ -42,6 +46,7 @@ export T=$CSBENCH/scop20_1.73_test
 
 export OI=$CSIBENCH/scop20_1.73_opt
 export TI=$CSIBENCH/scop20_1.73_test
+export OIP=$CSIBENCH/scop20_1.73_opt_1psi_neff1+
 
 
 ### Functions ###

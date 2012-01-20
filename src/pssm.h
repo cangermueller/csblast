@@ -71,6 +71,16 @@ struct Pssm {
     assert_eq(1 + query_length + query_length * AA::kSize, count);
   }
 
+  // Shifts PSIBLAST subsitution scores log_2(P(y|x)/P(y)) by muliplying the 
+  // conditional probabilities P(y|x) by log_2(bits).
+  void Shift(double bits) {
+    const double kFactor = pow(2, bits);
+    for (size_t i = 0; i < profile.length(); ++i) {
+      for (size_t a = 0; a < AA::kSize; ++a)
+        profile[i][a] *= kFactor;
+    }
+  }
+
   // Query sequence with which search was started
   Sequence<AA> query;
   // Evolving sequence profile

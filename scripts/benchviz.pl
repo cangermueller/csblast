@@ -22,7 +22,7 @@ use Cwd qw(abs_path);
  
     -d, --dir BENCHDIR+     List of directories containing benchmark result files
     -o, --out OUTBASE       Output basename [default: ./]
-    -p, --plot PLOT+        List of plots to be created [default: tpfp wtpfp rocx]
+    -p, --plot PLOT+        List of plots to be created [default: tpfp wtpfp rocx evalue]
     -t, --title TITLE       Title of the plots [default: ]
     -l, --label LABEL+      List of labels to be used instead of directory names
     -s, --sort SORT+        List of directories defining the plot order
@@ -88,7 +88,7 @@ GetOptions(
   "h|help"        => sub { pod2usage(2); }
 ) or pod2usage(1);
 unless (@dirs) { pod2usage("No benchmark directory provided!"); }
-unless (@plots) { @plots = qw/tpfp wtpfp rocx/; }
+unless (@plots) { @plots = qw/tpfp wtpfp rocx evalue/; }
 &get_entities;
 unless (@entities) { pod2usage("No plot data found in the specified benchmark directories!"); }
 unless ($db) {
@@ -145,7 +145,7 @@ sub plot {
     set style line 9 linetype 0 linewidth $opts{LINEWIDTHE} linecolor rgb "$opts{COLORS}->[8]"/;
 
   if ($plot eq "tpfp") { $cmd .= qq/
-    set key top left
+    set key top right
     set log x
     set grid
     set xlabel "FP"
@@ -177,7 +177,7 @@ sub plot {
     }
 
   } elsif ($plot eq "wtpfp") { $cmd .= qq/
-    set key top left
+    set key top right
     set log x
     set grid
     set xlabel "weighted FP"
@@ -223,12 +223,25 @@ sub plot {
     } else { $cmd .= qq/
       set yrange [0:0.5]/;
     }
+
+  } elsif ($plot eq "evalue") { $cmd .= qq/
+    set key top right
+    set grid
+    set xlabel "Reported E-value"
+    set ylabel "Actual E-value"
+    set xrange [1e-4:1e2]
+    set yrange [1e-4:1e3]
+    set logscale x
+    set logscale y
+    set tics format "%.0e"/;
   } 
 
   $cmd .= qq/
     plot /;
   if ($plot eq "tpfp" || $plot eq "wtpfp") { 
     $cmd .= qq/99*x notitle with lines ls 9, 9*x notitle with lines ls 9, 4*x notitle with lines ls 9,/;
+  } elsif ($plot eq "evalue") {
+    $cmd .= qq/x notitle with lines ls 9,/;
   }
   $cmd .= &cmd_curves($plot);
   $cmd =~ s/^\s+//mg;
@@ -243,7 +256,8 @@ sub cmd_curves {
     my $e = $entities[$i];
     if ($e->{PLOTS}->{$plot}) {
       push(@curves, sprintf('"%s" title "%s" with lines ls %d', 
-          &get_datafile($plot, $e->{DIR}), $e->{LABEL}, basename($e->{DIR}) eq "blast" ? 1 : $ls++));
+          &get_datafile($plot, $e->{DIR}), $e->{LABEL} . ($plot eq "evalue" ? "" : sprintf(": %.3f", $e->{ROCX})),
+          basename($e->{DIR}) eq "blast" ? 1 : $ls++));
     }
   }
   return join(", ", @curves);
@@ -266,7 +280,6 @@ sub get_entities {
       $e{LABEL} = basename($e{DIR}); 
       $e{LABEL} =~ s/_/ /g;
     }
-    if ($e{ROCX}) { $e{LABEL} .= sprintf(": %.3f", $e{ROCX}); }
     my $has_file = 0;
     foreach my $p (@plots) {
       my $h =  -f sprintf("%s/%s", $dirs[$i], &get_datafile($p)) ? 1 : 0;

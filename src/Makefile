@@ -11,6 +11,16 @@ ICC = $(shell which icc)
 CXX = $(GPP)
 
 
+### CS-SUITE version ###
+
+
+VERSION = 2.2.0
+OUTFILE = $@
+ifdef SHOW_VERSION
+	OUTFILE = $@-$(VERSION)
+endif
+
+
 ### Flags ###
 
 
@@ -38,6 +48,7 @@ DEBUG_FLAGS = -g3 $(FLAGS)
 
 
 DEFS =	-fno-strict-aliasing \
+		  -DVERSION="\"$(VERSION)\"" \
      	-DBUILD_HOST="\"`hostname`\"" \
      	-DBUILD_TIME="\"`date`\"" \
      	-DCOMPILER_VERSION="\"`$(CXX) -v 2>&1 | tail -1`\""
@@ -144,80 +155,18 @@ $(BUILD_DIR_TEST)/gtest_main.o : $(GTEST_SRC)
 	$(CXX) $(PARAMS) -c -o $@ $(GTEST_DIR)/src/gtest_main.cc
 
 
-### Test targets ###
-
-
-DEPS = test
-test: $(OBJECTS)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
-
-DEPS = lr_params_test
-lr_params_test: $(OBJECTS_TEST)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
-
-DEPS = lr_func_test
-lr_func_test: $(OBJECTS_TEST)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
-
-DEPS = lr_sgd_test
-lr_sgd_test: $(OBJECTS_TEST)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
-
-DEPS = lr_pseudocounts_test
-lr_pseudocounts_test: $(OBJECTS_TEST)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
-
-DEPS = sgd_test
-sgd_test: $(OBJECTS_TEST)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
-
-DEPS = crf_test
-crf_test: $(OBJECTS_TEST)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
-
-DEPS = count_profile_test
-count_profile_test: $(OBJECTS_TEST)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
-
-DEPS = profile_test
-profile_test: $(OBJECTS_TEST)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
-
-DEPS = library_pseudocounts_test
-library_pseudocounts_test: $(OBJECTS_TEST)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
-
-DEPS = pseudocounts_test
-pseudocounts_test: $(OBJECTS_TEST)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
-
-
-### cslrsgd ###
-
-
-DEPS = cslrsgd_app
-cslrsgd: $(OBJECTS)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
-
-cslrsgd_debug: $(OBJECTS_DEBUG)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
-
-cslrsgd_prof: $(OBJECTS_PROF)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
-
-
 ### csblast ###
 
 
 DEPS = csblast_app csblast_iteration csblast blast_hits
 csblast: $(OBJECTS)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
 
 csblast_debug: $(OBJECTS_DEBUG)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
 
 csblast_prof: $(OBJECTS_PROF)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
 
 
 ### cstrainset ###
@@ -225,13 +174,13 @@ csblast_prof: $(OBJECTS_PROF)
 
 DEPS = cstrainset_app
 cstrainset: $(OBJECTS)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
 
 cstrainset_debug: $(OBJECTS_DEBUG)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
 
 cstrainset_prof: $(OBJECTS_PROF)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
 
 
 ### cssgd ###
@@ -239,13 +188,27 @@ cstrainset_prof: $(OBJECTS_PROF)
 
 DEPS = cssgd_app
 cssgd: $(OBJECTS)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
 
 cssgd_debug: $(OBJECTS_DEBUG)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
 
 cssgd_prof: $(OBJECTS_PROF)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
+
+
+### cslrsgd ###
+
+
+DEPS = cslrsgd_app
+cslrsgd: $(OBJECTS)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
+
+cslrsgd_debug: $(OBJECTS_DEBUG)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
+
+cslrsgd_prof: $(OBJECTS_PROF)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
 
 
 ### cshmc ###
@@ -253,13 +216,13 @@ cssgd_prof: $(OBJECTS_PROF)
 
 DEPS = cshmc_app
 cshmc: $(OBJECTS)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
 
 cshmc_debug: $(OBJECTS_DEBUG)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
 
 cshmc_prof: $(OBJECTS_PROF)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
 
 
 ### csbuild ###
@@ -267,13 +230,13 @@ cshmc_prof: $(OBJECTS_PROF)
 
 DEPS = csbuild_app
 csbuild: $(OBJECTS)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
 
 csbuild_debug: $(OBJECTS_DEBUG)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
 
 csbuild_prof: $(OBJECTS_PROF)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
 
 
 ### csviz ###
@@ -281,13 +244,13 @@ csbuild_prof: $(OBJECTS_PROF)
 
 DEPS = csviz_app pdf_writer as
 csviz: $(OBJECTS)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
 
 csviz_debug: $(OBJECTS_DEBUG)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
 
 csviz_prof: $(OBJECTS_RPOF)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
 
 
 ### csalign ###
@@ -295,13 +258,13 @@ csviz_prof: $(OBJECTS_RPOF)
 
 DEPS = csalign pdf_writer sparse_profile
 csalign: $(OBJECTS)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
 
 csalign_debug: $(OBJECTS_DEBUG)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
 
 csalign_prof: $(OBJECTS_PROF)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
 
 
 ### csclust ###
@@ -309,13 +272,13 @@ csalign_prof: $(OBJECTS_PROF)
 
 DEPS = csclust_app pdf_writer as
 csclust: $(OBJECTS)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
 
 csclust_debug: $(OBJECTS_DEBUG)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
 
 csclust_prof: $(OBJECTS_PROF)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
 
 
 ### cstranslate ###
@@ -323,13 +286,13 @@ csclust_prof: $(OBJECTS_PROF)
 
 DEPS = cstranslate_app as
 cstranslate: $(OBJECTS)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
 
 cstranslate_debug: $(OBJECTS_DEBUG)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
 
 cstranslate_prof: $(OBJECTS_PROF)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
 
 
 ### cscp_neff ###
@@ -337,7 +300,7 @@ cstranslate_prof: $(OBJECTS_PROF)
 
 DEPS = cscp_neff_app as
 cscp_neff: $(OBJECTS)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
 
 
 ### cstrainset_neff ###
@@ -345,15 +308,7 @@ cscp_neff: $(OBJECTS)
 
 DEPS = cstrainset_neff_app as
 cstrainset_neff: $(OBJECTS)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
-
-
-### cstrainprofiles ###
-
-
-DEPS = cstrainprofiles_app as
-cstrainprofiles: $(OBJECTS)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
 
 
 ### csconvert ###
@@ -361,4 +316,52 @@ cstrainprofiles: $(OBJECTS)
 
 DEPS = csconvert_app as
 csconvert: $(OBJECTS)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$@ $+ $(LIBS)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
+
+
+### Test targets ###
+
+
+DEPS = test
+test: $(OBJECTS)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
+
+DEPS = lr_params_test
+lr_params_test: $(OBJECTS_TEST)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
+
+DEPS = lr_func_test
+lr_func_test: $(OBJECTS_TEST)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
+
+DEPS = lr_sgd_test
+lr_sgd_test: $(OBJECTS_TEST)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
+
+DEPS = lr_pseudocounts_test
+lr_pseudocounts_test: $(OBJECTS_TEST)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
+
+DEPS = sgd_test
+sgd_test: $(OBJECTS_TEST)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
+
+DEPS = crf_test
+crf_test: $(OBJECTS_TEST)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
+
+DEPS = count_profile_test
+count_profile_test: $(OBJECTS_TEST)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
+
+DEPS = profile_test
+profile_test: $(OBJECTS_TEST)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
+
+DEPS = library_pseudocounts_test
+library_pseudocounts_test: $(OBJECTS_TEST)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
+
+DEPS = pseudocounts_test
+pseudocounts_test: $(OBJECTS_TEST)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
