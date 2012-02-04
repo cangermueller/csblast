@@ -17,7 +17,7 @@ class CSBin
     @rocx           = 5
     @name2scopid    = {}
     @name           = ""
-    @min_score      = 0.0
+    @max_evalue     = nil
     @plots          = [:tpfp, :wtpfp, :rocx, :fdr, :rocx, :pvalue, :evalue]
     @benchfiles     = {
       :tpfp   => 'tpfp.dat',
@@ -52,6 +52,7 @@ class CSBin
     @rocx_scores    = []            # array with rocx scores (one per query)
     @worst_fp       = []            # array with 1000 worst false positives sorted by E-value
     @nworst         = 100000
+    @nworst_fam     = 20
 
     self
   end
@@ -82,7 +83,7 @@ class CSBin
       o.on("--fp-relation RELATION", Integer, "Relation threshold for FP classification (default: #{@fp_relation})." ) { |val| @fp_relation = val }
       o.on("--excl-relation RELATION", Integer, "Relation threshold for hit exclusion (default: #{@excl_relation})." ) { |val| @excl_relation = val }
       o.on("--rocx FP", Integer, "False positives threshold for ROCX plot (default: #{@rocx})." ) { |val| @rocx = val }
-      o.on("--min-score SCORE", Float, "Minimal score threshold of hits (default: #{@min_score})." ) { |val| @min_score = val }
+      o.on("--max-evalue EVALUE", Float, "Maximal E-value threshold of hits (default: #{@max_evalue})." ) { |val| @max_evalue = val }
       o.on("--rank-by SIGNIF_SCORE", "Rank hits by P-value or E-value (default: #{@rank})." ) { |val| @rank = val.to_sym }
       o.on("-q", "--quiet", "Turn output off.") { |val| @verbose=false }
       o.on("-h", "--help", "Show this help message.") { puts o; exit }
@@ -170,7 +171,7 @@ class CSBin
     report = Bioinf::Blast::Report.new(f.read)
 
     report.each do |h|
-      break if h.bit_score<@min_score
+      break if !@max_evalue.nil? && h.evalue>@max_evalue
       rel = relation(report.query_id, h.target_id)
       next if  rel>=@excl_relation
       bin = case @rank
@@ -190,25 +191,12 @@ class CSBin
       when :uc
         @uc[bin] += 1
         @wuc[bin] += 1.0/@sf_size[@name2scopid[report.query_id].sf].to_f
-        end
+      end
 
       h.classification = classification
       hits << h
-
-      if classification == :fp && (@worst_fp.size < @nworst || h.evalue < @worst_fp[-1].evalue)
-        if @worst_fp.empty? || h.evalue >= @worst_fp[-1].evalue
-          @worst_fp << h
-        else
-          idx = @worst_fp.size - 1
-          if idx == 0 || h.evalue >= @worst_fp[idx - 1].evalue
-            @worst_fp.insert(idx, h)
-          else
-            idx -= 1
-          end
-        end
-        if @worst_fp.size > @nworst
-          @worst_fp.delete_at(-1)
-        end
+      if classification == :fp
+        @worst_fp << h 
       end
     end
 
@@ -225,14 +213,7 @@ class CSBin
       calc_and_append_rocx(query, hits) if @plots.include?(:rocx)
 
       i+=1
-      # $stdout.print '.' if @verbose
-      # $stdout.flush if @verbose
-      # $stdout.puts " #{i}" if i%100==0 && @verbose
     end
-    # unless i%100==0 || !@verbose
-    #  $stdout.print ' '*(100-i%100)
-    #  $stdout.puts " #{i}"
-    # end
     @rocx_scores = @rocx_scores.sort.reverse
   end
 
@@ -373,32 +354,38 @@ class CSBin
 
   def write_worst_false_positives()
     @worst_fp = @worst_fp.sort_by {|h| h.evalue }
-    n = 1
-    File.open(@outfile, 'w') do |fout|
-      worst_sf = @worst_fp.map {|h| @name2scopid[h.query_id].sf }.uniq
+    @worst_fp = @worst_fp[0 .. @nworst-1]
 
+    File.open(@outfile, 'w') do |fout|
+      worst_fp_sf = @worst_fp.map {|h| @name2scopid[h.query_id].sf }
+      worst_sf = worst_fp_sf.uniq
 
       worst_sf_counts_unweighted = Hash.new
       worst_sf.each do |sf|
-        worst_sf_counts_unweighted[sf] = @worst_fp.select {|h| @name2scopid[h.query_id].sf == sf }.size
+        worst_sf_counts_unweighted[sf] = 0
+      end
+      worst_fp_sf.each do |sf|
+        worst_sf_counts_unweighted[sf] += 1
       end
       worst_sf_unweighted = worst_sf.sort_by { |sf| worst_sf_counts_unweighted[sf] }.reverse
 
       worst_sf_counts_weighted = Hash.new
       worst_sf.each do |sf|
-        worst_sf_counts_weighted[sf] = @worst_fp.select {|h| @name2scopid[h.query_id].sf == sf }.size / @sf_size[sf].to_f
+        worst_sf_counts_weighted[sf] = worst_sf_counts_unweighted[sf].to_f / @sf_size[sf]
       end
       worst_sf_weighted = worst_sf.sort_by { |sf| worst_sf_counts_weighted[sf] }.reverse
 
       fout.puts("Worst superfamilies unweighted:")
-      worst_sf_unweighted.each do |sf|
-          fout.printf("%-8s  %8.2f\n", sf, worst_sf_counts_unweighted[sf])
+      0.upto([worst_sf_unweighted.size, @nworst_fam].min - 1) do |i|
+        sf = worst_sf_unweighted[i]
+        fout.printf("%-8s  %8.2f\n", sf, worst_sf_counts_unweighted[sf])
       end
       fout.print "\n\n"
 
       fout.puts("Worst superfamilies weighted by superfamily size:")
-      worst_sf_weighted.each do |sf|
-          fout.printf("%-8s  %8.2f\n", sf, worst_sf_counts_weighted[sf])
+      0.upto([worst_sf_weighted.size, @nworst_fam].min - 1) do |i|
+        sf = worst_sf_weighted[i]
+        fout.printf("%-8s  %8.2f\n", sf, worst_sf_counts_weighted[sf])
       end
       fout.print "\n\n"
 
@@ -407,6 +394,7 @@ class CSBin
       row_format_str    = "%-4d  %-8s  %-8s  %-10s  %-10s  %-6i  %-7.2g  %4.2f\n"
       fout.printf(header_format_str, "No", "Query", "Hit", "Queryfam", "Hitfam", "Hit-No", "E-Value", "Weight")
 
+      n = 1
       @worst_fp.each do |h|
         fout.printf(row_format_str, n, h.query_id, h.target_id, @name2scopid[h.query_id].fm,
                     @name2scopid[h.target_id].fm, h.num, h.evalue, 1.0 / @sf_size[@name2scopid[h.query_id].sf].to_f)
@@ -416,6 +404,12 @@ class CSBin
   end
 
   def relation(query, target)
+    [query, target].each do |name|
+      if @name2scopid[name].nil?
+        $stderr.puts("No scop identifier for '#{name}' in sequence file!")
+        exit(1)
+      end
+    end
     return query==target ? 5 : @name2scopid[query].relation(@name2scopid[target])
   end
 

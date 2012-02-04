@@ -21,13 +21,14 @@ use Cwd qw(abs_path);
   OPTIONS:
  
     -d, --dir BENCHDIR+     List of directories containing benchmark result files
-    -o, --out OUTBASE       Output basename [default: ./]
+    -o, --out OUTBASE       Output basename [def: ./]
     -p, --plot PLOT+        List of plots to be created [default: tpfp wtpfp rocx evalue]
-    -t, --title TITLE       Title of the plots [default: ]
+    -t, --title TITLE       Title of the plots [def: ]
     -l, --label LABEL+      List of labels to be used instead of directory names
     -s, --sort SORT+        List of directories defining the plot order
         --db DB             Database used for scaling axis
-    -k, --keep              Keep plot files [default: false]
+        --no-under          Substitute underscore in labels [def: false]
+    -k, --keep              Keep plot files [def: false]
     -h, --help              Show this help message
 
 =head1 AUTHOR
@@ -47,6 +48,7 @@ my $title;
 my @labels;
 my @order;
 my $db;
+my $no_under;
 my $keep;
 
 my @entities;
@@ -84,6 +86,7 @@ GetOptions(
   "l|label=s{1,}" => \@labels,
   "s|sort=s{1,}"  => \@order,
   "db=s"          => \$db,
+  "no-under"      => \$no_under,
   "k|keep"        => \$keep,
   "h|help"        => sub { pod2usage(2); }
 ) or pod2usage(1);
@@ -158,7 +161,7 @@ sub plot {
       set label "20%" at 1150,7500 textcolor ls 9/;
     } elsif ($db eq "scop20_1.73_test") { $cmd .= qq/
       set xrange [1:4000]
-      set yrange [0:12000]
+      set yrange [0:20000]
       set label "1%" at 35,5000 textcolor ls 9
       set label "10%" at 350,5000 textcolor ls 9
       set label "20%" at 800,5000 textcolor ls 9/;
@@ -190,13 +193,13 @@ sub plot {
       set label "20%" at 50,275 textcolor ls 9/;
     } elsif ($db eq "scop20_1.73_test") { $cmd .= qq/
       set xrange [1:600]
-      set yrange [0:800]
+      set yrange [0:1200]
       set label "1%" at 4,550 textcolor ls 9
       set label "10%" at 40,550 textcolor ls 9
       set label "20%" at 95,550 textcolor ls 9/;
     } elsif ($db eq "scop20_1.75_opt") { $cmd .= qq/
       set xrange [1:600]
-      set yrange [0:400]
+      set yrange [0:800]
       set label "1%" at 2,275 textcolor ls 9
       set label "10%" at 20,275 textcolor ls 9
       set label "20%" at 50,275 textcolor ls 9/;
@@ -208,6 +211,25 @@ sub plot {
       set label "20%" at 60,350 textcolor ls 9/;
     }
 
+  } elsif ($plot eq "fdr") { $cmd .= qq/
+    set key top right
+    set grid
+    set xlabel "FDR"
+    set ylabel "TPR"/;
+    if ($db eq "scop20_1.73_opt") { $cmd .= qq/
+      set xrange [0:1]
+      set yrange [0:1]/;
+    } elsif ($db eq "scop20_1.73_test") { $cmd .= qq/
+      set xrange [0:1]
+      set yrange [0:1]/;
+    } elsif ($db eq "scop20_1.75_opt") { $cmd .= qq/
+      set xrange [0:1]
+      set yrange [0:1]/;
+    } else { $cmd .= qq/
+      set xrange [0:1]
+      set yrange [0:1]/;
+    }
+
   } elsif ($plot eq "rocx") { $cmd .= qq/
     set key top right
     set grid
@@ -217,7 +239,7 @@ sub plot {
     if ($db eq "scop20_1.73_opt") { $cmd .= qq/
       set yrange [0:0.6]/;
     } elsif ($db eq "scop20_1.73_test") { $cmd .= qq/
-      set yrange [0:0.5]/;
+      set yrange [0:0.75]/;
     } elsif ($db eq "scop20_1.75_opt") { $cmd .= qq/
       set yrange [0:0.5]/;
     } else { $cmd .= qq/
@@ -234,13 +256,24 @@ sub plot {
     set logscale x
     set logscale y
     set tics format "%.0e"/;
+
+  } elsif ($plot eq "pvalue") { $cmd .= qq/
+    set key top right
+    set grid
+    set xlabel "Reported P-value"
+    set ylabel "Actual P-value"
+    set xrange [1e-7:1]
+    set yrange [1e-7:1]
+    set logscale x
+    set logscale y
+    set tics format "%.0e"/;
   } 
 
   $cmd .= qq/
     plot /;
   if ($plot eq "tpfp" || $plot eq "wtpfp") { 
     $cmd .= qq/99*x notitle with lines ls 9, 9*x notitle with lines ls 9, 4*x notitle with lines ls 9,/;
-  } elsif ($plot eq "evalue") {
+  } elsif ($plot eq "evalue" || $plot eq "pvalue") {
     $cmd .= qq/x notitle with lines ls 9,/;
   }
   $cmd .= &cmd_curves($plot);
@@ -276,6 +309,7 @@ sub get_entities {
     $e{ROCX} = &get_rocx($dirs[$i]);    
     if ($labels[$i]) {
       $e{LABEL} =  $labels[$i]; 
+      if ($no_under) { $e{LABEL} =~ s/_/ /g; }
     } else {
       $e{LABEL} = basename($e{DIR}); 
       $e{LABEL} =~ s/_/ /g;

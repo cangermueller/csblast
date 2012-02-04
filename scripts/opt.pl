@@ -46,20 +46,23 @@ my %tplvars = (
   model   => undef,
   outdir  => undef,
   db      => "scop20_1.73_opt",
+  e       => "1e5",
+  v       => 1000,
+  b       => 0,
   j       => "1",
+  h       => "1e-3",
   z       => 12.0,
   x       => undef,
   n       => 2,
   seed    => int(rand(1e6)),
   csblast => "csblast-$ENV{CSVERSION}",
+  ENV     => \%ENV
 );
 my $submit = 0;
 
 my $runme = q(#!/bin/bash
 
-source $CS/.cs.sh
-
-DB=$DBS/[% db %]
+DB=[% ENV.DBS %]/[% db %]
 BASEDIR=[% outdir %]
 
 csopt \
@@ -104,8 +107,6 @@ c:
 
 my $csblast_sh = q(#!/bin/bash
 
-source $CS/.cs.sh;
-
 <% model = "[% model %]" %>
 <% dirbase = "#{csblastdir}/#{basename}" %>
 <% outfile = "#{dirbase}.bla" %>
@@ -116,17 +117,15 @@ source $CS/.cs.sh;
   -i FILENAME \
   -o <%= outfile %> \
   -d <%= seqfile %> \
-  --blast-path $BLAST_PATH \
+  --blast-path [% ENV.BLAST_PATH %] \
   [% IF x %]
   -x <%= x %> \
   [% ELSE %]
   -z <%= z %> \
   [% END %]
-  -e 1e5 -v 10000 -b 0 [% params %]);
+  -e [% e %] -v [% v %] -b [% b %] [% params %]);
 
 my $csiblast_sh = q(#!/bin/bash
-
-source $CS/.cs.sh;
 
 <% model = "[% model %]" %>
 <% dirbase = "#{csblastdir}/#{basename}" %>
@@ -139,15 +138,15 @@ source $CS/.cs.sh;
   -i FILENAME \
   -o <%= outfile %> \
   -C <%= chkfile %> \
-  -d $DBS/nr_2011-12-09/nr \
-  --blast-path $BLAST_PATH \
+  -d [% ENV.DBS %]/nr_2011-12-09/nr \
+  --blast-path [% ENV.BLAST_PATH %] \
   [% IF x %]
   -x <%= x %> \
   [% ELSE %]
   -z <%= z %> \
   [% END %]
   -c <%= c %> \
-  -h 2e-4 -j [% j %] [% params %]
+  -e [% e %] -h [% h %] -j [% j %] [% params %]
 
 
 [% csblast %] \\
@@ -156,10 +155,8 @@ source $CS/.cs.sh;
   -R <%= chkfile %> \\
   -o <%= outfile %> \\
   -d <%= seqfile %> \\
-  --blast-path $BLAST_PATH \\
-  -e 1e5 -v 10000 -b 0 $PARAMS
-  
-rm -f <%= chkfile %>);
+  --blast-path [% ENV.BLAST_PATH %] \\
+  -e [% e %] -v [% v %] -b [% b %] $PARAMS);
 
 
 ### Initialization ###

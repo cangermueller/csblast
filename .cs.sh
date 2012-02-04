@@ -25,6 +25,8 @@ export SEQS=$HOME/seqs
 export ZINC=$SEQS/zinc_finger.seq
 
 export BLAST_PATH=/cluster/bioprogs/blast-2.2.19/bin
+export HHREPID_PATH=/cluster/bioprogs/hhrepid
+
 if [ ! -d $BLAST_PATH ]; then
   BLAST_PATH=$HOME/bin/blast/bin
 fi
@@ -47,6 +49,11 @@ export T=$CSBENCH/scop20_1.73_test
 export OI=$CSIBENCH/scop20_1.73_opt
 export TI=$CSIBENCH/scop20_1.73_test
 export OIP=$CSIBENCH/scop20_1.73_opt_1psi_neff1+
+
+DO=$DBS/scop20_1.73_opt
+DOS=$DBS/scop20_1.73_opt_db
+DT=$DBS/scop20_1.73_test
+DTS=$DBS/scop20_1.73_test_db
 
 
 ### Functions ###

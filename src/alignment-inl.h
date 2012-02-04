@@ -155,9 +155,17 @@ void Alignment<Abc>::ReadFastaFlavors(FILE* fin, std::vector<std::string>& heade
             if (buffer[0] == '#') {
                 name_ = std::string(buffer + 1);
             } else if (buffer[0] == '>') {
-                if (headers.empty() && strstr(buffer, ">ss_")) {
-                    while (fgetline(buffer, kBufferSize, fin))
-                        if (buffer[0] == '>' && strstr(buffer, ">ss_") == NULL) break;
+                if (headers.empty() && 
+                    (strstr(buffer, ">ss_") == buffer || strstr(buffer, ">sa_") == buffer)) {
+                  while (!feof(fin)) {
+                    c = getc(fin);
+                    if (c == '>') {
+                      ungetc(c, fin);
+                      break;
+                    }
+                    fgetline(buffer, kBufferSize, fin);
+                  }
+                  continue;
                 }
                 headers.push_back(std::string(buffer + 1));
                 break;
@@ -182,6 +190,7 @@ void Alignment<Abc>::ReadFastaFlavors(FILE* fin, std::vector<std::string>& heade
 
         LOG(DEBUG2) << headers.back();
     }
+    //LOG(DEBUG2) << "Number of sequences read: " << headers.size() << std::endl;
     if (headers.empty())
         throw Exception("Bad alignment: no alignment data found in stream!");
 }

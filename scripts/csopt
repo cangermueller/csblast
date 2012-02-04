@@ -53,7 +53,8 @@ class CSOpt
     # miscellaneous options
     @seed            = 0
     @verbose         = true
-    @keep            = false
+    @keep            = true
+    @keep_bla        = true
 
     # global variables
     @params = {}          # parameters for optimization
@@ -121,7 +122,8 @@ class CSOpt
       o.on("")
 
       o.on("--seed INT", Integer, "Seed for random number generator  (default: #{@seed})." ) { |val| @seed = val }
-      o.on("-k", "--keep", TrueClass, "Keep working directory (default: #{@keep})." ) { |val| @keep = true }
+      o.on("-k", "--[no-]keep", TrueClass, "Keep working directory (default: #{@keep})." ) { |val| @keep = val }
+      o.on("--[no-]keep-bla", TrueClass, "Keep blast result files (default: #{@keep_bla})." ) { |val| @keep_bla = val }
       o.on("-q", "--quiet", "Turn output off.") { |val| @verbose = false }
       o.on("-h", "--help", "Show this help message.") { puts o; exit }
     end
@@ -526,7 +528,8 @@ class CSOpt
     sge_config[:args]       = sge_pe(@cpu_cstrainset)
     sge_config[:jobs_paths] = tplvars['cstrainsetdir']
     sge_config[:name]       = "cstrainset"
-    sge_config[:keep_files] = true
+    sge_config[:logfile]    = sprintf("%s/log", tplvars['cstrainsetdir'])
+    sge_config[:keep_files] = false
     qm          = SGE::Manager.new
     qm.verbose  = false
     qm.interval = 1
@@ -556,7 +559,8 @@ class CSOpt
     sge_config[:args]       = sge_pe(@cpu_cssgd)
     sge_config[:jobs_path]  = tplvars['cssgddir']
     sge_config[:name]       = sprintf("cssgd_%02d", repeat)
-    sge_config[:keep_files] = true
+    sge_config[:logfile]    = sprintf("%s/log", tplvars['cssgddir'])
+    sge_config[:keep_files] = false
     cg = SGE::CommandGenerator.new
     cg.generate(@cssgd_cmds.join("\n"), tplvars, {})
     qm          = SGE::Manager.new
@@ -620,11 +624,11 @@ class CSOpt
 
     # submit csblast jobs
     FileUtils.mkdir_p(tplvars['csblastdir'])
-    sge_config             = SGE::CONFIGURATION.dup
-    sge_config[:logfile]   = sprintf("%s/log", tplvars['csblastdir'])
-    sge_config[:args]      = sge_pe(@cpu_csblast)
-    sge_config[:name]      = sprintf("csblast_%02d", score.repeat)
-    sge_config[:keep_file] = @keep
+    sge_config              = SGE::CONFIGURATION.dup
+    sge_config[:args]       = sge_pe(@cpu_csblast)
+    sge_config[:name]       = sprintf("csblast_%02d", score.repeat)
+    sge_config[:logfile]    = sprintf("%s/log", tplvars['csblastdir'])
+    sge_config[:keep_files] = false
     qm          = SGE::Manager.new
     qm.verbose  = false
     qm.interval = 1
@@ -668,15 +672,17 @@ class CSOpt
     end
 
     # compute roc score
-    cmd = ["csbin -i '#{tplvars['csblastdir']}/#{@resglob}' -d #{tplvars['csblastdir']} --rocx #{@rocx} -s #{@seqfile} -q"]
+    cmd = ["csbin -i '#{tplvars['csblastdir']}/#{@resglob}' -d #{tplvars['csblastdir']} -o '#{tplvars['csblastdir']}/csbin.dat' --rocx #{@rocx} -s #{@seqfile} -q -p tpfp,wtpfp,fdr,rocx,evalue,pvalue --max-evalue 300"]
     sge_config[:name] = sprintf("csbin_%02d", score.repeat)
     qm.set_config(sge_config)
     qm.submit(cmd)
     qm.wait
     check_for_errors(qm)
     score.score = rocx_score(tplvars['csblastdir'])
-    Dir.glob(File.join(tplvars['csblastdir'], @resglob)).each do |r|
-      File.delete(r)
+    if !@keep_bla
+      Dir.glob(File.join(tplvars['csblastdir'], @resglob)).each do |r|
+        File.delete(r)
+      end
     end
 
     @score_repeats.push(score)

@@ -78,7 +78,7 @@ int Application::main(int argc, char* argv[], FILE* fout, const string& name) {
 
   } catch(const std::exception& e) {
     LOG(ERROR) << e.what();
-    fprintf(stderr, "\n%s\n", e.what());
+    fprintf(stderr, "\nERROR: %s\n", e.what());
     return 1;
   }
 

@@ -365,3 +365,7 @@ library_pseudocounts_test: $(OBJECTS_TEST)
 DEPS = pseudocounts_test
 pseudocounts_test: $(OBJECTS_TEST)
 	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
+
+DEPS = alignment_test blast_hits
+alignment_test: $(OBJECTS_TEST)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)

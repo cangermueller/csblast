@@ -14,8 +14,8 @@ bench.sh [OPTIONS] -m MODEL -o OUTDIR
     -d DB           Database name
     -j ITER         Number of iterations
     -p PARAMS       Command line parameters
+    -k KEEP         Keep blast files
     -s              Submit the job
-    -k              Keep output files
     -h              Show this text
 END
 }
@@ -33,17 +33,21 @@ MODEL=
 OUTDIR=
 DB="scop20_1.73_opt"
 NR="$DBS/nr_2011-12-09/nr"
+E="1e5"
+V=1000
+B=0
 J=1
+H="1e-3"
 PARAMS=
 SUBMIT=
-KEEP=
+KEEP=1
 MULT=100
 
 
 ### Initialization ###
 
 
-while getopts "m:o:d:j:p:skh" OPT; do
+while getopts "m:o:d:j:p:k:sh" OPT; do
   case $OPT in
     m) MODEL=$OPTARG;;
     o) OUTDIR=$OPTARG;;
@@ -51,7 +55,7 @@ while getopts "m:o:d:j:p:skh" OPT; do
     j) J=$OPTARG;;
     p) PARAMS=$OPTARG;;
     s) SUBMIT=1;;
-    k) KEEP=1;;
+    k) KEEP=$OPTARG;;
     h) synopsis; exit 0 ;;
     *) exit 1
   esac
@@ -96,7 +100,7 @@ $BLAST_PATH/blastpgp \\
   -i FILENAME \\
   -o <%= outfile %> \\
   -d $DB_FILE \\
-  -e 1e5 -v 10000 -b 0 $PARAMS
+  -e $E -v $V -b $B $PARAMS
 END
   else
     # blastpgp >1 round
@@ -112,14 +116,14 @@ $BLAST_PATH/blastpgp \\
   -o <%= outfile %> \\
   -C <%= chkfile %> \\
   -d $NR \\
-  -h 1e-3 -j $J $PARAMS
+  -e $E -h $H -j $J $PARAMS
 
 $BLAST_PATH/blastpgp \\
   -i FILENAME \\
   -R <%= chkfile %> \\
   -o <%= outfile %> \\
   -d $DB_FILE \\
-  -e 1e5 -v 10000 -b 0 $PARAMS
+  -e $E -v $V -b $B $PARAMS
 END
   fi
 else
@@ -139,7 +143,7 @@ $CSBLAST \\
   -o <%= outfile %> \\
   -d $DB_FILE \\
   --blast-path $BLAST_PATH \\
-  -e 1e5 -v 10000 -b 0 $PARAMS
+  -e $E -v $V -b $B $PARAMS
 END
   else
     # csblast >1 round
@@ -158,7 +162,7 @@ $CSBLAST \\
   -C <%= chkfile %> \\
   -d $NR \\
   --blast-path $BLAST_PATH \\
-  -h 1e-3 -j $J $PARAMS
+  -e $E -h $H -j $J $PARAMS
 
 $CSBLAST \\
   -D <%= model %> \\
@@ -167,7 +171,7 @@ $CSBLAST \\
   -o <%= outfile %> \\
   -d $DB_FILE \\
   --blast-path $BLAST_PATH \\
-  -e 1e5 -v 10000 -b 0 $PARAMS
+  -e $E -v $V -b $B $PARAMS
 END
   fi
 fi
@@ -177,8 +181,8 @@ RUNFILE="$OUTDIR/RUNME"
 cat > $RUNFILE <<END
 #!/bin/bash
 
-OUTDIR="$OUTDIR"
-rsub --logfile $HOME/jobs/bench$$.log --mult $MULT --quiet -g "$DB_DIR/*.seq" -s "$CMDFILE"
+OUTDIR=$OUTDIR
+rsub --logfile \$OUTDIR/log --mult $MULT --quiet -g "$DB_DIR/*.seq" -s $CMDFILE
 SHOULD=\`ls $DB_DIR/*.seq 2> /dev/null | wc -l\`
 IS=\`ls \$OUTDIR/*bla 2> /dev/null\`
 if [ ! \$IS -eq \$SHOULD ]; then
@@ -186,18 +190,22 @@ if [ ! \$IS -eq \$SHOULD ]; then
   exit 1
 fi
 
-csbin -i "\$OUTDIR/*.bla" -d \$OUTDIR -s "$DB_FILE" -p tpfp,wtpfp,rocx,evalue,pvalue
+csbin -i "\$OUTDIR/*.bla" -d \$OUTDIR -o \$OUTDIR/csbin.dat -s $DB_FILE -p tpfp,wtpfp,fdr,rocx,evalue,pvalue --max-evalue 300
 if [ ! \$? -eq 0 ]; then
   echo "Error calling csbin!"
   exit 1
 fi
 END
-if [ ! $KEEP ]; then
+if [ $KEEP -eq 0 ]; then
   cat >> $RUNFILE <<END
 
 find \$OUTDIR -maxdepth 1 -type f -name "*.bla" -delete
+END
+  if [ $J -gt 1 ]; then
+    cat >> $RUNFILE <<END
 find \$OUTDIR -maxdepth 1 -type f -name "*.chk" -delete
 END
+  fi
 fi
 chmod u+x $RUNFILE
 if [ $SUBMIT ]; then
