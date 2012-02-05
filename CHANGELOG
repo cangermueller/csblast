@@ -1,3 +1,7 @@
+== CS-BLAST 2.2.1 (Feburary 5th, 2012)
+* --shift -0.005 is default now.
+* Fasta sequences starting with >ss_ or >sa_ are ignored now. 
+
 == CS-BLAST 2.2.0 (January 20th, 2012)
 * Encompasses all changes since February 19th, 2010.
 * CRFs allow for better results than the context library now.

@@ -26,6 +26,7 @@ use Cwd qw(abs_path);
     -j, --iters [1;inf[     Maximum number of iterations to use in CSI-BLAST [def: 1]
     -x, --pc-admix ]0;1]    Optimize pseudocounts admixture coefficient x [def: off]
     -z, --pc-neff [1;inf[   Optimize pseudocounts admixture coefficient z [def: 12.0]
+    -p, --params STRING     Additional parameters
     -n, --niter [1;inf[     Number of iterations with Newtons method [def: 2]
     -s, --[no-]submit       Submit csopt job
         --seed INT          Seed for csopt
@@ -79,22 +80,22 @@ csopt \
   --seed [% seed %]);
 
 my $csopt_yml = "---
-[% IF x %]
+[%- IF x %]
 x:  
   order:    1
   value:    [% x %]
   add:      0.05
   min:      0.0
   max:      1.0
-[% ELSE %]
+[%- ELSE %]
 z:  
   order:    1
   value:    [% z %]
   add:      0.5
   min:      5.0
   max:      15.0
-[% END %]
-[% IF j > 1 %]
+[%- END %]
+[%- IF j > 1 %]
 
 c:
   order:    2
@@ -102,7 +103,7 @@ c:
   add:      2.0
   min:      0.0
   max:      25.0
-[% END %]
+[%- END %]
 ";
 
 my $csblast_sh = q(#!/bin/bash
@@ -111,18 +112,17 @@ my $csblast_sh = q(#!/bin/bash
 <% dirbase = "#{csblastdir}/#{basename}" %>
 <% outfile = "#{dirbase}.bla" %>
 
-
 [% csblast %] \
   -D <%= model %> \
   -i FILENAME \
   -o <%= outfile %> \
   -d <%= seqfile %> \
   --blast-path [% ENV.BLAST_PATH %] \
-  [% IF x %]
+  [%- IF x %]
   -x <%= x %> \
-  [% ELSE %]
+  [%- ELSE %]
   -z <%= z %> \
-  [% END %]
+  [%- END %]
   -e [% e %] -v [% v %] -b [% b %] [% params %]);
 
 my $csiblast_sh = q(#!/bin/bash
@@ -132,7 +132,6 @@ my $csiblast_sh = q(#!/bin/bash
 <% outfile = "#{dirbase}.bla" %>
 <% chkfile = "#{dirbase}.chk" %>
 
-
 [% csblast %] \
   -D <%= model %> \
   -i FILENAME \
@@ -140,14 +139,13 @@ my $csiblast_sh = q(#!/bin/bash
   -C <%= chkfile %> \
   -d [% ENV.DBS %]/nr_2011-12-09/nr \
   --blast-path [% ENV.BLAST_PATH %] \
-  [% IF x %]
+  [%- IF x %]
   -x <%= x %> \
-  [% ELSE %]
+  [%- ELSE %]
   -z <%= z %> \
-  [% END %]
+  [%- END %]
   -c <%= c %> \
   -e [% e %] -h [% h %] -j [% j %] [% params %]
-
 
 [% csblast %] \\
   -D <%= model %> \\
@@ -156,7 +154,7 @@ my $csiblast_sh = q(#!/bin/bash
   -o <%= outfile %> \\
   -d <%= seqfile %> \\
   --blast-path [% ENV.BLAST_PATH %] \\
-  -e [% e %] -v [% v %] -b [% b %] $PARAMS);
+  -e [% e %] -v [% v %] -b [% b %] [% params %]);
 
 
 ### Initialization ###
@@ -192,7 +190,7 @@ if (system("$tplvars{csblast} &> /dev/null")) {
 
 
 my $tpl = Template->new({
-    PRE_CHOMP => 1
+    PRE_CHOMP => 0
   });
 mkdir $tplvars{outdir};
 $tpl->process(\$csopt_yml, \%tplvars, catfile($tplvars{outdir}, "csopt.yml"));

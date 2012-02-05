@@ -45,7 +45,7 @@ struct CSBlastAppOptions {
     ndescr          = 500;
     nalis           = 250;
     emulate         = false;
-    shift           = 0.0;
+    shift           = -0.005;
     // penalty_alpha       = 0.0;
     // penalty_beta        = 0.1;
     // penalty_score_min   = 8.0;
@@ -262,7 +262,7 @@ void CSBlastApp::PrintOptions() const {
   //         "Turn off score penalty for repeat regions (def=penalty on).");
   fprintf(out_, "  %-30s %s\n", "    --blast-path <path>",
           "Path to directory with blastpgp executable (or set BLAST_PATH)");
-  fprintf(out_, "  %-30s %s (def=%.2f)\n", "    --shift [-1,1]",
+  fprintf(out_, "  %-30s %s (def=%g)\n", "    --shift [-1,1]",
           "Substitution score offset", opts_.shift);
 }
 

@@ -2,7 +2,7 @@ shopt -s extglob
 
 export CS=${CS:-$HOME/src/cs}
 
-export CSVERSION="2.2.0"
+export CSVERSION="2.2.1"
 
 export CSB=$CS/bin
 export CSS=$CS/scripts
@@ -15,66 +15,58 @@ export CST=$CSD/trainsets
 
 export CSBENCH=$CSD/bench
 export CSIBENCH=$CSD/bench_csiblast
+export CSBENCHO=$CSD/bench.2012-02-04
+export CSIBENCHO=$CSD/bench_csiblast.2012-02-04
 
-export K4000=$CSM/lib/K4000.lib
-export K4000CRF=$CSC/uni20v2_t_N6.0M_g1.0_u4.00_U10.00_M_K4000_e0.10_D2.5_P2_b1.0_c1.6_d0.85_p1.0_me0.13.crf
-export K4000CRFL=`basename $K4000CRF`
-
-export DBS=$HOME/databases
-export SEQS=$HOME/seqs
-export ZINC=$SEQS/zinc_finger.seq
+export L4000=$CSM/lib/K4000.lib
+export C4000=$CSC/uni20v2_t_N6.0M_g1.0_u4.00_U10.00_M_K4000_e0.10_D2.5_P2_b1.0_c1.6_d0.85_p1.0_me0.13.crf
 
 export BLAST_PATH=/cluster/bioprogs/blast-2.2.19/bin
 export HHREPID_PATH=/cluster/bioprogs/hhrepid
 
-if [ ! -d $BLAST_PATH ]; then
-  BLAST_PATH=$HOME/bin/blast/bin
+if [ ! $DEFCSPATH ]; then
+  export PATH=$PATH:$CSB:$CSS
+  export DEFCSPATH=1
 fi
-export PATH=$PATH:$CSB:$CSS
 
-# Temporary variables
 
-export O5=$CSBENCH/scop20_1.75_opt
-export O5M=$O5/models
-export O5Mu=$O5M/uni20v2_t_N3.0M_g1.0_u4.00_U10.00_M
-export O5MU=$O5M/uni20v2_t_N6.0M_g1.0_u4.00_U10.00_M
-export T5=$CSBENCH/scop20_1.75_test
-export T5M=$T5/models
+### Temporary variables ###
+
 
 export O=$CSBENCH/scop20_1.73_opt
-export Ou=$O/uni20v2_t_N3.0M_g1.0_u4.00_U10.00_M
-export OU=$O/uni20v2_t_N6.0M_g1.0_u4.00_U10.00_M
 export T=$CSBENCH/scop20_1.73_test
-
 export OI=$CSIBENCH/scop20_1.73_opt
 export TI=$CSIBENCH/scop20_1.73_test
-export OIP=$CSIBENCH/scop20_1.73_opt_1psi_neff1+
 
-DO=$DBS/scop20_1.73_opt
-DOS=$DBS/scop20_1.73_opt_db
-DT=$DBS/scop20_1.73_test
-DTS=$DBS/scop20_1.73_test_db
+export OO=$CSBENCHO/scop20_1.73_opt
+export TO=$CSBENCHO/scop20_1.73_test
+export OIO=$CSIBENCHO/scop20_1.73_opt
+export TIO=$CSIBENCHO/scop20_1.73_test
+
+export DO=$DBS/scop20_1.73_opt
+export DOS=$DBS/scop20_1.73_opt_db
+export DT=$DBS/scop20_1.73_test
+export DTS=$DBS/scop20_1.73_test_db
 
 
 ### Functions ###
 
 
-function sgdviz {
-  LOGS=$@
-  mkdir -p $PWD/plots; 
-  for LOG in $LOGS; do
-    OUT=`basename $LOG`;
-    OUT=$PWD/plots/${OUT%log}pdf
-    sgdviz.pl -i $LOG -o $OUT -p ll-val ll-train neff prior
-  done
-}
-
-function cpop {
-  cp ${1%/}/RUNME ${1%/}/*@(sh|yml) $2
-}
-
-
-
 alias csupdate="source $CS/.cs.sh"
-alias visgd='vi -p `find -path "*/0?/cssgd/out"`'
-alias viopt='vi -p `find -path "*/0?/csopt/out"`'
+
+function benchdir {
+  MODEL=$1
+  J=${2:-1}
+  shift; shift
+  APP=$@
+
+  DIR=v$CSVERSION
+  if [ $J -gt 1 ]; then
+    DIR=`printf "%s_j%d_h%s" $DIR $J "1e-3"`
+  fi
+  DIR=${DIR}_`basename $MODEL`
+  if [ $APP ]; then
+    DIR=${DIR}_$APP
+  fi
+  echo $DIR
+}
