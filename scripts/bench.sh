@@ -28,20 +28,21 @@ function check_arg {
   fi
 }
 
-CSBLAST="csblast-$CSVERSION"
 MODEL=
 OUTDIR=
 DB="scop20_1.73_opt"
+J=1
+PARAMS=
+KEEP=1
+SUBMIT=
+
+CSBLAST="csblast-$CSVERSION"
 NR="$DBS/nr_2011-12-09/nr"
 E="1e5"
 V=1000
 B=0
-J=1
 H="1e-3"
-PARAMS=
-SUBMIT=
-KEEP=1
-MULT=100
+MULT=(50 10 5)
 
 
 ### Initialization ###
@@ -62,14 +63,16 @@ while getopts "m:o:d:j:p:k:sh" OPT; do
 done
 check_arg model $MODEL
 check_arg outdir $OUTDIR
-if [ $J -gt 1 ]; then MULT=10; fi
 
 eval $CSBLAST &> /dev/null
 if [ $? -ne 0 ]; then
   echo "'$CSBLAST' binary not found!"
   exit 1
 fi
-DB_DIR="$DBS/$DB"
+DB_DIR=$DB
+if [ ! -d $DB_DIR ]; then
+  DB_DIR="$DBS/$DB"
+fi
 DB_FILE="${DB_DIR}_db"
 if [ ! -d $DB_DIR ]; then
   echo "'$DB_DIR' does not exist!"
@@ -182,9 +185,9 @@ cat > $RUNFILE <<END
 #!/bin/bash
 
 OUTDIR=$OUTDIR
-rsub --logfile \$OUTDIR/log --mult $MULT --quiet -g "$DB_DIR/*.seq" -s $CMDFILE
+rsub --logfile \$OUTDIR/log --mult ${MULT[$((J-1))]} --quiet -g "$DB_DIR/*.seq" -s $CMDFILE
 SHOULD=\`ls $DB_DIR/*.seq 2> /dev/null | wc -l\`
-IS=\`ls \$OUTDIR/*bla 2> /dev/null\`
+IS=\`ls \$OUTDIR/*.bla 2> /dev/null | wc -l\`
 if [ ! \$IS -eq \$SHOULD ]; then
   echo "There are only \$IS instead of \$SHOULD blast result files in '\$OUTDIR'!"
   exit 1

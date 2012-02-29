@@ -77,13 +77,13 @@ class CSOpt
     OptionParser.new do |o|
       o.set_summary_indent('  ')
       o.banner = "Usage: #{File.basename($0)} -p paramsfile [options]"
-      o.define_head( "Optimize homology detection performance of CSBLAST using CRF pseudocounts.")
+      o.define_head( "Optimize homology detection performance of CS-BLAST using CRF pseudocounts.")
       o.separator ""
 
       o.on("-p", "--paramsfile OPTFILE", "Parameter optimization file in YAML format.") { |val| @paramsfile=val }
       o.on("-t", "--cstrainset-script SCRIPT", "Job script for CSTRAINSET call.") { |val| @cstrainset_file=val }
       o.on("-s", "--cssgd-script SCRIPT", "Job script for CSSGD call.") { |val| @cssgd_file=val }
-      o.on("-b", "--csblast-script SCRIPT", "Job script for CSBLAST call.") { |val| @csblast_file=val }
+      o.on("-b", "--csblast-script SCRIPT", "Job script for CS-BLAST call.") { |val| @csblast_file=val }
       o.on("-c", "--csopt-script SCRIPT", "Job script for another CSOPT call.") { |val| @csopt_file=val }
       o.on("")
 
@@ -105,7 +105,7 @@ class CSOpt
       o.on("--rocx INT", Integer, "Maximal number of false positives threshold in ROCX calculation  (default: #{@rocx})." ) { |val| @rocx = val }
       o.on("")
 
-      o.on("--mult JOBS", Integer, "Merge multiple jobs into a jobscript to speed up CSBLAST jobs (default: #{@mult})." ) { |val| @mult = val }
+      o.on("--mult JOBS", Integer, "Merge multiple jobs into a jobscript to speed up CS-BLAST jobs (default: #{@mult})." ) { |val| @mult = val }
       o.on("--sge-pe PE", String, "Name of the SGE parallel environment (default: #{@sge_pe})." ) { |val| @sge_pe = val }
       o.on("--cpu-cstrainset INT", Integer, "Number of cpu cores to be used for a cstrainset job (default: #{@cpu_cstrainset})." ) { |val| @cpu_cstrainset = val }
       o.on("--cpu-cssgd INT", Integer, "Number of cpu cores to be used for a cssgd job (default: #{@cpu_cssgd})." ) { |val| @cpu_cssgd = val }
@@ -132,12 +132,12 @@ class CSOpt
   def check_args
     errors = []
     if @cssgd_file.nil? && @csblast_file.nil? && @csopt_file.nil?
-      errors << "Either a CSSGD script file and/or a CSBLAST or CSOPT script file is required!"
+      errors << "Either a CSSGD script file and/or a CS-BLAST or CSOPT script file is required!"
     end
     if !@csblast_file.nil? && @csopt_file.nil?
-      errors << "No CSBLAST command file given!" if @csblast_file.nil?
+      errors << "No CS-BLAST command file given!" if @csblast_file.nil?
       errors << "No sequence file given!" if @seqfile.nil?
-      errors << "No glob expression for CSBLAST input files given!" if @glob.nil?
+      errors << "No glob expression for CS-BLAST input files given!" if @glob.nil?
     end
     if !@opt_ll.nil?
       errors << "Likelihood must be either lltrain or llval!" unless @opt_ll == "lltrain" || @opt_ll == "llval"

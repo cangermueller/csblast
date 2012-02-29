@@ -62,7 +62,7 @@ class CSBin
   def options
     OptionParser.new do |o|
       o.set_summary_indent('  ')
-      o.banner = "Usage: #{$0} -s seqfile [options]"
+      o.banner = "Usage: #{File.basename($0)} -s seqfile [options]"
       o.define_head( "Evaluate homology detection of BLAST run and write datafiles for plotting.")
       o.separator ""
 
@@ -83,7 +83,7 @@ class CSBin
       o.on("--fp-relation RELATION", Integer, "Relation threshold for FP classification (default: #{@fp_relation})." ) { |val| @fp_relation = val }
       o.on("--excl-relation RELATION", Integer, "Relation threshold for hit exclusion (default: #{@excl_relation})." ) { |val| @excl_relation = val }
       o.on("--rocx FP", Integer, "False positives threshold for ROCX plot (default: #{@rocx})." ) { |val| @rocx = val }
-      o.on("--max-evalue EVALUE", Float, "Maximal E-value threshold of hits (default: #{@max_evalue})." ) { |val| @max_evalue = val }
+      o.on("--max-evalue EVALUE", Float, "Maximal E-value threshold of hits (default: off)." ) { |val| @max_evalue = val }
       o.on("--rank-by SIGNIF_SCORE", "Rank hits by P-value or E-value (default: #{@rank})." ) { |val| @rank = val.to_sym }
       o.on("-q", "--quiet", "Turn output off.") { |val| @verbose=false }
       o.on("-h", "--help", "Show this help message.") { puts o; exit }

@@ -25,9 +25,10 @@ use Cwd qw(abs_path);
     -p, --plot PLOT+        List of plots to be created [default: tpfp wtpfp rocx evalue]
     -t, --title TITLE       Title of the plots [def: ]
     -l, --label LABEL+      List of labels to be used instead of directory names
-    -s, --sort SORT+        List of directories defining the plot order
         --db DB             Database used for scaling axis
+        --iter INT          Number of CSI-BLAST iterations [def: 1]
         --no-under          Substitute underscore in labels [def: false]
+        --[no-]sort         Sort entities by their ROC score [def: true]
     -k, --keep              Keep plot files [def: false]
     -h, --help              Show this help message
 
@@ -46,9 +47,10 @@ my $outbase = "./";
 my @plots;
 my $title;
 my @labels;
-my @order;
 my $db;
+my $iter;
 my $no_under;
+my $sort = 1;
 my $keep;
 
 my @entities;
@@ -84,9 +86,10 @@ GetOptions(
   "p|plot=s{1,}"  => \@plots,
   "t|title=s"     => \$title,
   "l|label=s{1,}" => \@labels,
-  "s|sort=s{1,}"  => \@order,
   "db=s"          => \$db,
+  "iter=i"        => \$iter,
   "no-under"      => \$no_under,
+  "sort!"         => \$sort,
   "k|keep"        => \$keep,
   "h|help"        => sub { pod2usage(2); }
 ) or pod2usage(1);
@@ -97,6 +100,12 @@ unless (@entities) { pod2usage("No plot data found in the specified benchmark di
 unless ($db) {
   if (abs_path($dirs[0]) =~ /(scop20_1\.7._(opt|test))/) { $db = $1; }
   else { $db = "scop20_1.73_test"; }
+}
+unless ($iter) {
+  $iter = 1;
+  foreach my $d (@dirs) {
+    if (basename($d) =~ /(?:\A|_)j(\d)(?:\z|_)/ && $1 > $iter) { $iter = $1; }
+  }
 }
 
 
@@ -148,23 +157,47 @@ sub plot {
     set style line 9 linetype 0 linewidth $opts{LINEWIDTHE} linecolor rgb "$opts{COLORS}->[8]"/;
 
   if ($plot eq "tpfp") { $cmd .= qq/
-    set key top right
+    set key top left reverse invert Left
     set log x
     set grid
     set xlabel "FP"
     set ylabel "TP"/;
-    if ($db eq "scop20_1.73_opt") { $cmd .= qq/
+    if ($db eq "scop20_1.73_opt" && $iter == 1) { $cmd .= qq/
+      set xrange [1:4000]
+      set yrange [0:10000]
+      set label "1%" at 40,7500 textcolor ls 9
+      set label "10%" at 500,7500 textcolor ls 9
+      set label "20%" at 1150,7500 textcolor ls 9/;
+    } elsif ($db eq "scop20_1.73_opt" && $iter == 2) { $cmd .= qq/
       set xrange [1:4000]
       set yrange [0:12000]
       set label "1%" at 40,7500 textcolor ls 9
       set label "10%" at 500,7500 textcolor ls 9
       set label "20%" at 1150,7500 textcolor ls 9/;
-    } elsif ($db eq "scop20_1.73_test") { $cmd .= qq/
+    } elsif ($db eq "scop20_1.73_opt") { $cmd .= qq/
       set xrange [1:4000]
-      set yrange [0:20000]
+      set yrange [0:14000]
+      set label "1%" at 40,7500 textcolor ls 9
+      set label "10%" at 500,7500 textcolor ls 9
+      set label "20%" at 1150,7500 textcolor ls 9/;
+    } elsif ($db eq "scop20_1.73_test" && $iter == 1) { $cmd .= qq/
+      set xrange [1:6000]
+      set yrange [0:10000]
       set label "1%" at 35,5000 textcolor ls 9
       set label "10%" at 350,5000 textcolor ls 9
       set label "20%" at 800,5000 textcolor ls 9/;
+    } elsif ($db eq "scop20_1.73_test" && $iter == 2) { $cmd .= qq/
+      set xrange [1:6000]
+      set yrange [0:20000]
+      set label "1%" at 40,7500 textcolor ls 9
+      set label "10%" at 400,7500 textcolor ls 9
+      set label "20%" at 1100,7500 textcolor ls 9/;
+    } elsif ($db eq "scop20_1.73_test") { $cmd .= qq/
+      set xrange [1:6000]
+      set yrange [0:25000]
+      set label "1%" at 40,7500 textcolor ls 9
+      set label "10%" at 400,7500 textcolor ls 9
+      set label "20%" at 1100,7500 textcolor ls 9/;
     } elsif ($db eq "scop20_1.75_opt") { $cmd .= qq/
       set xrange [1:4000]
       set yrange [0:8000]
@@ -180,17 +213,41 @@ sub plot {
     }
 
   } elsif ($plot eq "wtpfp") { $cmd .= qq/
-    set key top right
+    set key top left reverse invert Left
     set log x
     set grid
     set xlabel "weighted FP"
     set ylabel "weighted TP"/;
-    if ($db eq "scop20_1.73_opt") { $cmd .= qq/
-      set xrange [1:600]
+    if ($db eq "scop20_1.73_opt" && $iter == 1) { $cmd .= qq/
+      set xrange [1:200]
+      set yrange [0:250]
+      set label "1%" at 1.2,175 textcolor ls 9
+      set label "10%" at 12,175 textcolor ls 9
+      set label "20%" at 30,175 textcolor ls 9/;
+    } elsif ($db eq "scop20_1.73_opt" && $iter == 2) { $cmd .= qq/
+      set xrange [1:200]
       set yrange [0:400]
       set label "1%" at 2,275 textcolor ls 9
       set label "10%" at 20,275 textcolor ls 9
       set label "20%" at 50,275 textcolor ls 9/;
+    } elsif ($db eq "scop20_1.73_opt") { $cmd .= qq/
+      set xrange [1:200]
+      set yrange [0:500]
+      set label "1%" at 2,275 textcolor ls 9
+      set label "10%" at 20,275 textcolor ls 9
+      set label "20%" at 50,275 textcolor ls 9/;
+    } elsif ($db eq "scop20_1.73_test" && $iter == 1) { $cmd .= qq/
+      set xrange [1:600]
+      set yrange [0:800]
+      set label "1%" at 4,550 textcolor ls 9
+      set label "10%" at 40,550 textcolor ls 9
+      set label "20%" at 95,550 textcolor ls 9/;
+    } elsif ($db eq "scop20_1.73_test" && $iter == 2) { $cmd .= qq/
+      set xrange [1:600]
+      set yrange [0:1200]
+      set label "1%" at 4,550 textcolor ls 9
+      set label "10%" at 40,550 textcolor ls 9
+      set label "20%" at 95,550 textcolor ls 9/;
     } elsif ($db eq "scop20_1.73_test") { $cmd .= qq/
       set xrange [1:600]
       set yrange [0:1200]
@@ -212,7 +269,7 @@ sub plot {
     }
 
   } elsif ($plot eq "fdr") { $cmd .= qq/
-    set key top right
+    set key top left reverse invert Left
     set grid
     set xlabel "FDR"
     set ylabel "TPR"/;
@@ -231,15 +288,23 @@ sub plot {
     }
 
   } elsif ($plot eq "rocx") { $cmd .= qq/
-    set key top right
+    set key top right invert
     set grid
     set xlabel "ROC"
     set ylabel "Fraction of queries"
     set xrange [0:1.0]/;
-    if ($db eq "scop20_1.73_opt") { $cmd .= qq/
+    if ($db eq "scop20_1.73_opt" && $iter == 1) { $cmd .= qq/
       set yrange [0:0.6]/;
-    } elsif ($db eq "scop20_1.73_test") { $cmd .= qq/
+    } elsif ($db eq "scop20_1.73_opt" && $iter == 2) { $cmd .= qq/
+      set yrange [0:0.7]/;
+    } elsif ($db eq "scop20_1.73_opt") { $cmd .= qq/
+      set yrange [0:0.8]/;
+    } elsif ($db eq "scop20_1.73_test" && $iter == 1) { $cmd .= qq/
+      set yrange [0:0.6]/;
+    } elsif ($db eq "scop20_1.73_test" && $iter == 2) { $cmd .= qq/
       set yrange [0:0.75]/;
+    } elsif ($db eq "scop20_1.73_test") { $cmd .= qq/
+      set yrange [0:0.8]/;
     } elsif ($db eq "scop20_1.75_opt") { $cmd .= qq/
       set yrange [0:0.5]/;
     } else { $cmd .= qq/
@@ -247,7 +312,7 @@ sub plot {
     }
 
   } elsif ($plot eq "evalue") { $cmd .= qq/
-    set key top right
+    set key top left reverse invert Left
     set grid
     set xlabel "Reported E-value"
     set ylabel "Actual E-value"
@@ -258,7 +323,7 @@ sub plot {
     set tics format "%.0e"/;
 
   } elsif ($plot eq "pvalue") { $cmd .= qq/
-    set key top right
+    set key top left reverse invert Left
     set grid
     set xlabel "Reported P-value"
     set ylabel "Actual P-value"
@@ -289,8 +354,8 @@ sub cmd_curves {
     my $e = $entities[$i];
     if ($e->{PLOTS}->{$plot}) {
       push(@curves, sprintf('"%s" title "%s" with lines ls %d', 
-          &get_datafile($plot, $e->{DIR}), $e->{LABEL} . ($plot eq "evalue" ? "" : sprintf(": %.3f", $e->{ROCX})),
-          basename($e->{DIR}) eq "blast" ? 1 : $ls++));
+          &get_datafile($plot, $e->{DIR}), ($plot eq "evalue" ? "" : sprintf("%.3f: ", $e->{ROCX})) . $e->{LABEL},
+          basename($e->{DIR}) =~ /^(blast|psiblast)/ ? 1 : $ls++));
     }
   }
   return join(", ", @curves);
@@ -322,18 +387,11 @@ sub get_entities {
     }
     if ($has_file) { push(@unsorted, \%e); }
   }
-  @entities = ();
-  foreach my $o (@order) {
-    for my $i (0 .. $#unsorted) {
-      my $e = $unsorted[$i];
-      if ($e->{NAME} eq $o) { 
-        push(@entities, $e); 
-        splice(@unsorted, $i, 1);
-        last;
-      }
-    }
+  if ($sort) {
+    @entities = sort({ $a->{ROCX} <=> $b->{ROCX} } @unsorted);
+  } else {
+    @entities = @unsorted;
   }
-  push(@entities, @unsorted);
 }
 
 sub get_datafile {

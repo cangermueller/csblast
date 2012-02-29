@@ -1,0 +1,402 @@
+#!/usr/bin/ruby
+require 'optparse'
+require 'fileutils'
+require 'rubygems'
+require 'bio'
+require 'bioinf'
+require 'myconfig'
+
+class CSAliBenchDb
+  TMalignAlignment = Struct.new(:struct, :target, :alignment, :alifile, :supfile)
+  DaliAlignment    = Struct.new(:struct, :target, :alignment, :alifile, :resfile)
+
+  def initialize
+    @verbose        = true
+    @indir          = nil
+    @outdir         = nil
+    @outdirfam      = nil
+    @outdirref      = nil
+    @outfile        = nil
+    @seq_ext        = '.seq'
+    @pdb_ext        = '.pdb'
+    @min_tmscore    = 0.6
+    @max_rmsd       = 4.0
+    @min_seqid      = 0.0
+    @max_seqid      = 0.3
+    @pairs          = 10       # number of sampled pairs per SCOP family
+    @sample         = 15       # number of initial sequences sampled per SCOP family
+    @families       = {}       # hash with all family members per SCOP family: key=family; value=domain ids
+    @benchset       = []       # list with benchmark sequences
+    @counts         = []       # count pairs with given sequence identity in bins
+    @bin_width      = 0.05
+    @superpose      = true
+    @mode           = :tmalign
+    @seed           = 0
+    @symmetric      = false    # allow both (a,b) and (b,a) to be sampled
+    @min_dblen      = 1e5      # minimum database length
+
+    self
+  end
+
+  def options
+    OptionParser.new do |o|
+      o.set_summary_indent('  ')
+      o.banner = "Usage: #{File.basename($0)} -i indir -o outdir [options]"
+      o.define_head( "Build benchmark set for pairwise alignment evaluation from SCOP families.")
+      o.separator ""
+
+      o.on("-i", "--indir DIR", "Directory with FASTA formatted sequences and PDB files.") { |val| @indir=val }
+      o.on("-o", "--outdir DIR", "Output directory for SCOP families and reference alignments.") { |val| @outdir=val }
+      o.on("-n", "--num N", Integer, "Pick N alignment pairs per SCOP family (default: #{@pairs})." ) { |val| @pairs=val }
+      o.on("-m", "--mode MODE", "Structural alignment mode: 'dali' or 'tmalign' (default: #{@mode})") { |val| @mode=val.to_sym }
+      o.on("-r", "--rmsd RMSD", Float, "Maximal RMSD of DALI reference alignments (default: #{@max_rmsd})." ) { |val| @max_rmsd=val }
+      o.on("-t", "--tmscore SCORE", Float, "Minimal TMscore of TMalign reference alignments (default: #{@min_tmscore})." ) { |val| @min_tmscore = val }
+      o.on("--min-seqid SEQID", Float, "Minimal sequence identity in benchmark (default: #{@min_seqid})." ) { |val| @min_seqid = val>1.0 ? val/100.0 : val }
+      o.on("--max-seqid SEQID", Float, "Maximal sequence identity in benchmark (default: #{@max_seqid})." ) { |val| @max_seqid = val>1.0 ? val/100.0 : val }
+      o.on("--sample N", Integer, "Maximal number of sequences to build sample set (runtime O(N^2), default: #{@sample})." ) { |val| @sample = val }
+      o.on("--seq-glob EXT", "File extension of sequence files (default: #{@seq_ext})." ) { |val| @seq_ext = val[0].chr=='.' ? val : '.'+val }
+      o.on("--pdb-glob EXT", "File extension of PDB files (default: #{@pdb_ext})." ) { |val| @pdb_ext = val[0].chr=='.' ? val : '.'+val }
+      o.on("--bin-width WIDTH", Float, "Width of bins in benchmark statistics (default: #{@bin_width})." ) { |val| @bin_width = val }
+      o.on("--[no-]superposition", TrueClass, "Write TMalign superpositions to outdir (default: #{@superpose})." ) { |val| @superpose = val }
+      o.on("-q", "--quiet", "Turn output off.") { |val| @verbose=false }
+      o.on("-h", "--help", "Show this help message.") { puts o; exit }
+      o.on("--seed INT", Integer, "Seed for random number generator (default: #{@seed})." ) { |val| @seed = val }
+    end
+  end
+
+  def check_args
+    errors = []
+    errors << "No input directory provided!" if @indir.nil?
+    errors << "No output directory provided!" if @outdir.nil?
+    unless errors.empty?
+      puts errors.join("\n")
+      exit 1
+    end
+  end
+
+  def run(args)
+    if args.empty? then puts options; exit end
+    options.parse!(args)
+    check_args
+    srand(@seed)
+
+    @seqfiles = Dir.glob(File.join(@indir, '*'+@seq_ext))
+    if @seqfiles.empty?
+      $stderr.puts "No input files found!"
+      exit 0
+    end
+    FileUtils.mkdir_p(@outdir)
+    @outdirfam = File.join(@outdir, "fam")
+    @outdirref = File.join(@outdir, "ref")
+    FileUtils.mkdir_p(@outdirfam)
+    FileUtils.mkdir_p(@outdirref)
+
+    @nbins = ((@max_seqid-@min_seqid)/@bin_width).round
+    @counts = Array.new(@nbins, 0)
+
+    process_infiles
+    @families.keys.each do |fam|
+      case @mode
+      when :tmalign: pick_sample_from_family_tmalign(fam)
+      when :dali:    pick_sample_from_family_dali(fam)
+      end
+    end
+    puts if @verbose
+    # write_outfile
+    print_summary if @verbose
+  end
+
+  def pick_sample_from_family_tmalign(fam)
+    return if @families[fam].size < 2
+    puts "Calculating TMalign structural alignments for SCOP family #{fam} with #{@families[fam].size} members ..." if @verbose
+
+    pool  = [] 
+    alis  = []
+    bench = []
+    members = @families[fam].dup
+
+    [@sample, @families[fam].size].min.times do
+      member = members[rand(members.size)]
+      pool << member
+      members.delete(member)
+    end
+
+    for i in 0..pool.size-2
+      for j in i+1..pool.size-1
+        # Since the alignment operation is not symmetric, we decide by random
+        # if i is alignent against j first or vice versa
+        [0,1].shuffle.each do |k|
+          tm = tmalign(pool[k == 0 ? i : j], pool[k == 0 ? j : i])
+          next if tm.nil?
+          accepted = accept?(tm.alignment)
+          printf("    %s <=> %s : tmscore=%4.2f  seqid=%4.2f ... %s\n",
+                 tm.struct, tm.target, tm.alignment.tmscore, tm.alignment.seqid, accepted ? 'accepted' : 'rejected') if @verbose
+
+          if accepted
+            alis << tm
+            break unless @symmetric
+          else
+            File.delete(tm.alifile)
+            File.delete(tm.supfile) if File.exists?(tm.supfile)
+            File.delete(tm.supfile+'_all') if File.exists?(tm.supfile+'_all')
+          end
+        end
+      end
+    end
+
+    samples = []
+    bench = []
+    @pairs.times do
+      break if alis.empty?
+      pick = alis[rand(alis.size)]
+      alis.delete(pick)
+      samples << pick
+      bench << pick.struct
+      bench << pick.target
+
+      bin = ((pick.alignment.seqid-@min_seqid)/@bin_width).to_i
+      if (bin<0) then bin=0 elsif (bin>@nbins-1) then bin=@nbins-1 end
+      @counts[bin] += 1
+    end
+
+    write_family_db(fam, samples) if samples.size > 0
+
+    alis.each do |tm|
+      File.delete(tm.alifile)
+      File.delete(tm.supfile) if File.exists?(tm.supfile)
+      File.delete(tm.supfile+'_all') if File.exists?(tm.supfile+'_all')
+    end
+
+    bench.uniq!
+    puts "    Picked #{bench.size} out of #{@families[fam].size} members from SCOP family #{fam}." if @verbose
+    @benchset.concat(bench)
+  end
+
+  def pick_sample_from_family_dali(fam)
+    return if @families[fam].size < 2
+    puts "Calculating DALI structural alignments for SCOP family #{fam} with #{@families[fam].size} members ..." if @verbose
+    
+    pool  = []
+    alis  = []
+    bench = []
+    members = @families[fam].dup
+
+    [@sample, @families[fam].size].min.times do
+      member = members[rand(members.size)]
+      pool << member
+      members.delete(member)
+    end
+
+    for i in 0..pool.size-2
+      for j in i+1..pool.size-1
+        # Since the alignment operation is not symmetric, we decide by random
+        # if i is alignent against j first or vice versa
+        [0,1].shuffle.each do |k|
+          da = dali(pool[k == 0 ? i : j], pool[k == 0 ? j : i])
+          next if da.nil?
+          accepted = accept?(da.alignment)
+          printf("    %s <=> %s : rmsd=%4.2f  seqid=%4.2f ... %s\n",
+                 da.struct, da.target, da.alignment.rmsd, da.alignment.seqid, accept?(da.alignment) ? 'accepted' : 'rejected') if @verbose
+
+          if accepted
+            alis << da
+            break
+          else
+            File.delete(da.alifile)
+            File.delete(da.resfile)
+          end
+        end
+      end
+    end
+
+    samples = []
+    bench = []
+    @pairs.times do
+      break if alis.empty?
+      pick = alis[rand(alis.size)]
+      alis.delete(pick)
+      samples << pick
+      bench << pick.struct
+      bench << pick.target
+
+      bin = ((pick.alignment.seqid-@min_seqid)/@bin_width).to_i
+      if (bin<0) then bin=0 elsif (bin>@nbins-1) then bin=@nbins-1 end
+      @counts[bin] += 1
+    end
+
+    write_family_db(fam, samples) if samples.size > 0
+
+    alis.each do |da|
+      File.delete(da.alifile)
+      File.delete(da.resfile)
+    end
+
+    bench.uniq!
+    puts "    Picked #{bench.size} out of #{@families[fam].size} members from SCOP family #{fam}." if @verbose
+    @benchset.concat(bench)
+  end
+
+
+  def accept?(ali)
+    case @mode
+    when :tmalign: ali.tmscore>=@min_tmscore && ali.seqid>=@min_seqid && ali.seqid<=@max_seqid
+    when :dali:    ali.rmsd<=@max_rmsd && ali.seqid>=@min_seqid && ali.seqid<=@max_seqid
+    end
+  end
+
+  def tmalign(query, target)
+    # query, target are both domain ids (e.g. d1acwa_)
+    qfile  = File.join(@indir, query+@pdb_ext)
+    tfile  = File.join(@indir, target+@pdb_ext)
+    tmfile = File.join(@outdirref, "#{query}.#{target}.tma")
+    spfile = File.join(@outdirref, "#{query}.#{target}.sup")
+
+    cmd = "#{MyConfig.tmalign_bin} #{qfile} #{tfile} #{@superpose ? '-o '+spfile : ''} -b &> #{tmfile}"
+    system(cmd)
+    unless $?.success?
+      $stderr.puts "Error in execution of '#{cmd}'!"
+      exit 1
+    end
+
+    f = File.open(tmfile)
+    results = f.read
+    f.close
+    return nil if results=~/There is no common residues in the input structures/
+
+    ali = TMalignAlignment.new
+    ali.struct    = query
+    ali.target    = target
+    ali.alifile   = tmfile
+    ali.supfile   = spfile
+    ali.alignment = Bioinf::TMalign::Alignment.parse(results)
+    return ali.alignment.nil? ? nil : ali
+  end
+
+  def dali(query, target)
+    qfile  = File.join(@indir, query+@pdb_ext)
+    tfile  = File.join(@indir, target+@pdb_ext)
+    resfile = File.join(@outdirref, "#{query}.#{target}.index.html")
+    alifile = File.join(@outdirref, "#{query}.#{target}.aln.html")
+
+    cmd = "mkdir -p #{MyConfig.tmp_path}/dali; cd #{MyConfig.tmp_path}/dali; #{MyConfig.dali_bin} -pairwise #{qfile} #{tfile} 1> /dev/null 2> /dev/null"
+    system(cmd)
+    unless $?.success?
+      $stderr.puts "Error in execution of '#{cmd}'!"
+      exit 1
+    end
+    if File.exists?("#{MyConfig.tmp_path}/dali/index.html") && File.exists?("#{MyConfig.tmp_path}/dali/aln.html")
+      FileUtils.cp("#{MyConfig.tmp_path}/dali/index.html", resfile)
+      FileUtils.cp("#{MyConfig.tmp_path}/dali/aln.html", alifile)
+      FileUtils.rm_rf "#{MyConfig.tmp_path}/dali"
+    else
+      puts "No DALI files found!!!"
+      FileUtils.rm_rf "#{MyConfig.tmp_path}/dali"
+      return nil
+    end
+
+    f = File.open(resfile)
+    results = f.read
+    f.close
+    return nil if results !~ /aln.html/
+
+    f = File.open(alifile)
+    aliout = f.read
+    f.close
+    return nil if aliout !~ /DSSP/
+
+    ali = DaliAlignment.new
+    ali.struct    = query
+    ali.target    = target
+    ali.resfile   = resfile
+    ali.alifile   = alifile
+    ali.alignment = Bioinf::Dali::Alignment.new(results, aliout)
+    return ali
+  end
+
+  def write_family_db(fam, samples) 
+    structs = []
+    targets = []
+    samples.each do |s|
+      structs << s.struct
+      targets << s.target
+    end
+    structs.uniq!
+    targets.uniq!
+
+    # copy struct sequence files
+    famdir = File.join(@outdirfam, fam)
+    FileUtils.mkdir_p(famdir)
+    structs.each do |name|
+      execute("cp #{seq_file(name)} #{famdir}")
+    end
+
+    # create target database file
+    famdb = "#{famdir}_db"
+    targets.each do |name|
+      execute("cat #{seq_file(name)} >> #{famdb}")
+    end
+    # enlarge db size up to @min_db_len letters by appending a dummy sequence.
+    # reason: blast-2.2.19 is hanging up if the evalue specified by -e is higher than
+    # the database length
+    dblen = `grep -v '^>' #{famdb} | tr -d '\n ' | wc -c`.to_i
+    if dblen < @min_dblen
+      File.open(famdb, "a") do |db|
+        db.puts ">dummy"
+        db.puts "x" * (@min_dblen - dblen)
+      end
+    end
+    execute("#{MyConfig.blast_path}/formatdb -i #{famdb} -t '#{fam}' -p T")
+  end
+
+  # Deprecated
+  def write_outfile
+    File.delete(@outfile) if File.exists?(@outfile)
+    FileUtils.touch(@outfile)
+    @benchset.each do |name|
+      execute("cat #{seq_file(name)} >> #{@outfile}")
+    end
+    puts "Wrote #{@benchset.size} sequences to #{@outfile}." if @verbose
+  end
+
+  def print_summary
+    puts "Benchmark statistics:"
+    printf("%-9s  %-15s\n", "SEQID", "ALIGNMENTS")
+    left = @min_seqid
+    0.upto(@nbins-1)do |bin|
+      right = left+@bin_width
+      printf("%-4.2f-%-4.2f  %-15i\n", left, right, @counts[bin])
+      left = right
+    end
+    printf("%-9s  %-15i\n", "Total:", @counts.inject(0) {|sum,c| sum+c })
+  end
+
+  def process_infiles
+    puts "Reading sequence files ..." if @verbose
+    @seqfiles.each do |infile|
+      Bio::FlatFile.open(Bio::FastaFormat, infile) do |ff|
+        ff.each do |entry|
+          if entry.definition =~ /^(\S+)\s+(\S+)/ # >d1acwa_ g.3.7.2
+            sid = Bioinf::SCOP::Identifier.new($2)
+            @families[sid.fm] ||= []
+            @families[sid.fm] << $1
+          end
+        end
+      end
+    end
+  end
+
+  def seq_file(seq)
+    return File.join(@indir, sprintf("%s%s", seq, @seq_ext))
+  end
+
+  def execute(cmd)
+    system(cmd)
+    unless $?.success?
+      $stderr.puts "Error in execution of '#{cmd}'!"
+      exit 1
+    end
+  end
+
+end
+
+CSAliBenchDb.new.run(ARGV)

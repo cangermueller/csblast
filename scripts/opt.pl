@@ -26,6 +26,7 @@ use Cwd qw(abs_path);
     -j, --iters [1;inf[     Maximum number of iterations to use in CSI-BLAST [def: 1]
     -x, --pc-admix ]0;1]    Optimize pseudocounts admixture coefficient x [def: off]
     -z, --pc-neff [1;inf[   Optimize pseudocounts admixture coefficient z [def: 12.0]
+    -c, --pc-ali [0;inf[    Constant for alignment pseudocounts in CSI-BLAST [def: 14.0]
     -p, --params STRING     Additional parameters
     -n, --niter [1;inf[     Number of iterations with Newtons method [def: 2]
     -s, --[no-]submit       Submit csopt job
@@ -50,15 +51,18 @@ my %tplvars = (
   e       => "1e5",
   v       => 1000,
   b       => 0,
-  j       => "1",
+  j       => 1,
   h       => "1e-3",
   z       => 12.0,
   x       => undef,
+  c       => 14.0,
   n       => 2,
+  mult    => undef,
   seed    => int(rand(1e6)),
   csblast => "csblast-$ENV{CSVERSION}",
   ENV     => \%ENV
 );
+my @mult = (50, 10, 5);
 my $submit = 0;
 
 my $runme = q(#!/bin/bash
@@ -76,8 +80,11 @@ csopt \
   -g "$DB/*.seq" \
   -n [% n %] \
   -r 1 \
-  --mult 100 \
-  --seed [% seed %]);
+  --mult [% mult %] \
+  --seed [% seed %]\
+  --no-keep \
+  --keep-bla
+);
 
 my $csopt_yml = "---
 [%- IF x %]
@@ -99,7 +106,7 @@ z:
 
 c:
   order:    2
-  value:    12.0
+  value:    [% c %]
   add:      2.0
   min:      0.0
   max:      25.0
@@ -154,6 +161,12 @@ my $csiblast_sh = q(#!/bin/bash
   -o <%= outfile %> \\
   -d <%= seqfile %> \\
   --blast-path [% ENV.BLAST_PATH %] \\
+  [%- IF x %]
+  -x <%= x %> \
+  [%- ELSE %]
+  -z <%= z %> \
+  [%- END %]
+  -c <%= c %> \
   -e [% e %] -v [% v %] -b [% b %] [% params %]);
 
 
@@ -170,7 +183,7 @@ GetOptions(
   "p|params=s"   => \$tplvars{params},
   "s|submit!"    => \$submit,
   "n|niter=i"    => \$tplvars{n},
-  "seed=i"     => \$tplvars{seed},
+  "seed=i"       => \$tplvars{seed},
   "h|help"       => sub { pod2usage(2); }
 ) or die pod2usage(1);
 unless ($tplvars{model}) { die pod2usage("No model provided!"); }
@@ -184,6 +197,7 @@ if (defined($tplvars{x})) {
 if (system("$tplvars{csblast} &> /dev/null")) {
   die "'$tplvars{csblast}' binary not found!";
 }
+$tplvars{mult} = $mult[$tplvars{j} - 1];
 
 
 ### Create script files and submit the optimization job ###

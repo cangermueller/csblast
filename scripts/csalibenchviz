@@ -1,0 +1,299 @@
+#!/usr/bin/ruby
+require 'optparse'
+require 'fileutils'
+require 'erb'
+require 'yaml'
+
+class CSPlotAlignments
+  @@template = %q{
+    set terminal postscript enhanced color linewidth 2 font "bold" 14
+    set output '<%= psfile %>'
+
+    set title "<%= title||'' %>"
+    set xlabel "<%= xlabel %>"
+    set ylabel "<%= ylabel %>"
+    <% if plot == :mpre_msen %>
+    set key top right noreverse invert Right
+    <% else %>
+    set key top left reverse invert Left
+    <% end %>
+    set grid
+
+    <% if @plottype[plot] == :bins %>
+    <% linewidth = 1.0 %>
+    <% else %>
+    <% linewidth = 4.0 %>
+    <% end %>
+    <% linetype = plot == :mpre_msen ? 2 : 1 %>
+    set style line 1 linetype <%= linetype %> linewidth <%= linewidth %> linecolor rgb "#FF0000" pointtype 7
+    set style line 2 linetype <%= linetype %> linewidth <%= linewidth %> linecolor rgb "#1E90FF" pointtype 7
+    set style line 3 linetype <%= linetype %> linewidth <%= linewidth %> linecolor rgb "#32CD32" pointtype 7
+    set style line 4 linetype <%= linetype %> linewidth <%= linewidth %> linecolor rgb "#C71585" pointtype 7
+    set style line 5 linetype <%= linetype %> linewidth <%= linewidth %> linecolor rgb "#FFA500" pointtype 7
+    set style line 6 linetype <%= linetype %> linewidth <%= linewidth %> linecolor rgb "#FF00FF" pointtype 7
+    set style line 7 linetype <%= linetype %> linewidth <%= linewidth %> linecolor rgb "#8470ff" pointtype 7
+    set style line 8 linetype <%= linetype %> linewidth <%= linewidth %> linecolor rgb "#A52A2A" pointtype 7
+    set style line 9 linetype <%= linetype %> linewidth <%= linewidth %> linecolor rgb "#DEB887" pointtype 7
+
+    <% if plot == :mpre_msen %>
+    <% xrange = [prec_mean.min * 0.95, prec_mean.max * 1.05].map{|v| sprintf("%.3f", v).to_f} %>
+    <% yrange = [sens_mean.min * 0.95, sens_mean.max * 1.05].map{|v| sprintf("%.3f", v).to_f} %>
+    set xrange [<%= xrange[0] %>:<%= xrange[1] %>]
+    set yrange [<%= yrange[0] %>:<%= yrange[1] %>]
+    set pointsize 2
+
+    <% elsif plot == :prec_sens %>
+    set xrange [0.0:0.65]
+    set yrange [0.0:0.65]
+    set pointsize 2
+
+    <% elsif @plottype[plot] == :bins %>
+    set yrange [0.0:0.65]
+    set boxwidth 1.0 relative
+    set style histogram clustered gap 2 title offset character 0, 0, 0
+    set datafile missing '-'
+    set style data histograms
+    set xtics border in scale 0,0 nomirror offset character 1.25, 0, 0
+
+    <% elsif @plottype[plot] == :scat %>
+    set yrange [0.0:0.65]
+    set xrange [0.0:0.65]
+    set pointsize 1
+
+    <% end %>
+
+    <% cmds=[] %>
+
+    <% if plot==:bins_both %>
+       <% datafiles.each_index do |i| %>
+          <% cmds << "'#{datafiles[i]}' u 4 title '#{legends[i]} sensitivity' ls #{i+1} fs solid 1.0 border -1" %>
+       <% end %>
+       <% cmds << "'#{datafiles[0]}' u ($4-$4):xtic(2) notitle lw 0 lc -3 fs noborder" %>
+       <% datafiles.each_index do |i| %>
+          <% cmds << "'#{datafiles[i]}' u 3 title '#{legends[i]} precision' ls #{i+1} fs solid 0.5 border -1" %>
+       <% end %>
+
+    <% elsif plot==:mpre_msen %>
+      <% datafiles.each_index do |i| %>
+        <% sens = sprintf("%.3f", sens_mean[i]).to_f %>
+        <% prec = sprintf("%.3f", prec_mean[i]).to_f %>
+        set arrow from <%= xrange[0] %>,<%= sens %> to <%= prec %>,<%= sens %> nohead ls <%= i+1 %>
+        set arrow from <%= prec %>,<%= yrange[0] %> to <%= prec %>,<%= sens %> nohead ls <%= i+1 %>
+        set label '<%= legends[i] %>' at <%= prec %>,<%= sens %> left offset 1,0 tc ls <%= i+1 %> front
+        <% cmds << "'< echo #{prec} #{sens}' with points ls #{i+1} title '#{legends[i]}: #{prec} / #{sens}'" %>
+      <% end %>
+
+    <% else %>
+       <% datafiles.each_index do |i| %>
+          <% if plot==:prec_sens %>
+             <% cmds << "'< grep -v ^# #{datafiles[i]} | sort -k 3 -n' using 3:4 title '#{legends[i]}' with linespoints ls #{i+1}" %>
+          <% elsif plot==:scat_prec %>
+             <% cmds << "'#{datafiles[i]}' using 1:2 title '#{legends[i]}' with points ls #{i+1}" %>
+          <% elsif plot==:scat_sens %>
+             <% cmds << "'#{datafiles[i]}' using 1:3 title '#{legends[i]}' with points ls #{i+1}" %>
+          <% elsif plot==:bins_prec %>
+             <% cmds << "'#{datafiles[i]}' u 3#{i==0 ? ':xtic(2)' : ''}  title '#{legends[i]}' ls #{i+1} fs solid 1.0 border -1" %>
+          <% elsif plot==:bins_sens %>
+             <% cmds << "'#{datafiles[i]}' u 4#{i==0 ? ':xtic(2)' : ''}  title '#{legends[i]}' ls #{i+1} fs solid 1.0 border -1" %>
+          <% end %>
+       <% end %>
+    <% end %>
+
+    plot <%= cmds.join(", ")+"\n" %>
+    }.gsub(/^\s+/, '').strip
+
+  def initialize
+    @verbose      = true
+    @indirs       = nil
+    @workdir      = './'
+    @keep_files   = false
+    @title        = nil
+    @plots        = [:mpre_msen,:bins_prec, :bins_sens, :bins_both]
+    @plottype = {
+      :mpre_msen => :prec_sens,
+      :prec_sens => :prec_sens,
+      :bins_prec => :bins,
+      :bins_sens => :bins,
+      :bins_both => :bins,
+      :scat_prec => :scat,
+      :scat_sens => :scat
+    }
+    @plotfiles    = {
+      :mpre_msen => "ali_all.dat",
+      :prec_sens => "ali_bin.dat",
+      :bins_both => "ali_bin.dat",
+      :bins_prec => "ali_bin.dat",
+      :bins_sens => "ali_bin.dat",
+      :scat_prec => "ali_all.dat",
+      :scat_sens => "ali_all.dat"
+    }
+    @basename     = nil
+    @basenames    = {
+      :mpre_msen => "mpre_msen",
+      :prec_sens => "prec_sens",
+      :bins_prec => "bins_prec",
+      :bins_sens => "bins_sens",
+      :bins_both => "bins_both",
+      :scat_prec => "scat_prec",
+      :scat_sens => "scat_sens"
+    }
+    @labels       = []
+
+    self
+  end
+
+  def options
+    OptionParser.new do |o|
+      o.set_summary_indent('  ')
+      o.banner = "Usage: #{File.basename($0)} -i dir1,dir2 [options]"
+      o.define_head( "Plot alignment quality of CS-BLAST versus BLAST.")
+      o.separator ""
+
+      o.on("-p", "--plots x,y,z", Array, "List of plots to be generated (default: #{@plots.join(', ')})",
+           "prec_sens :  Alignment precision versus sensitivity by sequence identity",
+           "bins_prec :  Alignment precision binned by sequence identity",
+           "bins_sens :  Alignment sensitivity binned by sequence identity",
+           "bins_both :  Alignment sensitivity and precision binned by sequence identity",
+           "scat_prec :  Alignment precision as scatterplot",
+           "scat_sens :  Alignment sensitivity as scatterplot." ) do |val|
+        @plots = val.map {|p| p.to_sym }
+      end
+
+      o.on("-i", "--indirs dir1,dir2", "Comma separated list of directories with runs.", Array) { |val| @indirs=val }
+      o.on("-o", "--directory DIRECTORY", "Output directory (default: #{@workdir}).") { |val| @workdir=val }
+      o.on("-b", "--basename BASE", String, "Basename of data files (default: #{@basename})." ) { |val| @basename = val}
+      o.on("-t", "--title TITLE", "Base title of plots (default: #{@title}).") { |val| @title=val }
+      o.on("-l", "--labels l1,l2,l3", Array, "List of labels to be used instead of directory names (default: off)") { |val| @labels = val }
+      o.on("-k", "--keep-files", TrueClass, "Keep gnuplot scripts (default: keep #{@keep_files})." ) {|val| @keep_files=true }
+      o.on("-q", "--quiet", "Turn output off.") { |val| @verbose=false }
+      o.on("-h", "--help", "Show this help message.") { puts o; exit }
+    end
+  end
+
+  def check_args
+    errors = []
+    errors << "No input directories given!" if @indirs.nil?
+    @plots.each do |plot|
+      errors << "Plot #{plot} unknown!" if @plottype[plot].nil? 
+    end
+    unless errors.empty?
+      puts errors.join("\n")
+      exit 1
+    end
+  end
+
+  def run(args)
+    if args.empty? then puts options; exit end
+    options.parse!(args)
+    check_args
+
+    draw_plots
+  end
+
+  def draw_plots
+    puts "Generating plots..." if @verbose
+    FileUtils.mkdir_p(@workdir) unless File.directory?(@workdir)
+    @plots.each do |plot|
+      pdffile     = compose_filename(@workdir, @basenames[plot]+'.pdf')
+      psfile      = compose_filename(@workdir, @basenames[plot]+'.ps')
+      gnuplotfile = compose_filename(@workdir, @basenames[plot]+'.gp')
+      xlabel = get_xlabel(plot)
+      ylabel = get_ylabel(plot)
+      title = @title
+      if title.nil? && !@basename.nil? 
+        title = @basename.gsub(/_/,' ')
+      end
+      title = (title.nil? ? "" : title+" - ") + get_subtitle(plot)
+      datafiles = @indirs.map {|d| compose_filename(d, @plotfiles[plot]) }
+      legends = @indirs.map {|d| File.basename(d).gsub(/_/, ' ') }
+      @labels.each_index do |i|
+        break if i >= legends.size
+        legends[i] = @labels[i]
+      end
+
+      if plot == :mpre_msen
+        prec_mean = []
+        sens_mean = []
+        @indirs.each_index do |i|
+          prec_sum = 0.0
+          sens_sum = 0.0
+          n = 0
+          File.open(datafiles[i]) do |f|
+            while !f.eof
+              l = f.readline
+              next if l =~ /^#/
+              if l =~ /^\S+\s+(\S+)\s+(\S+)/
+                prec_sum += $1.to_f
+                sens_sum += $2.to_f
+                n += 1
+              else
+                $stderr.puts "Invalid format '#{datafiles[i]}'!"
+                exit 1
+              end
+            end
+          end
+          prec_mean << prec_sum / n
+          sens_mean << sens_sum / n
+        end
+      end
+
+      # Write gnuplot file
+      File.open(gnuplotfile, 'w') do |f|
+        erb = ERB.new(@@template)
+        content = erb.result(binding).split("\n").select {|line| line !~ /^\s*$/ }.join("\n")
+        f.write(content)
+      end
+      puts "    "+pdffile if @verbose
+      execute("gnuplot #{gnuplotfile} > /dev/null")
+      execute("ps2pdf #{psfile} #{pdffile} > /dev/null")
+      execute("pdfcrop #{pdffile} #{pdffile} > /dev/null")
+
+      File.delete(gnuplotfile) unless @keep_files
+      File.delete(psfile) unless @keep_files
+    end
+  end
+
+  def get_subtitle(plot)
+    case plot
+    when :mpre_msen: "Average alignment sensitivity versus precision"
+    when :prec_sens: "Average alignment sensitivity versus precision by sequence identity"
+    when :bins_sens: "Average alignment sensitivity binned by sequence identity"
+    when :bins_prec: "Average alignment precision binned by sequence identity"
+    when :bins_both: "Average alignment sensitiviy/precision binned by sequence identity"
+    when :scat_sens: "Alignment sensitivity scatterplot"
+    when :scat_prec: "Alignment precision scatterplot"
+    end
+  end
+
+  def get_xlabel(plot)
+    case plot
+    when :mpre_msen then "Precision"
+    when :prec_sens then "Precision"
+    else "Sequence identity"
+    end
+  end
+
+  def get_ylabel(plot)
+    case plot
+    when :mpre_msen: "Sensitivity"
+    when :prec_sens: "Sensitivity"
+    when :bins_sens: "Sensitivity"
+    when :bins_prec: "Precision"
+    when :bins_both: "Alignment quality score"
+    when :scat_sens: "Sensitivity"
+    when :scat_prec: "Precision"
+    end
+  end
+
+  def compose_filename(dir, filename)
+    return File.join(dir, @basename.nil? ? filename : sprintf("%s_%s", @basename, filename))
+  end
+
+  def execute(cmd)
+    success = system(cmd)
+    raise "Error in execution of '#{cmd}'!" unless success
+  end
+
+end
+
+CSPlotAlignments.new.run(ARGV)

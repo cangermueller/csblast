@@ -1,0 +1,402 @@
+#!/usr/bin/ruby
+require 'optparse'
+require 'rubygems'
+require 'set'
+require 'bio'
+require 'bioinf'
+require 'myconfig'
+
+class CSAliBench
+  Alignment = Struct.new(:file, :query, :target, :sensitivity, :precision, :length, :hit)
+
+  def initialize
+    @verbose      = true
+    @min_tmscore  = 0.6
+    @max_rmsd     = 4.0
+    @min_seqid    = 0.0
+    @max_seqid    = 0.3
+    @max_evalue   = nil   # maximum e-value of hits to be used
+    @bin_width    = 0.05  # for binning the sequence identity
+    @resglob      = '*.bla'
+    @plots        = [:bins, :scat]
+    @basename     = nil
+    @plotfiles    = {
+      :bins => "ali_bin.dat",
+      :scat => "ali_all.dat",
+    }
+    @strict       = true
+    @common       = true # only use hits found by all methods
+    @refalis      = {}   # reference alignments ([query,target] => TMAlign::Alignment)
+    @refalis_used = []   # reference alignments used for evaluation (array of pairs [query,target])
+    @alis         = {}   # predicted alignments (dir => [query,target] => Alignment)
+    @nworst       = 1000
+    @mode         = :tmalign
+    @file_ext     = { :dali => '.aln.html', :tmalign => '.tma' }
+
+    self
+  end
+
+  def options
+    OptionParser.new do |o|
+      o.set_summary_indent('  ')
+      o.banner = "Usage: #{File.basename($0)} -d dirlist -a alidir [options]"
+      o.define_head( "Benchmark alignment quality of CS-BLAST versus BLAST.")
+      o.separator ""
+
+      o.on("-i", "--inputdir dir1,dir2,dir3", "List of directories with results of different methods.", Array) { |val| @dirs = val }
+      o.on("-a", "--alidir DIRECTORY", "Path to directory with reference alignments.") { |val| @alidir = val }
+      o.on("-m", "--mode MODE", "Structural alignment mode: 'dali' or 'tmalign' (default: #{@mode})") { |val| @mode=val.to_sym }
+      o.on("-p", "--plots x,y,z", Array, "List of datafiles to be generated (default: #{@plots.join(', ')})",
+           "bins: Alignment precision and sensitivity binned by sequence identity",
+           "scat: Each alignment with its precision, sensitivity and sequence identity") do |val|
+        @plots = val.map {|p| p.to_sym }
+      end
+      o.on("-b", "--basename BASE", String, "Basename of data files (default: #{@basename})." ) { |val| @basename = val}
+      o.on("-t", "--tmscore SCORE", Float, "Minimal TMscore of TMalign reference alignments (default: #{@min_tmscore})." ) { |val| @min_tmscore = val }
+      o.on("-r", "--rmsd RMSD", Float, "Maximal RMSD of DALI reference alignments (default: #{@max_rmsd})." ) { |val| @max_rmsd=val }
+      o.on("-g", "--glob GLOB", "Glob matching resultfiles in each directory (default: #{@resglob}).") { |val| @resglob=val }
+      o.on("--min-seqid SEQID", Float, "Minimal sequence identity in benchmark (default: #{@min_seqid})." ) { |val| @min_seqid = val>1.0 ? val/100.0 : val }
+      o.on("--max-seqid SEQID", Float, "Maximal sequence identity in benchmark (default: #{@max_seqid})." ) { |val| @max_seqid = val>1.0 ? val/100.0 : val }
+      o.on("--[no-]strict", TrueClass, "Count aligned residues with more than 5A as TPs. (default: #{@strict})" ) { |val| @strict = val }
+      o.on("--[no-]common", TrueClass, "Only use alignments predicted by all methods. (default: #{@common})" ) { |val| @common = val }
+      o.on("--bin-width WIDTH", Float, "Width of bins in benchmark statistics (default: #{@bin_width})." ) { |val| @bin_width = val }
+      o.on("--num-worst NUM", Integer, "Number of worst alignments to include in statistics for output file (default: #{@nworst})." ) { |val| @nworst = val }
+      o.on("-q", "--quiet", "Turn output off.") { |val| @verbose=false }
+      o.on("-h", "--help", "Show this help message.") { puts o; exit }
+    end
+  end
+
+  def check_args
+    errors = []
+    errors << "No directories given!" if @dirs.nil?
+    errors << "No alignment directory given!" if @alidir.nil?
+    unless errors.empty?
+      puts errors.join("\n")
+      exit 1
+    end
+  end
+
+  def run(args)
+    if args.empty? then puts options; exit end
+    options.parse!(args)
+    check_args
+
+    puts "Reading structural alignments in #{@alidir} ..." if @verbose
+    Dir.glob(File.join(@alidir, "*"+@file_ext[@mode])).each do |alifile|
+      basename = File.basename(alifile, @file_ext[@mode])
+      query  = basename[0...7]
+      target = basename[8...15]
+      fali = File.open(alifile)
+      results = fali.read
+      fali.close
+      if @mode==:dali
+        fidx = File.open(File.join(@alidir, "#{query}.#{target}.index.html"))
+        idx = fidx.read
+        fidx.close
+        @refalis[[query,target]] = Bioinf::Dali::Alignment.new(idx, results)
+      else
+        @refalis[[query,target]] = Bioinf::TMalign::Alignment.new(results)
+      end
+    end
+    if @refalis.empty?
+      $stderr.puts "No structural alignments found in #{@alidir}!"
+      exit 1
+    end
+
+    puts "Computing set of common resultfiles in all directories ..." if @verbose
+    basenames = {}
+    # Get resultfiles of each directory
+    @dirs.each { |dir| basenames[dir] = Set.new( Dir.glob(File.join(dir,@resglob)).map {|file| File.basename(file) } ) }
+    $stderr.print("\nWARNING: Number of resultfiles differs among the directories!\n\n") if !common_size?(basenames)
+    # Compute intersection of resultfiles of each directory
+    @resfiles = basenames.keys.inject(nil) {|memo,dir| memo.nil? ? basenames[dir] : (memo & basenames[dir]) }.to_a
+
+    @nbins = ((@max_seqid-@min_seqid)/@bin_width).round # bins refer to the seqid
+    @bins_prec = {}        # dir => [bin i with precision values]
+    @bins_sens = {}        # dir => [bin i with precision values]
+    @bins_prec_mean = {}   # dir => [bin i with mean precision]
+    @bins_sens_mean = {}   # dir => [bin i with mean sensitivity]
+    @bins_prec_stddev = {} # dir => [bin i with stddev of precision]
+    @bins_sens_stddev = {} # dir => [bin i with stddev of sensitivity]
+
+    @dirs.each do |dir|
+      @bins_prec[dir]   = Array.new(@nbins) { |i| [] }
+      @bins_sens[dir]   = Array.new(@nbins) { |i| [] }
+      @bins_prec_mean[dir] = []
+      @bins_sens_mean[dir] = []
+      @bins_prec_stddev[dir] = []
+      @bins_sens_stddev[dir] = []
+      @alis[dir] = {}
+    end
+
+    #parse resultfiles
+    process_results
+    printf("Using %d out of %d structurual alignments for computing statistics ...\n", 
+           @refalis_used.size, @refalis.size) if @verbose
+
+    #calculate mean and standart deviation of binned scores and write datafiles
+    @dirs.each do |dir|
+      0.upto(@nbins-1) do |bin|
+        if @bins_sens[dir][bin].empty?
+          @bins_sens_mean[dir][bin]=0.0
+          @bins_sens_stddev[dir][bin]=0.0
+        else
+          @bins_sens_mean[dir][bin] = @bins_sens[dir][bin].inject(0.0) {|mem,sample| mem+sample }.to_f/@bins_sens[dir][bin].size.to_f
+          @bins_sens_stddev[dir][bin] = Math.sqrt( @bins_sens[dir][bin].map do
+                                                     |s| (s-@bins_sens_mean[dir][bin])**2
+                                                   end.inject(0.0) do
+                                                     |m,s| m+s
+                                                   end.to_f/@bins_sens[dir][bin].size.to_f )
+        end
+        if @bins_prec[dir][bin].empty?
+          @bins_prec_mean[dir][bin]=0.0
+          @bins_prec_stddev[dir][bin]=0.0
+        else
+          @bins_prec_mean[dir][bin] = @bins_prec[dir][bin].inject(0.0) {|mem,sample| mem+sample }.to_f/@bins_prec[dir][bin].size.to_f
+          @bins_prec_stddev[dir][bin] = Math.sqrt( @bins_prec[dir][bin].map do
+                                                     |s| (s-@bins_prec_mean[dir][bin])**2
+                                                   end.inject(0.0) do
+                                                     |m,s| m+s
+                                                   end.to_f/@bins_prec[dir][bin].size.to_f )
+        end
+      end
+
+      puts "Writing datafiles for #{dir} ..." if @verbose
+      write_binned_data(dir)      if @plots.include?(:bins)
+      write_scatterplot_data(dir) if @plots.include?(:scat)
+      write_worst_alis(dir)
+    end
+  end
+
+  def process_results
+    puts "Processing #{@resfiles.size} result files ..." if @verbose
+    i=0
+    @resfiles.each do |resfile|
+      process_hits(resfile)
+
+      i+=1
+      $stdout.print '.' if @verbose
+      $stdout.flush if @verbose
+      $stdout.puts " #{i}" if i%100==0 && @verbose
+    end
+    unless i%100==0 || !@verbose
+      $stdout.print ' '*(100-i%100)
+      $stdout.puts " #{i}"
+    end
+  end
+
+  def accept?(refali)
+    case @mode
+    when :dali:  refali.rmsd<=@max_rmsd && refali.seqid>=@min_seqid && refali.seqid<=@max_seqid
+    when :tmalign: refali.tmscore>=@min_tmscore && refali.seqid>=@min_seqid && refali.seqid<=@max_seqid
+    end
+  end
+
+  def accept_hit?(hit)
+    return @max_evalue.nil? || hit.evalue < @max_evalue
+  end
+
+  def process_hits(resfile)
+    pairs  = {}
+    hits   = {} # dir=>[[query,target]=>hit]
+
+    @dirs.each do |dir|
+      pairs[dir] = Set.new
+      hits[dir]  = {}
+
+      f = File.open(File.join(dir, resfile), 'r')
+      report = Bioinf::Blast::Report.new(f.read)
+      report.each do |hit|
+        refali = @refalis[[hit.query_id, hit.target_id]]
+        next unless refali && (@mode==:tmalign || !refali.query_seq.empty?) && hit.hsps.first.ali_len && 
+          accept?(refali) && accept_hit?(hit)
+        pairs[dir] << [hit.query_id, hit.target_id]
+        hits[dir][[hit.query_id, hit.target_id]] = hit
+      end
+      f.close
+    end
+
+    if @common
+      # only use hits found by all methods
+      eval_pairs = pairs.keys.inject(nil) {|memo,dir| memo.nil? ? pairs[dir] : (memo & pairs[dir]) }.to_a
+    else
+      # only use hits found by at least one method
+      eval_pairs = pairs.keys.inject(nil) {|memo,dir| memo.nil? ? pairs[dir] : (memo | pairs[dir]) }.to_a
+    end
+    eval_pairs.each do |pair|
+      refali = @refalis[pair]
+      @refalis_used << pair
+      refali_pairs = @mode==:dali ? aligned_pairs_from_dali(refali) : aligned_pairs_from_tmalign(refali)
+      @dirs.each do |dir|
+        hit = hits[dir][pair]
+        ali             = Alignment.new
+        ali.file        = File.join(dir, resfile)
+        ali.query       = pair.first
+        ali.target      = pair.last
+        ali.hit         = hit
+
+        if hit.nil?
+          ali.precision   = 0.0
+          ali.sensitivity = 0.0
+          ali.length      = 0
+        else
+          blast_pairs     = aligned_pairs_from_blast(hit.hsps.first)
+          correct_pairs   = (refali_pairs & blast_pairs).size
+          ali.precision   = correct_pairs.to_f/hit.hsps.first.ali_len
+          ali.sensitivity = if @mode==:dali
+                          correct_pairs.to_f/refali.length.to_f
+                        else
+                          correct_pairs.to_f/(@strict ? refali.midline.scan(/:/).size.to_f : refali.midline.scan(/:|./).size.to_f)
+                        end
+          ali.length      = hit.hsps.first.ali_len
+        end
+
+        bin = ((refali.seqid-@min_seqid)/@bin_width).to_i
+        if (bin<0) then bin=0 elsif (bin>@nbins-1) then bin=@nbins-1 end
+        @bins_sens[dir][bin] << ali.sensitivity
+        @bins_prec[dir][bin] << ali.precision
+        @alis[dir][pair] = ali
+      end
+    end
+  end
+
+  def aligned_pairs_from_tmalign(ali)
+    pairs = Set.new
+    i=1
+    j=1
+    0.upto(ali.struct_seq.length-1) do |k|
+      pairs << [i,j] if ali.midline[k].chr==':' || (!@strict && ali.midline[k].chr=='.')
+      i+=1 if ali.struct_seq[k].chr!='-'
+      j+=1 if ali.target_seq[k].chr!='-'
+    end
+    return pairs
+  end
+
+  def aligned_pairs_from_dali(ali)
+    pairs = Set.new
+    i=1
+    j=1
+    0.upto(ali.query_seq.length-1) do |k|
+      pairs << [i,j] if ( ali.query_seq[k].chr!='.' && ali.sbjct_seq[k].chr!='.' &&
+                          ali.query_seq[k].chr=~/^[A-Z]$/ && ali.sbjct_seq[k].chr=~/^[A-Z]$/ )
+      i+=1 if ali.query_seq[k].chr!='.'
+      j+=1 if ali.sbjct_seq[k].chr!='.'
+    end
+    return pairs
+  end
+
+  def aligned_pairs_from_blast(hsp)
+    pairs = Set.new
+    i=hsp.query_start
+    j=hsp.hit_start
+    0.upto(hsp.qseq.length-1) do |k|
+      pairs << [i,j] if hsp.qseq[k].chr!='-' && hsp.hseq[k].chr!='-'
+      i+=1 if hsp.qseq[k].chr!='-'
+      j+=1 if hsp.hseq[k].chr!='-'
+    end
+    return pairs
+  end
+
+  def write_worst_alis(dir)
+    a = dir
+    @dirs.each do |b|
+      next if a == b
+      name_a = File.basename(a)
+      name_b = File.basename(b)
+      outfile = compose_filename(a, "worst_alis_vs_#{name_b}.dat")
+      alis_ab = []
+      @alis[a].each do |pair, ali_a|
+        ali_b = @alis[b][pair]
+        alis_ab << [ali_a, ali_b] unless ali_b.nil?
+      end
+      puts "    " + outfile if @verbose
+      File.open(outfile, 'w') do |fh|
+        fh.puts("A := #{name_a}")
+        fh.puts("B := #{name_b}")
+        fh.puts("\n")
+        write_worst_alis_by(:prec, fh, alis_ab)
+        fh.puts("\n")
+        write_worst_alis_by(:sens, fh, alis_ab)
+      end
+    end
+  end
+
+  def write_worst_alis_by(param, fh, alis_ab)
+    alis_ab = alis_ab.sort_by {|ali_ab| param == :prec ? 
+      ali_ab.last.precision - ali_ab.first.precision :
+      ali_ab.last.sensitivity - ali_ab.first.sensitivity}.reverse
+
+    fh.printf("Worst alignments sorted by %s:\n", param == :prec ? "precision" : "sensitivity")
+    header_format_str = "%-8s  %-8s  %-10s  %6s  %6s  %6s  %6s  %5s  %5s  %5s  %6s  %6s\n"
+    row_format_str    = "%-8s  %-8s  %-10s  %6.2f  %6.2f  %6.2f  %6.2f  %+4.2f  %5d  %5d  %8s  %8s\n"
+    
+    fh.printf(header_format_str, "Query", "Hit", "Family", 
+              "Prec-A", "Prec-B", "Sens-A", "Sens-B", "+/-", "Len-A", "Len-B", "Eval-A", "Eval-B")
+    alis_ab.each_index do |i|
+      break if i >= @nworst
+      a = alis_ab[i].first
+      b = alis_ab[i].last
+      delta = param == :prec ? a.precision - b.precision : a.sensitivity - b.sensitivity
+      family = ""
+      hit = a.hit.nil? ? b.hit : a.hit
+      if !hit.nil? && hit.target_def =~ /^\S+\s+(\S+)/
+        family = $1
+      end
+      fh.printf(row_format_str, a.query, a.target, family, a.precision, b.precision, 
+                a.sensitivity, b.sensitivity, delta, a.length, b.length,
+                a.hit.nil? ? "inf" : sprintf("%8.2g", a.hit.evalue), 
+                b.hit.nil? ? "inf" : sprintf("%8.2g", b.hit.evalue))
+    end
+  end
+
+  def write_scatterplot_data(dir)
+    datafile = compose_filename(dir, @plotfiles[:scat])
+    File.open(datafile, 'w') do |f|
+      f.printf("%-10s  %11s  %11s  %6s\n", "#query", "precision", "sensitivity", "length")
+      @alis[dir].each do |pair, ali|
+        f.printf("%-10s  %11.4f  %11.4f  %6d\n", 
+                 ali.query, ali.precision, ali.sensitivity, ali.length)
+      end
+    end
+    puts "    "+datafile if @verbose
+  end
+
+  def write_binned_data(dir)
+    datafile = compose_filename(dir, @plotfiles[:bins])
+    method = dir.split('/').last
+
+    header_format_str = "%-20s %12s  %12s  %12s  %12s  %12s  %12s\n"
+    row_format_str    = "%-20s  %8d-%-2d  %12.4f  %12.4f  %12.4f  %12.4f  %12d\n"
+    File.open(datafile, 'w') do |f|
+      f.printf(header_format_str, 
+               "#method", "seqid-range", "prec-mean", "sens-mean", "prec-stddev", "sens-stddev", "count")
+      left = @min_seqid
+      0.upto(@nbins-1) do |bin|
+        right = left+@bin_width
+        f.printf(row_format_str, method[0...20], (left*100.0).round, (right*100.0).round,
+                 @bins_prec_mean[dir][bin], @bins_sens_mean[dir][bin], @bins_prec_stddev[dir][bin], @bins_sens_stddev[dir][bin], @bins_prec[dir][bin].size)
+        left = right
+      end
+    end
+    puts "    "+datafile if @verbose
+  end
+
+  def common_size?(h)
+    size = nil
+    h.each_value do |v|
+      if size.nil? 
+        size = v.size
+      elsif size != v.size
+        return false
+      end
+    end
+    return true
+  end
+
+  def compose_filename(dir, filename)
+    return File.join(dir, @basename.nil? ? filename : sprintf("%s_%s", @basename, filename))
+  end
+
+end
+
+CSAliBench.new.run(ARGV)
