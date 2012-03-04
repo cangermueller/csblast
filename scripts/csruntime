@@ -1,0 +1,122 @@
+#!/usr/bin/ruby
+require 'optparse'
+require 'benchmark'
+require 'rubygems'
+require 'bio'
+
+class CSRuntime
+  def initialize
+    @verbose = true
+    @nbins   = 20
+    @min_len = 0
+    @max_len = 2000
+    @caching = true
+    self
+  end
+
+  def options
+    OptionParser.new do |o|
+      o.set_summary_indent('  ')
+      o.banner = "Usage: #{File.basename($0)} -g glob -c command -o outfile [options]"
+      o.define_head( "Run command on given glob and calculate average runtimes binned by query length.")
+      o.separator ""
+
+      o.on("-g", "--glob GLOB", "Execute command for each file that is matched by the GLOB expression (e.g. *.seq).") { |val| @glob = val  }
+      o.on("-c", "--command COMMAND", "command or command file to be executed (FILENAME will be replaced with queryfile).") { |val| @incmd = val }
+      o.on("-o", "--outfile OUTFILE", "Output file with binned runtimes for plotting.") { |val| @outfile=val }
+      o.on("-b", "--bins BINS", Integer, "Number of bins (default: #{@nbins})." ) { |val| @nbins = val }
+      o.on("--min-length LEN", Integer, "Minimal length of query (default: #{@min_len})." ) { |val| @min_len = val }
+      o.on("--max-length LEN", Integer, "Maximal length of query (default: #{@max_len})." ) { |val| @max_len = val }
+      o.on("--no-caching", FalseClass, "Do not run command twice to disable caching effects (default: caching on).") { |val| @caching=false }
+      o.on("-q", "--quiet", "Turn output off.") { |val| @verbose=false }
+      o.on("-h", "--help", "Show this help message.") { puts o; exit }
+    end
+  end
+
+  def check_args
+    errors = []
+    errors << "No command given!" if @incmd.nil?
+    errors << "No glob expression given!" if @glob.nil?
+    errors << "No outfile given!" if @outfile.nil?
+    unless errors.empty?
+      puts errors.join("\n")
+      exit 1
+    end
+  end
+
+  def run(args)
+    if args.empty? then puts options; exit end 
+    options.parse!(args)  
+    check_args
+
+    if File.file?(@incmd)
+      @command = File.readlines(@incmd).join("")
+    else 
+      @command = @incmd
+    end
+
+    @runtimes  = Array.new(@nbins) {|i| [] }
+    @means     = Array.new(@nbins, 0.0)
+    @std_dev   = Array.new(@nbins, 0.0)
+    @bin_width = (@max_len-@min_len)/@nbins
+    results    = ''
+    len        = 0
+    i          = 0
+    
+    printf("%4s  %-15s  %5s  %10s  %10s\n", '#', 'query', 'L', 'runtime', 'runtime/L') if @verbose
+    $stdout.flush if $verbose
+    Dir.glob(@glob) do |filename|
+      i+=1
+
+      #get query length
+      Bio::FlatFile.open(Bio::FastaFormat, filename) do |ff|
+        ff.each { |entry| len=entry.length }
+      end
+
+      #run command on query        
+      cmd = @command.dup.gsub(/FILENAME/, filename)
+      result = `#{cmd} 1>/dev/null 2>/dev/null` if @caching
+      runtime = Benchmark.realtime { result=`#{cmd} 1>/dev/null 2>/dev/null` }
+
+      printf("%4i  %-15s  %5i  %10.6f  %10.6f\n", i, File.basename(filename), len, runtime, runtime/len) if @verbose
+      $stdout.flush if $verbose
+      
+      bin = ((len-@min_len)/@bin_width.to_f).to_i
+      next if (bin<0 || bin>=@nbins || len<@min_len)
+      @runtimes[bin] << runtime
+    end
+    
+    0.upto(@nbins-1) do |bin|
+      next if @runtimes[bin].empty?
+      @means[bin]   = @runtimes[bin].inject(0.0) {|mem,sample| mem+sample }.to_f/@runtimes[bin].size.to_f
+      @std_dev[bin] = Math.sqrt( @runtimes[bin].map{|n| (n-@means[bin])**2 }.inject(0.0) {|mem,sample| mem+sample }.to_f/@runtimes[bin].size.to_f)
+    end
+
+    if @verbose
+      runtimes = @runtimes.inject([]) {|memo,arr| memo.concat(arr) }
+      mean     = runtimes.inject(0.0) {|mem,sample| mem+sample }.to_f/runtimes.size.to_f
+      std_dev  = Math.sqrt( runtimes.map{|n| (n-mean)**2 }.inject(0.0) {|mem,sample| mem+sample }.to_f/runtimes.size.to_f)    
+      puts 
+      printf("mean runtime:    %10.6f\n", mean)
+      printf("std-dev runtime: %10.6f\n", std_dev)
+    end
+    write_data
+  end
+  
+  def write_data
+    puts "\nWriting #{@runtimes.inject(0) {|memo,arr| memo+arr.size }} binned counts to #{@outfile} ..." if @verbose
+    $stdout.flush if $verbose
+    File.open(@outfile, 'w' ) do |f|
+      
+      f.printf("%-15s  %10s  %10s  %10s  %10s  %10s\n", "#length-range", "min-length", "max-length", "counts", "mean", "std-dev")
+      1.upto(@nbins) do |bin|
+        i=@bin_width*(bin-1)+@min_len
+        j=@bin_width*bin+@min_len
+        f.printf("%-15s  %10i  %10i  %10i  %10.6f  %10.6f\n", "#{i}-#{j}", i, j, @runtimes[bin-1].size, @means[bin-1], @std_dev[bin-1])
+      end
+    end
+  end
+
+end
+  
+CSRuntime.new.run(ARGV)

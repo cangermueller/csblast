@@ -1,0 +1,139 @@
+#!/usr/bin/ruby
+require 'optparse'
+require 'rubygems'
+require 'bio'
+require 'fileutils'
+
+class CSRuntimeDb
+  def initialize
+    @verbose  = true
+    @min_len  = 100
+    @max_len  = 2000
+    @bin_len  = 100
+    @min_seqs = 50
+    @max_seqs = 75
+    @seed     = nil
+    self
+  end
+
+  def options
+    OptionParser.new do |o|
+      o.set_summary_indent('  ')
+      o.banner = "Usage: #{File.basename($0)} -g glob -o outdir [options]"
+      o.define_head( "Creates databases of sequences for CS-BLAST runtime benchmark.")
+      o.separator ""
+
+      o.on("-g", "--glob GLOB", "GLOB expression for sequence files.") { |val| @glob = val  }
+      o.on("-o", "--outdir DIR", "Output directory for sampled sequences.") { |val| @outdir = val  }
+      o.on("--min-length LEN", Integer, "Minimal sequence length (default: #{@min_len})." ) { |val| @min_len = val }
+      o.on("--max-length LEN", Integer, "Maximal sequence length (default: #{@max_len})." ) { |val| @max_len = val }
+      o.on("--bin-length LEN", Integer, "Bin length for grouping sequences by length (default: #{@bin_len})." ) { |val| @bin_len = val }
+      o.on("--min-seqs NUM", Integer, "Minimal number of sequences per bin  (default: #{@min_seqs})." ) { |val| @min_seqs = val }
+      o.on("--max-seqs NUM", Integer, "Maximal number of sequences per bin  (default: #{@max_seqs})." ) { |val| @max_seqs = val }
+      o.on("--seed SEED", Integer, "Seed for random number generator  (default: #{@seed})." ) { |val| @seed = seed }
+      o.on("-q", "--quiet", "Turn output off.") { |val| @verbose=false }
+      o.on("-h", "--help", "Show this help message.") { puts o; exit }
+    end
+  end
+
+  def check_args
+    errors = []
+    errors << "No glob expression given!" if @glob.nil?
+    errors << "No output directory given!" if @outdir.nil?
+    unless errors.empty?
+      puts errors.join("\n")
+      exit 1
+    end
+  end
+
+  def run(args)
+    if args.empty? then puts options; exit end 
+    options.parse!(args)  
+    check_args
+    srand(@seed) unless @seed.nil?
+
+    puts "Globbing input sequences ..." if @verbose
+    @seqs = Dir.glob(@glob)
+    if @seqs.empty? 
+      $stderr.puts "No input sequences available!"
+      exit 1
+    end
+
+    @nbins = (@max_len - @min_len) / @bin_len + 1
+    @bins = []
+    @nbins.times {@bins << Array.new}
+
+    @seqs.shuffle
+    @seqs = @seqs[0 ... @nbins * @max_seqs * 10]
+    @seqs.each do |seq|
+      len = `grep -v '^>' #{seq} | tr -d '\n ' | wc -c`.to_i
+      if len >= @min_len && len <= @max_len
+        @bins[(len - @min_len) / @bin_len] << seq
+      end
+    end
+
+    pool = []
+    if @bins.inject(@max_seqs) {|memo, bin| [memo, bin.size].min} < @min_seqs
+      # Create pool of sequnces of generating random sequences
+      1.upto([100, @seqs.size].min) do |i|
+        Bio::FlatFile.open(Bio::FastaFormat, @seqs[i - 1]) do |ff|
+          pool << ff.first.seq
+        end
+      end
+    end
+
+    puts "Creating database ..." if @verbose
+    head_format = "%10s %10s %10s\n"
+    row_format  = "%10d %10d %10d\n"
+    sep_line = "    " + "-" * 28
+    printf(head_format, "Length", "Sampled", "Generated") if @verbose
+    puts sep_line if @verbose
+    nsampled = 0
+    ngenerated = 0
+    FileUtils.mkdir_p(@outdir)
+    @bins.each_index do |i|
+      len = @min_len + i * @bin_len
+      @bins[i] = @bins[i][0 ... @max_seqs]
+      @bins[i].each do |seq|
+        FileUtils.copy(seq, @outdir)
+        nsampled += 1
+      end
+      if @bins[i].size < @min_seqs
+        # Generate random sequences in case of insufficient sequences
+        n = @min_seqs - @bins[i].size
+        digits = (0..9).to_a.map {|v| v.to_s}
+        letters = ('a'..'z').to_a
+        n.times do
+          seq = ""
+          while seq.length < len
+            seq += pool[rand(pool.size)]
+          end
+          seq = seq[0...len]
+          tag = nil
+          seqfile = nil
+          begin
+            tag = 'x'
+            6.times do
+              tag += rand(2) == 0 ? 
+                digits[rand(digits.size)] : 
+                letters[rand(letters.size)]
+            end
+            seqfile = File.join(@outdir, "#{tag}.seq")
+          end while File.exist?(seqfile)
+          File.open(seqfile, "w") do |fh|
+            fh.puts ">#{tag}"
+            fh.puts seq
+            ngenerated += 1
+          end
+        end
+      end
+      printf(row_format, len, @bins[i].size, [0, @min_seqs - @bins[i].size].max) if @verbose
+    end
+    puts sep_line if @verbose
+    printf("%10s %10d %10d\n", "", nsampled, ngenerated)
+    puts "Done!" if @verbose
+  end
+
+end
+  
+CSRuntimeDb.new.run(ARGV)

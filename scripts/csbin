@@ -11,17 +11,18 @@ class CSBin
     @workdir        = './'
     @inglob         = '*.bla'
     @seqfile        = nil
-    @tp_relation    = 3 # true positives in same superfamily
-    @fp_relation    = 1 # false positives in different fold
+    @tp_relation    = 3 # same superfamily
+    @fp_relation    = 1 # different fold
     @excl_relation  = 5
     @rocx           = 5
-    @name2scopid    = {}
-    @name           = ""
+    @name2scopid    = {} # 'd1a25a_' => Bioinf::SCOP::Identifier.new('b.7.1.2')
+    @basename       = ""
     @max_evalue     = nil
     @plots          = [:tpfp, :wtpfp, :rocx, :fdr, :rocx, :pvalue, :evalue]
     @benchfiles     = {
       :tpfp   => 'tpfp.dat',
       :wtpfp  => 'wtpfp.dat',
+      :ftpfp  => 'ftpfp.dat',
       :rocx   => 'rocx.dat',
       :pvalue => 'pvalue.dat',
       :evalue => 'evalue.dat',
@@ -35,12 +36,15 @@ class CSBin
     @bin_max_pvalue = 200
     @bin_min_pvalue = 0
     @bin_width      = @rank==:evalue ? (@bin_max_evalue-@bin_min_evalue).to_f/@nbins.to_f : (@bin_max_evalue-@bin_min_pvalue).to_f/@nbins.to_f
-    @tp             = []
-    @fp             = []
-    @uc             = []
-    @wtp            = []
-    @wfp            = []
-    @wuc            = []
+    @tp             = []  # true positives
+    @fp             = []  # false positives
+    @uc             = []  # unclassified
+    @sf_tp          = []  # superfamily weighted true positives
+    @sf_fp          = []  # superfamily weighted false positives
+    @sf_uc          = []  # superfamily weighted unclassified
+    @fm_tp          = []  # family weighted true positives
+    @fm_fp          = []  # family weighted false positives
+    @fm_uc          = []  # family weighted unclassified
 
     @resfiles       = []            # files matched by input glob
     @neg_tot        = nil           # total number of negatives
@@ -68,16 +72,19 @@ class CSBin
 
       o.on("-p", "--plots x,y,z", Array, "List of plots for which datafiles should be generated (default: #{@plots.join(', ')})",
            "tpfp  :  TP versus FP ROC (unweighted)",
-           "wtpfp :  TP versus FP ROC (weighted by number of family members)",
-           "pvalue:  Real P-value versus reported P-value.",
-           "evalue:  Real E-value versus reported E-value.") do |val|
+           "wtpfp :  TP versus FP ROC (weighted by number of superfamily members)",
+           "ftpfp :  TP versus FP ROC (weighted by number of family members)",
+           "rocx  :  Fraction of queries verus ROCX score",
+           "pvalue:  Real P-value versus reported P-value",
+           "evalue:  Real E-value versus reported E-value",
+           "fdr   :  Sensitivity versus false discovery rate") do |val|
         @plots = val.map {|p| p.to_sym }
       end
       o.on("-i", "--infiles GLOB", "Glob expression matching BLAST resultfiles (default: #{@inglob}).") { |val| @inglob = val }
       o.on("-o", "--outfile FILE", "Output file with statistics.") { |val| @outfile = val }
       o.on("-d", "--directory DIRECTORY", "Working directory for datafiles (default: #{@workdir}).") { |val| @workdir=val }
       o.on("-s", "--seq-file FILE", "Sequence file with sequences and SCOP identifiers in FASTA format.") { |val| @seqfile=val }
-      o.on("-n", "--name NAME", "Basename for datafiles (default: #{@name}).") { |val| @name=val }
+      o.on("-b", "--basename NAME", "Basename for datafiles (default: #{@basename}).") { |val| @basename=val }
       o.on("--num-worst NUM", Integer, "Number of worst FP hits to include in statistics for output file (default: #{@nworst})." ) { |val| @nworst = val }
       o.on("--tp-relation RELATION", Integer, "Relation threshold for TP classification (default: #{@tp_relation})." ) { |val| @tp_relation = val }
       o.on("--fp-relation RELATION", Integer, "Relation threshold for FP classification (default: #{@fp_relation})." ) { |val| @fp_relation = val }
@@ -108,9 +115,12 @@ class CSBin
     @tp = Array.new(@nbins+1, 0.0)
     @fp = Array.new(@nbins+1, 0.0)
     @uc = Array.new(@nbins+1, 0.0)
-    @wtp = Array.new(@nbins+1, 0.0)
-    @wfp = Array.new(@nbins+1, 0.0)
-    @wuc = Array.new(@nbins+1, 0.0)
+    @sf_tp = Array.new(@nbins+1, 0.0)
+    @sf_fp = Array.new(@nbins+1, 0.0)
+    @sf_uc = Array.new(@nbins+1, 0.0)
+    @fm_tp = Array.new(@nbins+1, 0.0)
+    @fm_fp = Array.new(@nbins+1, 0.0)
+    @fm_uc = Array.new(@nbins+1, 0.0)
 
     @resfiles = Dir.glob(@inglob)
     if @resfiles.empty?
@@ -125,8 +135,9 @@ class CSBin
     @neg_tot = @fp.inject(0) {|sum,c| sum+c }
 
     puts "Writing datafiles..." if @verbose
-    write_tpfp_data(false) if @plots.include?(:tpfp)
-    write_tpfp_data(true) if @plots.include?(:wtpfp)
+    write_roc_data(:tpfp) if @plots.include?(:tpfp)
+    write_roc_data(:wtpfp) if @plots.include?(:wtpfp)
+    write_roc_data(:ftpfp) if @plots.include?(:ftpfp)
     write_fdr_data if @plots.include?(:fdr)
     write_pvalue_data if @plots.include?(:pvalue)
     write_evalue_data if @plots.include?(:evalue)
@@ -169,6 +180,8 @@ class CSBin
   def parse_hits(resfile, hits)
     f = File.open(resfile, 'r')
     report = Bioinf::Blast::Report.new(f.read)
+    sf_size = @sf_size[@name2scopid[report.query_id].sf].to_f
+    fm_size = @fm_size[@name2scopid[report.query_id].fm].to_f
 
     report.each do |h|
       break if !@max_evalue.nil? && h.evalue>@max_evalue
@@ -183,14 +196,17 @@ class CSBin
       classification = classify(report.query_id, h.target_id)
       case classification
       when :tp
-        @tp[bin]  += 1
-        @wtp[bin] += 1.0/@sf_size[@name2scopid[report.query_id].sf].to_f
-      when :fp
-        @fp[bin] += 1
-        @wfp[bin] += 1.0/@sf_size[@name2scopid[report.query_id].sf].to_f
-      when :uc
-        @uc[bin] += 1
-        @wuc[bin] += 1.0/@sf_size[@name2scopid[report.query_id].sf].to_f
+        @tp[bin]    += 1
+        @sf_tp[bin] += 1.0 / sf_size
+        @fm_tp[bin] += 1.0 / fm_size
+        when :fp
+        @fp[bin]    += 1
+        @sf_fp[bin] += 1.0/ sf_size
+        @fm_fp[bin] += 1.0/ fm_size
+        when :uc
+        @uc[bin]    += 1
+        @sf_uc[bin] += 1.0/ sf_size
+        @fm_uc[bin] += 1.0/ fm_size
       end
 
       h.classification = classification
@@ -254,7 +270,7 @@ class CSBin
     y.reverse!
 
     #write data to file
-    datafile = File.join(@workdir, @name.empty? ? @benchfiles[:rocx] : "#{@name}_#{@benchfiles[:rocx]}")
+    datafile = File.join(@workdir, @basename.empty? ? @benchfiles[:rocx] : "#{@basename}_#{@benchfiles[:rocx]}")
     File.open(datafile, 'w') do |f|
       f.printf("%-15s  %-20s\n", "#ROCX", "fraction of queries")
       x.each_index {|i| f.printf("%-15.8g  %-15.8g\n", x[i], y[i]) }
@@ -262,19 +278,22 @@ class CSBin
     puts "    "+datafile if @verbose
   end
 
-  def write_tpfp_data(weighted=true)
+  def write_roc_data(type = :tpfp)
     #calculate ROC data
     fp_count=0.0
     tp_count=0.0
     x = []
     y = []
     (@nbins).downto(0) do |bin|
-      if weighted
-        tp_count += @wtp[bin]
-        fp_count += @wfp[bin]
-      else
+      if type == :tpfp
         tp_count += @tp[bin]
         fp_count += @fp[bin]
+      elsif type == :wtpfp
+        tp_count += @sf_tp[bin]
+        fp_count += @sf_fp[bin]
+      else
+        tp_count += @fm_tp[bin]
+        fp_count += @fm_fp[bin]
       end
       if (!x.empty? && x.last==fp_count)
         y[-1] = tp_count
@@ -284,8 +303,8 @@ class CSBin
       end
     end
     #write data to file
-    file = weighted ? @benchfiles[:wtpfp] : @benchfiles[:tpfp]
-    datafile = File.join(@workdir, @name.empty? ? file: "#{@name}_#{file}")
+    file = @benchfiles[type]
+    datafile = File.join(@workdir, @basename.empty? ? file: "#{@basename}_#{file}")
     File.open(datafile, 'w') do |f|
       f.printf("%-15s  %-15s\n", "#FPs", "TPs")
       x.each_index {|i| f.printf("%-15.4g  %-15.4g\n", x[i], y[i]) }
@@ -312,7 +331,7 @@ class CSBin
       end
     end
     #write data to file
-    datafile = File.join(@workdir, @name.empty? ? @benchfiles[:fdr] : "#{@name}_#{@benchfiles[:fdr]}")
+    datafile = File.join(@workdir, @basename.empty? ? @benchfiles[:fdr] : "#{@basename}_#{@benchfiles[:fdr]}")
     File.open(datafile, 'w') do |f|
       f.printf("%-15s  %-15s\n", "#FDR", "sensitivity")
       x.each_index {|i| f.printf("%-15.8g  %-15.8g\n", x[i], y[i]) }
@@ -321,7 +340,7 @@ class CSBin
   end
 
   def write_pvalue_data
-    datafile = File.join(@workdir, @name.empty? ? @benchfiles[:pvalue] : "#{@name}_#{@benchfiles[:pvalue]}")
+    datafile = File.join(@workdir, @basename.empty? ? @benchfiles[:pvalue] : "#{@basename}_#{@benchfiles[:pvalue]}")
 
     File.open(datafile, 'w') do |f|
       fp_count=0
@@ -337,7 +356,7 @@ class CSBin
   end
 
   def write_evalue_data
-    datafile = File.join(@workdir, @name.empty? ? @benchfiles[:evalue] : "#{@name}_#{@benchfiles[:evalue]}")
+    datafile = File.join(@workdir, @basename.empty? ? @benchfiles[:evalue] : "#{@basename}_#{@benchfiles[:evalue]}")
 
     File.open(datafile, 'w') do |f|
       fp_count=0
@@ -420,10 +439,19 @@ class CSBin
 
     if rel<=@fp_relation
       if (qsid.to_s=~/^b\.(66|67|68|69|70)/ && tsid.to_s=~/^b\.(66|67|68|69|70)/)
+        # x-bladed beta propeller
         return :uc
       elsif (qsid.to_s=~/c\.(2|3|4|5|30|66|78|79|111)\./ && tsid.to_s=~/c\.(2|3|4|5|30|66|78|79|111)\./)
+        # barrel beta, rossman-fold like
         return :uc
       elsif (qsid.to_s=~/i\./  || tsid.to_s=~/i\./ )
+        # Low resolution protein structures
+        return :uc
+      elsif (qsid.to_s=~/(a\.118\.24)|(d\.211\.1)/  && tsid.to_s=~/(a\.118\.24)|(d\.211\.1)/ )
+        # a.118.24: pseudo ankyrin repeat like; d.211.1: ankyrin repeat
+        return :uc
+      elsif (qsid.to_s=~/(a\.1\.2\.1)|(d\.58\.1\.5)/ && tsid.to_s=~/(a\.1\.2\.1)|(d\.58\.1\.5)/)
+        # a.1.2.1: Fe4-S4 clusters; d.58.1.5: Fe4-S4 ferrodoxin multidomain 
         return :uc
       else
         return :fp

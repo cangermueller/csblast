@@ -6,6 +6,7 @@ use Pod::Usage;
 use Getopt::Long;
 use File::Basename qw(basename);
 use Cwd qw(abs_path);
+use File::Spec::Functions qw(catdir catfile);
 
 
 =pod
@@ -22,9 +23,17 @@ use Cwd qw(abs_path);
  
     -d, --dir BENCHDIR+     List of directories containing benchmark result files
     -o, --out OUTBASE       Output basename [def: ./]
-    -p, --plot PLOT+        List of plots to be created [default: tpfp wtpfp rocx evalue]
+    -p, --plot PLOT+        List of plots to be created [default: tpfp wtpfp ftpfp rocx evalue]
+                            tpfp  :  TP versus FP ROC (unweighted)
+                            wtpfp :  TP versus FP ROC (weighted by number of superfamily members)
+                            ftpfp :  TP versus FP ROC (weighted by number of family members)
+                            rocx  :  Fraction of queries verus ROCX score
+                            pvalue:  Real P-value versus reported P-value
+                            evalue:  Real E-value versus reported E-value
+                            fdr   :  Sensitivity versus false discovery rate
     -t, --title TITLE       Title of the plots [def: ]
     -l, --label LABEL+      List of labels to be used instead of directory names
+    -b, --basename BASE     Basename of plot files [def: ]
         --db DB             Database used for scaling axis
         --iter INT          Number of CSI-BLAST iterations [def: 1]
         --no-under          Substitute underscore in labels [def: false]
@@ -47,6 +56,7 @@ my $outbase = "./";
 my @plots;
 my $title;
 my @labels;
+my $basename;
 my $db;
 my $iter;
 my $no_under;
@@ -86,6 +96,7 @@ GetOptions(
   "p|plot=s{1,}"  => \@plots,
   "t|title=s"     => \$title,
   "l|label=s{1,}" => \@labels,
+  "b|basename=s"  => \$basename,
   "db=s"          => \$db,
   "iter=i"        => \$iter,
   "no-under"      => \$no_under,
@@ -94,7 +105,7 @@ GetOptions(
   "h|help"        => sub { pod2usage(2); }
 ) or pod2usage(1);
 unless (@dirs) { pod2usage("No benchmark directory provided!"); }
-unless (@plots) { @plots = qw/tpfp wtpfp rocx evalue/; }
+unless (@plots) { @plots = qw/tpfp wtpfp ftpfp rocx evalue/; }
 &get_entities;
 unless (@entities) { pod2usage("No plot data found in the specified benchmark directories!"); }
 unless ($db) {
@@ -216,8 +227,8 @@ sub plot {
     set key top left reverse invert Left
     set log x
     set grid
-    set xlabel "weighted FP"
-    set ylabel "weighted TP"/;
+    set xlabel "superfamily weighted FP"
+    set ylabel "superfamily weighted TP"/;
     if ($db eq "scop20_1.73_opt" && $iter == 1) { $cmd .= qq/
       set xrange [1:200]
       set yrange [0:250]
@@ -238,7 +249,7 @@ sub plot {
       set label "20%" at 50,275 textcolor ls 9/;
     } elsif ($db eq "scop20_1.73_test" && $iter == 1) { $cmd .= qq/
       set xrange [1:600]
-      set yrange [0:800]
+      set yrange [0:700]
       set label "1%" at 4,550 textcolor ls 9
       set label "10%" at 40,550 textcolor ls 9
       set label "20%" at 95,550 textcolor ls 9/;
@@ -267,6 +278,63 @@ sub plot {
       set label "10%" at 25,350 textcolor ls 9
       set label "20%" at 60,350 textcolor ls 9/;
     }
+
+  } elsif ($plot eq "ftpfp") { $cmd .= qq/
+    set key top left reverse invert Left
+    set log x
+    set grid
+    set xlabel "family weighted FP"
+    set ylabel "family weighted TP"/;
+    if ($db eq "scop20_1.73_opt" && $iter == 1) { $cmd .= qq/
+      set xrange [1:200]
+      set yrange [0:250]
+      set label "1%" at 6,750 textcolor ls 9
+      set label "10%" at 100,1250 textcolor ls 9
+      set label "20%" at 200,1250 textcolor ls 9/;
+    } elsif ($db eq "scop20_1.73_opt" && $iter == 2) { $cmd .= qq/
+      set xrange [1:200]
+      set yrange [0:400]
+      set label "1%" at 6,750 textcolor ls 9
+      set label "10%" at 100,1250 textcolor ls 9
+      set label "20%" at 200,1250 textcolor ls 9/;
+    } elsif ($db eq "scop20_1.73_opt") { $cmd .= qq/
+      set xrange [1:200]
+      set yrange [0:500]
+      set label "1%" at 2,275 textcolor ls 9
+      set label "10%" at 20,275 textcolor ls 9
+      set label "20%" at 50,275 textcolor ls 9/;
+    } elsif ($db eq "scop20_1.73_test" && $iter == 1) { $cmd .= qq/
+      set xrange [1:2000]
+      set yrange [0:3000]
+      set label "1%" at 9,1200 textcolor ls 9
+      set label "10%" at 90,1200 textcolor ls 9
+      set label "20%" at 200,1200 textcolor ls 9/;
+    } elsif ($db eq "scop20_1.73_test" && $iter == 2) { $cmd .= qq/
+      set xrange [1:2000]
+      set yrange [0:8000]
+      set label "1%" at 25,3500 textcolor ls 9
+      set label "10%" at 250,3500 textcolor ls 9
+      set label "20%" at 600,3500 textcolor ls 9/;
+    } elsif ($db eq "scop20_1.73_test") { $cmd .= qq/
+      set xrange [1:2000]
+      set yrange [0:8000]
+      set label "1%" at 25,3500 textcolor ls 9
+      set label "10%" at 250,3500 textcolor ls 9
+      set label "20%" at 600,3500 textcolor ls 9/;
+    } elsif ($db eq "scop20_1.75_opt") { $cmd .= qq/
+      set xrange [1:600]
+      set yrange [0:800]
+      set label "1%" at 2,275 textcolor ls 9
+      set label "10%" at 20,275 textcolor ls 9
+      set label "20%" at 50,275 textcolor ls 9/;
+    } else { $cmd .= qq/
+      set xrange [1:600]
+      set yrange [0:600]
+      set label "1%" at 2.5,350 textcolor ls 9
+      set label "10%" at 25,350 textcolor ls 9
+      set label "20%" at 60,350 textcolor ls 9/;
+    }
+
 
   } elsif ($plot eq "fdr") { $cmd .= qq/
     set key top left reverse invert Left
@@ -336,7 +404,7 @@ sub plot {
 
   $cmd .= qq/
     plot /;
-  if ($plot eq "tpfp" || $plot eq "wtpfp") { 
+  if ($plot eq "tpfp" || $plot eq "wtpfp" || $plot eq "ftpfp") { 
     $cmd .= qq/99*x notitle with lines ls 9, 9*x notitle with lines ls 9, 4*x notitle with lines ls 9,/;
   } elsif ($plot eq "evalue" || $plot eq "pvalue") {
     $cmd .= qq/x notitle with lines ls 9,/;
@@ -381,7 +449,7 @@ sub get_entities {
     }
     my $has_file = 0;
     foreach my $p (@plots) {
-      my $h =  -f sprintf("%s/%s", $dirs[$i], &get_datafile($p)) ? 1 : 0;
+      my $h =  -f &get_datafile($p, $dirs[$i]) ? 1 : 0;
       if ($h) { $has_file = 1; }
       $e{PLOTS}->{$p} = $h;
     }
@@ -397,7 +465,8 @@ sub get_entities {
 sub get_datafile {
   my ($plot, $dir) = @_;
   $plot .= ".dat";
-  if ($dir) { $plot = sprintf("%s/%s", $dir, $plot); }
+  if ($basename) { $plot = sprintf("%s_%s", $basename, $plot); }
+  if ($dir) { $plot = catdir($dir, $plot); }
   return $plot;
 }
 

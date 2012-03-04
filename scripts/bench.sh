@@ -193,7 +193,7 @@ if [ ! \$IS -eq \$SHOULD ]; then
   exit 1
 fi
 
-csbin -i "\$OUTDIR/*.bla" -d \$OUTDIR -o \$OUTDIR/csbin.dat -s $DB_FILE -p tpfp,wtpfp,fdr,rocx,evalue,pvalue --max-evalue 300
+csbin -i "\$OUTDIR/*.bla" -d \$OUTDIR -o \$OUTDIR/csbin.dat -s $DB_FILE -p tpfp,wtpfp,ftpfp,fdr,rocx,evalue,pvalue --max-evalue 300
 if [ ! \$? -eq 0 ]; then
   echo "Error calling csbin!"
   exit 1

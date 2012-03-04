@@ -672,7 +672,7 @@ class CSOpt
     end
 
     # compute roc score
-    cmd = ["csbin -i '#{tplvars['csblastdir']}/#{@resglob}' -d #{tplvars['csblastdir']} -o '#{tplvars['csblastdir']}/csbin.dat' --rocx #{@rocx} -s #{@seqfile} -q -p tpfp,wtpfp,fdr,rocx,evalue,pvalue --max-evalue 300"]
+    cmd = ["csbin -i '#{tplvars['csblastdir']}/#{@resglob}' -d #{tplvars['csblastdir']} -o '#{tplvars['csblastdir']}/csbin.dat' --rocx #{@rocx} -s #{@seqfile} -q -p tpfp,wtpfp,ftpfp,fdr,rocx,evalue,pvalue --max-evalue 300"]
     sge_config[:name] = sprintf("csbin_%02d", score.repeat)
     qm.set_config(sge_config)
     qm.submit(cmd)

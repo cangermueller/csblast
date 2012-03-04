@@ -36,12 +36,13 @@ ifeq ($(BITS), 32)
 else
 	FLAGS += -m64
 endif
-ifdef OPENMP
-	FLAGS += -fopenmp -DOPENMP
-endif
 
 RELEASE_FLAGS = -O3 -DNDEBUG -fopenmp -DOPENMP $(FLAGS)
 DEBUG_FLAGS = -g3 $(FLAGS)
+
+ifeq ($(OPENMP),1)
+	DEBUG_FLAGS += -fopenmp -DOPENMP
+endif
 
 
 ### Definitions ###
