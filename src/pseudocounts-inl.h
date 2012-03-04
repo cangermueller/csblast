@@ -12,7 +12,7 @@ template<class Abc>
 Profile<Abc> Pseudocounts<Abc>::AddTo(const Sequence<Abc>& seq, const Admix& admix) const {
     Profile<Abc> p(seq.length());
     AddToSequence(seq, p);
-    Mix(p, seq, admix);
+    AdmixTo(seq, p, admix);
     for(size_t i = 0; i < seq.length(); ++i) p[i][Abc::kAny] = 0.0;
     Normalize(p, 1.0);
     return p;
@@ -24,7 +24,7 @@ Profile<Abc> Pseudocounts<Abc>::AddTo(const Sequence<Abc>& seq, CSBlastAdmix& ad
         double neff, double delta) const {
     Profile<Abc> p(seq.length());
     AddToSequence(seq, p);
-    AdjustNeff(p, seq, admix, neff, delta);
+    AdmixToNeff(seq, p, admix, neff, delta);
     for(size_t i = 0; i < seq.length(); ++i) p[i][Abc::kAny] = 0.0;
     Normalize(p, 1.0);
     return p;
@@ -35,7 +35,7 @@ template<class Abc>
 Profile<Abc> Pseudocounts<Abc>::AddTo(const CountProfile<Abc>& cp, const Admix& admix) const {
     Profile<Abc> p(cp.counts.length());
     AddToProfile(cp, p);
-    Mix(p, cp, admix);
+    AdmixTo(cp, p, admix);
     for(size_t i = 0; i < cp.counts.length(); ++i)
         p[i][Abc::kAny] = 0.0;
     Normalize(p, 1.0);
@@ -48,7 +48,7 @@ Profile<Abc> Pseudocounts<Abc>::AddTo(const CountProfile<Abc>& cp, CSBlastAdmix&
         double neff, double delta) const {
     Profile<Abc> p(cp.counts.length());
     AddToProfile(cp, p);
-    AdjustNeff(p, cp, admix, neff, delta);
+    AdmixToNeff(cp, p, admix, neff, delta);
     for(size_t i = 0; i < cp.counts.length(); ++i)
         p[i][Abc::kAny] = 0.0;
     Normalize(p, 1.0);
@@ -63,8 +63,7 @@ void Pseudocounts<Abc>::AddTo(POHmm<Abc>* hmm, const Admix& admix) const {
 
     Profile<Abc> p(size);
     AddToPOHmm(hmm, p);
-    Mix(p, *hmm, admix);
-
+    AdmixTo(*hmm, p, admix);
     for (size_t i = 1; i <= size; ++i) {
         memcpy(&g[i].probs[0], p[i - 1], Abc::kSize * sizeof(double));
         g[i].probs[Abc::kAny] = 1.0;
@@ -81,7 +80,7 @@ void Pseudocounts<Abc>::AddTo(POHmm<Abc>* hmm, CSBlastAdmix& admix,
 
     Profile<Abc> p(size);
     AddToPOHmm(hmm, p);
-    AdjustNeff(p, *hmm, admix, neff, delta);
+    AdmixToNeff(*hmm, p, admix, neff, delta);
     for (size_t i = 1; i <= size; ++i) {
         memcpy(&g[i].probs[0], p[i - 1], Abc::kSize * sizeof(double));
         g[i].probs[Abc::kAny] = 1.0;
@@ -90,8 +89,7 @@ void Pseudocounts<Abc>::AddTo(POHmm<Abc>* hmm, CSBlastAdmix& admix,
 }
 
 template<class Abc>
-// Mixes Profile p and Sequence q
-void Pseudocounts<Abc>::Mix(Profile<Abc>& p, const Sequence<Abc>& q, const Admix& admix) const {
+void Pseudocounts<Abc>::AdmixTo(const Sequence<Abc>& q, Profile<Abc>& p, const Admix& admix) const {
     double tau = admix(1.0);
     double t = 1 - tau;
     for (size_t i = 0; i < p.length(); ++i) {
@@ -102,8 +100,7 @@ void Pseudocounts<Abc>::Mix(Profile<Abc>& p, const Sequence<Abc>& q, const Admix
 }
 
 template<class Abc>
-// Mixes Profile p and CountProfile q
-void Pseudocounts<Abc>::Mix(Profile<Abc>& p, const CountProfile<Abc>& q, const Admix& admix) const {
+void Pseudocounts<Abc>::AdmixTo(const CountProfile<Abc>& q, Profile<Abc>& p, const Admix& admix) const {
     for (size_t i = 0; i < p.length(); ++i) {
         double tau = admix(q.neff[i]);
         double t = 1 - tau;
@@ -113,8 +110,7 @@ void Pseudocounts<Abc>::Mix(Profile<Abc>& p, const CountProfile<Abc>& q, const A
 }
 
 template<class Abc>
-// Mixes Profile p and POHmm q
-void Pseudocounts<Abc>::Mix(Profile<Abc>& p, const POHmm<Abc>& q, const Admix& admix) const {
+void Pseudocounts<Abc>::AdmixTo(const POHmm<Abc>& q, Profile<Abc>& p, const Admix& admix) const {
     const typename POHmm<Abc>::Graph& g = q.g;
 
     for (size_t i = 1; i <= q.size(); ++i) {
@@ -128,7 +124,7 @@ void Pseudocounts<Abc>::Mix(Profile<Abc>& p, const POHmm<Abc>& q, const Admix& a
 // Adjusts the Neff in 'p' to 'neff' by admixing q and returns tau
 template<class Abc>
 template<class T>
-double Pseudocounts<Abc>::AdjustNeff(Profile<Abc>& p, const T& q, CSBlastAdmix& admix, 
+double Pseudocounts<Abc>::AdmixToNeff(const T& q, Profile<Abc>& p, CSBlastAdmix& admix, 
     double neff, double delta) const {
 
     double l  = kAdjustMin;
@@ -137,7 +133,7 @@ double Pseudocounts<Abc>::AdjustNeff(Profile<Abc>& p, const T& q, CSBlastAdmix& 
     Profile<Abc> pp;
     while (l < kAdjustMax - kAdjustEps && r > kAdjustMin + kAdjustEps) {
         pp = p;
-        Mix(pp, q, admix);
+        AdmixTo(q, pp, admix);
         double ne = Neff(pp);
         if (fabs(ne - neff) <= delta) {
             break;
@@ -149,10 +145,10 @@ double Pseudocounts<Abc>::AdjustNeff(Profile<Abc>& p, const T& q, CSBlastAdmix& 
     }
     if (l > kAdjustMax - kAdjustEps) {
         admix.pca = kAdjustMax;
-        Mix(p, q, admix);
+        AdmixTo(q, p, admix);
     } else if (r < kAdjustMin + kAdjustEps) {
         admix.pca = kAdjustMin;
-        Mix(p, q, admix);
+        AdmixTo(q, p, admix);
     } else {
         p = pp;
     }

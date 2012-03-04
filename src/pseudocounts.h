@@ -106,20 +106,19 @@ class Pseudocounts {
     // Adds pseudocounts to alignment derived profile.
     virtual void AddToPOHmm(const POHmm<Abc>* hhm, Profile<Abc>& p) const {};
 
-    // Mixes Profile p and Sequence q
-    void Mix(Profile<Abc>& p, const Sequence<Abc>& q, const Admix& admix) const;
+    // Admixes Sequence q to Profile p
+    void AdmixTo(const Sequence<Abc>& q, Profile<Abc>& p, const Admix& admix) const;
 
-    // Mixes Profile p and CountProfile q
-    void Mix(Profile<Abc>& p, const CountProfile<Abc>& q, const Admix& admix) const;
+    // Admixes CountProfile q to Profile q
+    void AdmixTo(const CountProfile<Abc>& q, Profile<Abc>& p, const Admix& admix) const;
 
-    // Mixes Profile p and POHmm q
-    void Mix(Profile<Abc>& p, const POHmm<Abc>& q, const Admix& admix) const;
+    // Admixes POHmm q to profile q
+    void AdmixTo(const POHmm<Abc>& q, Profile<Abc>& p, const Admix& admix) const;
 
-    // Adjusts the Neff in Profile p to neff by admixing q and returns tau
+    // Admixes q to Profile p such that the Neff in p is equal to neff
     template<class T>
-    double AdjustNeff(Profile<Abc>& p, const T& q, CSBlastAdmix& admix,
-        double neff, double delta) const;
-
+    double AdmixToNeff(const T& q, Profile<Abc>& p, CSBlastAdmix& admix, 
+        double neff, double delta = kAdjustDelta) const;
 
   private:
     static const double kNormalize  = 1e-5; // Normalization threshold

@@ -84,7 +84,7 @@ class PseudocountsTest : public testing::Test {
     static const size_t kRounds = 2;
 };
 
-TEST_F(PseudocountsTest, TauNull) {
+TEST_F(PseudocountsTest, ConstantAdmix) {
   ConstantAdmix admix(0.0);
   for (size_t r = 0; r < kRounds; ++r) {
     Sequence<AA> seq = GetRndSeq();
