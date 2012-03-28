@@ -9,22 +9,14 @@ namespace cs {
 
 // Adds pseudocounts to sequence using admixture and returns normalized profile.
 template<class Abc>
-Profile<Abc> Pseudocounts<Abc>::AddTo(const Sequence<Abc>& seq, const Admix& admix) const {
+Profile<Abc> Pseudocounts<Abc>::AddTo(const Sequence<Abc>& seq, Admix& admix) const {
     Profile<Abc> p(seq.length());
     AddToSequence(seq, p);
-    AdmixTo(seq, p, admix);
-    for(size_t i = 0; i < seq.length(); ++i) p[i][Abc::kAny] = 0.0;
-    Normalize(p, 1.0);
-    return p;
-}
-
-// Adds pseudocounts to sequence using target Neff and returns normalized profile.
-template<class Abc>
-Profile<Abc> Pseudocounts<Abc>::AddTo(const Sequence<Abc>& seq, CSBlastAdmix& admix,
-        double neff, double delta) const {
-    Profile<Abc> p(seq.length());
-    AddToSequence(seq, p);
-    AdmixToNeff(seq, p, admix, neff, delta);
+    if (target_neff_ >= 1.0) {
+      AdmixToTargetNeff(seq, p, admix);
+    } else {
+      AdmixTo(seq, p, admix);
+    }
     for(size_t i = 0; i < seq.length(); ++i) p[i][Abc::kAny] = 0.0;
     Normalize(p, 1.0);
     return p;
@@ -32,23 +24,14 @@ Profile<Abc> Pseudocounts<Abc>::AddTo(const Sequence<Abc>& seq, CSBlastAdmix& ad
 
 // Adds pseudocounts to sequence using admixture and returns normalized profile.
 template<class Abc>
-Profile<Abc> Pseudocounts<Abc>::AddTo(const CountProfile<Abc>& cp, const Admix& admix) const {
+Profile<Abc> Pseudocounts<Abc>::AddTo(const CountProfile<Abc>& cp, Admix& admix) const {
     Profile<Abc> p(cp.counts.length());
     AddToProfile(cp, p);
-    AdmixTo(cp, p, admix);
-    for(size_t i = 0; i < cp.counts.length(); ++i)
-        p[i][Abc::kAny] = 0.0;
-    Normalize(p, 1.0);
-    return p;
-}
-
-// Adds pseudocounts to sequence using target Neff and returns normalized profile.
-template<class Abc>
-Profile<Abc> Pseudocounts<Abc>::AddTo(const CountProfile<Abc>& cp, CSBlastAdmix& admix,
-        double neff, double delta) const {
-    Profile<Abc> p(cp.counts.length());
-    AddToProfile(cp, p);
-    AdmixToNeff(cp, p, admix, neff, delta);
+    if (target_neff_ >= 1.0) {
+      AdmixToTargetNeff(cp, p, admix);
+    } else {
+      AdmixTo(cp, p, admix);
+    }
     for(size_t i = 0; i < cp.counts.length(); ++i)
         p[i][Abc::kAny] = 0.0;
     Normalize(p, 1.0);
@@ -57,34 +40,21 @@ Profile<Abc> Pseudocounts<Abc>::AddTo(const CountProfile<Abc>& cp, CSBlastAdmix&
 
 // Adds pseudocounts to counts in PO-HMM vertices using admixture and stores results in 'probs' vector.
 template<class Abc>
-void Pseudocounts<Abc>::AddTo(POHmm<Abc>* hmm, const Admix& admix) const {
+void Pseudocounts<Abc>::AddTo(POHmm<Abc>* hmm, Admix& admix) const {
     typename POHmm<Abc>::Graph& g = hmm->g;
     size_t size = hmm->size();
 
     Profile<Abc> p(size);
     AddToPOHmm(hmm, p);
-    AdmixTo(*hmm, p, admix);
+    if (target_neff_ >= 1.0) {
+      AdmixToTargetNeff(*hmm, p, admix);
+    } else {
+      AdmixTo(*hmm, p, admix);
+    }
     for (size_t i = 1; i <= size; ++i) {
         memcpy(&g[i].probs[0], p[i - 1], Abc::kSize * sizeof(double));
         g[i].probs[Abc::kAny] = 1.0;
         Normalize(g[i].probs, 1.0);
-    }
-}
-
-// Adds pseudocounts to counts in PO-HMM vertices and stores results in 'probs' vector.
-template<class Abc>
-void Pseudocounts<Abc>::AddTo(POHmm<Abc>* hmm, CSBlastAdmix& admix,
-        double neff, double delta) const {
-    typename POHmm<Abc>::Graph& g = hmm->g;
-    size_t size = hmm->size();
-
-    Profile<Abc> p(size);
-    AddToPOHmm(hmm, p);
-    AdmixToNeff(*hmm, p, admix, neff, delta);
-    for (size_t i = 1; i <= size; ++i) {
-        memcpy(&g[i].probs[0], p[i - 1], Abc::kSize * sizeof(double));
-        g[i].probs[Abc::kAny] = 1.0;
-        Normalize(hmm->g[i].probs, 1.0);
     }
 }
 
@@ -121,38 +91,37 @@ void Pseudocounts<Abc>::AdmixTo(const POHmm<Abc>& q, Profile<Abc>& p, const Admi
     }
 }
 
-// Adjusts the Neff in 'p' to 'neff' by admixing q and returns tau
+// Adjusts the Neff in 'p' to 'neff' by admixing q and returns tau.
 template<class Abc>
 template<class T>
-double Pseudocounts<Abc>::AdmixToNeff(const T& q, Profile<Abc>& p, CSBlastAdmix& admix, 
-    double neff, double delta) const {
+double Pseudocounts<Abc>::AdmixToTargetNeff(const T& q, Profile<Abc>& p, Admix& admix) const {
 
-    double l  = kAdjustMin;
-    double r  = kAdjustMax;
-    admix.pca = kAdjustInit;
+    double l = kTargetNeffParamMin;
+    double r = kTargetNeffParamMax;
+    admix.SetTargetNeffParam(kTargetNeffParamInit);
     Profile<Abc> pp;
-    while (l < kAdjustMax - kAdjustEps && r > kAdjustMin + kAdjustEps) {
+    while (l < kTargetNeffParamMax - kTargetNeffEps && r > kTargetNeffParamMin + kTargetNeffEps) {
         pp = p;
         AdmixTo(q, pp, admix);
         double ne = Neff(pp);
-        if (fabs(ne - neff) <= delta) {
+        if (fabs(ne - target_neff_) <= target_neff_delta_) {
             break;
         } else {
-            if (ne < neff) l = admix.pca;
-            else r = admix.pca;
+            if (ne < target_neff_) l = admix.GetTargetNeffParam();
+            else r = admix.GetTargetNeffParam();
         }
-        admix.pca = 0.5 * (l + r);
+        admix.SetTargetNeffParam(0.5 * (l + r));
     }
-    if (l > kAdjustMax - kAdjustEps) {
-        admix.pca = kAdjustMax;
+    if (l > kTargetNeffParamMax - kTargetNeffEps) {
+        admix.SetTargetNeffParam(kTargetNeffParamMax);
         AdmixTo(q, p, admix);
-    } else if (r < kAdjustMin + kAdjustEps) {
-        admix.pca = kAdjustMin;
+    } else if (r < kTargetNeffParamMin + kTargetNeffEps) {
+        admix.SetTargetNeffParam(kTargetNeffParamMin);
         AdmixTo(q, p, admix);
     } else {
         p = pp;
     }
-    return admix.pca;
+    return admix.GetTargetNeffParam();
 }
 
 

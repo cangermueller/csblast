@@ -306,13 +306,8 @@ int CSBlastApp::Run() {
 
       if (itr) {
         CountProfile<AA> ali_profile(*ali_, !opts_.global_weights);
-        if (opts_.pc_neff == 0.0) {
-          CSBlastAdmix admix(opts_.pc_admix, opts_.pc_ali);
-          pssm_.reset(new Pssm(*it, pc_->AddTo(ali_profile, admix)));
-        } else {
-          CSBlastAdmix admix(1.0, opts_.pc_ali);
-          pssm_.reset(new Pssm(*it, pc_->AddTo(ali_profile, admix, opts_.pc_neff)));
-        }
+        CSBlastAdmix admix(opts_.pc_admix, opts_.pc_ali);
+        pssm_.reset(new Pssm(*it, pc_->AddTo(ali_profile, admix)));
         pssm_->Shift(opts_.shift);
         csblast_->set_pssm(pssm_.get());
       }
@@ -374,6 +369,7 @@ void CSBlastApp::Init() {
   } else {
     throw Exception("Unknown pseudocount engine '%s'!", opts_.pc_engine.c_str());
   }
+  pc_->SetTargetNeff(opts_.pc_neff);
 
   // if (!opts_.no_penalty) {
   //   // Setup repeat penalizer
@@ -389,30 +385,18 @@ void CSBlastApp::PrepareForRun(const Sequence<AA>& query) {
   // restart file is provided
   if (opts_.csblast.find('R') == opts_.csblast.end()) {
     if (opts_.ali_infile.empty()) {
-      if (opts_.pc_neff == 0.0) {
-        ConstantAdmix admix(opts_.pc_admix);
-        pssm_.reset(new Pssm(query, pc_->AddTo(query, admix)));
-      } else {
-        CSBlastAdmix admix(1.0, opts_.pc_ali);
-        pssm_.reset(new Pssm(query, pc_->AddTo(query, admix, opts_.pc_neff)));
-      }
-      pssm_->Shift(opts_.shift);
-
+      ConstantAdmix admix(opts_.pc_admix);
+      pssm_.reset(new Pssm(query, pc_->AddTo(query, admix)));
     } else {
       FILE* fp = fopen(opts_.ali_infile.c_str(), "r");
       Alignment<AA> query_ali(fp, PSI_ALIGNMENT);
       query_ali.AssignMatchColumnsBySequence(0);
       fclose(fp);
       CountProfile<AA> ali_profile(query_ali, !opts_.global_weights);
-      if (opts_.pc_neff == 0.0) {
-        CSBlastAdmix admix(opts_.pc_admix, opts_.pc_ali);
-        pssm_.reset(new Pssm(query, pc_->AddTo(ali_profile, admix)));
-      } else {
-        CSBlastAdmix admix(1.0, opts_.pc_ali);
-        pssm_.reset(new Pssm(query, pc_->AddTo(ali_profile, admix, opts_.pc_neff)));
-      }
-      pssm_->Shift(opts_.shift);
+      CSBlastAdmix admix(opts_.pc_admix, opts_.pc_ali);
+      pssm_.reset(new Pssm(query, pc_->AddTo(ali_profile, admix)));
     }
+    pssm_->Shift(opts_.shift);
   }
   // Use composition based score adjustment type 1 to avoid
   // warnings when restarting from checkpoint file

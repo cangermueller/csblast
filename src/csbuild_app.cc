@@ -219,6 +219,7 @@ int CSBuildApp<Abc>::Run() {
     fclose(fin);
     pc_.reset(new LibraryPseudocounts<Abc>(*lib_, opts_.weight_center,
                                            opts_.weight_decay));
+    pc_->SetTargetNeff(opts_.pc_neff);
 
   } else if (!opts_.modelfile.empty() && opts_.pc_engine == "crf") {
     fprintf(out_, "Reading CRF from %s ...\n",
@@ -229,6 +230,7 @@ int CSBuildApp<Abc>::Run() {
     crf_.reset(new Crf<Abc>(fin));
     fclose(fin);
     pc_.reset(new CrfPseudocounts<Abc>(*crf_));
+    pc_->SetTargetNeff(opts_.pc_neff);
   }
 
   CountProfile<Abc> profile;  // output profile
@@ -243,15 +245,9 @@ int CSBuildApp<Abc>::Run() {
     profile.name = profile.name.substr(0, profile.name.length() - 1);
 
     if (pc_) {
-      if (opts_.pc_neff == 0.0) {
-        fprintf(out_, "Adding cs-pseudocounts (admix=%.2f) ...\n", opts_.pc_admix);
-        ConstantAdmix admix(opts_.pc_admix);
-        profile.counts = pc_->AddTo(seq, admix);
-      } else {
-        fprintf(out_, "Adding cs-pseudocounts (neff=%.2f) ...\n", opts_.pc_neff);
-        CSBlastAdmix admix(1.0, opts_.pc_ali);
-        profile.counts = pc_->AddTo(seq, admix, opts_.pc_neff);
-      }
+      fputs("Adding cs-pseudocounts ...\n", out_);
+      ConstantAdmix admix(opts_.pc_admix);
+      profile.counts = pc_->AddTo(seq, admix);
     }
     fprintf(out_, "Effective number of sequences exp(entropy) = %.2f\n", 
         Neff(profile.counts));
@@ -276,15 +272,9 @@ int CSBuildApp<Abc>::Run() {
     profile.name = profile.name.substr(0, profile.name.length() - 1);
 
     if (pc_) {
-      if (opts_.pc_neff == 0.0) {
-        fprintf(out_, "Adding cs-pseudocounts (admix=%.2f) ...\n", opts_.pc_admix);
-        CSBlastAdmix admix(opts_.pc_admix, opts_.pc_ali);
-        profile.counts = pc_->AddTo(profile, admix);
-      } else {
-        fprintf(out_, "Adding cs-pseudocounts (neff=%.2f) ...\n", opts_.pc_neff);
-        CSBlastAdmix admix(1.0, opts_.pc_ali);
-        profile.counts = pc_->AddTo(profile, admix, opts_.pc_neff);
-      }
+      fputs("Adding cs-pseudocounts ...\n", out_);
+      CSBlastAdmix admix(opts_.pc_admix, opts_.pc_ali);
+      profile.counts = pc_->AddTo(profile, admix);
       Normalize(profile.counts, profile.neff);
     }
     Profile<Abc> prof = profile.counts;
