@@ -102,7 +102,7 @@ struct HHsearchAdmix : public Admix {
 template<class Abc>
 class Pseudocounts {
   public:
-    Pseudocounts() {}
+    Pseudocounts() : target_neff_(0.0), target_neff_delta_(0.025) {}
 
     virtual ~Pseudocounts() {}
 

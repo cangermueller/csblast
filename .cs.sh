@@ -2,7 +2,7 @@ shopt -s extglob
 
 export CS=${CS:-$HOME/src/cs}
 
-export CSVERSION="2.2.1"
+export CSVERSION="2.2.2"
 
 export CSB=$CS/bin
 export CSS=$CS/scripts

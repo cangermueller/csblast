@@ -1,3 +1,6 @@
+== CS-BLAST 2.2.2 (March 28th, 2012)
+* Generalizes target Neff adjustment to all Admix classes.
+
 == CS-BLAST 2.2.1 (Feburary 5th, 2012)
 * --shift -0.005 is default now.
 * Fasta sequences starting with >ss_ or >sa_ are ignored now. 
