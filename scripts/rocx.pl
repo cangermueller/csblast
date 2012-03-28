@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use Getopt::Long;
 use Pod::Usage;
+use File::Spec::Functions qw(catdir);
 
 
 =pod
@@ -16,8 +17,8 @@ use Pod::Usage;
  rocx.pl [OPTIONS] --dir DIR+
 
  OPTIONS:
- -d, --dir DIR+       Input directory list
- -c, --curve CURVE    Name of the rocx curve file in the given directory [default: rocx.dat]
+ -d, --dir DIR+         Input directory list
+ -b, --basename NAME    Basename of rocx files [def: ]
  
 =head1 AUTHOR
 
@@ -31,7 +32,7 @@ use Pod::Usage;
 
 
 my @dirs;
-my $curve = "rocx.dat";
+my $basename;
 my @rocx;
 
 
@@ -39,18 +40,20 @@ my @rocx;
 
 
 GetOptions(
-  "dir|d=s{1,}" => \@dirs,
-  "curve|c=s"   => \$curve,
-  "help|h"      => sub { pod2usage(2); }
-) or pod2usage(1);
+  "d|dir=s{1,}"      => \@dirs,
+  "b|basename=s"     => \$basename,
+  "h|help"           => sub { pod2usage(2); }
+  ) or pod2usage(1);
 unless (scalar(@dirs)) { pod2usage("Input directories missing!"); }
 
 
 ### Compute mean rocx scores ###
 
 
+my $rocx_file = sprintf("%srocx.dat", $basename ? "${basename}_" : "");
 foreach my $dir (@dirs) {
-  if (-e "$dir/$curve") { push(@rocx, [&rocx("$dir/$curve"), $dir]); }
+  my $path = catdir($dir, $rocx_file);
+  if (-f $path) { push(@rocx, [&rocx($path), $dir]); }
 }
 @rocx = sort({ $b->[0] <=> $a->[0] } @rocx);
 printf("%3s\t%10s\t%s\n", "NR", "ROCX", "NAME"); 

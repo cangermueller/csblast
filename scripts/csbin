@@ -450,8 +450,8 @@ class CSBin
       elsif (qsid.to_s=~/(a\.118\.24)|(d\.211\.1)/  && tsid.to_s=~/(a\.118\.24)|(d\.211\.1)/ )
         # a.118.24: pseudo ankyrin repeat like; d.211.1: ankyrin repeat
         return :uc
-      elsif (qsid.to_s=~/(a\.1\.2\.1)|(d\.58\.1\.5)/ && tsid.to_s=~/(a\.1\.2\.1)|(d\.58\.1\.5)/)
-        # a.1.2.1: Fe4-S4 clusters; d.58.1.5: Fe4-S4 ferrodoxin multidomain 
+      elsif (qsid.to_s=~/(a\.1\.2)|(d\.58\.1)/ && tsid.to_s=~/(a\.1\.2)|(d\.58\.1)/)
+        # a.1.2: alpha helical ferrodoxin; d.58.1: Fe4-S4 ferrodoxin
         return :uc
       else
         return :fp

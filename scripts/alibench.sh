@@ -31,7 +31,7 @@ PARAMS=
 SUBMIT=
 
 CSBLAST="csblast-$CSVERSION"
-E="5e4"
+E="1e4"
 V=100
 B=100
 MULT=100
@@ -107,7 +107,6 @@ $CSBLAST \\
   -o <%= outfile %> \\
   -d <%= dbfile %> \\
   --blast-path $BLAST_PATH \\
-  -x 1.0 \\
   -e $E -v $V -b $B $PARAMS
 END
 fi

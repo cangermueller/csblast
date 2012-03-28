@@ -137,6 +137,7 @@ class CSPlotAlignments
       :scat_prec => "scat_prec",
       :scat_sens => "scat_sens"
     }
+    @out_basename = nil
     @labels       = []
 
     self
@@ -160,8 +161,9 @@ class CSPlotAlignments
       end
 
       o.on("-i", "--indirs dir1,dir2", "Comma separated list of directories with runs.", Array) { |val| @indirs=val }
-      o.on("-o", "--directory DIRECTORY", "Output directory (default: #{@workdir}).") { |val| @workdir=val }
       o.on("-b", "--basename BASE", String, "Basename of data files (default: #{@basename})." ) { |val| @basename = val}
+      o.on("-o", "--directory DIRECTORY", "Output directory (default: #{@workdir}).") { |val| @workdir=val }
+      o.on("-O", "--out-basename BASE", "Use special basename for output plot files (default: #{@out_basename}).") { |val| @out_basename=val }
       o.on("-t", "--title TITLE", "Base title of plots (default: #{@title}).") { |val| @title=val }
       o.on("-l", "--labels l1,l2,l3", Array, "List of labels to be used instead of directory names (default: off)") { |val| @labels = val }
       o.on("-k", "--keep-files", TrueClass, "Keep gnuplot scripts (default: keep #{@keep_files})." ) {|val| @keep_files=true }
@@ -186,7 +188,6 @@ class CSPlotAlignments
     if args.empty? then puts options; exit end
     options.parse!(args)
     check_args
-
     draw_plots
   end
 
@@ -194,9 +195,9 @@ class CSPlotAlignments
     puts "Generating plots..." if @verbose
     FileUtils.mkdir_p(@workdir) unless File.directory?(@workdir)
     @plots.each do |plot|
-      pdffile     = compose_filename(@workdir, @basenames[plot]+'.pdf')
-      psfile      = compose_filename(@workdir, @basenames[plot]+'.ps')
-      gnuplotfile = compose_filename(@workdir, @basenames[plot]+'.gp')
+      pdffile     = compose_outfile(@workdir, @basenames[plot]+'.pdf')
+      psfile      = compose_outfile(@workdir, @basenames[plot]+'.ps')
+      gnuplotfile = compose_outfile(@workdir, @basenames[plot]+'.gp')
       xlabel = get_xlabel(plot)
       ylabel = get_ylabel(plot)
       title = @title
@@ -204,7 +205,7 @@ class CSPlotAlignments
         title = @basename.gsub(/_/,' ')
       end
       title = (title.nil? ? "" : title+" - ") + get_subtitle(plot)
-      datafiles = @indirs.map {|d| compose_filename(d, @plotfiles[plot]) }
+      datafiles = @indirs.map {|d| File.join(d, @basename ? sprintf("%s_%s", @basename, @plotfiles[plot]) : @plotfiles[plot]) }
       legends = @indirs.map {|d| File.basename(d).gsub(/_/, ' ') }
       @labels.each_index do |i|
         break if i >= legends.size
@@ -285,8 +286,9 @@ class CSPlotAlignments
     end
   end
 
-  def compose_filename(dir, filename)
-    return File.join(dir, @basename.nil? ? filename : sprintf("%s_%s", @basename, filename))
+  def compose_outfile(dir, filename)
+    base = @out_basename ? @out_basename : @basename 
+    return File.join(dir, base ? sprintf("%s_%s", base, filename) : filename)
   end
 
   def execute(cmd)

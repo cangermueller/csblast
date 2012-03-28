@@ -57,6 +57,7 @@ class CSAliBench
       o.on("-g", "--glob GLOB", "Glob matching resultfiles in each directory (default: #{@resglob}).") { |val| @resglob=val }
       o.on("--min-seqid SEQID", Float, "Minimal sequence identity in benchmark (default: #{@min_seqid})." ) { |val| @min_seqid = val>1.0 ? val/100.0 : val }
       o.on("--max-seqid SEQID", Float, "Maximal sequence identity in benchmark (default: #{@max_seqid})." ) { |val| @max_seqid = val>1.0 ? val/100.0 : val }
+      o.on("--max-evalue EVALUE", Float, "Maximal e-value of hits used for evaluation (default: #{@max_evalue})." ) { |val| @max_evalue=val }
       o.on("--[no-]strict", TrueClass, "Count aligned residues with more than 5A as TPs. (default: #{@strict})" ) { |val| @strict = val }
       o.on("--[no-]common", TrueClass, "Only use alignments predicted by all methods. (default: #{@common})" ) { |val| @common = val }
       o.on("--bin-width WIDTH", Float, "Width of bins in benchmark statistics (default: #{@bin_width})." ) { |val| @bin_width = val }
@@ -81,6 +82,12 @@ class CSAliBench
     options.parse!(args)
     check_args
 
+    if @verbose
+      printf "Computing statistics%s for following set of directories:\n", @basename ? " (#{@basename})" : ""
+      @dirs.each do |d|
+        puts "    #{d}"
+      end
+    end
     puts "Reading structural alignments in #{@alidir} ..." if @verbose
     Dir.glob(File.join(@alidir, "*"+@file_ext[@mode])).each do |alifile|
       basename = File.basename(alifile, @file_ext[@mode])
@@ -229,14 +236,14 @@ class CSAliBench
       refali_pairs = @mode==:dali ? aligned_pairs_from_dali(refali) : aligned_pairs_from_tmalign(refali)
       @dirs.each do |dir|
         hit = hits[dir][pair]
-        ali             = Alignment.new
-        ali.file        = File.join(dir, resfile)
-        ali.query       = pair.first
-        ali.target      = pair.last
-        ali.hit         = hit
+        ali        = Alignment.new
+        ali.file   = File.join(dir, resfile)
+        ali.query  = pair.first
+        ali.target = pair.last
+        ali.hit    = hit
 
         if hit.nil?
-          ali.precision   = 0.0
+          ali.precision   = nil
           ali.sensitivity = 0.0
           ali.length      = 0
         else
@@ -253,8 +260,8 @@ class CSAliBench
 
         bin = ((refali.seqid-@min_seqid)/@bin_width).to_i
         if (bin<0) then bin=0 elsif (bin>@nbins-1) then bin=@nbins-1 end
-        @bins_sens[dir][bin] << ali.sensitivity
-        @bins_prec[dir][bin] << ali.precision
+        @bins_sens[dir][bin] << ali.sensitivity unless ali.sensitivity.nil?
+        @bins_prec[dir][bin] << ali.precision unless ali.precision.nil?
         @alis[dir][pair] = ali
       end
     end
@@ -307,7 +314,9 @@ class CSAliBench
       alis_ab = []
       @alis[a].each do |pair, ali_a|
         ali_b = @alis[b][pair]
-        alis_ab << [ali_a, ali_b] unless ali_b.nil?
+        unless ali_b.nil? || ali_a.length == 0 || ali_b.length == 0
+          alis_ab << [ali_a, ali_b]
+        end
       end
       puts "    " + outfile if @verbose
       File.open(outfile, 'w') do |fh|
@@ -354,6 +363,7 @@ class CSAliBench
     File.open(datafile, 'w') do |f|
       f.printf("%-10s  %11s  %11s  %6s\n", "#query", "precision", "sensitivity", "length")
       @alis[dir].each do |pair, ali|
+        next if ali.length == 0
         f.printf("%-10s  %11.4f  %11.4f  %6d\n", 
                  ali.query, ali.precision, ali.sensitivity, ali.length)
       end

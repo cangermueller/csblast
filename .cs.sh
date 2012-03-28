@@ -21,6 +21,7 @@ export CSIBENCHO=$CSD/bench_csiblast.2012-02-04
 
 export L4000=$CSM/lib/K4000.lib
 export C4000=$CSC/uni20v2_t_N6.0M_g1.0_u4.00_U10.00_M_K4000_e0.10_D2.5_P2_b1.0_c1.6_d0.85_p1.0_me0.13.crf
+export C1600=$CSC/uni20v2_t_N6.0M_g1.0_u4.00_U10.00_M_K1600_e0.12_D2.5_P3_b1.0_c1.0_d0.8_p1.0_m0.17.crf
 
 export BLAST_PATH=/cluster/bioprogs/blast-2.2.19/bin
 export HHREPID_PATH=/cluster/bioprogs/hhrepid
@@ -112,4 +113,13 @@ function rmfast {
     fi
     find $DIR -maxdepth 1 -name "*.$EXT" -delete
   done
+}
+
+function rargs {
+  RARGS=
+  for ((i = 1; i <= $#; ++i)); do
+    eval ARG=\${$i}
+    RARGS="$RARGS,'$ARG'"
+  done
+  echo ${RARGS:1}
 }

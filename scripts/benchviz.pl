@@ -38,6 +38,7 @@ use File::Spec::Functions qw(catdir catfile);
         --iter INT          Number of CSI-BLAST iterations [def: 1]
         --no-under          Substitute underscore in labels [def: false]
         --[no-]sort         Sort entities by their ROC score [def: true]
+        --hhblits           Adjust axis for hhblits benchmark [def: false]
     -k, --keep              Keep plot files [def: false]
     -h, --help              Show this help message
 
@@ -61,6 +62,7 @@ my $db;
 my $iter;
 my $no_under;
 my $sort = 1;
+my $hhblits;
 my $keep;
 
 my @entities;
@@ -101,6 +103,7 @@ GetOptions(
   "iter=i"        => \$iter,
   "no-under"      => \$no_under,
   "sort!"         => \$sort,
+  "hhblits"       => \$hhblits,
   "k|keep"        => \$keep,
   "h|help"        => sub { pod2usage(2); }
 ) or pod2usage(1);
@@ -114,8 +117,9 @@ unless ($db) {
 }
 unless ($iter) {
   $iter = 1;
+  my $iter_arg = $hhblits ? "n" : "j";
   foreach my $d (@dirs) {
-    if (basename($d) =~ /(?:\A|_)j(\d)(?:\z|_)/ && $1 > $iter) { $iter = $1; }
+    if (basename($d) =~ /(?:\A|_)$iter_arg(\d)(?:\z|_)/ && $1 > $iter) { $iter = $1; }
   }
 }
 
@@ -191,6 +195,18 @@ sub plot {
       set label "1%" at 40,7500 textcolor ls 9
       set label "10%" at 500,7500 textcolor ls 9
       set label "20%" at 1150,7500 textcolor ls 9/;
+    } elsif ($db eq "scop20_1.73_test" && $hhblits && $iter == 1) { $cmd .= qq/
+      set xrange [1:6000]
+      set yrange [0:25000]
+      set label "1%" at 60,8000 textcolor ls 9
+      set label "10%" at 600,8000 textcolor ls 9
+      set label "20%" at 1300,8000 textcolor ls 9/;
+    } elsif ($db eq "scop20_1.73_test" && $hhblits) { $cmd .= qq/
+      set xrange [1:6000]
+      set yrange [0:40000]
+      set label "1%" at 110,17000 textcolor ls 9
+      set label "10%" at 1100,17000 textcolor ls 9
+      set label "20%" at 2500,17000 textcolor ls 9/;
     } elsif ($db eq "scop20_1.73_test" && $iter == 1) { $cmd .= qq/
       set xrange [1:6000]
       set yrange [0:10000]
@@ -247,6 +263,18 @@ sub plot {
       set label "1%" at 2,275 textcolor ls 9
       set label "10%" at 20,275 textcolor ls 9
       set label "20%" at 50,275 textcolor ls 9/;
+    } elsif ($db eq "scop20_1.73_test" && $hhblits && $iter == 1) { $cmd .= qq/
+      set xrange [1:600]
+      set yrange [0:1400]
+      set label "1%" at 4,550 textcolor ls 9
+      set label "10%" at 40,550 textcolor ls 9
+      set label "20%" at 95,550 textcolor ls 9/;
+    } elsif ($db eq "scop20_1.73_test" && $hhblits) { $cmd .= qq/
+      set xrange [1:600]
+      set yrange [0:2000]
+      set label "1%" at 4,550 textcolor ls 9
+      set label "10%" at 40,550 textcolor ls 9
+      set label "20%" at 95,550 textcolor ls 9/;
     } elsif ($db eq "scop20_1.73_test" && $iter == 1) { $cmd .= qq/
       set xrange [1:600]
       set yrange [0:700]
@@ -367,6 +395,10 @@ sub plot {
       set yrange [0:0.7]/;
     } elsif ($db eq "scop20_1.73_opt") { $cmd .= qq/
       set yrange [0:0.8]/;
+    } elsif ($db eq "scop20_1.73_test" && $hhblits && $iter == 1) { $cmd .= qq/
+      set yrange [0:0.75]/;
+    } elsif ($db eq "scop20_1.73_test" && $hhblits) { $cmd .= qq/
+      set yrange [0:0.85]/;
     } elsif ($db eq "scop20_1.73_test" && $iter == 1) { $cmd .= qq/
       set yrange [0:0.6]/;
     } elsif ($db eq "scop20_1.73_test" && $iter == 2) { $cmd .= qq/
@@ -422,11 +454,23 @@ sub cmd_curves {
     my $e = $entities[$i];
     if ($e->{PLOTS}->{$plot}) {
       push(@curves, sprintf('"%s" title "%s" with lines ls %d', 
-          &get_datafile($plot, $e->{DIR}), ($plot eq "evalue" ? "" : sprintf("%.3f: ", $e->{ROCX})) . $e->{LABEL},
+          &get_datafile($plot, $e->{DIR}), 
+          &get_title($plot, $e),
           basename($e->{DIR}) =~ /^(blast|psiblast)/ ? 1 : $ls++));
     }
   }
   return join(", ", @curves);
+}
+
+sub get_title {
+  my ($plot, $e) = @_;
+  if ($plot eq "evalue" || !defined($e->{ROCX})) {
+    return $e->{LABEL};
+  } elsif ($plot eq "rocx") {
+    return sprintf("%s: %.3f", $e->{LABEL}, $e->{ROCX});
+  } else {
+    return sprintf("%.3f: %s", $e->{ROCX}, $e->{LABEL});
+  }
 }
 
 
