@@ -846,7 +846,9 @@ void CSTrainSetApp<Abc>::SampleTrainingSeqs(TrainSeqs& samples, size_t nsamples_
                 Profile<Abc> pw_y = cpw_y.counts;
                 Normalize(pw_y, 1.0);
                 // Estimated target Neff in count profile = Neff / Neff(cp_i) * Neff(p)
-                cpw_y.counts = pc_->AddTo(cpw_y, opts_.neff_y_target / cpw_y.neff[center] * Neff(pw_y));
+                CSBlastAdmix admix(opts_.pc_admix, opts_.pc_ali);
+                pc_->SetTargetNeff(opts_.neff_y_target / cpw_y.neff[center] * Neff(pw_y));
+                cpw_y.counts = pc_->AddTo(cpw_y, admix);
                 Assign(cpw_y.neff, opts_.neff_y_target);
                 Normalize(cpw_y.counts, cpw_y.neff);
               }
@@ -951,7 +953,9 @@ void CSTrainSetApp<Abc>::SampleTrainingProfiles(TrainProfiles& samples) {
           Profile<Abc> pw_y = cpw_y.counts;
           Normalize(pw_y, 1.0);
           // Estimated target Neff in count profile = Neff / Neff(M_i) * Neff(CP_i)
-          pw_y = pc_->AddTo(cpw_y, opts_.neff_y_target / cpw_y.neff[center] * Neff(pw_y));
+          CSBlastAdmix admix(opts_.pc_admix, opts_.pc_ali);
+          pc_->SetTargetNeff(opts_.neff_y_target / cpw_y.neff[center] * Neff(pw_y));
+          pw_y = pc_->AddTo(cpw_y, admix);
           cpw_y.counts = pw_y;
           Assign(cpw_y.neff, opts_.neff_y_target);
           Normalize(cpw_y.counts, cpw_y.neff);

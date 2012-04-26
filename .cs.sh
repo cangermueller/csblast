@@ -2,7 +2,7 @@ shopt -s extglob
 
 export CS=${CS:-$HOME/src/cs}
 
-export CSVERSION="2.2.2"
+export CSVERSION="2.2.1"
 
 export CSB=$CS/bin
 export CSS=$CS/scripts
@@ -122,4 +122,33 @@ function rargs {
     RARGS="$RARGS,'$ARG'"
   done
   echo ${RARGS:1}
+}
+
+function cpdat {
+  if [ $# -lt 2 ]; then
+    echo "cpdat SRC+ DST!"
+    return 1
+  fi
+  SRCS=
+  while [ $# -gt 1 ]; do
+    SRCS="$SRCS $1"
+    shift
+  done
+  DST=$1
+  for SRC in $SRCS; do
+    if [ -d $SRC ]; then
+      echo $SRC
+      D=$DST/`basename $SRC`
+      if [ -d $D ]; then
+        "'$D' already exists!"
+      else
+        mkdir $D
+        for DAT in $SRC/*.dat $SRC/*.out $SRC/*.sh $SRC/RUNME; do
+          if [ -f $DAT ]; then
+           cp $DAT $D
+         fi
+        done
+      fi
+    fi
+  done
 }

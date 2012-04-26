@@ -42,7 +42,7 @@ E="1e5"
 V=1000
 B=0
 H="1e-3"
-MULT=(50 10 5)
+MULT=(50 10 5 3 2)
 
 
 ### Initialization ###

@@ -30,6 +30,7 @@ DB="scop30_1.75_ali_seqid0.3_tmscore0.6"
 PARAMS=
 SUBMIT=
 
+CSVERSION=2.2.1
 CSBLAST="csblast-$CSVERSION"
 E="1e4"
 V=100

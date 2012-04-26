@@ -39,7 +39,7 @@ class CSAliBench
   def options
     OptionParser.new do |o|
       o.set_summary_indent('  ')
-      o.banner = "Usage: #{File.basename($0)} -d dirlist -a alidir [options]"
+      o.banner = "Usage: #{File.basename($0)} -i dirlist -a alidir [options]"
       o.define_head( "Benchmark alignment quality of CS-BLAST versus BLAST.")
       o.separator ""
 

@@ -94,7 +94,7 @@ LIBS = -lm
 ### Targets ###
 
 
-TARGETS = cslrsgd csblast cstrainset cssgd csbuild csviz csalign csclust cstranslate \
+TARGETS = cslrsgd csblast cstrainset cssgd csbuild csviz csalign csclust cstranslate cscons \
 					cscp_neff cstrainset_neff cstrainprofiles
 TEST_TARGETS = lr_params lr_func lr_sgd lr_pseudocounts training_profile
 TARGETS := $(TARGETS) $(TARGETS:%=%_debug) $(TARGETS:%=%_prof)
@@ -237,6 +237,20 @@ csbuild_debug: $(OBJECTS_DEBUG)
 	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
 
 csbuild_prof: $(OBJECTS_PROF)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
+
+
+### cscons ###
+
+
+DEPS = cscons_app
+cscons: $(OBJECTS)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
+
+cscons_debug: $(OBJECTS_DEBUG)
+	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
+
+cscons_prof: $(OBJECTS_PROF)
 	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
 
 
