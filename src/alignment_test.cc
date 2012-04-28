@@ -4,8 +4,12 @@
 #include "alignment-inl.h"
 
 namespace cs {
+using std::string;
+using std::vector;
 
-TEST(AlignmentTest, ConstructionFromPsiInput) {
+const string test_dir = PathCat(getenv("CS_DATA") ? getenv("CS_DATA") : "../data", "test");
+
+TEST(AlignmentTest, DISABLED_ConstructionFromPsiInput) {
   FILE* fin = fopen("../data/26SPS9.psi", "r");
   Alignment<AA> alignment(fin, PSI_ALIGNMENT);
   fclose(fin);
@@ -21,7 +25,7 @@ TEST(AlignmentTest, ConstructionFromPsiInput) {
   EXPECT_EQ(AA::kGap, alignment[23][1]);
 }
 
-TEST(AlignmentTest, ConstructionFromSequence) {
+TEST(AlignmentTest, DISABLED_ConstructionFromSequence) {
   FILE* fin = fopen("../data/d1w6ga2.seq", "r");
   Sequence<AA> query(fin);
   fclose(fin);
@@ -31,7 +35,7 @@ TEST(AlignmentTest, ConstructionFromSequence) {
   EXPECT_EQ(query.ToString(), ali.GetSequence(0).ToString());
 }
 
-TEST(AlignmentTest, ReadFastaDnaAlignment) {
+TEST(AlignmentTest, DISABLED_ReadFastaDnaAlignment) {
   FILE* fin = fopen("../data/align00.fas", "r");
   Alignment<Dna> alignment(fin, FASTA_ALIGNMENT);
   fclose(fin);
@@ -43,7 +47,7 @@ TEST(AlignmentTest, ReadFastaDnaAlignment) {
   EXPECT_EQ(Dna::kGap, alignment[10][0]);
 }
 
-TEST(AlignmentTest, ConstructionFromBlastHits) {
+TEST(AlignmentTest, DISABLED_ConstructionFromBlastHits) {
   FILE* fin = fopen("../data/blast_results_broken_hitlist.txt", "r");
   BlastHits blast_hits(fin);
   fclose(fin);
@@ -56,7 +60,7 @@ TEST(AlignmentTest, ConstructionFromBlastHits) {
   EXPECT_EQ(2, static_cast<int>(ali.nseqs()));
 }
 
-TEST(AlignmentTest, ConstructionFromBlastHitsWithMultipleHSPs) {
+TEST(AlignmentTest, DISABLED_ConstructionFromBlastHitsWithMultipleHSPs) {
   FILE* fin = fopen("../data/blast_results.txt", "r");
   BlastHits blast_hits(fin);
   fclose(fin);
@@ -72,7 +76,7 @@ TEST(AlignmentTest, ConstructionFromBlastHitsWithMultipleHSPs) {
   EXPECT_EQ((size_t)4, ali_best.nseqs());
 }
 
-TEST(AlignmentTest, ConstructionFromA2M) {
+TEST(AlignmentTest, DISABLED_ConstructionFromA2M) {
   FILE* fin = fopen("../data/d1alx.a2m", "r");
   Alignment<AA> alignment(fin, A2M_ALIGNMENT);
   fclose(fin);
@@ -81,14 +85,31 @@ TEST(AlignmentTest, ConstructionFromA2M) {
 }
 
 TEST(AlignmentTest, ConstructionFromA3M) {
-  FILE* fin = fopen("../data/d1alx.a3m", "r");
-  Alignment<AA> alignment(fin, A3M_ALIGNMENT);
-  fclose(fin);
-
-  EXPECT_EQ(AA::kGap, alignment.seq(0,27));
+  vector<string> alis;
+  alis.push_back("101mA.a3m");
+  alis.push_back("101mA_ss.a3m");
+  alis.push_back("101mA_ss_whitespace.a3m");
+  for (vector<string>::iterator it = alis.begin(); it != alis.end(); ++it) {
+    FILE* fin = fopen(PathCat(test_dir, *it), "r");
+    Alignment<AA> ali(fin, A3M_ALIGNMENT);
+    fclose(fin);
+    EXPECT_EQ(ali.nseqs(), 1066);
+    EXPECT_EQ(ali.ncols(), 858);
+  }
+  alis.clear();
+  alis.push_back("3nkuB.a3m");
+  alis.push_back("3nkuB_ss.a3m");
+  alis.push_back("3nkuB_ss_whitespace.a3m");
+  for (vector<string>::iterator it = alis.begin(); it != alis.end(); ++it) {
+    FILE* fin = fopen(PathCat(test_dir, *it), "r");
+    Alignment<AA> ali(fin, A3M_ALIGNMENT);
+    fclose(fin);
+    EXPECT_EQ(ali.nseqs(), 1);
+    EXPECT_EQ(ali.ncols(), 200);
+  }
 }
 
-TEST(AlignmentTest, AssignMatchColumnsByGapRule) {
+TEST(AlignmentTest, DISABLED_AssignMatchColumnsByGapRule) {
   FILE* fin = fopen("../data/MalT_diverse.fas", "r");
   Alignment<AA> ali(fin, FASTA_ALIGNMENT);
   fclose(fin);
@@ -106,7 +127,7 @@ TEST(AlignmentTest, AssignMatchColumnsByGapRule) {
   EXPECT_FALSE(ali.is_match(52));
 }
 
-TEST(AlignmentTest, Merging) {
+TEST(AlignmentTest, DISABLED_Merging) {
   FILE* fin = fopen("../data/MalT_slim.fas", "r");
   Alignment<AA> ali_slim(fin, FASTA_ALIGNMENT);
   fclose(fin);
