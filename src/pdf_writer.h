@@ -10,6 +10,7 @@
 #include "pairwise_aligner-inl.h"
 #include "po_hmm-inl.h"
 #include "context_library-inl.h"
+#include "crf-inl.h"
 
 namespace cs {
 
@@ -20,12 +21,11 @@ class PdfWriter {
     virtual ~PdfWriter() {}
 
     // Writes PDF to given outfile
-    void WriteToFile(std::string outfile);
+    void WriteToFile(std::string outfile, bool keep = false);
 
     // TexShade residue width in cm
     static const float kResWidth = 0.21212;
 
-  private:
     // Writes header section of latex file
     void WriteHeader(FILE* fp) const;
 
@@ -59,7 +59,9 @@ class ProfilePdfWriter : public PdfWriter {
     ProfilePdfWriter(const Profile<Abc>& profile);
     virtual ~ProfilePdfWriter() {}
 
+    double col_height;
     bool hide_numbering;
+    bool show_chars;
     double pmin;
 
   private:
@@ -273,7 +275,6 @@ class AbstractStateMatrixPdfWriter : public PdfWriter {
     std::string tempfile_;
 };
 
-
 inline std::string PairStateToColor(uint8_t xx) {
     std::string rv;
     switch (xx) {
@@ -284,6 +285,93 @@ inline std::string PairStateToColor(uint8_t xx) {
     }
     return rv;
 }
+
+// PDF-Writer subclass for drawing an CRF states.
+template<class Abc>
+class CrfStatePdfWriter : public PdfWriter {
+  public:
+    CrfStatePdfWriter() : prob_min(0.005) {}
+
+    const CrfState<Abc>* crf_state;
+    double prob_min;
+
+    virtual size_t Width() const = 0;
+    virtual size_t Height() const = 0;
+
+  protected:
+    typedef boost::tuple<int, double, uint8_t> GroupProbResTuple;
+  
+    std::vector<size_t> SortRes(const double* col) const;
+};
+
+template<class Abc>
+class ProbCrfStatePdfWriter : public CrfStatePdfWriter<Abc> {
+  public:
+    ProbCrfStatePdfWriter() 
+      : col_height(10.0),
+        show_weights(true),
+        weights_height(5.0),
+        weight_center(0.0),
+        weight_decay(0.85),
+        show_name(true) {}
+
+    virtual ~ProbCrfStatePdfWriter() {};
+
+    virtual void WriteBody(FILE* fp);
+    virtual size_t Width() const;
+    virtual size_t Height() const;
+
+    double col_height;
+    double show_weights;
+    double weights_height;
+    double weight_center;
+    double weight_decay;
+    bool show_name;
+
+  private:
+    void DrawColumn(FILE* fp, double* probs, double x, double y) const;
+};
+
+template<class Abc>
+class WeightCrfStatePdfWriter : public CrfStatePdfWriter<Abc> {
+  public:
+    WeightCrfStatePdfWriter() 
+      : col_height(10.0),
+        show_name(true) {}
+
+    virtual ~WeightCrfStatePdfWriter() {};
+
+    virtual void WriteBody(FILE* fp);
+    virtual size_t Width() const;
+    virtual size_t Height() const;
+
+    double col_height;
+    bool show_name;
+
+  private:
+    void DrawColumn(FILE* fp, double* probs, double x, double y, bool down) const;
+};
+
+template<class Abc>
+class CrfPdfWriter : public PdfWriter {
+  public:
+    CrfPdfWriter(
+        const std::vector<CrfState<Abc> >& crf_states, 
+        CrfStatePdfWriter<Abc>& crf_state_writer)
+      : states_per_row(10),
+        crf_states_(crf_states),
+        crf_state_writer_(crf_state_writer) {}
+
+    virtual ~CrfPdfWriter() {};
+
+    void WriteBody(FILE* fp);
+
+    size_t states_per_row;
+  
+  private:
+    const std::vector<CrfState<Abc> >& crf_states_;
+    CrfStatePdfWriter<Abc>& crf_state_writer_;
+};
 
 }  // namespace cs
 

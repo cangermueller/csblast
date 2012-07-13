@@ -80,6 +80,12 @@ struct CrfState {
     // Returns number of context weights columns.
     inline size_t length() const { return context_weights.length(); }
 
+    // Compares two CRF states.
+    bool operator< (const CrfState<Abc>& other) const {
+      return bias_weight < other.bias_weight;
+    }
+
+
     std::string name;               // name of this state
     double bias_weight;             // bias weight lamda_k of this state
     Profile<Abc> context_weights;   // context weights lamda_k(j,a)

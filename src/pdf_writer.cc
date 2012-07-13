@@ -15,6 +15,7 @@ void PdfWriter::WriteHeader(FILE* fp) const {
     fputs("\\usepackage[dvipsnames]{xcolor}\n", fp);
     fputs("\\usepackage{tikz}\n", fp);
     fputs("\\usetikzlibrary{arrows,shapes,backgrounds,petri}\n", fp);
+    fputs("\\usepackage{amsmath}\n", fp);
     fputs("\\pagestyle{empty}\n", fp);
     fputs("\\begin{document}\n", fp);
     fputs("\\definecolor{DodgerBlue}{rgb}{0.117647059,0.564705882,1.0}\n", fp);
@@ -58,7 +59,7 @@ void PdfWriter::WriteFooter(FILE* fp) const {
     fputs("\\end{document}\n", fp);
 }
 
-void PdfWriter::WriteToFile(std::string outfile) {
+void PdfWriter::WriteToFile(std::string outfile, bool keep) {
     std::string dirname  = GetDirname(outfile);
     std::string basename = GetBasename(outfile, false);
     std::string texfile  = dirname + kDirSep + basename + ".tex";
@@ -77,7 +78,7 @@ void PdfWriter::WriteToFile(std::string outfile) {
     // Compile texfile with pdflatex
     //  cmd = strprintf("pdflatex -output-directory=%s %s > /dev/null 2> /dev/null",
     //                dirname.c_str(), texfile.c_str());
-    cmd = strprintf("pdflatex -output-directory=%s %s > /dev/null 2> /dev/null",
+    cmd = strprintf("pdflatex -halt-on-error -output-directory=%s %s > /dev/null 2> /dev/null",
                     dirname.c_str(), texfile.c_str());
     exit_code = system(cmd.c_str());
     if (exit_code) throw Exception("Error executing command '%s'!", cmd.c_str());
@@ -89,9 +90,11 @@ void PdfWriter::WriteToFile(std::string outfile) {
     if (exit_code) throw Exception("Error executing command '%s'!", cmd.c_str());
 
     // Cleanup texfile, logfile and auxfile
-    remove(texfile.c_str());
-    remove(logfile.c_str());
-    remove(auxfile.c_str());
+    if (!keep) {
+        remove(texfile.c_str());
+        remove(logfile.c_str());
+        remove(auxfile.c_str());
+    }
 }
 
 template<>

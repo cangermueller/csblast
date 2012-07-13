@@ -22,12 +22,42 @@ struct CSVizAppOptions {
 
   // Set csbuild default parameters
   void Init() {
-    informat = "auto";
+    informat    = "auto";
+    keep        = false;
+    sort        = false;
+    states      = "";
+    max_states  = 0;
+    crf_weights = false;
   }
 
   // Validates the parameter settings and throws exception if needed.
   void Validate() {
     if (infile.empty()) throw Exception("No input file provided!");
+  }
+
+  vector<size_t> States() const {
+    vector<size_t> states_int;
+    if (!states.empty()) {
+      vector<std::string> s;
+      Tokenize(states, ',', &s);
+      if (s.empty()) {
+        s.push_back(states);
+      }
+      for (size_t i = 0; i < s.size(); ++i) {
+        vector<std::string> ss;
+        Tokenize(s[i], "-", &ss);
+        if (ss.size() == 2) {
+          size_t first = atoi(ss[0].c_str());
+          size_t last = atoi(ss[1].c_str());
+          for (size_t i = first; i <= last; ++i) {
+            states_int.push_back(i);
+          }
+        } else {
+          states_int.push_back(atoi(s[i].c_str()));
+        }
+      }
+    }
+    return states_int;
   }
 
   // The input alignment file with training data.
@@ -38,6 +68,16 @@ struct CSVizAppOptions {
   string libfile;
   // Input file format
   string informat;
+  // Keep temporary files
+  bool keep;
+  // Sort states
+  bool sort;
+  // Expression for selecting states
+  string states;
+  // Maximum number of states to be printed
+  size_t max_states;
+  // Visualize CRF weights instead of probabilities
+  bool crf_weights;
 
 };  // CSVizAppOptions
 
@@ -55,6 +95,8 @@ class CSVizApp : public Application {
   virtual void PrintBanner() const;
   // Prints usage banner to stream.
   virtual void PrintUsage() const;
+  // Prepares CRF states for visualization.
+  std::vector<CrfState<Abc> > PrepareCrfStates(const Crf<Abc>& crf) const;
 
   // Parameter wrapper
   CSVizAppOptions opts_;
@@ -70,6 +112,11 @@ void CSVizApp<Abc>::ParseOptions(GetOpt_pp& ops) {
   ops >> Option('o', "outfile", opts_.outfile, opts_.outfile);
   ops >> Option('A', "alphabet", opts_.libfile, opts_.libfile);
   ops >> Option('I', "informat", opts_.informat, opts_.informat);
+  ops >> OptionPresent('k', "keep", opts_.keep);
+  ops >> OptionPresent(' ', "sort", opts_.sort);
+  ops >> Option(' ', "states", opts_.states, opts_.states);
+  ops >> Option(' ', "max-states", opts_.max_states, opts_.max_states);
+  ops >> OptionPresent(' ', "crf-weights", opts_.crf_weights);
 
   opts_.Validate();
 
@@ -102,6 +149,14 @@ void CSVizApp<Abc>::PrintOptions() const {
           opts_.informat.c_str());
   fprintf(out_, "  %-30s %s (def=off)\n", "-A, --alphabet <file>",
           "Abstract state alphabet consisting of exactly 62 states");
+  fprintf(out_, "  %-30s %s (def=off)\n", "-k, --keep", "Keep temporary files");
+  fprintf(out_, "  %-30s %s (def=off)\n", "    --sort", "Sort states by probability");
+  fprintf(out_, "  %-30s %s (def=off)\n", "    --states <s[-s][,s[-s]]+>", 
+          "Expression for selecting states");
+  fprintf(out_, "  %-30s %s (def=all)\n", "    --max-states <int>", 
+          "Maximum number of states to be printed");
+  fprintf(out_, "  %-30s %s (def=off)\n", "    --crf-weights", 
+      "Visualize CRF weights instead of probabilities");
 }
 
 template<class Abc>
@@ -126,7 +181,7 @@ int CSVizApp<Abc>::Run() {
 
     fputs("Generating PDF with profile logos ...\n", out_);
     ProfilePdfWriter<Abc> profile_writer(profile.counts);
-    profile_writer.WriteToFile(opts_.outfile);
+    profile_writer.WriteToFile(opts_.outfile, opts_.keep);
     fprintf(out_, "Wrote output PDF to %s\n", opts_.outfile.c_str());
 
   } else if (opts_.informat == "ap62") {
@@ -137,12 +192,62 @@ int CSVizApp<Abc>::Run() {
 
     fputs("Generating PDF with profile logos ...\n", out_);
     StateProfilePdfWriter<AS62, Abc> profile_writer(profile.counts, *lib_);
-    profile_writer.WriteToFile(opts_.outfile);
+    profile_writer.WriteToFile(opts_.outfile, opts_.keep);
+    fprintf(out_, "Wrote output PDF to %s\n", opts_.outfile.c_str());
+
+  } else if (opts_.informat == "crf") {
+    FILE* fin = fopen(opts_.infile.c_str(), "r");
+    if (!fin) throw Exception("Unable to read file '%s'!", opts_.infile.c_str());
+    Crf<Abc> crf(fin);
+    fclose(fin);
+
+    fputs("Generating PDF from CRF ...\n", out_);
+    vector<CrfState<Abc> > crf_states = PrepareCrfStates(crf);
+    scoped_ptr<CrfStatePdfWriter<Abc> > crf_state_writer;
+    if (opts_.crf_weights) {
+      crf_state_writer.reset(new WeightCrfStatePdfWriter<Abc>());
+    } else {
+      crf_state_writer.reset(new ProbCrfStatePdfWriter<Abc>());
+    }
+    CrfPdfWriter<Abc> crf_writer(crf_states, *crf_state_writer);
+    crf_writer.WriteToFile(opts_.outfile, opts_.keep);
     fprintf(out_, "Wrote output PDF to %s\n", opts_.outfile.c_str());
   }
 
   return 0;
 }
+
+template<class Abc>
+std::vector<CrfState<Abc> > CSVizApp<Abc>::PrepareCrfStates(const Crf<Abc>& crf) const {
+  std::vector<CrfState<Abc> > crf_states;
+
+  std::vector<size_t> idx;
+  if (opts_.states.empty()) {
+    for (size_t i = 1; i <= crf.size(); ++i) {
+      idx.push_back(i);
+    }
+  } else {
+    idx = opts_.States();
+  }
+  for (size_t i = 0; i < idx.size(); ++i) {
+    CrfState<Abc> crf_state = crf[idx[i] - 1];
+    crf_state.name = strprintf("%zu: %.1f", 
+        idx[i], crf_state.bias_weight);
+    crf_states.push_back(crf_state);
+  }
+
+  if (opts_.sort) {
+    std::sort(crf_states.begin(), crf_states.end());
+    std::reverse(crf_states.begin(), crf_states.end());
+  }
+
+  if (opts_.max_states > 0 && crf_states.size() > opts_.max_states) {
+    crf_states.erase(crf_states.begin() + opts_.max_states, crf_states.end());
+  }
+
+  return crf_states;
+}
+
 
 }  // namespace cs
 
