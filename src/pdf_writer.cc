@@ -14,7 +14,12 @@ void PdfWriter::WriteHeader(FILE* fp) const {
     fputs("\\usepackage{graphicx}\n", fp);
     fputs("\\usepackage[dvipsnames]{xcolor}\n", fp);
     fputs("\\usepackage{tikz}\n", fp);
-    fputs("\\usetikzlibrary{arrows,shapes,backgrounds,petri}\n", fp);
+    fprintf(fp, "\\usetikzlibrary{arrows,shapes,backgrounds,petri%s}\n",
+            external_dir.empty() ? "" : ",external");
+    if (!external_dir.empty()) {
+        fputs("\\tikzexternalize\n", fp);
+        fprintf(fp, "\\tikzsetexternalprefix{%s}\n", PathCat(external_dir, ""));
+    }
     fputs("\\usepackage{amsmath}\n", fp);
     fputs("\\pagestyle{empty}\n", fp);
     fputs("\\begin{document}\n", fp);
@@ -60,11 +65,10 @@ void PdfWriter::WriteFooter(FILE* fp) const {
 }
 
 void PdfWriter::WriteToFile(std::string outfile, bool keep) {
-    std::string dirname  = GetDirname(outfile);
-    std::string basename = GetBasename(outfile, false);
-    std::string texfile  = dirname + kDirSep + basename + ".tex";
-    std::string logfile  = dirname + kDirSep + basename + ".log";
-    std::string auxfile  = dirname + kDirSep + basename + ".aux";
+    std::string dirname     = GetDirname(outfile);
+    std::string basename    = GetBasename(outfile, false);
+    std::string dirbasename = PathCat(dirname, basename);
+    std::string texfile     = dirbasename + ".tex";
     std::string cmd;
     int exit_code = 0;
 
@@ -76,9 +80,8 @@ void PdfWriter::WriteToFile(std::string outfile, bool keep) {
     fclose(fp);
 
     // Compile texfile with pdflatex
-    //  cmd = strprintf("pdflatex -output-directory=%s %s > /dev/null 2> /dev/null",
-    //                dirname.c_str(), texfile.c_str());
-    cmd = strprintf("pdflatex -halt-on-error -output-directory=%s %s > /dev/null 2> /dev/null",
+    cmd = strprintf("pdflatex %s-halt-on-error -output-directory=%s %s > /dev/null 2> /dev/null",
+                    external_dir.empty() ? "" : "-shell-escape ",
                     dirname.c_str(), texfile.c_str());
     exit_code = system(cmd.c_str());
     if (exit_code) throw Exception("Error executing command '%s'!", cmd.c_str());
@@ -92,8 +95,19 @@ void PdfWriter::WriteToFile(std::string outfile, bool keep) {
     // Cleanup texfile, logfile and auxfile
     if (!keep) {
         remove(texfile.c_str());
-        remove(logfile.c_str());
-        remove(auxfile.c_str());
+        remove((dirbasename + ".log").c_str());
+        remove((dirbasename + ".aux").c_str());
+        remove((dirbasename + ".auxlock").c_str());
+        if (!external_dir.empty()) {
+            std::vector<std::string> files;
+            GetAllFiles(external_dir, files);
+            for (size_t i = 0; i < files.size(); ++i) {
+                std::string ext = GetFileExt(files[i]);
+                if (ext == "dpth" || ext == "log") {
+                    remove(PathCat(external_dir, files[i]));
+                }
+            }
+        }
     }
 }
 

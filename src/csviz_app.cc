@@ -22,12 +22,13 @@ struct CSVizAppOptions {
 
   // Set csbuild default parameters
   void Init() {
-    informat    = "auto";
-    keep        = false;
-    sort        = false;
-    states      = "";
-    max_states  = 0;
-    crf_weights = false;
+    informat     = "auto";
+    keep         = false;
+    sort         = false;
+    states       = "";
+    max_states   = 0;
+    crf_weights  = false;
+    external_dir = "";
   }
 
   // Validates the parameter settings and throws exception if needed.
@@ -78,6 +79,8 @@ struct CSVizAppOptions {
   size_t max_states;
   // Visualize CRF weights instead of probabilities
   bool crf_weights;
+  // Create figures in external directory
+  string external_dir;
 
 };  // CSVizAppOptions
 
@@ -117,6 +120,7 @@ void CSVizApp<Abc>::ParseOptions(GetOpt_pp& ops) {
   ops >> Option(' ', "states", opts_.states, opts_.states);
   ops >> Option(' ', "max-states", opts_.max_states, opts_.max_states);
   ops >> OptionPresent(' ', "crf-weights", opts_.crf_weights);
+  ops >> Option(' ', "external", opts_.external_dir, opts_.external_dir);
 
   opts_.Validate();
 
@@ -126,6 +130,8 @@ void CSVizApp<Abc>::ParseOptions(GetOpt_pp& ops) {
     opts_.outfile = GetBasename(opts_.infile, false) + ".pdf";
   if (GetDirname(opts_.outfile).empty())
     opts_.outfile = "./" + opts_.outfile;
+  if (*opts_.external_dir.rbegin() == kDirSep) 
+    opts_.external_dir.substr(0, opts_.external_dir.size() - 1);
 }
 
 template<class Abc>
@@ -157,6 +163,8 @@ void CSVizApp<Abc>::PrintOptions() const {
           "Maximum number of states to be printed");
   fprintf(out_, "  %-30s %s (def=off)\n", "    --crf-weights", 
       "Visualize CRF weights instead of probabilities");
+  fprintf(out_, "  %-30s %s\n", "    --external <directory>", 
+      "Create figures in external directory");
 }
 
 template<class Abc>
@@ -210,6 +218,7 @@ int CSVizApp<Abc>::Run() {
       crf_state_writer.reset(new ProbCrfStatePdfWriter<Abc>());
     }
     CrfPdfWriter<Abc> crf_writer(crf_states, *crf_state_writer);
+    crf_writer.external_dir = opts_.external_dir;
     crf_writer.WriteToFile(opts_.outfile, opts_.keep);
     fprintf(out_, "Wrote output PDF to %s\n", opts_.outfile.c_str());
   }
@@ -231,8 +240,7 @@ std::vector<CrfState<Abc> > CSVizApp<Abc>::PrepareCrfStates(const Crf<Abc>& crf)
   }
   for (size_t i = 0; i < idx.size(); ++i) {
     CrfState<Abc> crf_state = crf[idx[i] - 1];
-    crf_state.name = strprintf("%zu: %.1f", 
-        idx[i], crf_state.bias_weight);
+    crf_state.name = strprintf("%zu: %+.1f", idx[i], crf_state.bias_weight);
     crf_states.push_back(crf_state);
   }
 

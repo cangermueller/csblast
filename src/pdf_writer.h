@@ -34,6 +34,9 @@ class PdfWriter {
 
     // Writes latex document body. This method should be implemented by subclasses.
     virtual void WriteBody(FILE* fp) = 0;
+
+    // Create figures in external directory
+    std::string external_dir;
 };
 
 // PDF-Writer subclass for drawing a colored multiple sequence alignment.
@@ -310,7 +313,7 @@ class ProbCrfStatePdfWriter : public CrfStatePdfWriter<Abc> {
     ProbCrfStatePdfWriter() 
       : col_height(10.0),
         show_weights(true),
-        weights_height(5.0),
+        weights_height(3.0),
         weight_center(0.0),
         weight_decay(0.85),
         show_name(true) {}

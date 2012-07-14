@@ -1012,31 +1012,16 @@ void CrfPdfWriter<Abc>::WriteBody(FILE* fp) {
     std::string s(states_per_row, 'c');
     fprintf(fp, "\\begin{tabular}{%s}\n", s.c_str());
     for (size_t i = 0; i < crf_states_.size(); ++i) {
+        if (i > 0) {
+            fputs(i % states_per_row == 0 ? "\\\\\n" : "&\n", fp);
+        }
+        if (!external_dir.empty() && !crf_states_[i].name.empty()) {
+            fprintf(fp, "\\tikzsetnextfilename{%zu}\n", i + 1);
+        }
         crf_state_writer_.crf_state = &crf_states_[i];
         crf_state_writer_.WriteBody(fp);
-        fputs((i + 1) == states_per_row ? "\\\\" : "&", fp);
     }
     fputs("\\end{tabular}\n", fp);
-
-    /*
-    double x = 0.0;
-    double y = 0.0;
-    double sep = 1;
-    fputs("\\begin{tikzpicture}[x=2.5ex,y=2.5ex]\n", fp);
-    for (size_t i = 0; i < crf_states_.size(); ++i) {
-        fprintf(fp, "\\node at (%.4f,%.4f) {\n", x, y);
-        crf_state_writer_.crf_state = &crf_states_[i];
-        crf_state_writer_.WriteBody(fp);
-        fputs("};\n", fp);
-        if ((i + 1) % states_per_row == 0) {
-            x = 0.0;
-            y -= crf_state_writer_.Height() + sep;
-        } else {
-            x += crf_state_writer_.Width() + sep;
-        }
-    }
-    fputs("\\end{tikzpicture}\n", fp);
-    */
 }
 
 }  // namespace cs
