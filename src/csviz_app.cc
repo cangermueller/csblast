@@ -119,7 +119,7 @@ void CSVizApp<Abc>::ParseOptions(GetOpt_pp& ops) {
   ops >> OptionPresent(' ', "sort", opts_.sort);
   ops >> Option(' ', "states", opts_.states, opts_.states);
   ops >> Option(' ', "max-states", opts_.max_states, opts_.max_states);
-  ops >> OptionPresent(' ', "crf-weights", opts_.crf_weights);
+  // ops >> OptionPresent(' ', "crf-weights", opts_.crf_weights);
   ops >> Option(' ', "external", opts_.external_dir, opts_.external_dir);
 
   opts_.Validate();
@@ -161,8 +161,8 @@ void CSVizApp<Abc>::PrintOptions() const {
           "Expression for selecting states");
   fprintf(out_, "  %-30s %s (def=all)\n", "    --max-states <int>", 
           "Maximum number of states to be printed");
-  fprintf(out_, "  %-30s %s (def=off)\n", "    --crf-weights", 
-      "Visualize CRF weights instead of probabilities");
+  // fprintf(out_, "  %-30s %s (def=off)\n", "    --crf-weights", 
+  //     "Visualize CRF weights instead of probabilities");
   fprintf(out_, "  %-30s %s\n", "    --external <directory>", 
       "Create figures in external directory");
 }
