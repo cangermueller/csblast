@@ -13,11 +13,11 @@ use Cwd qw(abs_path);
 =pod
 =head1 NAME
   
-  opt.pl - Optimizes the admixture coefficient tau for a given model.
+  csopt.pl - Optimizes the admixture coefficient tau for a given model.
 
 =head1 SYNOPSIS
 
-  opt.pl [OPTIONS] -m MODEL
+  csopt.pl [OPTIONS] -m MODEL
 
   OPTIONS:
     -m, --model FILE        The model used for optimization

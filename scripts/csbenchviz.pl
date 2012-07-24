@@ -13,11 +13,11 @@ use File::Spec::Functions qw(catdir catfile);
 
 =head1 NAME
 
-  benchviz.pl - Visualizes CS-BLAST benchmark results.
+  csbenchviz.pl - Visualizes CS-BLAST benchmark results.
 
 =head1 SYNOPSIS
 
-  benchviz.pl [OPTIONS] --dir BENCHDIR+
+  csbenchviz.pl [OPTIONS] --dir BENCHDIR+
 
   OPTIONS:
  

@@ -6,16 +6,16 @@ Makefile.csalign) that are needed to compile the cs-executables. To start the
 compilation, simply change into the src directory and execute any of the
 following commands:
 
-make csblast NDEBUG=1
-make csbuild NDEBUG=1
-make csclust NDEBUG=1 OPENMP=1
-make cstrainset NDEBUG=1 OPENMP=1
-make cstranslate NDEBUG=1
+make csblast
+make csbuild
+make csclust
+make cssgd
+make cstrainset
+make cstranslate
 make -f Makefile.csalign csalign
 
 After the compilation has finished, the newly created executables can be found
-in the src subdirectory (not the bin directory!). The bin directory contains
-precompiled executables of all cs-executables from above.
+in the bin subdirectory.
 
 
 CONTEXT LIBRARIES
@@ -23,8 +23,9 @@ CONTEXT LIBRARIES
 
 The data subdirectory contains the library of 4000 context profiles needed by
 CS-BLAST, as well as the CS62 column state alphabet for translating sequence
-profiles into CS62 sequences with cstranslate.
-
+profiles into CS62 sequences with cstranslate. 
+- lib/K4000.lib: context library of the generative model
+- lib/K4000.crf: context library of the discriminative model
 
 If you have any problems or questions regarding the suite of cs-tools please
-contact Andreas Biegert at biegert@lmb.uni-muenchen.de.
+contact Angermueller Christof at angermueller@lmb.uni-muenchen.de.

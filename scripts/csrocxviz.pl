@@ -12,11 +12,11 @@ use POSIX;
 =pod
 =head1 NAME
 
-  rocxviz.pl - Visualizes the ROCX score of the given directories against a specified parameter.
+  csrocxviz.pl - Visualizes the ROCX score of the given directories against a specified parameter.
 
 =head1 SYNOPSIS
 
-  rocxviz.pl [OPTIONS] --dir DIR+ --param PARAM [ROCX.PL OPTIONS]
+  csrocxviz.pl [OPTIONS] --dir DIR+ --param PARAM [CSROCX.PL OPTIONS]
 
   OPTIONS:
     -d, --dir DIR           Input directories with rocx curve.

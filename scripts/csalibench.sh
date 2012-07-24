@@ -2,9 +2,9 @@
 
 function synopsis {
   cat <<END
-alibench.sh - Performs alignment benchmark for a given model
+csalibench.sh - Performs alignment benchmark for a given model
 
-alibench.sh [OPTIONS] -m MODEL -o OUTDIR
+csalibench.sh [OPTIONS] -m MODEL -o OUTDIR
 
   OPTIONS:
     -m MODEL        The input model

@@ -12,11 +12,11 @@ use My::Utils qw(is_numeric);
 =pod
 =head1 NAME
 
-  sgdresults.pl - Creates results file for the given SGD output files.
+  cssgdresults.pl - Creates results file for the given SGD output files.
 
 =head1 SYNOPSIS
 
-  sgdresults.pl [OPTIONS] --infile INFILE
+  cssgdresults.pl [OPTIONS] --infile INFILE
 
   OPTIONS:
   -i, --infile INFILE+    SGD output files.

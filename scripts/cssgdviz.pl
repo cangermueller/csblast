@@ -12,11 +12,11 @@ use POSIX;
 =pod
 =head1 NAME
 
-  sgdviz.pl - Visualizes parameters of an SGD optimization.
+  cssgdviz.pl - Visualizes parameters of an SGD optimization.
 
 =head1 SYNOPSIS
 
-  sgdviz.pl [OPTIONS] --infile INFILE
+  cssgdviz.pl [OPTIONS] --infile INFILE
 
   OPTIONS:
     -i, --infile INFILE+      List of SGD log files

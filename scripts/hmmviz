@@ -1,5 +1,0 @@
-#!/usr/bin/env ruby
-
-require File.expand_path(ENV['HOME'] + "/lib/rcs")
-
-Script::HmmViz.new.execute(STDOUT, ARGV)

@@ -4,9 +4,9 @@ source $HOME/src/cs/.cs.sh
 
 function synopsis {
   cat <<END
-bench.sh - Benchmarks a given model
+csbench.sh - Benchmarks a given model
 
-bench.sh [OPTIONS] -m MODEL -o OUTDIR
+csbench.sh [OPTIONS] -m MODEL -o OUTDIR
 
   OPTIONS:
     -m MODEL        The input model

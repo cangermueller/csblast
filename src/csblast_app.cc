@@ -256,8 +256,8 @@ void CSBlastApp::PrintOptions() const {
           "Use global instead of position-specific sequence weights (def=off)");
   fprintf(out_, "  %-30s %s\n", "    --best",
           "Include only the best HSP per hit in alignment (def=off)");
-  fprintf(out_, "  %-30s %s\n", "    --emulate",
-          "Emulate BLAST call (def=off)");
+  // fprintf(out_, "  %-30s %s\n", "    --emulate",
+  //        "Emulate BLAST call (def=off)");
   // fprintf(out_, "  %-30s %s\n", "    --no-penalty",
   //         "Turn off score penalty for repeat regions (def=penalty on).");
   fprintf(out_, "  %-30s %s\n", "    --blast-path <path>",

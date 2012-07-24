@@ -10,11 +10,11 @@ use File::Basename qw(dirname basename);
 =pod1
 =head1 NAME
 
-  fdr.pl - Returns the number of FP/TP fiven a FDR.
+  csfdr.pl - Returns the number of FP/TP fiven a FDR.
 
 =head1 SYNOPSIS
 
-  fdr.pl [OPTIONS] -i DIR+
+  csfdr.pl [OPTIONS] -i DIR+
 
   OPTIONS:
     -i, --indir DIR+    Input directory of data file containing FP/TP.

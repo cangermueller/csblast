@@ -12,11 +12,11 @@ use POSIX;
 =pod
 =head1 NAME
 
-  trainsetviz.pl - Visualizes the diversity of a training set
+  cstrainsetviz.pl - Visualizes the diversity of a training set
 
 =head1 SYNOPSIS
 
-  trainsetviz.pl [OPTIONS] -i INFILE
+  cstrainsetviz.pl [OPTIONS] -i INFILE
 
   OPTIONS:
     -i, --infile INFILE       Input training set

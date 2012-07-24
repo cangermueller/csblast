@@ -11,11 +11,11 @@ use File::Basename qw(dirname basename);
 =pod
 =head1 NAME
 
-  rocx.pl - Computes the mean rocx score of given rocx curves
+  csrocx.pl - Computes the mean rocx score of given rocx curves
 
 =head1 SYNOPSIS
 
-  rocx.pl [OPTIONS] -i DIR+
+  csrocx.pl [OPTIONS] -i DIR+
 
   OPTIONS:
     -i, --indir DIR+          Input directory of data files containing ROCX data.

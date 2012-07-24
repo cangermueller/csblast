@@ -73,6 +73,7 @@ $(shell mkdir -p $(BUILD_DIR_TEST))
 $(shell mkdir -p $(BUILD_DIR_DEBUG))
 $(shell mkdir -p $(BUILD_DIR_PROF))
 BIN_DIR = ../bin
+$(shell mkdir -p $(BIN_DIR))
 LIB_DIR = ../lib
 GTEST_DIR = ../lib/gtest
 GTEST_HEADERS = $(GTEST_DIR)/include/gtest/*.h \

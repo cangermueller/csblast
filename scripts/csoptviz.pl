@@ -283,14 +283,14 @@ sub exec {
 }
 
 sub invalid_format {
-  die "Invalid format: '$infile' line $.!\n";
+ return "Invalid format: '$infile' line $. ($_)!";
 }
 
 sub parse_table {
   open FIN, "< $infile" or die "Can't read from '$infile'!";
   # parse header
   $_ = <FIN>;
-  /^#\s+r\s+optimizing\s+(\S+(?:\s+\S+)*?)\s+(lltrain\s+llval)?\s+score\s+\+\/\-%\s*$/ or &invalid_format;
+  /^#\s+r\s+optimizing\s+(\S+(?:\s+\S+)*?)\s+(lltrain\s+llval)?\s+score\s+\+\/\-%\s*$/ or die &invalid_format;
   @_ = split(/\s+/, $1);
   for my $i (0 .. $#_) { $params{$_[$i]} = $i; }
   $nparams = scalar(@_);
@@ -306,24 +306,29 @@ sub parse_table {
   while (<FIN>) {
     last if /^-/;
     my %e;
-    /^(.+?)\s+(\S+\s+\S+)?\s+(\S+)\s+(\S+)$/ or last;
-    $e{"score"} = $3;
-    $e{"gain"} = $4;
+    my $tmp;
     if ($has_ll) {
-      $2 or &invalid_format;
-      @_ = split(/\s+/, $2);
-      $e{"lltrain"} = $_[0];
-      $e{"llval"} = $_[1];
+      /^(.+?)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)$/ or last;
+      $tmp = $1;
+      $e{"lltrain"} = $2;
+      $e{"llval"} = $3;
+      $e{"score"} = $4;
+      $e{"gain"} = $5;
+    } else {
+      /^(.+?)\s+(\S+)\s+(\S+)$/ or last;
+      $tmp = $1;
+      $e{"score"} = $2;
+      $e{"gain"} = $3;
     }
-    my @f = split(/\s+/, trim($1));
+    my @f = split(/\s+/, trim($tmp));
     unless (scalar(@f)) {
-      unless (@params_cur) { &invalid_format; }
+      scalar(@params_cur) or die &invalid_format;
       $e{"k"} = $k;
       $e{"r"} = $r;
       $e{"opt"} = $opt;
       $e{"params"} = [@params_cur];
     } else {
-      if (scalar(@f) < $nparams) { &invalid_format; }
+      scalar(@f) >= $nparams or die &invalid_format;
       if (@group_cur) {
         push(@groups, [@group_cur]);
         @group_cur = ();
@@ -333,7 +338,9 @@ sub parse_table {
       for (1 .. $nparams) { pop(@f); }
       if (scalar(@f) == 3) {
         ($k, $r, $opt) = @f; 
-      } elsif (scalar(@f) != 0) { &invalid_format; }
+      } elsif (scalar(@f) != 0) { 
+        die &invalid_format; 
+      }
       $e{"k"} = $k;
       $e{"r"} = $r;
       $e{"opt"} = $opt;
@@ -342,7 +349,7 @@ sub parse_table {
   }
   if (@group_cur) { push(@groups, [@group_cur]); }
   close FIN;
-  scalar(@groups) or &invalid_format;
+  scalar(@groups) or die &invalid_format;
 
   # filter entries with invalid score
   my @groups_f;

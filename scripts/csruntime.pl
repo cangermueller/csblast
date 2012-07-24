@@ -14,11 +14,12 @@ use My::Config;
 
 =head1 NAME
  
-  timer.pl - Measure time for CSBLAST pseudocounts generation before a BLAST call.
+  csruntime.pl - Measure time for CSBLAST pseudocounts generation before a BLAST call.
+                 For creating the publication results, csruntime was used.
 
 =head1 SYNOPSIS
 
-  runtime.pl [OPTIONS] -s SEQ-GLOB -D CONTEXT-DATA+ [CSBLAST OPTIONS]
+  csruntime.pl [OPTIONS] -s SEQ-GLOB -D CONTEXT-DATA+ [CSBLAST OPTIONS]
 
   OPTIONS:
     -s, --seq-glob DIR          Glob of input sequences
