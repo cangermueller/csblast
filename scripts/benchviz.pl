@@ -25,6 +25,7 @@ use File::Spec::Functions qw(catdir catfile);
     -o, --out OUTBASE       Output basename [def: ./]
     -p, --plot PLOT+        List of plots to be created [default: tpfp wtpfp ftpfp rocx evalue]
                             tpfp  :  TP versus FP ROC (unweighted)
+                            otpfp :  TP versus FP ROC (weighted by number of fold members)
                             wtpfp :  TP versus FP ROC (weighted by number of superfamily members)
                             ftpfp :  TP versus FP ROC (weighted by number of family members)
                             rocx  :  Fraction of queries verus ROCX score
@@ -376,6 +377,26 @@ sub plot {
       set label "20%" at 60,350 textcolor ls $ls_fdr/;
     }
 
+  } elsif ($plot eq "otpfp") { $cmd .= qq/
+    set key top left reverse invert Left
+    set log x
+    set grid
+    set xlabel "fold weighted FP"
+    set xlabel "fold weighted TP"/;
+
+    if ($db eq "scop20_1.73_test" && $iter == 1) { $cmd .= qq/
+      set xrange [1:200]
+      set yrange [0:1000]
+      set label "1%" at 9,1200 textcolor ls $ls_fdr
+      set label "10%" at 90,1200 textcolor ls $ls_fdr
+      set label "20%" at 200,1200 textcolor ls $ls_fdr/;
+    } else { $cmd .= qq/
+      set xrange [1:200]
+      set yrange [0:2000]
+      set label "1%" at 25,3500 textcolor ls $ls_fdr
+      set label "10%" at 250,3500 textcolor ls $ls_fdr
+      set label "20%" at 600,3500 textcolor ls $ls_fdr/;
+    }
 
   } elsif ($plot eq "fdr") { $cmd .= qq/
     set key top left reverse invert Left
