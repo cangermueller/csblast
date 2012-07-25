@@ -6,6 +6,7 @@
 /scripts/csrocxviz.pl export-ignore
 /scripts/csruntime.pl export-ignore
 /scripts/cssgdresults.pl  export-ignore
+/scripts/cssgd.pl  export-ignore
 /scripts/cssgdviz.pl  export-ignore
 /scripts/cstrainset.pl  export-ignore
 /scripts/cstrainsetviz.pl export-ignore
