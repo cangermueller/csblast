@@ -1,5 +1,6 @@
 /.gitignore export-ignore
 /.gitattributes export-ignore
+/data/test/ export-ignore
 /scripts/csalibench.sh  export-ignore
 /scripts/csbench.sh export-ignore
 /scripts/csfdr.sh export-ignore
@@ -11,4 +12,4 @@
 /scripts/cssgd.pl  export-ignore
 /scripts/cssgdviz.pl  export-ignore
 /scripts/cstrainset.pl  export-ignore
-/scripts/cstrainsetviz.pl export-ignore
+scripts/cstrainsetviz.pl export-ignore
