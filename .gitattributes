@@ -1,0 +1,11 @@
+/scripts/csalibench.sh  export-ignore
+/scripts/csbench.sh export-ignore
+/scripts/csfdr.sh export-ignore
+/scripts/csopt.pl export-ignore
+/scripts/csrocx.pl  export-ignore
+/scripts/csrocxviz.pl export-ignore
+/scripts/csruntime.pl export-ignore
+/scripts/cssgdresults.pl  export-ignore
+/scripts/cssgdviz.pl  export-ignore
+/scripts/cstrainset.pl  export-ignore
+/scripts/cstrainsetviz.pl export-ignore
