@@ -1,3 +1,5 @@
+/.gitignore export-ignore
+/.gitattributes export-ignore
 /scripts/csalibench.sh  export-ignore
 /scripts/csbench.sh export-ignore
 /scripts/csfdr.sh export-ignore
