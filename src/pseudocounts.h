@@ -12,8 +12,6 @@ template<class Abc>
 class Profile;
 template<class Abc>
 class CountProfile;
-template<class Abc>
-class POHmm;
 
 // Calculates pseudocount admixture for profile column.
 struct Admix {
@@ -112,9 +110,6 @@ class Pseudocounts {
     // Adds pseudocounts to sequence using admixture and returns normalized profile.
     Profile<Abc> AddTo(const CountProfile<Abc>& cp, Admix& admix) const;
 
-    // Adds pseudocounts to counts in PO-HMM vertices using admixture and stores results in 'probs' vector.
-    void AddTo(POHmm<Abc>* hmm, Admix& admix) const;
-
     // Gets the target Neff in the resulting profile after admixing pseudocounts.
     double GetTargetNeff() const {
       return target_neff_;
@@ -142,17 +137,11 @@ class Pseudocounts {
     // Adds pseudocounts to alignment derived profile.
     virtual void AddToProfile(const CountProfile<Abc>& cp, Profile<Abc>& p) const = 0;
 
-    // Adds pseudocounts to alignment derived profile.
-    virtual void AddToPOHmm(const POHmm<Abc>* hhm, Profile<Abc>& p) const {};
-
     // Admixes Sequence q to Profile p.
     void AdmixTo(const Sequence<Abc>& q, Profile<Abc>& p, const Admix& admix) const;
 
     // Admixes CountProfile q to Profile q.
     void AdmixTo(const CountProfile<Abc>& q, Profile<Abc>& p, const Admix& admix) const;
-
-    // Admixes POHmm q to profile q.
-    void AdmixTo(const POHmm<Abc>& q, Profile<Abc>& p, const Admix& admix) const;
 
     // Admixes q to Profile p such that the Neff in p converges to the target Neff.
     template<class T>

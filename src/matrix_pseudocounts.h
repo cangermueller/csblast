@@ -24,8 +24,6 @@ class MatrixPseudocounts : public Pseudocounts<Abc> {
 
     virtual void AddToProfile(const CountProfile<Abc>& cp, Profile<Abc>& p) const;
 
-    virtual void AddToPOHmm(const POHmm<Abc>* hmm, Profile<Abc>& p) const;
-
     // Substitution matrix with conditional probabilities for pseudocounts.
     const SubstitutionMatrix<Abc>& m_;
 

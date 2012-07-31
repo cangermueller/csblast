@@ -13,11 +13,6 @@ namespace cs {
 // Functor for calculating multinomial emission probabilities for context profiles.
 template<class Abc>
 class Emission {
-    typedef typename POHmm<Abc>::Graph Graph;
-    typedef typename POHmm<Abc>::Vertex Vertex;
-    typedef typename POHmm<Abc>::OutEdgeIter OutEdgeIter;
-    typedef typename POHmm<Abc>::InEdgeIter InEdgeIter;
-    typedef typename POHmm<Abc>::VertexIndex VertexIndex;
 
   public:
 
@@ -90,85 +85,7 @@ class Emission {
 	return rv;
     }
 
-    // Calculates the log of the probability that profile 'p' emits the counts in
-    // a window centered around POG vertex 'v'. Note that the normalization factor
-    // that is usualy used in multinomial distributions is left out since it
-    // cancels out anyway.
-    double operator() (const Profile<Abc>& p,
-		       const Graph& g,
-		       Vertex v) const {
-	assert(p.length() & 1);
-	assert_eq(weights_.size(), p.length());
-	VertexIndex index;
-	// Calculate emission at central vertex 'v'
-	double rv = 0.0, sum = 0.0;
-	for (size_t a = 0; a < Abc::kSize; ++a)
-	    sum += g[v].counts[a] * (p[center_][a] - logp_[a]);
-	rv += weights_[center_] * sum;
-	// Collect emission probs within context window in forwad direction
-	if (center_ != 0) {
-	    OutEdgeIter ei, edge_end;
-	    for (tie(ei, edge_end) = out_edges(v, g); ei != edge_end; ++ei) {
-		if (index[target(*ei, g)] != kStartEndVertex)
-		    rv += g[*ei].weight * ScoreFwd(p, g, target(*ei, g), center_ + 1);
-	    }
-	}
-	// Collect emission probs within context window in backward direction
-	if (center_ != 0) {
-	    InEdgeIter ei, edge_end;
-	    for (tie(ei, edge_end) = in_edges(v, g); ei != edge_end; ++ei) {
-		if (index[source(*ei, g)] != kStartEndVertex)
-		    rv += g[*ei].weight_rev * ScoreBwd(p, g, source(*ei, g), center_ - 1);
-	    }
-	}
-	return rv;
-    }
-
   private:
-    double ScoreFwd(const Profile<Abc>& p,
-		    const Graph& g,
-		    Vertex v,
-		    int j) const {
-	assert(j < static_cast<int>(weights_.size()));
-	VertexIndex index;
-	// Calculate emission score for counts at vertex 'v'
-	double rv = 0.0, sum = 0.0;
-	for (size_t a = 0; a < Abc::kSize; ++a)
-	    sum += g[v].counts[a] * (p[j][a] - logp_[a]);
-	rv += weights_[j] * sum;
-	// Collect emission probs within context window in forwad direction
-	if (j + 1 < static_cast<int>(weights_.size())) {
-	    OutEdgeIter ei, edge_end;
-	    for (tie(ei, edge_end) = out_edges(v, g); ei != edge_end; ++ei) {
-		if (index[target(*ei, g)] != kStartEndVertex)
-		    rv += g[*ei].weight * ScoreFwd(p, g, target(*ei, g), j + 1);
-	    }
-	}
-	return rv;
-    }
-
-    double ScoreBwd(const Profile<Abc>& p,
-		    const Graph& g,
-		    Vertex v,
-		    int j) const {
-	assert(j >= 0);
-	VertexIndex index;
-	// Calculate emission score for counts at vertex 'v'
-	double rv = 0.0, sum = 0.0;
-	for (size_t a = 0; a < Abc::kSize; ++a)
-	    sum += g[v].counts[a] * (p[j][a] - logp_[a]);
-	rv += weights_[j] * sum;
-	// Collect emission probs within context window in backward direction
-	if (j - 1 >= 0) {
-	    InEdgeIter ei, edge_end;
-	    for (tie(ei, edge_end) = in_edges(v, g); ei != edge_end; ++ei) {
-		if (index[source(*ei, g)] != kStartEndVertex)
-		    rv += g[*ei].weight_rev * ScoreBwd(p, g, source(*ei, g), j - 1);
-	    }
-	}
-	return rv;
-    }
-
     size_t center_;            // index of central column in context window
     Vector<double> weights_;   // positional window weights
     ProfileColumn<Abc> logp_;  // log of background frequencies

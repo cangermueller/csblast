@@ -8,7 +8,6 @@
 #include "context_library.h"
 #include "crf_pseudocounts-inl.h"
 #include "crf-inl.h"
-#include "lr_pseudocounts-inl.h"
 #include "count_profile-inl.h"
 #include "csblast.h"
 #include "csblast_iteration.h"
@@ -150,8 +149,6 @@ class CSBlastApp : public Application {
   scoped_ptr<ContextLibrary<AA> > lib_;
   // CRF for pseudocounts
   scoped_ptr<Crf<AA> > crf_;
-  // lr params for pseudocounts
-  scoped_ptr<LrParams<AA> > lrparams_;
   // Pseudocount engine
   scoped_ptr<Pseudocounts<AA> > pc_;
   // PSI-BLAST engine
@@ -357,15 +354,6 @@ void CSBlastApp::Init() {
     fclose(fin);
 
     pc_.reset(new CrfPseudocounts<AA>(*crf_));
-  /*
-  } else if (opts_.pc_engine == "lr") {
-    fin = fopen(opts_.modelfile.c_str(), "r");
-    if (!fin) throw Exception("Unable to read file '%s'!", opts_.modelfile.c_str());
-    lrparams_.reset(new LrParams<AA>(fin));
-    fclose(fin);
-
-    pc_.reset(new LrPseudocounts<AA>(*lrparams_));
-  */
   } else {
     throw Exception("Unknown pseudocount engine '%s'!", opts_.pc_engine.c_str());
   }

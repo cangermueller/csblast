@@ -25,8 +25,6 @@ class LibraryPseudocounts : public Pseudocounts<Abc> {
 
     virtual void AddToProfile(const CountProfile<Abc>& cp, Profile<Abc>& p) const;
 
-    virtual void AddToPOHmm(const POHmm<Abc>* hmm, Profile<Abc>& p) const;
-
   private:
     // Profile library with context profiles.
     const ContextLibrary<Abc>& lib_;

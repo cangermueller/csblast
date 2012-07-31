@@ -6,7 +6,6 @@
 #include "matrix_pseudocounts.h"
 
 #include "count_profile-inl.h"
-#include "po_hmm-inl.h"
 #include "profile-inl.h"
 #include "sequence-inl.h"
 #include "substitution_matrix-inl.h"
@@ -35,21 +34,6 @@ void MatrixPseudocounts<Abc>::AddToProfile(const CountProfile<Abc>& cp, Profile<
             for(size_t b = 0; b < Abc::kSize; ++b)
                 sum += m_.r(a,b) * cp.counts[i][b] / cp.neff[i];
             p[i][a] = sum;
-        }
-    }
-}
-
-template<class Abc>
-void MatrixPseudocounts<Abc>::AddToPOHmm(const POHmm<Abc>* hmm, Profile<Abc>& p) const {
-    typedef typename POHmm<Abc>::Graph Graph;
-    const Graph& g = hmm->g;
-
-    for (size_t i = 1; i <= hmm->size(); ++i) {
-        for(size_t a = 0; a < Abc::kSize; ++a) {
-            double sum = 0.0;
-            for(size_t b = 0; b < Abc::kSize; ++b)
-                sum += m_.r(a,b) * g[i].counts[b] / g[i].neff;
-            p[i - 1][a] = sum;
         }
     }
 }

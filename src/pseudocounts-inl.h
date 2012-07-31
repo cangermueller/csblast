@@ -38,26 +38,6 @@ Profile<Abc> Pseudocounts<Abc>::AddTo(const CountProfile<Abc>& cp, Admix& admix)
     return p;
 }
 
-// Adds pseudocounts to counts in PO-HMM vertices using admixture and stores results in 'probs' vector.
-template<class Abc>
-void Pseudocounts<Abc>::AddTo(POHmm<Abc>* hmm, Admix& admix) const {
-    typename POHmm<Abc>::Graph& g = hmm->g;
-    size_t size = hmm->size();
-
-    Profile<Abc> p(size);
-    AddToPOHmm(hmm, p);
-    if (target_neff_ >= 1.0) {
-      AdmixToTargetNeff(*hmm, p, admix);
-    } else {
-      AdmixTo(*hmm, p, admix);
-    }
-    for (size_t i = 1; i <= size; ++i) {
-        memcpy(&g[i].probs[0], p[i - 1], Abc::kSize * sizeof(double));
-        g[i].probs[Abc::kAny] = 1.0;
-        Normalize(g[i].probs, 1.0);
-    }
-}
-
 template<class Abc>
 void Pseudocounts<Abc>::AdmixTo(const Sequence<Abc>& q, Profile<Abc>& p, const Admix& admix) const {
     double tau = admix(1.0);
@@ -76,18 +56,6 @@ void Pseudocounts<Abc>::AdmixTo(const CountProfile<Abc>& q, Profile<Abc>& p, con
         double t = 1 - tau;
         for (size_t a = 0; a < Abc::kSize; ++a)
             p[i][a] = tau * p[i][a] + t * q.counts[i][a] / q.neff[i];
-    }
-}
-
-template<class Abc>
-void Pseudocounts<Abc>::AdmixTo(const POHmm<Abc>& q, Profile<Abc>& p, const Admix& admix) const {
-    const typename POHmm<Abc>::Graph& g = q.g;
-
-    for (size_t i = 1; i <= q.size(); ++i) {
-        double tau = admix(g[i].neff);
-        double t = 1 - tau;
-        for (size_t a = 0; a < Abc::kSize; ++a)
-            p[i - 1][a] = tau * p[i - 1][a] + t * g[i].counts[a] / g[i].neff;
     }
 }
 

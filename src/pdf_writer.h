@@ -7,8 +7,6 @@
 #include <boost/tuple/tuple_comparison.hpp>
 
 #include "abstract_state_matrix-inl.h"
-#include "pairwise_aligner-inl.h"
-#include "po_hmm-inl.h"
 #include "context_library-inl.h"
 #include "crf-inl.h"
 
@@ -135,121 +133,6 @@ class ContextLibraryPdfWriter : public PdfWriter {
     const ContextLibrary<Abc>& lib_;
 };
 
-
-// Helper struct for arranging PO-HMM vertices as a linear chain.
-template<class Abc>
-struct POHmmGrid {
-    typedef typename POHmm<Abc>::Graph Graph;
-    typedef typename POHmm<Abc>::VertexVec VertexVec;
-
-    POHmmGrid(const POHmm<Abc>& hmm) : coords(hmm.size() + 2, 0) {
-	// Determine blocks of vertices with same ali-bitset patterns
-	const Graph& g = hmm.g;
-	VertexVec block(1, kStartEndVertex);  // first block consists of start vertex
-	for (size_t i = 1; i < hmm.vertices.size(); ++i) {
-	    if (i == 1 || g[hmm.vertices[i]].alis != g[hmm.vertices[i-1]].alis) {
-		blocks.push_back(block);
-		block.clear();
-	    }
-	    block.push_back(hmm.vertices[i]);
-	}
-	blocks.push_back(block);
-	// Add last block consisting of virtual end vertex
-	blocks.push_back(VertexVec(1, hmm.vertices.size()));
-
-	// Set vertex coordinates
-	for (size_t b = 0, i = 0; b < blocks.size(); ++b)
-	    for (size_t j = 0; j < blocks[b].size(); ++j, ++i)
-		coords[blocks[b][j]] = b + i;
-    }
-
-    std::vector<VertexVec> blocks;  // vertex blocks
-    std::vector<int> coords;        // grid coordinate for each vertex
-};
-
-
-// PDF-Writer subclass for drawing a complete PO-HMM with vertices, edges, and
-// alternative alignments.
-template<class Abc>
-class POHmmPdfWriter : public PdfWriter {
-  public:
-    POHmmPdfWriter(const POHmm<Abc>& hmm,
-		   const ContextLibrary<Abc>* lib = NULL,
-		   const IndexPath* path = NULL);
-    virtual ~POHmmPdfWriter();
-
-    bool hide_numbering;
-    bool hide_profiles;
-    bool hide_alignment;
-    bool hide_paths;
-    bool reverse;
-    double pmin;
-
-  private:
-    typedef typename POHmm<Abc>::Graph Graph;
-    typedef typename POHmm<Abc>::Vertex Vertex;
-    typedef typename POHmm<Abc>::VertexVec VertexVec;
-    typedef typename POHmm<Abc>::ConstVertexVecIter ConstVertexVecIter;
-    typedef typename POHmm<Abc>::EdgeIter EdgeIter;
-    typedef SparseProfileCol::ElementIter ContextIter;
-    typedef std::pair<Color, double> ColorProbPair;
-    typedef boost::tuple<int, double, uint8_t> GroupProbResTuple;
-
-    // Writes TikZ picture with PO-HMM vertices and edges.
-    virtual void WriteBody(FILE* fp);
-
-    // Generates alignment PDFs for each vertex block
-    void GenerateAlignmentBlocks() const;
-
-    // Defines colors needed for contexts state profiles.
-    void DefineContextColors(FILE* fp) const;
-
-    // Returns alignment filename for block 'b'
-    std::string alignment_filename(size_t b) const {
-	return strprintf("%s_%zu.pdf", tempfile_.c_str(), b);
-    }
-
-    // Colors for alignment-path boxes
-    static const char* kAliColors[];
-    // Y-Scale for TikZ
-    static const float kScaleY = 0.07029;
-
-    const POHmm<Abc>& hmm_;
-    const ContextLibrary<Abc>* lib_;
-    const IndexPath* path_;
-    POHmmGrid<Abc> grid_;
-    std::string tempfile_;
-};
-
-
-// PDF-Writer subclass for drawing posterior probability matrix, optionally with
-// highlighted alignment path.
-template<class Abc>
-class PosteriorMatrixPdfWriter : public PdfWriter {
-  public:
-    PosteriorMatrixPdfWriter(const AlignmentMatrices<Abc>& data,
-			     const ContextLibrary<Abc>* lib = NULL,
-			     const PairAlignment* ali = NULL);
-    virtual ~PosteriorMatrixPdfWriter();
-
-  private:
-    typedef typename POHmm<Abc>::Graph Graph;
-    typedef typename POHmm<Abc>::Vertex Vertex;
-    typedef typename POHmm<Abc>::VertexVec VertexVec;
-    typedef typename POHmm<Abc>::ConstVertexVecIter ConstVertexVecIter;
-
-    // Writes posterior matrix using the Texshade package.
-    virtual void WriteBody(FILE* fp);
-
-    const AlignmentMatrices<Abc>& data_;
-    const ContextLibrary<Abc>* lib_;
-    const PairAlignment* ali_;
-    POHmmGrid<Abc> grid_x_;
-    POHmmGrid<Abc> grid_y_;
-    std::string tempfile_;
-};
-
-
 // PDF-Writer subclass for drawing an abstract state substitution matrix.
 template<class AS, class Abc>
 class AbstractStateMatrixPdfWriter : public PdfWriter {
@@ -277,17 +160,6 @@ class AbstractStateMatrixPdfWriter : public PdfWriter {
     const ContextLibrary<Abc>& alphabet_;
     std::string tempfile_;
 };
-
-inline std::string PairStateToColor(uint8_t xx) {
-    std::string rv;
-    switch (xx) {
-	case MM: rv = "red"; break;
-	case MI: rv = "MyGreen!90!white"; break;
-	case IM: rv = "MyBlue!90!white"; break;
-	default: throw Exception("Unknown pair state '%d'!", xx);
-    }
-    return rv;
-}
 
 // PDF-Writer subclass for drawing an CRF states.
 template<class Abc>

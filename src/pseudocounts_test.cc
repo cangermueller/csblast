@@ -3,7 +3,6 @@
 #include "cs.h"
 #include "blosum_matrix.h"
 #include "count_profile-inl.h"
-#include "po_hmm-inl.h"
 #include "pseudocounts-inl.h"
 #include "crf-inl.h"
 #include "context_library-inl.h"
@@ -67,17 +66,6 @@ class PseudocountsTest : public testing::Test {
       }
       return true;
     }
-
-    Profile<AA> ToProfile(POHmm<AA>& hmm) {
-      Profile<AA> p(hmm.size());
-      for (size_t i = 1; i <= hmm.size(); ++i) {
-        for (size_t a = 0; a < AA::kSize; ++a)
-          p[i - 1][a] = hmm.g[i].probs[a];
-      }
-      return p;
-    }
-
-          
 
  protected:
     Ran ran;
@@ -197,38 +185,6 @@ TEST_F(PseudocountsTest, CountProfile) {
         ASSERT_NEAR(Neff(q), Neff(cp_p), kTargetNeffDelta);
         ASSERT_TRUE(IsEqual(cp_p, q, 1e-5));
       }
-    }
-  }
-}
-
-TEST_F(PseudocountsTest, POHmm) {
-  const double kTargetNeffDelta = 0.001;
-  const double kTargetNeff[]    = {3.0, 5.0, 8.0};
-  const double tau[]            = {0.1, 0.5, 0.9};
-  pc_engines[1]->SetTargetNeffDelta(kTargetNeffDelta);
-
-  for (size_t r = 0; r < kRounds; ++r) {
-    Sequence<AA> seq = GetRndSeq();
-    POHmm<AA> hmm(seq);
-    Profile<AA> p, q;
-    pc_engines[1]->SetTargetNeff(0.0);
-    for (size_t i = 0; i < 3; ++i) {
-      ConstantAdmix admix(tau[i]);
-      p = pc_engines[1]->AddTo(seq, admix);
-      pc_engines[1]->AddTo(&hmm, admix);
-      q = ToProfile(hmm);
-      ASSERT_TRUE(IsEqual(p, q, 0.001));
-    }
-    for (size_t i = 0; i < 3; ++i) {
-      pc_engines[1]->SetTargetNeff(kTargetNeff[i]);
-      CSBlastAdmix admix(1.0, 12.0);
-
-      p = pc_engines[1]->AddTo(seq, admix);
-      pc_engines[1]->AddTo(&hmm, admix);
-      q = ToProfile(hmm);
-      ASSERT_NEAR(Neff(p), kTargetNeff[i], kTargetNeffDelta);
-      ASSERT_NEAR(Neff(q), kTargetNeff[i], kTargetNeffDelta);
-      ASSERT_TRUE(IsEqual(p, q, 0.001));
     }
   }
 }

@@ -1,7 +1,3 @@
-# Author	: Angermueller Christof
-# Date		: 10-09-09
-
-
 ### Compiler ###
 
 
@@ -95,12 +91,10 @@ LIBS = -lm
 ### Targets ###
 
 
-TARGETS = cslrsgd csblast cstrainset cssgd csbuild csviz csalign csclust cstranslate cscons \
+TARGETS = csblast cstrainset cssgd csbuild csviz csclust cstranslate cscons \
 					cscp_neff cstrainset_neff cstrainprofiles
-TEST_TARGETS = lr_params lr_func lr_sgd lr_pseudocounts training_profile
 TARGETS := $(TARGETS) $(TARGETS:%=%_debug) $(TARGETS:%=%_prof)
-TEST_TARGETS := $(TEST_TARGETS:%=%_test)
-BINS = $(TARGETS:%=$(BIN_DIR)/%) $(TEST_TARGETS:%=$(BIN_DIR)/%)
+BINS = $(TARGETS:%=$(BIN_DIR)/%)
 
 PARAMS = $(RELEASE_FLAGS) $(RELEASE_DEFS) $(INC)
 %_test: PARAMS = $(DEBUG_FLAGS) $(DEBUG_DEFS) $(INC) $(GTEST_FLAGS)
@@ -112,8 +106,6 @@ PARAMS = $(RELEASE_FLAGS) $(RELEASE_DEFS) $(INC)
 
 
 all: $(TARGETS)
-
-all_test: $(TEST_TARGETS)
 
 clean_build:
 	find $(BUILD_DIR) -name '*.o' -exec rm -f '{}' +
@@ -199,20 +191,6 @@ cssgd_prof: $(OBJECTS_PROF)
 	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
 
 
-### cslrsgd ###
-
-
-DEPS = cslrsgd_app
-cslrsgd: $(OBJECTS)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
-
-cslrsgd_debug: $(OBJECTS_DEBUG)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
-
-cslrsgd_prof: $(OBJECTS_PROF)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
-
-
 ### cshmc ###
 
 
@@ -266,20 +244,6 @@ csviz_debug: $(OBJECTS_DEBUG)
 	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
 
 csviz_prof: $(OBJECTS_RPOF)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
-
-
-### csalign ###
-
-
-DEPS = csalign pdf_writer sparse_profile
-csalign: $(OBJECTS)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
-
-csalign_debug: $(OBJECTS_DEBUG)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
-
-csalign_prof: $(OBJECTS_PROF)
 	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
 
 
@@ -340,22 +304,6 @@ csconvert: $(OBJECTS)
 
 DEPS = test
 test: $(OBJECTS)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
-
-DEPS = lr_params_test
-lr_params_test: $(OBJECTS_TEST)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
-
-DEPS = lr_func_test
-lr_func_test: $(OBJECTS_TEST)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
-
-DEPS = lr_sgd_test
-lr_sgd_test: $(OBJECTS_TEST)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
-
-DEPS = lr_pseudocounts_test
-lr_pseudocounts_test: $(OBJECTS_TEST)
 	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
 
 DEPS = sgd_test

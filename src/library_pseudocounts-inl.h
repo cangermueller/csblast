@@ -63,28 +63,6 @@ void LibraryPseudocounts<Abc>::AddToProfile(const CountProfile<Abc>& cp, Profile
     }
 }
 
-template<class Abc>
-void LibraryPseudocounts<Abc>::AddToPOHmm(const POHmm<Abc>* hmm, Profile<Abc>& p) const {
-    LOG(INFO) << "Adding library pseudocounts to profile ...";
-    Matrix<double> pp(hmm->size(), lib_.size(), 0.0);  // posterior probs
-    int len = static_cast<int>(hmm->size());
-
-#pragma omp parallel for schedule(static)
-    for (int i = 1; i <= len; ++i) {
-        double* ppi = pp[i - 1];
-        // Calculate posterior probability of state k given sequence window around 'i'
-        CalculatePosteriorProbs(lib_, emission_, hmm->g, i, ppi);
-        // Calculate pseudocount vector P(a|X_i)
-        double* pc = p[i - 1];
-        for (size_t a = 0; a < Abc::kSize; ++a) pc[a] = 0.0;
-        for (size_t k = 0; k < lib_.size(); ++k) {
-            for(size_t a = 0; a < Abc::kSize; ++a)
-                pc[a] += ppi[k] * lib_[k].pc[a];
-        }
-        Normalize(&pc[0], Abc::kSize);
-    }
-}
-
 }  // namespace cs
 
 #endif  // CS_CONTEXT_LIB_PSEUDOCOUNTS_INL_H_

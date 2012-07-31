@@ -121,7 +121,7 @@ class SamplingCrfInit : public CrfInit<Abc> {
 
     SamplingCrfInit(const TrainingSet& trainset,
                     const Pseudocounts<Abc>& pc,
-                    const Admix& admix,
+                    Admix& admix,
                     const SubstitutionMatrix<Abc>& sm,
                     unsigned int seed = 0, 
                     double weight_center = 1.6,
@@ -142,7 +142,7 @@ class SamplingCrfInit : public CrfInit<Abc> {
   private:
     const TrainingSet& trainset_;
     const Pseudocounts<Abc>& pc_;
-    const Admix& admix_;
+    Admix& admix_;
     const SubstitutionMatrix<Abc>& sm_;
     const unsigned int seed_;
     Ran ran_;
