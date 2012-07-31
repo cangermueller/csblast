@@ -4,7 +4,6 @@
 #define CS_EMISSION_H_
 
 #include "count_profile-inl.h"
-#include "po_hmm-inl.h"
 #include "profile-inl.h"
 #include "profile_column.h"
 #include "substitution_matrix-inl.h"
