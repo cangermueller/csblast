@@ -1,5 +1,9 @@
 /.gitignore export-ignore
 /.gitattributes export-ignore
+/src/csviz_app.cc export-ignore
+/src/pdf_writer.h export-ignore
+/src/pdf_writer-inl.h export-ignore
+/src/pdf_writer.cc export-ignore
 /data/test export-ignore
 /scripts/csalibench.sh  export-ignore
 /scripts/csbench.sh export-ignore
