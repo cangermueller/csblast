@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Pod::Usage;
 use Getopt::Long;
-use File::Basename qw(basename);
+use File::Basename qw(basename dirname);
 use Cwd qw(abs_path);
 use File::Spec::Functions qw(catdir catfile);
 
@@ -115,13 +115,12 @@ GetOptions(
   "h|help"        => sub { pod2usage(2); }
 ) or pod2usage(1);
 unless (@dirs) { pod2usage("No benchmark directory provided!"); }
-unless (@plots) { @plots = qw/tpfp wtpfp ftpfp rocx evalue/; }
+unless (@plots) { @plots = qw/tpfp wtpfp rocx evalue/; }
 &get_entities;
 unless (@entities) { pod2usage("No plot data found in the specified benchmark directories!"); }
 unless ($format eq "pdf" || $format eq "ps" || $format eq "eps") { pod2usage("Output format not supported!"); }
 unless ($db) {
-  if (abs_path($dirs[0]) =~ /(scop20_1\.7._(opt|test))/) { $db = $1; }
-  else { $db = "scop20_1.73_test"; }
+  $db = basename(dirname(abs_path($dirs[0])));
 }
 unless ($iter) {
   $iter = 1;
@@ -172,8 +171,11 @@ sub plot {
   my ($plot, $outfile) = @_;
   my $cmd = qq/
     set terminal postscript / . ($format eq "eps" ? "eps" : "") . qq/ enhanced color linewidth $opts{LINEWIDTH_SCALE} font "$opts{FONT}" $opts{FONTSIZE}
-    set output "$outfile"
-  
+    set output "$outfile"/;
+  if ($title) { $cmd .= qq/
+    set title "$title"/;
+  }
+  $cmd .= qq/
     set style line 1 linetype 2 linewidth $opts{LINEWIDTH} linecolor rgb "$opts{COLORS}->[0]"
     set style line 2 linetype 1 linewidth $opts{LINEWIDTH} linecolor rgb "$opts{COLORS}->[1]"
     set style line 3 linetype 1 linewidth $opts{LINEWIDTH} linecolor rgb "$opts{COLORS}->[2]"
@@ -245,6 +247,36 @@ sub plot {
       set label "1%" at 45,6500 textcolor ls $ls_fdr
       set label "10%" at 450,6500 textcolor ls $ls_fdr
       set label "20%" at 1000,6500 textcolor ls $ls_fdr/;
+    } elsif ($db eq "scop20_1.75_test" && $iter == 1) { $cmd .= qq/
+      set xrange [1:4000]
+      set yrange [0:10000]
+      set label "1%" at 50,7500 textcolor ls $ls_fdr
+      set label "10%" at 500,7500 textcolor ls $ls_fdr
+      set label "20%" at 1100,7500 textcolor ls $ls_fdr/;
+    } elsif ($db eq "scop20_1.75_test" && $iter == 2) { $cmd .= qq/
+      set xrange [1:4000]
+      set yrange [0:25000]
+      set label "1%" at 50,7500 textcolor ls $ls_fdr
+      set label "10%" at 500,7500 textcolor ls $ls_fdr
+      set label "20%" at 1100,7500 textcolor ls $ls_fdr/;
+    } elsif ($db eq "scop40_1.75_test" && $iter == 1) { $cmd .= qq/
+      set xrange [1:40000]
+      set yrange [0:60000]
+      set label "1%" at 50,7500 textcolor ls $ls_fdr
+      set label "10%" at 500,7500 textcolor ls $ls_fdr
+      set label "20%" at 1100,7500 textcolor ls $ls_fdr/;
+    } elsif ($db eq "scop60_1.75_test" && $iter == 1) { $cmd .= qq/
+      set xrange [1:50000]
+      set yrange [0:100000]
+      set label "1%" at 50,7500 textcolor ls $ls_fdr
+      set label "10%" at 500,7500 textcolor ls $ls_fdr
+      set label "20%" at 1100,7500 textcolor ls $ls_fdr/;
+    } elsif ($db eq "scop80_1.75_test" && $iter == 1) { $cmd .= qq/
+      set xrange [1:80000]
+      set yrange [0:250000]
+      set label "1%" at 50,7500 textcolor ls $ls_fdr
+      set label "10%" at 500,7500 textcolor ls $ls_fdr
+      set label "20%" at 1100,7500 textcolor ls $ls_fdr/;
     } else { $cmd .= qq/
       set xrange [1:4000]
       set yrange [0:10000]
@@ -310,6 +342,36 @@ sub plot {
     } elsif ($db eq "scop20_1.75_opt") { $cmd .= qq/
       set xrange [1:600]
       set yrange [0:800]
+      set label "1%" at 2,275 textcolor ls $ls_fdr
+      set label "10%" at 20,275 textcolor ls $ls_fdr
+      set label "20%" at 50,275 textcolor ls $ls_fdr/;
+    } elsif ($db eq "scop20_1.75_test" && $iter == 1) { $cmd .= qq/
+      set xrange [1:600]
+      set yrange [0:700]
+      set label "1%" at 2,275 textcolor ls $ls_fdr
+      set label "10%" at 20,275 textcolor ls $ls_fdr
+      set label "20%" at 50,275 textcolor ls $ls_fdr/;
+    } elsif ($db eq "scop20_1.75_test" && $iter == 2) { $cmd .= qq/
+      set xrange [1:600]
+      set yrange [0:1200]
+      set label "1%" at 2,275 textcolor ls $ls_fdr
+      set label "10%" at 20,275 textcolor ls $ls_fdr
+      set label "20%" at 50,275 textcolor ls $ls_fdr/;
+    } elsif ($db eq "scop40_1.75_test" && $iter == 1) { $cmd .= qq/
+      set xrange [1:1000]
+      set yrange [0:2000]
+      set label "1%" at 2,275 textcolor ls $ls_fdr
+      set label "10%" at 20,275 textcolor ls $ls_fdr
+      set label "20%" at 50,275 textcolor ls $ls_fdr/;
+    } elsif ($db eq "scop60_1.75_test" && $iter == 1) { $cmd .= qq/
+      set xrange [1:2000]
+      set yrange [0:3000]
+      set label "1%" at 2,275 textcolor ls $ls_fdr
+      set label "10%" at 20,275 textcolor ls $ls_fdr
+      set label "20%" at 50,275 textcolor ls $ls_fdr/;
+    } elsif ($db eq "scop80_1.75_test" && $iter == 1) { $cmd .= qq/
+      set xrange [1:2000]
+      set yrange [0:4000]
       set label "1%" at 2,275 textcolor ls $ls_fdr
       set label "10%" at 20,275 textcolor ls $ls_fdr
       set label "20%" at 50,275 textcolor ls $ls_fdr/;
@@ -441,6 +503,14 @@ sub plot {
       set yrange [0:0.8]/;
     } elsif ($db eq "scop20_1.75_opt") { $cmd .= qq/
       set yrange [0:0.5]/;
+    } elsif ($db eq "scop20_1.75_test" && $iter == 1) { $cmd .= qq/
+      set yrange [0:0.5]/;
+    } elsif ($db eq "scop40_1.75_test" && $iter == 1) { $cmd .= qq/
+      set yrange [0:0.6]/;
+    } elsif ($db eq "scop60_1.75_test" && $iter == 1) { $cmd .= qq/
+      set yrange [0:0.6]/;
+    } elsif ($db eq "scop80_1.75_test" && $iter == 1) { $cmd .= qq/
+      set yrange [0:0.6]/;
     } else { $cmd .= qq/
       set yrange [0:0.5]/;
     }

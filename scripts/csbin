@@ -17,7 +17,7 @@ class CSBin
     @rocx           = 5
     @name2scopid    = {} # 'd1a25a_' => Bioinf::SCOP::Identifier.new('b.7.1.2')
     @basename       = ""
-    @max_evalue     = nil
+    @max_evalue     = 800
     @plots          = [:tpfp, :wtpfp, :rocx, :fdr, :rocx, :pvalue, :evalue]
     @benchfiles     = {
       :tpfp   => 'tpfp.dat',
@@ -55,7 +55,7 @@ class CSBin
     @cl_size        = Hash.new(0)   # number of members in SCOP class
     @rocx_scores    = []            # array with rocx scores (one per query)
     @worst_fp       = []            # array with 1000 worst false positives sorted by E-value
-    @nworst         = 100000
+    @nworst         = 10000
     @nworst_fam     = 20
 
     self
@@ -121,6 +121,7 @@ class CSBin
     @fm_tp = Array.new(@nbins+1, 0.0)
     @fm_fp = Array.new(@nbins+1, 0.0)
     @fm_uc = Array.new(@nbins+1, 0.0)
+    @worst_fp = Array.new
 
     @resfiles = Dir.glob(@inglob)
     if @resfiles.empty?
@@ -212,7 +213,21 @@ class CSBin
       h.classification = classification
       hits << h
       if classification == :fp
-        @worst_fp << h 
+        if @worst_fp.size < @nworst
+          @worst_fp << h
+          if @worst_fp.size == @nworst
+            @worst_fp.sort! { |a, b| b.evalue <=> a.evalue }
+          end
+        else
+          i = 0
+          while i < @worst_fp.size && h.evalue < @worst_fp[i].evalue 
+            i = i + 1
+          end
+          if i > 0
+            @worst_fp.insert(i, h)
+            @worst_fp.shift
+          end
+        end
       end
     end
 

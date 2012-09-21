@@ -26,11 +26,11 @@ function check_arg {
 
 MODEL=
 OUTDIR=
-DB="scop30_1.75_ali_seqid0.3_tmscore0.6"
+DB="scop30_1.75_test_ali_seqid0.3_tmscore0.6"
 PARAMS=
 SUBMIT=
 
-CSVERSION=2.2.1
+CSVERSION=2.2.3
 CSBLAST="csblast-$CSVERSION"
 E="1e4"
 V=100
