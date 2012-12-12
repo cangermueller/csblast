@@ -34,8 +34,11 @@ const char* CSBlast::kPsiBlastExec = "blastpgp";
 const char* CSBlast::kIgnoreOptions = "o";
 
 const char* CSBlast::kCSBlastReference =
-  "Reference for sequence context-specific profiles:\n"
-  "Biegert, Andreas and Soding, Johannes (2009), \n"
+  "References for sequence context-specific profiles:\n"
+  "Angermueller C, Biegert A, and Soeding J (2012), \n"
+  "\"Discriminative modelling of context-specific amino acid substitution probabilities\", \n"
+  "Bioinformatics, 28 (24), 3240-3247.\n"
+  "Biegert A, and Soeding J (2009), \n"
   "\"Sequence context-specific profiles for homology searching\", \n"
   "Proc Natl Acad Sci USA, 106 (10), 3770-3775.";
 

@@ -221,10 +221,13 @@ void CSBlastApp::ParseOptions(GetOpt_pp& ops) {
 }
 
 void CSBlastApp::PrintBanner() const {
-  fputs("Search with an amino acid sequence against protein databases for locally\n"
-        "similar sequences.\n"
-        "Biegert, A. and Soding, J. (2009), Sequence context-specific profiles\n"
-        "for homology searching. Proc Natl Acad Sci USA, 106 (10), 3770-3775\n",
+  fputs("Search with an amino acid sequence against protein databases for locally similar sequences.\n"
+        "Angermueller C, Biegert A, and Soeding J (2012), \n"
+        "\"Discriminative modelling of context-specific amino acid substitution probabilities\", \n"
+        "Bioinformatics, 28 (24), 3240-3247.\n"
+        "Biegert A, and Soeding J (2009), \n"
+        "\"Sequence context-specific profiles for homology searching\", \n"
+        "Proc Natl Acad Sci USA, 106 (10), 3770-3775.\n",
         out_);
 }
 

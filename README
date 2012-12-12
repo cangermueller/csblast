@@ -24,8 +24,8 @@ CONTEXT LIBRARIES
 The data subdirectory contains the library of 4000 context profiles needed by
 CS-BLAST, as well as the CS62 column state alphabet for translating sequence
 profiles into CS62 sequences with cstranslate. 
-- lib/K4000.lib: context library of the generative model
-- lib/K4000.crf: context library of the discriminative model
+- data/K4000.lib: context library of the generative model
+- data/K4000.crf: context library of the discriminative model
 
 If you have any problems or questions regarding the suite of cs-tools please
 contact Christof Angermueller at angermueller@lmb.uni-muenchen.de.

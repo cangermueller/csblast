@@ -23,15 +23,15 @@ use File::Spec::Functions qw(catdir catfile);
  
     -d, --dir BENCHDIR+     List of directories containing benchmark result files
     -o, --out OUTBASE       Output basename [def: ./]
-    -p, --plot PLOT+        List of plots to be created [default: tpfp wtpfp ftpfp rocx evalue]
-                            tpfp  :  TP versus FP ROC (unweighted)
-                            otpfp :  TP versus FP ROC (weighted by number of fold members)
-                            wtpfp :  TP versus FP ROC (weighted by number of superfamily members)
-                            ftpfp :  TP versus FP ROC (weighted by number of family members)
-                            rocx  :  Fraction of queries verus ROCX score
-                            pvalue:  Real P-value versus reported P-value
-                            evalue:  Real E-value versus reported E-value
-                            fdr   :  Sensitivity versus false discovery rate
+    -p, --plot PLOT+        List of plots to be created [default: tpfp rocx evalue]
+                            tpfp    : TP versus FP ROC (unweighted)
+                            fdtpfp  : TP versus FP ROC (weighted by number of fold members)
+                            sfmtpfp : TP versus FP ROC (weighted by number of superfamily members)
+                            fmfpfp  : TP versus FP ROC (weighted by number of family members)
+                            rocx    : Fraction of queries verus ROCX score
+                            pvalue  : Real P-value versus reported P-value
+                            evalue  : Real E-value versus reported E-value
+                            fdr     : Sensitivity versus false discovery rate
     -f, --format FORMAT     Output format (pdf, ps, eps) [def: pdf]
     -t, --title TITLE       Title of the plots [def: ]
     -l, --label LABEL+      List of labels to be used instead of directory names
@@ -115,7 +115,7 @@ GetOptions(
   "h|help"        => sub { pod2usage(2); }
 ) or pod2usage(1);
 unless (@dirs) { pod2usage("No benchmark directory provided!"); }
-unless (@plots) { @plots = qw/tpfp wtpfp rocx evalue/; }
+unless (@plots) { @plots = qw/tpfp rocx evalue/; }
 &get_entities;
 unless (@entities) { pod2usage("No plot data found in the specified benchmark directories!"); }
 unless ($format eq "pdf" || $format eq "ps" || $format eq "eps") { pod2usage("Output format not supported!"); }
@@ -285,12 +285,14 @@ sub plot {
       set label "20%" at 1100,7500 textcolor ls $ls_fdr/;
     }
 
-  } elsif ($plot eq "wtpfp") { $cmd .= qq/
+  } elsif ($plot eq "fdtpfp" || $plot eq "sftpfp") { 
+    my $label = $plot eq "fdtpfp" ? "fold" : "superfamily";
+    $cmd .= qq/
     set key top left reverse invert Left
     set log x
     set grid
-    set xlabel "superfamily weighted FP"
-    set ylabel "superfamily weighted TP"/;
+    set xlabel "$label weighted FP"
+    set ylabel "$label weighted TP"/;
     if ($db eq "scop20_1.73_opt" && $iter == 1) { $cmd .= qq/
       set xrange [1:200]
       set yrange [0:250]
@@ -383,7 +385,7 @@ sub plot {
       set label "20%" at 60,350 textcolor ls $ls_fdr/;
     }
 
-  } elsif ($plot eq "ftpfp") { $cmd .= qq/
+  } elsif ($plot eq "fmtpfp") { $cmd .= qq/
     set key top left reverse invert Left
     set log x
     set grid
@@ -419,7 +421,13 @@ sub plot {
       set label "1%" at 25,3500 textcolor ls $ls_fdr
       set label "10%" at 250,3500 textcolor ls $ls_fdr
       set label "20%" at 600,3500 textcolor ls $ls_fdr/;
-    } elsif ($db eq "scop20_1.73_test") { $cmd .= qq/
+    } elsif ($db eq "scop20_1.75_test") { $cmd .= qq/
+      set xrange [1:2000]
+      set yrange [0:5000]
+      set label "1%" at 25,3500 textcolor ls $ls_fdr
+      set label "10%" at 250,3500 textcolor ls $ls_fdr
+      set label "20%" at 600,3500 textcolor ls $ls_fdr/;
+    } elsif ($db eq "scop20_1.75_test") { $cmd .= qq/
       set xrange [1:2000]
       set yrange [0:8000]
       set label "1%" at 25,3500 textcolor ls $ls_fdr
@@ -540,7 +548,7 @@ sub plot {
 
   $cmd .= qq/
     plot /;
-  if ($plot eq "tpfp" || $plot eq "wtpfp" || $plot eq "ftpfp") { 
+  if ($plot eq "tpfp" || $plot eq "fdtpfp" || $plot eq "sftpfp" || $plot eq "fmtpfp") { 
     $cmd .= qq/99*x notitle with lines ls $ls_fdr, 9*x notitle with lines ls $ls_fdr, 4*x notitle with lines ls $ls_fdr,/;
   } elsif ($plot eq "evalue" || $plot eq "pvalue") {
     $cmd .= qq/x notitle with lines ls $ls_fdr,/;
