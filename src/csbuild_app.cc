@@ -110,6 +110,8 @@ class CSBuildApp : public Application {
   // Writes PSI-BLAST checkpoint file
   void WriteCheckpoint(const Sequence<Abc>& query,
                        const CountProfile<Abc>& cp) const;
+  // Initialize alphabet dependent pseudocount engine
+  void InitAbcPcEngine();
 
   // Parameter wrapper
   CSBuildAppOptions opts_;
@@ -183,7 +185,7 @@ void CSBuildApp<Abc>::PrintOptions() const {
           "Target Neff for pseudocounts admixture", opts_.pc_neff);
   fprintf(out_, "  %-30s %s (def=%-.1f)\n", "-c, --pc-ali [0,inf[",
           "Constant in pseudocount calculation for alignments", opts_.pc_ali);
-  fprintf(out_, "  %-30s %s (def=%s)\n", "    --pc-engine crf|lib",
+  fprintf(out_, "  %-30s %s (def=%s)\n", "    --pc-engine crf|lib|blosum",
            "Specify engine for pseudocount generation", opts_.pc_engine.c_str());
   fprintf(out_, "  %-30s %s (def=%-.2f)\n", "    --weight-center [0,inf[",
          "Weight of central profile column for context-specific pseudocounts", opts_.weight_center);
@@ -223,6 +225,19 @@ void CSBuildApp<AA>::WriteCheckpoint(const Sequence<AA>& query,
 }
 
 template<class Abc>
+void CSBuildApp<Abc>::InitAbcPcEngine() {
+}
+
+template<>
+void CSBuildApp<AA>::InitAbcPcEngine() {
+  if (opts_.pc_engine == "blosum") {
+    BlosumMatrix* sm = new BlosumMatrix(BLOSUM62);
+    pc_.reset(new MatrixPseudocounts<AA>(*sm));
+    pc_->SetTargetNeff(opts_.pc_neff);
+  }
+}
+
+template<class Abc>
 int CSBuildApp<Abc>::Run() {
   // Setup pseudocount engine
   if (!opts_.modelfile.empty() && opts_.pc_engine == "lib") {
@@ -248,6 +263,8 @@ int CSBuildApp<Abc>::Run() {
     fclose(fin);
     pc_.reset(new CrfPseudocounts<Abc>(*crf_));
     pc_->SetTargetNeff(opts_.pc_neff);
+  } else {
+    InitAbcPcEngine();
   }
 
   CountProfile<Abc> profile;  // output profile
@@ -262,7 +279,7 @@ int CSBuildApp<Abc>::Run() {
     profile.name = profile.name.substr(0, profile.name.length() - 1);
 
     if (pc_) {
-      fputs("Adding cs-pseudocounts ...\n", out_);
+      fputs("Adding pseudocounts ...\n", out_);
       ConstantAdmix admix(opts_.pc_admix);
       profile.counts = pc_->AddTo(seq, admix);
     }
@@ -289,7 +306,7 @@ int CSBuildApp<Abc>::Run() {
     profile.name = profile.name.substr(0, profile.name.length() - 1);
 
     if (pc_) {
-      fputs("Adding cs-pseudocounts ...\n", out_);
+      fputs("Adding pseudocounts ...\n", out_);
       CSBlastAdmix admix(opts_.pc_admix, opts_.pc_ali);
       profile.counts = pc_->AddTo(profile, admix);
       Normalize(profile.counts, profile.neff);

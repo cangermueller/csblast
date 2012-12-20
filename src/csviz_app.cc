@@ -39,13 +39,14 @@ struct CSVizAppOptions {
 
   // Set csbuild default parameters
   void Init() {
-    informat     = "auto";
-    keep         = false;
-    sort         = false;
-    states       = "";
-    max_states   = 0;
-    crf_weights  = false;
-    external_dir = "";
+    informat       = "auto";
+    keep           = false;
+    sort           = false;
+    states         = "";
+    max_states     = 0;
+    crf_weights    = false;
+    external_dir   = "";
+    hide_numbering = false;
   }
 
   // Validates the parameter settings and throws exception if needed.
@@ -98,6 +99,8 @@ struct CSVizAppOptions {
   bool crf_weights;
   // Create figures in external directory
   string external_dir;
+  // Hide sequence numbers
+  bool hide_numbering;
 
 };  // CSVizAppOptions
 
@@ -134,6 +137,7 @@ void CSVizApp<Abc>::ParseOptions(GetOpt_pp& ops) {
   ops >> Option('I', "informat", opts_.informat, opts_.informat);
   ops >> OptionPresent('k', "keep", opts_.keep);
   ops >> OptionPresent(' ', "sort", opts_.sort);
+  ops >> OptionPresent(' ', "no-numbers", opts_.hide_numbering);
   ops >> Option(' ', "states", opts_.states, opts_.states);
   ops >> Option(' ', "max-states", opts_.max_states, opts_.max_states);
   // ops >> OptionPresent(' ', "crf-weights", opts_.crf_weights);
@@ -173,6 +177,7 @@ void CSVizApp<Abc>::PrintOptions() const {
   fprintf(out_, "  %-30s %s (def=off)\n", "-A, --alphabet <file>",
           "Abstract state alphabet consisting of exactly 62 states");
   fprintf(out_, "  %-30s %s (def=off)\n", "-k, --keep", "Keep temporary files");
+  fprintf(out_, "  %-30s %s (def=off)\n", "    --no-numbers", "Hide sequence numbers");
   fprintf(out_, "  %-30s %s (def=off)\n", "    --sort", "Sort states by probability");
   fprintf(out_, "  %-30s %s (def=off)\n", "    --states <s[-s][,s[-s]]+>", 
           "Expression for selecting states");
@@ -206,6 +211,7 @@ int CSVizApp<Abc>::Run() {
 
     fputs("Generating PDF with profile logos ...\n", out_);
     ProfilePdfWriter<Abc> profile_writer(profile.counts);
+    profile_writer.hide_numbering = opts_.hide_numbering;
     profile_writer.WriteToFile(opts_.outfile, opts_.keep);
     fprintf(out_, "Wrote output PDF to %s\n", opts_.outfile.c_str());
 
