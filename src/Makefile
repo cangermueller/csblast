@@ -10,7 +10,7 @@ CXX = $(GPP)
 ### CS-SUITE version ###
 
 
-VERSION = 2.2.3
+VERSION = 2.2.4
 OUTFILE = $@
 ifdef SHOW_VERSION
 	OUTFILE = $@-$(VERSION)
