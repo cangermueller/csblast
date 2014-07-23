@@ -60,14 +60,17 @@ DEBUG_DEFS = -DCOMPILER_OPTIONS="\"$(DEBUG_FLAGS)\"" $(DEFS)
 ### Files ###
 
 
-BUILD_DIR = ../build
-BUILD_DIR_TEST = $(BUILD_DIR)/test
-BUILD_DIR_PROF = $(BUILD_DIR)/prof
-BUILD_DIR_DEBUG = $(BUILD_DIR)/debug
+BUILD_ROOT = ../build
+ifeq ($(MODE),test)
+	BUILD_DIR = $(BUILD_ROOT)/test
+else ifeq  ($(MODE),debug)
+	BUILD_DIR = $(BUILD_ROOT)/debug
+else ifeq  ($(MODE),prof)
+	BUILD_DIR = $(BUILD_ROOT)/prof
+else
+	BUILD_DIR = $(BUILD_ROOT)
+endif
 $(shell mkdir -p $(BUILD_DIR))
-$(shell mkdir -p $(BUILD_DIR_TEST))
-$(shell mkdir -p $(BUILD_DIR_DEBUG))
-$(shell mkdir -p $(BUILD_DIR_PROF))
 BIN_DIR = ../bin
 $(shell mkdir -p $(BIN_DIR))
 LIB_DIR = ../lib
@@ -79,27 +82,32 @@ EXT = cc
 HEADERS = $(wildcard *.h)
 DEPS =
 BASE_DEPS = application aa dna log getopt_pp blosum_matrix assert_helpers utils
-GTEST_DEPS = gtest_main gtest-all
-OBJECTS = $(patsubst %, $(BUILD_DIR)/%.o, $(BASE_DEPS) $(DEPS))
-OBJECTS_TEST = $(patsubst %, $(BUILD_DIR_TEST)/%.o, $(BASE_DEPS) $(DEPS) $(GTEST_DEPS))
-OBJECTS_PROF = $(patsubst %, $(BUILD_DIR_PROF)/%.o, $(BASE_DEPS) $(DEPS))
-OBJECTS_DEBUG = $(patsubst %, $(BUILD_DIR_DEBUG)/%.o, $(BASE_DEPS) $(DEPS))
-INC = -I$$HOME/lib/sparsehash/include
+GTEST_DEPS = gtest-all
+ifeq ($(MODE),test)
+	OBJECTS = $(patsubst %, $(BUILD_DIR)/%.o, $(BASE_DEPS) $(DEPS) $(GTEST_DEPS))
+else
+	OBJECTS = $(patsubst %, $(BUILD_DIR)/%.o, $(BASE_DEPS) $(DEPS))
+endif
+INC = -I$$HOME/include
 LIBS = -lm
 
 
 ### Targets ###
 
 
-TARGETS = csblast cstrainset cssgd csbuild csviz csclust cstranslate cscons \
-					cscp_neff cstrainset_neff cstrainprofiles
-TARGETS := $(TARGETS) $(TARGETS:%=%_debug) $(TARGETS:%=%_prof)
+TARGETS = csblast cstrainset cssgd csbuild csviz cstranslate cscons \
+					cscp_neff cstrainset_neff
 BINS = $(TARGETS:%=$(BIN_DIR)/%)
 
-PARAMS = $(RELEASE_FLAGS) $(RELEASE_DEFS) $(INC)
-%_test: PARAMS = $(DEBUG_FLAGS) $(DEBUG_DEFS) $(INC) $(GTEST_FLAGS)
-%_debug: PARAMS = $(DEBUG_FLAGS) $(DEBUG_DEFS) $(INC)
-%_prof: PARAMS = $(RELEASE_FLAGS) $(RELEASE_DEFS) $(INC) $(GPROF_FLAGS)
+ifeq ($(MODE),test)
+	PARAMS = $(DEBUG_FLAGS) $(DEBUG_DEFS) $(INC) $(GTEST_FLAGS)
+else ifeq ($(MODE),debug)
+	PARAMS = $(DEBUG_FLAGS) $(DEBUG_DEFS) $(INC)
+else ifeq ($(MODE),prof)
+	PARAMS = $(RELEASE_FLAGS) $(RELEASE_DEFS) $(INC) $(GPROF_FLAGS)
+else
+	PARAMS = $(RELEASE_FLAGS) $(RELEASE_DEFS) $(INC)
+endif
 
 
 ### Global targets ###
@@ -110,42 +118,24 @@ all: $(TARGETS)
 clean_build:
 	find $(BUILD_DIR) -name '*.o' -exec rm -f '{}' +
 
-clean_build_test:
-	rm $(BUILD_DIR_TEST)/*.o
-
-clean_build_prof:
-	rm $(BUILD_DIR_PROF)/*.o
-
-clean_build_debug:
-	rm $(BUILD_DIR_DEBUG)/*.o
-
 clean_bin:
 	rm -f $(BINS)
 
-clean: clean_build clean_build_test clean_build_prof clean_build_debug cclean_bin
+clean: clean_build clean_bin
 
 .PHONY: all all_test clean clean_build clean_bin
 
 $(BUILD_DIR)/%.o: %.$(EXT) $(HEADERS)
 	$(CXX) $(PARAMS) -c -o $@ $<
 
-$(BUILD_DIR_TEST)/%.o: %.$(EXT) $(HEADERS)
-	$(CXX) $(PARAMS) -c -o $@ $<
-
-$(BUILD_DIR_PROF)/%.o: %.$(EXT) $(HEADERS)
-	$(CXX) $(PARAMS) -c -o $@ $<
-
-$(BUILD_DIR_DEBUG)/%.o: %.$(EXT) $(HEADERS)
-	$(CXX) $(PARAMS) -c -o $@ $<
-
 
 ### GTEST targets
 
 
-$(BUILD_DIR_TEST)/gtest-all.o : $(GTEST_SRC)
+$(BUILD_DIR)/gtest-all.o : $(GTEST_SRC)
 	$(CXX) $(PARAMS) -c -o $@ $(GTEST_DIR)/src/gtest-all.cc
 
-$(BUILD_DIR_TEST)/gtest_main.o : $(GTEST_SRC)
+$(BUILD_DIR)/gtest_main.o : $(GTEST_SRC)
 	$(CXX) $(PARAMS) -c -o $@ $(GTEST_DIR)/src/gtest_main.cc
 
 
@@ -156,24 +146,12 @@ DEPS = csblast_app csblast_iteration csblast blast_hits
 csblast: $(OBJECTS)
 	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
 
-csblast_debug: $(OBJECTS_DEBUG)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
-
-csblast_prof: $(OBJECTS_PROF)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
-
 
 ### cstrainset ###
 
 
 DEPS = cstrainset_app
 cstrainset: $(OBJECTS)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
-
-cstrainset_debug: $(OBJECTS_DEBUG)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
-
-cstrainset_prof: $(OBJECTS_PROF)
 	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
 
 
@@ -184,24 +162,12 @@ DEPS = cssgd_app
 cssgd: $(OBJECTS)
 	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
 
-cssgd_debug: $(OBJECTS_DEBUG)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
-
-cssgd_prof: $(OBJECTS_PROF)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
-
 
 ### cshmc ###
 
 
 DEPS = cshmc_app
 cshmc: $(OBJECTS)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
-
-cshmc_debug: $(OBJECTS_DEBUG)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
-
-cshmc_prof: $(OBJECTS_PROF)
 	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
 
 
@@ -212,24 +178,12 @@ DEPS = csbuild_app
 csbuild: $(OBJECTS)
 	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
 
-csbuild_debug: $(OBJECTS_DEBUG)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
-
-csbuild_prof: $(OBJECTS_PROF)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
-
 
 ### cscons ###
 
 
 DEPS = cscons_app
 cscons: $(OBJECTS)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
-
-cscons_debug: $(OBJECTS_DEBUG)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
-
-cscons_prof: $(OBJECTS_PROF)
 	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
 
 
@@ -240,12 +194,6 @@ DEPS = csviz_app pdf_writer as
 csviz: $(OBJECTS)
 	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
 
-csviz_debug: $(OBJECTS_DEBUG)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
-
-csviz_prof: $(OBJECTS_RPOF)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
-
 
 ### csclust ###
 
@@ -254,24 +202,12 @@ DEPS = csclust_app pdf_writer as
 csclust: $(OBJECTS)
 	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
 
-csclust_debug: $(OBJECTS_DEBUG)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
-
-csclust_prof: $(OBJECTS_PROF)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
-
 
 ### cstranslate ###
 
 
 DEPS = cstranslate_app as
 cstranslate: $(OBJECTS)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
-
-cstranslate_debug: $(OBJECTS_DEBUG)
-	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
-
-cstranslate_prof: $(OBJECTS_PROF)
 	$(CXX) $(PARAMS) -o $(BIN_DIR)/$(OUTFILE) $+ $(LIBS)
 
 

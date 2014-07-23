@@ -434,12 +434,12 @@ void CSTrainSetApp<Abc>::ReadProfiles(ProgressBar& progress) {
       round = atoi(name.substr(i + 1).c_str());
       if (round > 0) key = name.substr(0, i); // count-profiles refers to a specific round
     }
-    Groups::iterator it = groups.find(key);
-    if (it == groups.end()) 
+    Groups::iterator it_groups = groups.find(key);
+    if (it_groups == groups.end()) 
       groups[key] = GroupValue(1 << round, round);
     else {
-      it->second.first |= 1 << round;
-      it->second.second = MAX(it->second.second, round);
+      it_groups->second.first |= 1 << round;
+      it_groups->second.second = MAX(it_groups->second.second, round);
     }
   }
   fprintf(out_, "\n%zu files globbed\n", groups.size());
