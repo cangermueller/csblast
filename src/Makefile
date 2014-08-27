@@ -96,7 +96,7 @@ LIBS = -lm
 
 
 TARGETS = csblast cstrainset cssgd csbuild csviz cstranslate cscons \
-					cscp_neff cstrainset_neff
+					cscp_neff cstrainset_neff csclust
 BINS = $(TARGETS:%=$(BIN_DIR)/%)
 
 ifeq ($(MODE),test)

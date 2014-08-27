@@ -154,7 +154,7 @@ class SamplingLibraryInit : public LibraryInit<Abc> {
 
   SamplingLibraryInit(const TrainingSet& trainset,
                       const Pseudocounts<Abc>& pc,
-                      const Admix& admix,
+                      Admix& admix,
                       unsigned int seed = 0)
       : trainset_(trainset),
         pc_(pc),
@@ -168,7 +168,7 @@ class SamplingLibraryInit : public LibraryInit<Abc> {
  private:
   const TrainingSet& trainset_;
   const Pseudocounts<Abc>& pc_;
-  const Admix& admix_;
+  Admix& admix_;
   const unsigned int seed_;
 };  // SamplingLibraryInit
 

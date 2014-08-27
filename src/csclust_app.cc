@@ -222,9 +222,10 @@ int CSClustApp<Abc>::Run() {
     // Copy learned library and add pseudocounts for color-space learning
     MatrixPseudocounts<Abc> pc(*sm_);
     ContextLibrary<Abc> lib_pc(em.lib);
+    ConstantAdmix admix(0.5);
     for (size_t k = 0; k < lib_pc.size(); ++k) {
         CountProfile<Abc> cp(lib_pc[k].probs);
-        lib_pc[k].probs = pc.AddTo(cp, ConstantAdmix(0.5));
+        lib_pc[k].probs = pc.AddTo(cp, admix);
     }
 
     // Learn color-space SOM of context profiles
@@ -280,8 +281,8 @@ int CSClustApp<Abc>::Run() {
 
 int main(int argc, char* argv[]) {
     string alphabet(getenv("CS_ALPHABET") ? getenv("CS_ALPHABET") : "");
-    if (alphabet == "dna" || alphabet == "DNA")
+    // if (alphabet == "dna" || alphabet == "DNA")
         return cs::CSClustApp<cs::Dna>().main(argc, argv, stdout, "csclust");
-    else
-        return cs::CSClustApp<cs::AA>().main(argc, argv, stdout, "csclust");
+    // else
+    //    return cs::CSClustApp<cs::AA>().main(argc, argv, stdout, "csclust");
 }
