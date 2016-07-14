@@ -28,4 +28,4 @@ profiles into CS62 sequences with cstranslate.
 - data/K4000.crf: context library of the discriminative model
 
 If you have any problems or questions regarding the suite of cs-tools please
-contact Christof Angermueller at cangermueller@gmail.com
+contact Johannes Soeding (soeding@mpibpc.mpg.de).
