@@ -1,7 +1,7 @@
 COMPILATION
 -----------
 
-The src subdirecty contains the source files and two makefiles (Makefile and
+The src subdirecory contains the source files and two makefiles (Makefile and
 Makefile.csalign) that are needed to compile the cs-executables. To start the
 compilation, simply change into the src directory and execute any of the
 following commands:
@@ -20,13 +20,25 @@ in the bin subdirectory.
 
 CONTEXT LIBRARIES
 -----------------
-
 The data subdirectory contains the library of 4000 context profiles needed by
 CS-BLAST, as well as the CS62 column state alphabet for translating sequence
-profiles into CS62 sequences with cstranslate. 
+profiles into CS62 sequences with cstranslate.
 - data/K4000.lib: context library of the generative model
 - data/K4000.crf: context library of the discriminative model
 
-If you have any problems or questions regarding the suite of cs-tools please
-contact Johannes Soeding (soeding@mpibpc.mpg.de) or Christof Angermueller 
-(cangermueller@gmail.com).
+
+REFERENCES
+----------
+
+Angermüller C., Biegert A., Söding J. (2012) Discriminative modelling of
+context-specific amino acid substitution probabilities.Bioinformatics 28(24):
+3240-3247. PMID: 23080114
+Biegert A., Söding J. (2009) Sequence context-specific profiles for homology
+search ing.  Proceedings of the National Academy of Sciences 106(10): 3770-3775.
+PMCID: PMC2645910
+
+
+CONTACT
+-------
+Christof Angermueller, https://cangermueller.com, cangermueller@ebi.ac.uk
+soeding lab: http://www.mpibpc.mpg.de/soeding, soeding@mpibpc.mpg.de
