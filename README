@@ -1,3 +1,15 @@
+Dependencies
+-----------------
+CS-BLAST requires the 'sparsehash' library, which was originally maintained
+by Google and can now be obtained from Github:
+
+> git clone https://github.com/sparsehash/sparsehash
+
+Follow the INSTALL notes for further details.
+Alternatively, sparsehash can be installed using apt-get:
+
+> apt-get install apt-get install libsparsehash-dev
+
 COMPILATION
 -----------
 The src subdirecory contains the source files and two makefiles (Makefile and
